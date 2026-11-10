@@ -634,6 +634,45 @@ def _ce_source_moles(weights: dict[str, float]) -> dict[str, float]:
     return {name: amount / masses[name] for name, amount in weights.items()}
 
 
+def _ce_parent_standard_factor(temperature: float = 1873.0) -> float:
+    source_path = Path(__file__).resolve().parents[2] / "data-src/konings/ce.json"
+    source = json.loads(source_path.read_text())["condensates"]["Ce2O3(l)"]
+    phase_a = source["phases"][0]
+    reference_temperature = 298.15
+    enthalpy_increment = 0.0
+    entropy_increment = 0.0
+    for coefficient, power in zip(
+        phase_a["coefficients"], phase_a["powers"], strict=True
+    ):
+        if power == -1:
+            enthalpy_increment += coefficient * math.log(
+                temperature / reference_temperature
+            )
+        else:
+            enthalpy_increment += coefficient * (
+                temperature ** (power + 1) - reference_temperature ** (power + 1)
+            ) / (power + 1)
+        if power == 0:
+            entropy_increment += coefficient * math.log(
+                temperature / reference_temperature
+            )
+        else:
+            entropy_increment += coefficient * (
+                temperature**power - reference_temperature**power
+            ) / power
+    g_stable_solid = (
+        source["dfH298_kJ_mol"] * 1000.0
+        + enthalpy_increment
+        - temperature * (source["S298_J_mol_K"] + entropy_increment)
+    )
+    gas_pack = load_gas_datapack()
+    liquid_row = _nearest_interval_row(gas_pack.oxide_df, "Ce2O3(l)", temperature, True)
+    g_parent_liquid = _lamor_gibbs(temperature, liquid_row)
+    delta_g = g_parent_liquid - g_stable_solid
+    assert delta_g == pytest.approx(32_749.41, abs=0.02)
+    return math.exp(-delta_g / (R_J_MOL_K * temperature))
+
+
 def test_ce_equations_match_table_anchors_and_full_source_closure() -> None:
     assert _CE_ZHAO_TABLE_IV[0] == (301, 45.0, 50.0, 5.0, 3.29)
     assert _CE_ZHAO_TABLE_IV[4] == (305, 38.0, 52.0, 10.0, 3.64)
@@ -642,10 +681,7 @@ def test_ce_equations_match_table_anchors_and_full_source_closure() -> None:
     assert _CE_CHEN_TABLE_2[3] == (104, 10.0, 60.0, 15.0, 5.0, 10.0, 0.18)
     assert _CE_CHEN_TABLE_2[-1] == (117, 7.5, 42.5, 35.0, 5.0, 10.0, 0.76)
 
-    fusion_factor = math.exp(
-        -85_000.0 * (1.0 - 1873.0 / 2512.0) / (R_J_MOL_K * 1873.0)
-    )
-    assert fusion_factor == pytest.approx(0.249463, rel=1e-5)
+    parent_standard_factor = _ce_parent_standard_factor()
     zhao_residuals = []
     for sample, cao, sio2, ce2o3, activity_x1e7 in _CE_ZHAO_TABLE_IV:
         composition = _ce_source_moles(
@@ -668,7 +704,7 @@ def test_ce_equations_match_table_anchors_and_full_source_closure() -> None:
             fO2_bar=4.76e-16 * 1.01325,
         )
         assert result.row == "Ce2O3-Zhao-2019-CaO-SiO2-1873K"
-        assert result.gamma / fusion_factor == pytest.approx(predicted_gamma, rel=1e-12)
+        assert result.gamma / parent_standard_factor == pytest.approx(predicted_gamma, rel=1e-12)
         zhao_residuals.append(math.log(predicted_gamma / observed_gamma))
 
     chen_residuals = []
@@ -687,7 +723,7 @@ def test_ce_equations_match_table_anchors_and_full_source_closure() -> None:
             fO2_bar=4.76e-16 * 1.01325,
         )
         assert result.row == "Ce2O3-Chen-2020-CMAS-1873K"
-        assert result.gamma / fusion_factor == pytest.approx(predicted_gamma, rel=1e-12)
+        assert result.gamma / parent_standard_factor == pytest.approx(predicted_gamma, rel=1e-12)
         chen_residuals.append(math.log(predicted_gamma / observed_gamma))
 
     zhao_rms = math.sqrt(math.fsum(value * value for value in zhao_residuals) / 14)
@@ -705,23 +741,25 @@ def test_ce_fusion_direction_band_and_oxygen_screen() -> None:
         "Ce", composition, 1873.0, parent_oxide="Ce2O3",
         fO2_bar=4.76e-16 * 1.01325,
     )
-    fusion_factor = math.exp(
-        -85_000.0 * (1.0 - 1873.0 / 2512.0) / (R_J_MOL_K * 1873.0)
-    )
-    ln_band = 0.2919 + (
-        10_000.0 * abs(1.0 - 1873.0 / 2512.0) / (R_J_MOL_K * 1873.0)
-    )
+    fusion_factor = _ce_parent_standard_factor()
+    transition_variance = math.fsum((
+        (8_000.0 * (1.0 - 1873.0 / 2392.0)) ** 2,
+        (5_000.0 * (1.0 - 1873.0 / 2406.0)) ** 2,
+        (10_000.0 * (1.0 - 1873.0 / 2512.0)) ** 2,
+    ))
+    ln_band = math.hypot(0.2919, math.sqrt(transition_variance) / (R_J_MOL_K * 1873.0))
 
     assert result.row == "Ce2O3-Chen-2020-CMAS-1873K"
     assert result.gamma < result.gamma / fusion_factor
     assert result.gamma / (result.gamma / fusion_factor) == pytest.approx(
         fusion_factor, rel=1e-12
     )
+    assert fusion_factor == pytest.approx(0.122094, rel=1e-5)
     assert result.gamma_range == pytest.approx((
         result.gamma * math.exp(-ln_band),
         result.gamma * math.exp(ln_band),
     ))
-    assert any("fusion-enthalpy estimate" in item for item in result.notice.limitations)
+    assert any("transition enthalpy uncertainties" in item for item in result.notice.limitations)
     assert not any(
         "source used graphite and pure CO" in axis
         for axis in result.notice.violated_axes
@@ -740,6 +778,16 @@ def test_ce_fusion_direction_band_and_oxygen_screen() -> None:
         "source used graphite and pure CO" in axis
         for axis in zhao.notice.violated_axes
     )
+
+    trace_alumina = _ce_source_moles({
+        "CaO": 45.0, "SiO2": 50.0, "Al2O3": 1e-8, "MgO": 0.0,
+        "Ce2O3": 5.0,
+    })
+    chen = evaluate_review_gamma_activity(
+        "Ce", trace_alumina, 1873.0, parent_oxide="Ce2O3",
+    )
+    assert chen.row == "Ce2O3-Chen-2020-CMAS-1873K"
+    assert any("Al2O3 is outside" in axis for axis in chen.notice.violated_axes)
 
 
 def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:

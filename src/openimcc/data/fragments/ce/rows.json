@@ -5,6 +5,7 @@
     {
       "row": "Ce2O3-Chen-2020-CMAS-1873K",
       "parent_oxide": "Ce2O3",
+      "select_when_component_positive": "Al2O3",
       "gamma_law": {
         "kind": "composition_terms",
         "input_basis": "weight_percent",
@@ -15,10 +16,13 @@
         "ln_gamma_rms_closure": 0.2919
       },
       "fusion_conversion": {
-        "components_per_parent": 1,
-        "delta_H_fusion_J_mol_component": 85000,
-        "delta_H_fusion_uncertainty_J_mol_component": 10000,
-        "T_m_K": 2512,
+        "transitions": [
+          {"phase": "A_to_H", "T_K": 2392, "delta_H_J_mol": 28000, "delta_H_uncertainty_J_mol": 8000},
+          {"phase": "H_to_X", "T_K": 2406, "delta_H_J_mol": 19000, "delta_H_uncertainty_J_mol": 5000},
+          {"phase": "fusion", "T_K": 2512, "delta_H_J_mol": 85000, "delta_H_uncertainty_J_mol": 10000}
+        ],
+        "delta_G_heat_capacity_correction_J_mol": 842.885929,
+        "heat_capacity_correction_basis": "at 1873 K, shipped Ce2O3(l) G° minus stable A-phase G° less the transition sum",
         "source_standard": "pure solid Ce2O3 (inherited from Zhao et al. 2019)",
         "parent_standard": "pure liquid Ce2O3(l)",
         "direction": "source_solid_to_parent_liquid"
@@ -60,7 +64,8 @@
       "limitations": [
         "Eq. (3) uses weight-percent inputs: ln(gamma_Ce2O3) = 3.46*((wt% CaO + 0.72*wt% Al2O3)/wt% SiO2) - 14.93.",
         "Closure RMS is 0.2919 in ln(gamma) against the 17 unstarred Table 2 activities; the two starred inherited comparison rows are excluded.",
-        "The gamma band combines the closure RMS with the propagated +/-10 kJ/mol fusion-enthalpy estimate by multiplying their log-space endpoint factors. The 85 +/-10 kJ/mol Ce2O3 fusion enthalpy is an estimate from La2O3 analogue entropies, not a direct measurement.",
+        "The gamma band combines closure RMS and the three transition enthalpy uncertainties in quadrature in ln(gamma). The transition sum uses delta-Cp approximately zero; a 0.843 kJ/mol heat-capacity correction makes its 1873 K central delta-G match the shipped liquid-parent Gibbs function against the stable A-phase Gibbs function.",
+        "The 28 +/-8, 19 +/-5 and 85 +/-10 kJ/mol transition enthalpies are source estimates; the fusion enthalpy is based on La2O3 analogue entropies, not a direct Ce2O3 measurement.",
         "The activity standard is pure solid Ce2O3 inherited from Zhao et al. 2019. The engine parent uses pure liquid Ce2O3(l); this empirical equation is a single-temperature, CMAS-like screen, not a validated Fe-bearing law."
       ]
     },
@@ -80,10 +85,13 @@
         "ln_gamma_rms_closure": 0.0751
       },
       "fusion_conversion": {
-        "components_per_parent": 1,
-        "delta_H_fusion_J_mol_component": 85000,
-        "delta_H_fusion_uncertainty_J_mol_component": 10000,
-        "T_m_K": 2512,
+        "transitions": [
+          {"phase": "A_to_H", "T_K": 2392, "delta_H_J_mol": 28000, "delta_H_uncertainty_J_mol": 8000},
+          {"phase": "H_to_X", "T_K": 2406, "delta_H_J_mol": 19000, "delta_H_uncertainty_J_mol": 5000},
+          {"phase": "fusion", "T_K": 2512, "delta_H_J_mol": 85000, "delta_H_uncertainty_J_mol": 10000}
+        ],
+        "delta_G_heat_capacity_correction_J_mol": 842.885929,
+        "heat_capacity_correction_basis": "at 1873 K, shipped Ce2O3(l) G° minus stable A-phase G° less the transition sum",
         "source_standard": "pure solid Ce2O3",
         "parent_standard": "pure liquid Ce2O3(l)",
         "direction": "source_solid_to_parent_liquid"
@@ -117,11 +125,12 @@
         "zhao_ce2o3_outside_table_iv": "Ce2O3 is outside the Table IV loading range."
       },
       "source_citation": "Zhao, Chen, Glaser & Yan (2019), Metallurgical and Materials Transactions B 50, 395–406, doi:10.1007/s11663-018-1471-9",
-      "source_locator": "Eq. [6] and Table IV, p. 402; Eq. [2], p. 396, pure solid Ce2O3 standard",
+      "source_locator": "Eq. [6] and Table IV, p. 402; Eq. [2], p. 396 gives delta-G°; adjacent text specifies the pure solid Ce2O3 standard",
       "limitations": [
         "Eq. [6] uses oxide-formula-unit mole fractions: ln(gamma_Ce2O3) = 4.5 - 14.5*x_CaO^2 - 27.7*x_SiO2^2 - 17.5*x_CaO*x_SiO2.",
         "Closure RMS is 0.0751 in ln(gamma) against the 14 Table IV activities.",
-        "The gamma band combines the closure RMS with the propagated +/-10 kJ/mol fusion-enthalpy estimate by multiplying their log-space endpoint factors. The 85 +/-10 kJ/mol Ce2O3 fusion enthalpy is an estimate from La2O3 analogue entropies, not a direct measurement.",
+        "The gamma band combines closure RMS and the three transition enthalpy uncertainties in quadrature in ln(gamma). The transition sum uses delta-Cp approximately zero; a 0.843 kJ/mol heat-capacity correction makes its 1873 K central delta-G match the shipped liquid-parent Gibbs function against the stable A-phase Gibbs function.",
+        "The 28 +/-8, 19 +/-5 and 85 +/-10 kJ/mol transition enthalpies are source estimates; the fusion enthalpy is based on La2O3 analogue entropies, not a direct Ce2O3 measurement.",
         "The source is the Al-free CaO-SiO2-Ce2O3 ternary at 1873 K and C/CO oxygen potential; the equation is a family screen outside the Table IV composition range."
       ]
     }

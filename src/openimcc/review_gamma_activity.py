@@ -140,39 +140,36 @@ def _evaluate_review_gamma_activity(
         source_x = source_units * parent_moles / source_basis_total
 
     gamma, gamma_range = _gamma_for_row(row, temperature, amounts)
-    fusion = row.get("fusion_conversion")
-    if fusion is not None:
-        components_per_parent = float(fusion["components_per_parent"])
-        delta_h_fusion = float(fusion["delta_H_fusion_J_mol_component"])
-        melting_temperature = float(fusion["T_m_K"])
-        delta_g_fusion = (
-            components_per_parent
-            * delta_h_fusion
-            * (1.0 - temperature / melting_temperature)
-        )
-        # At fusion equilibrium, μ°_s + RT ln(a_s) = μ°_l + RT ln(a_l),
-        # so ln(a_l) = ln(a_s) - ΔG_fus/(RT). With ΔG_fus = n·ΔH_fus·
-        # (1 - T/Tm) > 0 below Tm, the exponent is negative and dimensionless;
-        # the liquid-standard activity is therefore smaller below Tm.
-        factor = math.exp(
-            -delta_g_fusion / (R_J_MOL_K * temperature)
-        )
+    conversion = row.get("fusion_conversion")
+    if conversion is not None:
+        transitions = conversion["transitions"]
+        delta_g = float(conversion.get("delta_G_heat_capacity_correction_J_mol", 0.0))
+        transition_variance = 0.0
+        for transition in transitions:
+            transition_temperature = float(transition["T_K"])
+            delta_h = float(transition["delta_H_J_mol"])
+            delta_g += delta_h * (1.0 - temperature / transition_temperature)
+            delta_h_uncertainty = float(transition["delta_H_uncertainty_J_mol"])
+            transition_variance += (
+                delta_h_uncertainty * (1.0 - temperature / transition_temperature)
+            ) ** 2
+        # At phase equilibrium, μ°_solid + RT ln(a_s) = μ°_parent + RT ln(a_l),
+        # so ln(a_l) = ln(a_s) - [G°_parent(T)-G°_stable-solid(T)]/(RT).
+        # The transition sum uses ΔCp≈0; the source's integrated phase heat
+        # capacities correct its central ΔG to the shipped liquid-parent Gibbs
+        # function. The exponent is dimensionless and positive ΔG makes the
+        # parent-liquid activity smaller than the stable-solid activity.
+        factor = math.exp(-delta_g / (R_J_MOL_K * temperature))
         gamma *= factor
-        gamma_range = (gamma_range[0] * factor, gamma_range[1] * factor)
-        delta_h_uncertainty = float(
-            fusion.get("delta_H_fusion_uncertainty_J_mol_component", 0.0)
+        closure_rms = float(row["gamma_law"].get("ln_gamma_rms_closure", 0.0))
+        transition_log_uncertainty = math.sqrt(transition_variance) / (
+            R_J_MOL_K * temperature
         )
-        if delta_h_uncertainty:
-            fusion_log_uncertainty = (
-                components_per_parent
-                * delta_h_uncertainty
-                * abs(1.0 - temperature / melting_temperature)
-                / (R_J_MOL_K * temperature)
-            )
-            gamma_range = (
-                gamma_range[0] * math.exp(-fusion_log_uncertainty),
-                gamma_range[1] * math.exp(fusion_log_uncertainty),
-            )
+        log_half_width = math.hypot(closure_rms, transition_log_uncertainty)
+        gamma_range = (
+            gamma * math.exp(-log_half_width),
+            gamma * math.exp(log_half_width),
+        )
 
     source_activity = gamma * source_x
     activity = source_activity**parent_power
@@ -319,14 +316,20 @@ def _select_row(
     nearest = [
         row for row in candidates if temperature_distance(row) == nearest_distance
     ]
-    component_absence = [
-        row
-        for row in nearest
-        if row.get("select_when_component_zero") is not None
-        and amounts.get(str(row["select_when_component_zero"]), 0.0) == 0.0
-    ]
-    if component_absence:
-        return component_absence[0]
+    component_selection = []
+    for row in nearest:
+        zero_component = row.get("select_when_component_zero")
+        positive_component = row.get("select_when_component_positive")
+        if zero_component is not None and amounts.get(str(zero_component), 0.0) != 0.0:
+            continue
+        if positive_component is not None and amounts.get(str(positive_component), 0.0) <= 0.0:
+            continue
+        if zero_component is not None or positive_component is not None:
+            component_selection.append(row)
+    if component_selection:
+        if len(component_selection) != 1:
+            raise ValueError("review-gamma component selectors must identify one row")
+        return component_selection[0]
     if len(nearest) > 1 and any(
         row["composition_screen"].get("select_tie_by_family") for row in nearest
     ):
