@@ -221,7 +221,7 @@ def test_basic_monoxide_envelope_scores_dilute_cobalt_and_caps_major_rows() -> N
         "class": "basic_monoxide",
         "temperature_range_K": (1400.0, 2200.0),
         "log10_fO2_range_bar": trace_components.ENVELOPE_LOG10_FO2_RANGE_BAR,
-        "delta_IW_grid": (-2.0, 0.0, 2.0, 4.0),
+        "delta_IW_grid": (-6.0, -4.0, -2.0, 0.0, 2.0, 4.0),
     }
     assert "mn_calibrated_envelope" in str(sodium)
     assert math.isfinite(dilute.activity("Na2O"))
@@ -243,10 +243,16 @@ def test_basic_monoxide_envelope_scores_dilute_cobalt_and_caps_major_rows() -> N
         concentrated.activity("Na2O")
 
 
-def test_trace_envelope_falls_back_to_strict_bound_outside_temperature_grid() -> None:
+@pytest.mark.parametrize(
+    ("temperature_K", "uses_envelope"),
+    [(1399.0, False), (1400.0, True), (2200.0, True), (2201.0, False)],
+)
+def test_trace_envelope_temperature_gate_is_inclusive(
+    temperature_K: float, uses_envelope: bool
+) -> None:
     result = evaluate(
         _mole_fraction_composition(_MARE_BASALT_WT, "CoO", 0.001),
-        1399.0,
+        temperature_K,
         basis_type="mol",
         allow_extrapolation=True,
     )
@@ -254,10 +260,15 @@ def test_trace_envelope_falls_back_to_strict_bound_outside_temperature_grid() ->
         item for item in result.labels.notices
         if isinstance(item, TraceMajorBiasFlag) and item.major_oxide == "Na2O"
     )
-    assert sodium.envelope_flags == ()
-    assert sodium.limiting_cap_dex == 0.01
-    assert "temperature outside 1400–2200 K" in str(sodium)
-    assert not sodium.scoreable
+    if uses_envelope:
+        assert sodium.envelope_flags
+        assert sodium.limiting_cap_dex == 0.02
+        assert sodium.scoreable
+    else:
+        assert sodium.envelope_flags == ()
+        assert sodium.limiting_cap_dex == 0.01
+        assert "temperature outside 1400–2200 K" in str(sodium)
+        assert not sodium.scoreable
 
 
 def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
@@ -283,7 +294,7 @@ def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
         1800.0,
         1.0e-8,
         packaged_gas_pack,
-        gas_species=("Na", "SiO"),
+        gas_species=("Na", "SiO", "Mg"),
         composition_wt_pct=dilute_composition,
     )
     assert "Na" in dilute_gas
@@ -291,6 +302,14 @@ def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
     assert isinstance(sodium_flag, TraceMajorBiasFlag)
     assert sodium_flag.mn_calibrated_envelope is not None
     assert sodium_flag.scoreable
+    magnesium_flag = dilute_gas.domain_flags["Mg"]
+    assert isinstance(magnesium_flag, TraceMajorBiasFlag)
+    assert magnesium_flag.mn_calibrated_envelope is not None
+    assert any(
+        "constant-Cp supercooled-liquid continuation" in flag
+        for flag in magnesium_flag.prior_flags
+    )
+    assert any("±0.76 dex pO2" in flag for flag in magnesium_flag.prior_flags)
 
     concentrated_activities, concentrated_composition = evaluate_composition(0.01)
     with pytest.raises(ImccComponentOutsideDomainError):
@@ -671,6 +690,28 @@ def test_redox_sweeps_recompute_stored_class_envelopes() -> None:
     assert k_amphoteric == pytest.approx(AMPHOTERIC_ENVELOPE_K, rel=1e-12)
     assert all(math.isfinite(item[0]) for item in by_class["amphoteric"])
     assert k_amphoteric > 1.8
+
+    def point_max_k(
+        trace_class: str, melt: str, temperature_K: float, delta_iw: float
+    ) -> float:
+        log_fO2 = _iw_log10_fO2_bar(temperature_K) + delta_iw
+        return max(
+            value[2]
+            for key, value in recomputed.items()
+            if key[0] == trace_class
+            and key[2] == melt
+            and key[3] == temperature_K
+            and key[4] == log_fO2
+        )
+
+    mn_minus_2 = point_max_k("basic_monoxide", "mare basalt", 1400.0, -2.0)
+    mn_minus_4 = point_max_k("basic_monoxide", "mare basalt", 1400.0, -4.0)
+    mn_minus_6 = point_max_k("basic_monoxide", "mare basalt", 1400.0, -6.0)
+    assert mn_minus_4 < mn_minus_2
+    assert mn_minus_6 < mn_minus_4
+    cr_minus_4 = point_max_k("amphoteric", "mare basalt", 1400.0, -4.0)
+    cr_minus_6 = point_max_k("amphoteric", "mare basalt", 1400.0, -6.0)
+    assert cr_minus_6 < cr_minus_4
 
 
 @pytest.mark.parametrize("oxide", ["Cl", "F", "S", "SO3"])

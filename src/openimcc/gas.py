@@ -3684,7 +3684,18 @@ def evaluate_gas(
             )
         elif channel_major_flags:
             if len(channel_major_flags) == 1:
-                domain_flags[gas_name] = channel_major_flags[0]
+                first_major_flag = channel_major_flags[0]
+                domain_flags[gas_name] = TraceMajorBiasFlag(
+                    first_major_flag.major_oxide,
+                    first_major_flag.x_free,
+                    first_major_flag.bias_bound_dex,
+                    first_major_flag.scoreable,
+                    limiting_bound_dex=first_major_flag.limiting_bound_dex,
+                    limiting_cap_dex=first_major_flag.limiting_cap_dex,
+                    prior_flags=tuple(flags),
+                    additional_major_flags=first_major_flag.additional_major_flags,
+                    envelope_flags=first_major_flag.envelope_flags,
+                )
             else:
                 first_major_flag = channel_major_flags[0]
                 domain_flags[gas_name] = TraceMajorBiasFlag(
