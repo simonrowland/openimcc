@@ -50,7 +50,7 @@ class TraceComponentRule:
     gas_channel_blocked_above_mole_fraction: float | None = None
     activity_fragment: Literal["Ni", "Co", "P", "S"] | None = None
     review_gamma_element: Literal[
-        "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W"
+        "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ce"
     ] | None = None
 
 
@@ -269,6 +269,16 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class_reason="Bi2O3 is a trivalent trace oxide with a published melt activity estimate",
             gas_parent_oxide="Bi2O3",
             review_gamma_element="Bi",
+        ),
+        "Ce2O3": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["Ce"] + 3.0 * _O_MASS,
+            1,
+            "one Ce2O3 formula unit is one source component unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="Ce2O3 is the trivalent rare-earth oxide measured in the reducing slag sources",
+            gas_parent_oxide="Ce2O3",
+            review_gamma_element="Ce",
         ),
     }
 )

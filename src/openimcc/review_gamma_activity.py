@@ -14,6 +14,7 @@ _LOG10_BAR_PER_ATM = math.log10(1.01325)
 _TRACE_PARENTS = frozenset(
     {
         "SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3",
+        "Ce2O3",
         "NiO", "CoO", "PbO", "WO3",
     }
 )
@@ -138,17 +139,40 @@ def _evaluate_review_gamma_activity(
         source_basis_total = total_moles - parent_moles + source_units * parent_moles
         source_x = source_units * parent_moles / source_basis_total
 
-    gamma, gamma_range = _gamma_for_row(row, temperature)
+    gamma, gamma_range = _gamma_for_row(row, temperature, amounts)
     fusion = row.get("fusion_conversion")
     if fusion is not None:
+        components_per_parent = float(fusion["components_per_parent"])
+        delta_h_fusion = float(fusion["delta_H_fusion_J_mol_component"])
+        melting_temperature = float(fusion["T_m_K"])
+        delta_g_fusion = (
+            components_per_parent
+            * delta_h_fusion
+            * (1.0 - temperature / melting_temperature)
+        )
+        # At fusion equilibrium, μ°_s + RT ln(a_s) = μ°_l + RT ln(a_l),
+        # so ln(a_l) = ln(a_s) - ΔG_fus/(RT). With ΔG_fus = n·ΔH_fus·
+        # (1 - T/Tm) > 0 below Tm, the exponent is negative and dimensionless;
+        # the liquid-standard activity is therefore smaller below Tm.
         factor = math.exp(
-            float(fusion["components_per_parent"])
-            * float(fusion["delta_H_fusion_J_mol_component"])
-            * (1.0 - temperature / float(fusion["T_m_K"]))
-            / (R_J_MOL_K * temperature)
+            -delta_g_fusion / (R_J_MOL_K * temperature)
         )
         gamma *= factor
         gamma_range = (gamma_range[0] * factor, gamma_range[1] * factor)
+        delta_h_uncertainty = float(
+            fusion.get("delta_H_fusion_uncertainty_J_mol_component", 0.0)
+        )
+        if delta_h_uncertainty:
+            fusion_log_uncertainty = (
+                components_per_parent
+                * delta_h_uncertainty
+                * abs(1.0 - temperature / melting_temperature)
+                / (R_J_MOL_K * temperature)
+            )
+            gamma_range = (
+                gamma_range[0] * math.exp(-fusion_log_uncertainty),
+                gamma_range[1] * math.exp(fusion_log_uncertainty),
+            )
 
     source_activity = gamma * source_x
     activity = source_activity**parent_power
@@ -210,12 +234,12 @@ def _evaluate_review_gamma_activity(
     composition_windows = row.get("composition_windows_wt_pct", {})
     if composition_windows:
         total_mass = math.fsum(
-            amount * MOLAR_MASS_G_MOL[component]
+            amount * _component_molar_mass(component)
             for component, amount in amounts.items()
         )
         weight_pct = {
             component: amounts.get(component, 0.0)
-            * MOLAR_MASS_G_MOL[component]
+            * _component_molar_mass(component)
             / total_mass
             * 100.0
             for component in composition_windows
@@ -295,6 +319,14 @@ def _select_row(
     nearest = [
         row for row in candidates if temperature_distance(row) == nearest_distance
     ]
+    component_absence = [
+        row
+        for row in nearest
+        if row.get("select_when_component_zero") is not None
+        and amounts.get(str(row["select_when_component_zero"]), 0.0) == 0.0
+    ]
+    if component_absence:
+        return component_absence[0]
     if len(nearest) > 1 and any(
         row["composition_screen"].get("select_tie_by_family") for row in nearest
     ):
@@ -354,7 +386,9 @@ def _matches_an_di_target(
 
 
 def _gamma_for_row(
-    row: Mapping[str, object], temperature: float
+    row: Mapping[str, object],
+    temperature: float,
+    amounts: Mapping[str, float],
 ) -> tuple[float, tuple[float, float]]:
     law = row["gamma_law"]
     if law["kind"] == "range":
@@ -368,4 +402,53 @@ def _gamma_for_row(
     if law["kind"] == "log10_linear":
         gamma = 10.0 ** (float(law["A_K"]) / temperature + float(law["B"]))
         return gamma, (gamma, gamma)
+    if law["kind"] == "composition_terms":
+        input_basis = str(law["input_basis"])
+        if input_basis == "oxide_mole_fraction":
+            total_moles = math.fsum(amounts.values())
+            x_cao = amounts.get("CaO", 0.0) / total_moles
+            x_sio2 = amounts.get("SiO2", 0.0) / total_moles
+            term_values = {
+                "constant": 1.0,
+                "x_CaO_squared": x_cao * x_cao,
+                "x_SiO2_squared": x_sio2 * x_sio2,
+                "x_CaO_times_x_SiO2": x_cao * x_sio2,
+            }
+        elif input_basis == "weight_percent":
+            cao_mass = amounts.get("CaO", 0.0) * MOLAR_MASS_G_MOL["CaO"]
+            sio2_mass = amounts.get("SiO2", 0.0) * MOLAR_MASS_G_MOL["SiO2"]
+            al2o3_mass = amounts.get("Al2O3", 0.0) * MOLAR_MASS_G_MOL["Al2O3"]
+            if sio2_mass <= 0.0:
+                raise ValueError("weight-percent composition_terms require SiO2")
+            term_values = {
+                "constant": 1.0,
+                "wt_CaO_plus_0_72_Al2O3_over_SiO2": (
+                    (cao_mass + 0.72 * al2o3_mass) / sio2_mass
+                ),
+            }
+        else:
+            raise ValueError(f"unknown composition_terms basis {input_basis!r}")
+
+        ln_gamma = math.fsum(
+            float(term["coefficient"]) * term_values[str(term["name"])]
+            for term in law["terms"]
+        )
+        gamma = math.exp(ln_gamma)
+        ln_gamma_rms = float(law.get("ln_gamma_rms_closure", 0.0))
+        return gamma, (
+            gamma * math.exp(-ln_gamma_rms),
+            gamma * math.exp(ln_gamma_rms),
+        )
     raise ValueError(f"unknown gamma law {law['kind']!r}")
+
+
+def _component_molar_mass(component: str) -> float:
+    mass = MOLAR_MASS_G_MOL.get(component)
+    if mass is not None:
+        return mass
+    from openimcc.trace_components import trace_component_rule
+
+    rule = trace_component_rule(component)
+    if rule is None:
+        raise ValueError(f"no molar mass is registered for {component!r}")
+    return rule.molar_mass_g_mol

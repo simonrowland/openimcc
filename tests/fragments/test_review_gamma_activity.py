@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
-from openimcc import evaluate, load_datapack
+from openimcc import evaluate, load_datapack, supported_trace_oxides
+from openimcc.activity_fragments import load_activity_fragment
 from openimcc.gas import (
     _janaf_gibbs,
     _lamor_gibbs,
@@ -585,4 +586,246 @@ def test_ni_and_co_match_b750046_float_hex_outputs_over_domain_grid() -> None:
     )
     assert payload_hash(co_payload) == (
         "a49593cf750d325051433049c1f7ba11a4274c0da301f8749749c14603c689e4"
+    )
+
+
+_CE_ZHAO_TABLE_IV = (
+    (301, 45.0, 50.0, 5.0, 3.29),
+    (302, 41.0, 54.0, 5.0, 1.72),
+    (303, 37.0, 58.0, 5.0, 0.86),
+    (304, 35.0, 55.0, 10.0, 2.81),
+    (305, 38.0, 52.0, 10.0, 3.64),
+    (306, 35.0, 50.0, 15.0, 7.94),
+    (307, 32.5, 52.5, 15.0, 5.03),
+    (308, 32.5, 47.5, 20.0, 16.22),
+    (309, 30.0, 50.0, 20.0, 8.97),
+    (310, 27.5, 47.5, 25.0, 15.80),
+    (311, 25.0, 50.0, 25.0, 9.02),
+    (312, 23.75, 46.25, 30.0, 19.06),
+    (313, 21.25, 48.75, 30.0, 9.03),
+    (314, 18.75, 46.25, 35.0, 18.20),
+)
+
+_CE_CHEN_TABLE_2 = (
+    (101, 22.5, 57.5, 5.0, 5.0, 10.0, 0.24),
+    (102, 27.5, 52.5, 5.0, 5.0, 10.0, 0.42),
+    (103, 32.5, 47.5, 5.0, 5.0, 10.0, 1.10),
+    (104, 10.0, 60.0, 15.0, 5.0, 10.0, 0.18),
+    (105, 15.0, 55.0, 15.0, 5.0, 10.0, 0.28),
+    (106, 20.0, 50.0, 15.0, 5.0, 10.0, 0.78),
+    (107, 25.0, 45.0, 15.0, 5.0, 10.0, 1.17),
+    (108, 27.5, 42.5, 15.0, 5.0, 10.0, 2.10),
+    (109, 5.0, 57.5, 22.5, 5.0, 10.0, 0.17),
+    (110, 15.0, 47.5, 22.5, 5.0, 10.0, 0.96),
+    (111, 25.0, 37.5, 22.5, 5.0, 10.0, 2.12),
+    (112, 32.5, 30.0, 22.5, 5.0, 10.0, 16.75),
+    (113, 5.0, 50.0, 30.0, 5.0, 10.0, 0.68),
+    (114, 12.5, 42.5, 30.0, 5.0, 10.0, 1.41),
+    (115, 20.0, 35.0, 30.0, 5.0, 10.0, 6.88),
+    (116, 27.5, 27.5, 30.0, 5.0, 10.0, 27.28),
+    (117, 7.5, 42.5, 35.0, 5.0, 10.0, 0.76),
+)
+
+
+def _ce_source_moles(weights: dict[str, float]) -> dict[str, float]:
+    ce_rule = trace_component_rule("Ce2O3")
+    assert ce_rule is not None
+    masses = {**MOLAR_MASS_G_MOL, "Ce2O3": ce_rule.molar_mass_g_mol}
+    return {name: amount / masses[name] for name, amount in weights.items()}
+
+
+def test_ce_equations_match_table_anchors_and_full_source_closure() -> None:
+    assert _CE_ZHAO_TABLE_IV[0] == (301, 45.0, 50.0, 5.0, 3.29)
+    assert _CE_ZHAO_TABLE_IV[4] == (305, 38.0, 52.0, 10.0, 3.64)
+    assert _CE_ZHAO_TABLE_IV[-1] == (314, 18.75, 46.25, 35.0, 18.20)
+    assert _CE_CHEN_TABLE_2[0] == (101, 22.5, 57.5, 5.0, 5.0, 10.0, 0.24)
+    assert _CE_CHEN_TABLE_2[3] == (104, 10.0, 60.0, 15.0, 5.0, 10.0, 0.18)
+    assert _CE_CHEN_TABLE_2[-1] == (117, 7.5, 42.5, 35.0, 5.0, 10.0, 0.76)
+
+    fusion_factor = math.exp(
+        -85_000.0 * (1.0 - 1873.0 / 2512.0) / (R_J_MOL_K * 1873.0)
+    )
+    assert fusion_factor == pytest.approx(0.249463, rel=1e-5)
+    zhao_residuals = []
+    for sample, cao, sio2, ce2o3, activity_x1e7 in _CE_ZHAO_TABLE_IV:
+        composition = _ce_source_moles(
+            {"CaO": cao, "SiO2": sio2, "Ce2O3": ce2o3, "Al2O3": 0.0, "MgO": 0.0}
+        )
+        total = math.fsum(composition.values())
+        x_cao = composition["CaO"] / total
+        x_sio2 = composition["SiO2"] / total
+        x_ce = composition["Ce2O3"] / total
+        ln_gamma = (
+            4.5
+            - 14.5 * x_cao**2
+            - 27.7 * x_sio2**2
+            - 17.5 * x_cao * x_sio2
+        )
+        observed_gamma = activity_x1e7 * 1e-7 / x_ce
+        predicted_gamma = math.exp(ln_gamma)
+        result = evaluate_review_gamma_activity(
+            "Ce", composition, 1873.0, parent_oxide="Ce2O3",
+            fO2_bar=4.76e-16 * 1.01325,
+        )
+        assert result.row == "Ce2O3-Zhao-2019-CaO-SiO2-1873K"
+        assert result.gamma / fusion_factor == pytest.approx(predicted_gamma, rel=1e-12)
+        zhao_residuals.append(math.log(predicted_gamma / observed_gamma))
+
+    chen_residuals = []
+    for sample, cao, sio2, al2o3, mgo, ce2o3, activity_x1e7 in _CE_CHEN_TABLE_2:
+        composition = _ce_source_moles({
+            "CaO": cao, "SiO2": sio2, "Al2O3": al2o3, "MgO": mgo,
+            "Ce2O3": ce2o3,
+        })
+        total = math.fsum(composition.values())
+        x_ce = composition["Ce2O3"] / total
+        ln_gamma = 3.46 * ((cao + 0.72 * al2o3) / sio2) - 14.93
+        observed_gamma = activity_x1e7 * 1e-7 / x_ce
+        predicted_gamma = math.exp(ln_gamma)
+        result = evaluate_review_gamma_activity(
+            "Ce", composition, 1873.0, parent_oxide="Ce2O3",
+            fO2_bar=4.76e-16 * 1.01325,
+        )
+        assert result.row == "Ce2O3-Chen-2020-CMAS-1873K"
+        assert result.gamma / fusion_factor == pytest.approx(predicted_gamma, rel=1e-12)
+        chen_residuals.append(math.log(predicted_gamma / observed_gamma))
+
+    zhao_rms = math.sqrt(math.fsum(value * value for value in zhao_residuals) / 14)
+    chen_rms = math.sqrt(math.fsum(value * value for value in chen_residuals) / 17)
+    assert zhao_rms == pytest.approx(0.0751, abs=1e-4)
+    assert chen_rms == pytest.approx(0.2919, abs=1e-4)
+
+
+def test_ce_fusion_direction_band_and_oxygen_screen() -> None:
+    composition = _ce_source_moles({
+        "CaO": 22.5, "SiO2": 57.5, "Al2O3": 5.0, "MgO": 5.0,
+        "Ce2O3": 10.0,
+    })
+    result = evaluate_review_gamma_activity(
+        "Ce", composition, 1873.0, parent_oxide="Ce2O3",
+        fO2_bar=4.76e-16 * 1.01325,
+    )
+    fusion_factor = math.exp(
+        -85_000.0 * (1.0 - 1873.0 / 2512.0) / (R_J_MOL_K * 1873.0)
+    )
+    ln_band = 0.2919 + (
+        10_000.0 * abs(1.0 - 1873.0 / 2512.0) / (R_J_MOL_K * 1873.0)
+    )
+
+    assert result.row == "Ce2O3-Chen-2020-CMAS-1873K"
+    assert result.gamma < result.gamma / fusion_factor
+    assert result.gamma / (result.gamma / fusion_factor) == pytest.approx(
+        fusion_factor, rel=1e-12
+    )
+    assert result.gamma_range == pytest.approx((
+        result.gamma * math.exp(-ln_band),
+        result.gamma * math.exp(ln_band),
+    ))
+    assert any("fusion-enthalpy estimate" in item for item in result.notice.limitations)
+    assert not any(
+        "source used graphite and pure CO" in axis
+        for axis in result.notice.violated_axes
+    )
+
+    no_alumina = _ce_source_moles({
+        "CaO": 45.0, "SiO2": 50.0, "Al2O3": 0.0, "MgO": 0.0,
+        "Ce2O3": 5.0,
+    })
+    zhao = evaluate_review_gamma_activity(
+        "Ce", no_alumina, 1873.0, parent_oxide="Ce2O3",
+        fO2_bar=4.76e-16 * 1.01325 * 10.0,
+    )
+    assert zhao.row == "Ce2O3-Zhao-2019-CaO-SiO2-1873K"
+    assert any(
+        "source used graphite and pure CO" in axis
+        for axis in zhao.notice.violated_axes
+    )
+
+
+def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:
+    supported = {item.oxide for item in supported_trace_oxides()}
+    assert "Ce2O3" in supported
+
+    composition = {
+        "SiO2": 47.0,
+        "Al2O3": 15.0,
+        "CaO": 18.0,
+        "MgO": 9.0,
+        "FeO": 11.0,
+        "Ce2O3": 0.01,
+    }
+    result = evaluate_gas(
+        {},
+        1873.0,
+        4.76e-16 * 1.01325,
+        load_gas_datapack(),
+        gas_species=("Ce", "CeO"),
+        composition_wt_pct=composition,
+    )
+    assert math.isfinite(result["Ce"]) and result["Ce"] > 0.0
+    assert math.isfinite(result["CeO"]) and result["CeO"] > 0.0
+
+    dilute_composition = _ce_source_moles({
+        **{name: composition[name] for name in ("SiO2", "Al2O3", "CaO", "MgO", "FeO")},
+        "Ce2O3": composition["Ce2O3"],
+    })
+    dilute_activity = evaluate_review_gamma_activity(
+        "Ce", dilute_composition, 1873.0, parent_oxide="Ce2O3",
+        fO2_bar=4.76e-16 * 1.01325,
+    )
+    assert any(
+        "Ce2O3 differs from the 10 wt%" in axis
+        for axis in dilute_activity.notice.violated_axes
+    )
+
+
+def test_existing_review_gamma_rows_are_bit_identical_and_have_no_fusion_block() -> None:
+    elements = ("Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ni", "Co")
+    payload = []
+    for element in elements:
+        for row in load_activity_fragment(element)["rows"]:
+            assert row.get("fusion_conversion") is None
+            screen = row["composition_screen"]
+            if screen["kind"] == "family_oxide_set":
+                composition = {name: 1.0 for name in screen["oxides"]}
+            elif screen["kind"] == "an_di_target":
+                composition = {
+                    name: float(weight) / MOLAR_MASS_G_MOL[name]
+                    for name, weight in screen["major_wt_pct"].items()
+                }
+            elif screen["kind"] == "supported_component_set":
+                composition = {name: 1.0 for name in screen["components"]}
+            else:
+                raise AssertionError(screen["kind"])
+
+            parent = row["parent_oxide"]
+            composition[parent] = 0.001
+            low, high = map(float, row["temperature_window_K"])
+            result = evaluate_review_gamma_activity(
+                element,
+                composition,
+                (low + high) / 2.0,
+                parent_oxide=parent,
+            )
+            payload.append([
+                element,
+                row["row"],
+                float(result.activity).hex(),
+                float(result.source_activity).hex(),
+                float(result.gamma).hex(),
+                [float(value).hex() for value in result.gamma_range],
+                float(result.source_mole_fraction).hex(),
+                [float(value).hex() for value in result.activity_range],
+                result.parent_oxide,
+                result.row,
+                list(result.notice.violated_axes),
+                list(result.notice.limitations),
+                str(result.notice),
+                result.reference,
+            ])
+
+    encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
+    assert len(payload) == 14
+    assert hashlib.sha256(encoded).hexdigest() == (
+        "6eb3409ef8b0534758c573cbdb601b18754d296f9374d1591e7c87be6cb5970c"
     )
