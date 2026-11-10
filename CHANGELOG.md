@@ -880,6 +880,21 @@
 
 ### Changes that can break callers
 
+- Trace-limit refusals in `evaluate()` (an unmodelled trace oxide above 0.01
+  mole fraction, or above 0.02 in total) now raise
+  `ImccTraceLimitExceededError`, a subclass of
+  `ImccComponentOutsideDomainError`, with code `imcc_trace_limit_exceeded`
+  instead of `imcc_component_outside_domain`. Its message keeps the previous
+  `component(s) outside IMCC-SF04 domain: [...]` prefix and adds details after
+  a semicolon. `except ImccComponentOutsideDomainError` still catches it.
+  Callers that compare `.code` or the full message text must accept the new
+  code and suffix. Unknown-component and major out-of-domain refusals are
+  unchanged.
+- A non-scoreable major-row trace bias refusal from `ImccResult.activity()` or
+  `evaluate_gas()` now raises `ImccTraceMajorBiasError`, also a subclass of
+  `ImccComponentOutsideDomainError`, with code `trace_major_activity_bound`
+  instead of `imcc_component_outside_domain`, and the refused parent in
+  `major_oxide`. The message text is unchanged.
 - Changed the default K2O(l) reference from LAM1984 to a construction from the
   JANAF K-012 crystal, using `liquid_from_solid` inputs in
   `data-src/liquid-from-solid-inputs.json`: fusion temperature 1013 K (band
