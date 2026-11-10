@@ -439,19 +439,18 @@ def test_cr_candidate_v3_outputs_pin_corrected_homologue():
 
     At outer tolerance 1e-15 and inner balance tolerance 1e-14, old half-step
     relaxation and Anderson(m=1) agree within 3.61e-15 relative across these
-    three cases. The previous stored outputs differ from that reference by at
-    most 5.47e-11 relative, consistent with their former 1e-10 outer stop.
-    The shipped 1e-14 outer/inner floor is within 1e-12 relative of the
-    reference; the assertion retains that tolerance across platforms.
+    three cases. The shipped 1e-12 outer tolerance with the caller's default
+    inner tolerance differs from that reference by at most 1.28e-13 relative.
+    The assertion retains rel=1e-12 to cover cross-platform roundoff.
     """
     feed = {"Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
             "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05}
     # The default melt component is D066 v4; its composition-dependent redox
     # inputs feed the Cr candidate rows and unchanged redox equations.
     expected = (
-        (0.0015149463419796816, 0.00048505365802031987, 0.00075747317098984082),
-        (0.0010971925842534283, 0.00090280741574657133, 0.00054859629212671414),
-        (0.00078869153632028625, 0.0012113084636797139, 0.00039434576816014313),
+        (0.0015149463419797046, 0.0004850536580202975, 0.0007574731709898523),
+        (0.0010971925842534341, 0.0009028074157465673, 0.0005485962921267171),
+        (0.0007886915363203871, 0.0012113084636796129, 0.00039434576816019354),
     )
     actual = []
     for temperature, logf in ((1673.0, -10.0), (1700.0, -8.0), (1773.0, -6.0)):

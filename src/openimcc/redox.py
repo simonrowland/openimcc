@@ -1025,9 +1025,10 @@ def _active_inner(
     # scalar map, cancels its residual exactly. The smooth Cr map is locally
     # affine, so this secant step accelerates it; half-relaxation remains the
     # safe fallback when the residual difference is degenerate or extrapolates
-    # too far. A 1e-14 floor for both the outer fixed-point criterion and its
-    # inner balance solve keeps the returned activity within the pin tolerance
-    # despite changes in the iteration path.
+    # too far. The inner balance certificate is the caller's tolerance (1e-12
+    # by default), and its residual noise can reach 5e-13 in the conditioned
+    # map. Set the outer stop at 1e-12, above that noise floor, so a valid inner
+    # solve can satisfy the fixed-point test instead of oscillating forever.
     applied: dict[str, float] = {str(row["complex"]): 0.0 for row in composition_rows}
     names = tuple(applied)
     previous_residual: tuple[float, ...] | None = None
@@ -1038,7 +1039,7 @@ def _active_inner(
             parent_moles, temperature_K, lambda_value, base_datapack, redox_pack,
             fallback_counter=fallback_counter, exclude_fe_redox=exclude_fe_redox,
             y_init=y_init if state is None else state.y,
-            tol=min(tol, 1.0e-14), max_iter=max_iter,
+            tol=tol, max_iter=max_iter,
             composition_ln_k=applied,
         )
         desired = _composition_conditioned_effective_ln_k(
@@ -1049,7 +1050,7 @@ def _active_inner(
              for name in desired),
             default=0.0,
         )
-        if relative_change < 1.0e-14:
+        if relative_change < 1.0e-12:
             return replace(state, composition_redox_iterations=count)
         residual = tuple(desired[name] - applied[name] for name in names)
         if previous_residual is None or previous_desired is None:

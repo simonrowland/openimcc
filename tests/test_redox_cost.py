@@ -68,10 +68,10 @@ _COLD_REFERENCE_TEMPERATURE = 1734.15
 # natural melt). Before Anderson acceleration, the returned states took 20 and
 # 32 composition fixed-point updates and cProfile recorded 128 and 356 inner
 # solves per evaluation (v4: 9 and 15). They now take 7 and 8 updates and 65
-# and 115 inner solves. The Sr/Li/Zn/Yb associates are absent from these
+# and 114 inner solves. The Sr/Li/Zn/Yb associates are absent from these
 # inventories and do not enter the Newton matrix. Basalt has no Cr and keeps
-# its prior baseline. The Cr values below are five new run medians per chip;
-# the local measurements use M5 Max and the remote gate reaches M3 Ultra.
+# its prior baseline. Cr baselines were remeasured on M5 Max locally and M3
+# Ultra remotely, using five run medians per chip.
 _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, ...]]] = {
     # Values are five independent run medians. Each run is the median of five
     # trial medians, each from seven interleaved solve/reference pairs. Ratios
@@ -79,35 +79,35 @@ _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, ...]]] = {
     _DEV_CPU_CLASS: {
         "basalt": (0.00378906, 0.00373555, 0.00372911, 0.00368432, 0.00366756),
         "basalt_with_traces": (
-            0.00621913,
-            0.00650781,
-            0.00604345,
-            0.00617380,
-            0.00626567,
+            0.00650448,
+            0.00660936,
+            0.00649766,
+            0.00689846,
+            0.00616468,
         ),
         "closed_natural_melt": (
-            0.00669640,
-            0.00666512,
-            0.00657505,
-            0.00661673,
-            0.00664248,
+            0.00728417,
+            0.00731344,
+            0.00681555,
+            0.00693469,
+            0.00701973,
         ),
     },
     "Apple M3 Ultra": {
         "basalt": (0.00384046, 0.00368501, 0.00375076, 0.00372141, 0.00375380),
         "basalt_with_traces": (
-            0.00533617,
-            0.00520448,
-            0.00505638,
-            0.00650448,
-            0.00549489,
+            0.00581956,
+            0.00601708,
+            0.00607861,
+            0.00542480,
+            0.00599507,
         ),
         "closed_natural_melt": (
-            0.00589986,
-            0.00560087,
-            0.00618191,
-            0.00645192,
-            0.00581225,
+            0.00656782,
+            0.00614391,
+            0.00645480,
+            0.00602802,
+            0.00637913,
         ),
     },
 }
