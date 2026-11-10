@@ -11,13 +11,13 @@ from dataclasses import dataclass
 import math
 from typing import Mapping
 
-from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.activity_fragments import load_activity_fragment
+from openimcc.review_gamma_activity import _evaluate_review_gamma_activity
 
 _FRAGMENT = load_activity_fragment("Co")
 _ACTIVITY_ROW = _FRAGMENT["rows"][0]
 _OXIDE_COMPONENTS = frozenset(
-    {"SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O", "CoO"}
+    _ACTIVITY_ROW["composition_screen"]["components"]
 )
 
 
@@ -62,79 +62,24 @@ def evaluate_co_activity(
     particular basalt composition and the dilute limit has no published
     numeric upper bound in this record.
     """
-    temperature = float(T_K)
-    if not math.isfinite(temperature) or temperature <= 0.0:
-        raise ValueError("temperature must be finite and positive")
-
-    amounts: dict[str, float] = {}
-    for component, raw_amount in composition_moles.items():
-        if component not in _OXIDE_COMPONENTS:
-            raise ValueError(f"unsupported oxide component {component!r}")
-        amount = float(raw_amount)
-        if not math.isfinite(amount) or amount < 0.0:
-            raise ValueError(f"moles for {component} must be finite and nonnegative")
-        amounts[component] = amount
-
-    total_moles = math.fsum(amounts.values())
-    coo_moles = amounts.get("CoO", 0.0)
-    if total_moles <= 0.0 or coo_moles <= 0.0:
-        raise ValueError("composition must contain positive total moles and CoO")
-    x_coo = coo_moles / total_moles
-
-    total_mass = math.fsum(
-        amount * MOLAR_MASS_G_MOL[component]
-        for component, amount in amounts.items()
+    result = _evaluate_review_gamma_activity(
+        "Co",
+        composition_moles,
+        T_K,
+        parent_oxide="CoO",
+        log10_fO2_relative_to_IW=log10_fO2_over_IW,
     )
-    weight_pct = {
-        component: amount * MOLAR_MASS_G_MOL[component] / total_mass * 100.0
-        for component, amount in amounts.items()
-    }
-
-    domain = _ACTIVITY_ROW["domain"]
-    violated: list[str] = []
-    t_min, t_max = domain["temperature_K"]
-    if temperature < t_min or temperature > t_max:
-        violated.append("temperature_outside_1573.15_1873.15_K")
-    if log10_fO2_over_IW is None:
-        violated.append("oxygen_fugacity_domain_unchecked")
-    else:
-        oxygen_offset = float(log10_fO2_over_IW)
-        if not math.isfinite(oxygen_offset):
-            raise ValueError("log10_fO2_over_IW must be finite when supplied")
-        o_min, o_max = domain["log10_fO2_over_IW"]
-        if oxygen_offset < o_min or oxygen_offset > o_max:
-            violated.append("oxygen_fugacity_outside_IW_minus_3_to_plus_1_5")
-
-    feo_min, feo_max = domain["FeO_wt_pct"]
-    feo_wt_pct = weight_pct.get("FeO", 0.0)
-    if feo_wt_pct < feo_min or feo_wt_pct > feo_max:
-        violated.append("FeO_outside_0_to_12_wt_pct")
-    mgo_min, mgo_max = domain["MgO_wt_pct"]
-    mgo_wt_pct = weight_pct.get("MgO", 0.0)
-    if mgo_wt_pct < mgo_min or mgo_wt_pct > mgo_max:
-        violated.append("MgO_outside_4_to_30_wt_pct")
-    elif mgo_wt_pct > domain["MgO_no_reported_increase_through_wt_pct"]:
-        violated.append("MgO_above_20_wt_pct_source_reports_gamma_increase")
-
-    gamma = float(_ACTIVITY_ROW["gamma_mean"])
-    spread = float(_ACTIVITY_ROW["gamma_reported_spread"])
-    gamma_range = (gamma - spread, gamma + spread)
-    activity_range = (gamma_range[0] * x_coo, gamma_range[1] * x_coo)
-    notice = CoActivityNotice(
-        code="imcc_co_activity_domain_notice",
-        violated_axes=tuple(violated),
-        limitations=(
-            "The pooled coefficient is provisional for a specific melt composition.",
-            "The dilute-concentration upper limit is not numerically specified by the source.",
-            "Other major-oxide composition effects are not parameterized.",
-        ),
-    )
+    x_coo = result.source_mole_fraction
     return CoActivityResult(
-        activity=gamma * x_coo,
-        log10_activity=math.log10(gamma) + math.log10(x_coo),
-        gamma=gamma,
+        activity=result.source_activity,
+        log10_activity=math.log10(result.gamma) + math.log10(x_coo),
+        gamma=result.gamma,
         x_coo=x_coo,
-        gamma_range=gamma_range,
-        activity_range=activity_range,
-        notice=notice,
+        gamma_range=result.gamma_range,
+        activity_range=result.activity_range,
+        notice=CoActivityNotice(
+            code=result.notice.code,
+            violated_axes=result.notice.violated_axes,
+            limitations=result.notice.limitations,
+        ),
     )

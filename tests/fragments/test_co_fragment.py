@@ -22,13 +22,14 @@ def test_activity_row_matches_printed_holzheid_anchor() -> None:
     fragment = _read_fragment()
     row = fragment["rows"][0]
 
-    assert row["gamma_mean"] == 1.51
-    assert row["gamma_reported_spread"] == 0.28
+    assert row["gamma_law"]["gamma_point"] == 1.51
+    assert row["gamma_law"]["gamma_endpoints"] == [1.23, 1.79]
+    assert row["reported_gamma_spread"]["value"] == 0.28
     assert row["experiment_count"] == 76
-    assert row["domain"]["temperature_K"] == [1573.15, 1873.15]
-    assert row["domain"]["log10_fO2_over_IW"] == [-3.0, 1.5]
-    assert row["domain"]["FeO_wt_pct"] == [0.0, 12.0]
-    assert row["domain"]["MgO_wt_pct"] == [4.0, 30.0]
+    assert row["temperature_window_K"] == [1573.15, 1873.15]
+    assert row["log10_fO2_source"]["range"] == [-3.0, 1.5]
+    assert row["composition_windows_wt_pct"]["FeO"]["range"] == [0.0, 12.0]
+    assert row["composition_windows_wt_pct"]["MgO"]["range"] == [4.0, 30.0]
     assert row["citation"]["doi"] == "10.1016/S0009-2541(97)00030-2"
     assert row["citation"]["pages"] == "21-38"
 

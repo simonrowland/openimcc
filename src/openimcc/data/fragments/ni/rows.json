@@ -1,5 +1,5 @@
 {
-  "schema": "openimcc-activity-fragment.v1",
+  "schema": "openimcc-review-gamma-activity.v1",
   "element": "Ni",
   "parent_oxide": "NiO",
   "standards": [
@@ -18,72 +18,100 @@
   ],
   "rows": [
     {
-      "row": 1,
-      "name": "NiO dilute-solute activity",
-      "role": "melt_activity_coefficient",
-      "equation": "a_NiO = gamma_NiO(l) * x_NiO",
-      "standard_state": "NiO(l)",
-      "gamma_NiO_l": 2.7,
-      "reported_spread": {
-        "value": 0.52,
-        "unit": "dimensionless",
-        "interpretation": "Reported plus/minus spread; not identified as a standard error."
+      "row": "NiO-liquid-dilute-activity",
+      "parent_oxide": "NiO",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          2.18,
+          3.22
+        ],
+        "gamma_point": 2.7,
+        "temperature_K": [
+          1573.15,
+          1873.15
+        ]
       },
-      "experiment_count": 77,
-      "T_domain_K": [
+      "fusion_conversion": null,
+      "component": "NiO(l)",
+      "component_basis": "simple oxide formula-unit mole fraction",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid NiO at 1 bar",
+      "source_mole_fraction_kind": "simple_oxide",
+      "composition_screen": {
+        "kind": "supported_component_set",
+        "components": [
+          "SiO2",
+          "CaO",
+          "MgO",
+          "FeO",
+          "FeOeq",
+          "Al2O3",
+          "TiO2",
+          "Na2O",
+          "K2O",
+          "MnO",
+          "Cr2O3",
+          "P2O5",
+          "NiO"
+        ]
+      },
+      "temperature_window_K": [
         1573.15,
         1873.15
       ],
-      "fO2_relative_to_IW": [
-        -3.0,
-        1.5
-      ],
-      "composition_domain": {
-        "matrix": "metal-saturated silicate melts",
-        "FeO_wt_pct": [
-          0.0,
-          12.0
+      "log10_fO2_source": {
+        "range": [
+          -3.0,
+          1.5
         ],
-        "MgO_wt_pct": [
-          4.0,
-          30.0
-        ],
-        "full_multicomponent_limits_reported": false
+        "unit": "delta_iw"
       },
-      "range_flags": [
-        "Provisional transfer from the measured metal-saturated silicate-melt composition family to regolith-like melts.",
-        "The source abstract does not specify a numerical upper mole-fraction limit for dilute NiO.",
-        "Outside the reported temperature, oxygen-fugacity, FeO, or MgO intervals the central value is an extrapolation."
-      ],
-      "construction": {
+      "composition_windows_wt_pct": {
+        "FeO": {
+          "range": [
+            0.0,
+            12.0
+          ],
+          "outside_flag": "FeO_wt_pct_outside_0_to_12"
+        },
+        "MgO": {
+          "range": [
+            4.0,
+            30.0
+          ],
+          "outside_flag": "MgO_wt_pct_outside_4_to_30"
+        }
+      },
+      "flag_labels": {
+        "temperature_extrapolated": "temperature_outside_1573_1873_K",
+        "oxygen_fugacity_window_unchecked": "oxygen_fugacity_relative_to_IW_not_supplied",
+        "oxygen_fugacity_extrapolated": "oxygen_fugacity_outside_IW_minus_3_to_plus_1_5"
+      },
+      "notice_code": "imcc_ni_activity_domain_notice",
+      "source_citation": "Holzheid, Palme, and Chakraborty (1997), The activities of NiO, CoO and FeO in silicate melts, Chemical Geology 139, 21-38, doi:10.1016/S0009-2541(97)00030-2",
+      "source_locator": "Abstract; mean gamma_NiO(l), reported spread, 77 experiments, and source-domain limits.",
+      "experiment_count": 77,
+      "reported_gamma_spread": {
+        "value": 0.52,
+        "interpretation": "Reported plus/minus spread; not identified as a standard error."
+      },
+      "derivation": {
         "premise": "Holzheid, Palme, and Chakraborty report a mean gamma_NiO(l) of 2.70 +/- 0.52 from 77 experiments, relative to pure liquid NiO and simple oxide mole fractions.",
-        "algebra": "For dilute NiO, a_NiO = gamma_NiO(l) * x_NiO; no parameter is fitted to battery rows.",
+        "algebra": "For dilute NiO, a_NiO = gamma_NiO(l) * x_NiO.",
         "units_check": "gamma_NiO(l), x_NiO, and a_NiO are dimensionless.",
-        "sanity_value": {
+        "sanity": {
           "x_NiO": 0.001,
           "gamma_NiO_l": 2.7,
           "a_NiO": 0.0027
         }
       },
-      "provenance_class": "primary-measured-activity",
-      "provenance": {
-        "source": "Holzheid, A.; Palme, H.; Chakraborty, S. (1997), The activities of NiO, CoO and FeO in silicate melts.",
-        "doi": "10.1016/S0009-2541(97)00030-2",
-        "source_locator": "Chemical Geology 139, pp. 21-38; abstract reports gamma_NiO(l), its spread, 77 experiments, and the stated temperature, fO2, FeO, and MgO limits.",
-        "tier": "primary_measurement",
-        "selection_rationale": "The measured coefficient uses the same pure-liquid NiO standard as the existing gas parent row and is independent of the simulator battery."
-      },
-      "independent_check": {
-        "status": "not_applicable",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
-        "miss": null,
-        "miss_to_band_ratio": null,
-        "reason": "The reported activity experiments define this helper's central coefficient; no separate same-standard Ni activity set is used as a held-out check."
-      }
+      "limitations": [
+        "Provisional transfer from the measured metal-saturated silicate-melt composition family to regolith-like melts.",
+        "The source abstract does not specify a numerical upper mole-fraction limit for dilute NiO.",
+        "Outside the reported temperature, oxygen-fugacity, FeO, or MgO intervals the central value is an extrapolation."
+      ]
     }
   ],
   "flags": [

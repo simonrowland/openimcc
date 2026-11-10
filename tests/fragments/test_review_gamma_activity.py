@@ -1,3 +1,5 @@
+import hashlib
+import json
 import math
 from pathlib import Path
 
@@ -12,6 +14,8 @@ from openimcc.gas import (
     evaluate_gas,
     load_gas_datapack,
 )
+from openimcc.co_activity import evaluate_co_activity
+from openimcc.ni import evaluate_ni_activity
 from openimcc.review_gamma_activity import evaluate_review_gamma_activity
 from openimcc.trace_components import (
     TraceActivityEstimate,
@@ -380,3 +384,205 @@ def test_all_seven_trace_rows_preserve_nontrace_gas_channels_bit_for_bit() -> No
         assert flags
         assert all(flag.activity_range is not None for flag in flags)
         assert all(flag.x_source is not None for flag in flags)
+
+
+def test_wood_wade_pb_point_carries_the_reported_uncertainty_status() -> None:
+    major_wt_pct = {
+        "SiO2": 59.4,
+        "Al2O3": 10.7,
+        "FeO": 11.3,
+        "MgO": 10.4,
+        "CaO": 7.2,
+    }
+    composition = {
+        name: amount / MOLAR_MASS_G_MOL[name]
+        for name, amount in major_wt_pct.items()
+    }
+    composition["PbO"] = 0.001
+    result = evaluate_review_gamma_activity(
+        "Pb", composition, 1923.0, parent_oxide="PbO"
+    )
+
+    printed_gamma = 0.22
+    assert result.gamma == printed_gamma
+    assert result.gamma_range == (printed_gamma, printed_gamma)
+    assert result.source_mole_fraction == (
+        composition["PbO"] / math.fsum(composition.values())
+    )
+    assert result.activity == printed_gamma * result.source_mole_fraction
+    assert result.activity_range == (
+        printed_gamma * result.source_mole_fraction,
+        printed_gamma * result.source_mole_fraction,
+    )
+    assert result.row == "PbO-BW1102-1923K"
+    assert "a(PbO)=(gamma*x_source)^1" in result.reference
+    assert "pure liquid PbO at 1 bar" in result.reference
+    assert "uncertainty not stated" in result.notice.limitations[0]
+    assert "oxygen_fugacity_window_unreported" in result.notice.violated_axes
+    assert "melt_family_extrapolated" not in result.notice.violated_axes
+
+
+def test_wood_wade_tungsten_contour_band_reaches_gas_flags() -> None:
+    composition = {
+        "CaO": 1.0,
+        "MgO": 2.0,
+        "Al2O3": 0.5,
+        "SiO2": 3.0,
+        "WO3": 0.001,
+    }
+    result = evaluate_review_gamma_activity(
+        "W", composition, 1923.0, parent_oxide="WO3"
+    )
+
+    assert result.gamma_range == (0.001, 0.05)
+    assert result.gamma == math.sqrt(0.001 * 0.05)
+    assert result.activity_range == (
+        0.001 * result.source_mole_fraction,
+        0.05 * result.source_mole_fraction,
+    )
+    assert result.row == "WO3-Di-An-Fo-1923K"
+    assert "a(WO3)=(gamma*x_source)^1" in result.reference
+    assert "pure liquid WO3 at 1 bar" in result.reference
+    assert "contour-read (provisional)" in result.notice.limitations[0]
+    assert "oxygen_fugacity_window_unreported" in result.notice.violated_axes
+    assert "melt_family_extrapolated" not in result.notice.violated_axes
+
+    default_pack = load_gas_datapack()
+    for species in ("PbO(l)", "WO3(l)"):
+        parent_row = _nearest_interval_row(
+            default_pack.oxide_df, species, 1923.0, True
+        )
+        assert parent_row["state"] == "l"
+        assert parent_row["T_min"] <= 1923.0 <= parent_row["T_max"]
+
+    rule = trace_component_rule("WO3")
+    assert rule is not None
+    assert rule.gas_parent_oxide == "WO3"
+    assert rule.review_gamma_element == "W"
+    estimate, _, _ = _resolve_trace_activity(
+        "WO3", composition["WO3"], composition, 1923.0, fO2_bar=1.0e-8
+    )
+    gas_flag = TraceActivityFlag(estimate, context="gas")
+    assert gas_flag.activity_range == result.activity_range
+    assert "contour-read" in str(gas_flag)
+
+    pb_composition = {
+        name: amount / MOLAR_MASS_G_MOL[name]
+        for name, amount in {
+            "SiO2": 59.4,
+            "Al2O3": 10.7,
+            "FeO": 11.3,
+            "MgO": 10.4,
+            "CaO": 7.2,
+        }.items()
+    }
+    pb_composition["PbO"] = 0.001
+    pb_rule = trace_component_rule("PbO")
+    assert pb_rule is not None
+    assert pb_rule.gas_parent_oxide == "PbO"
+    assert pb_rule.review_gamma_element == "Pb"
+    pb_estimate, _, _ = _resolve_trace_activity(
+        "PbO", pb_composition["PbO"], pb_composition, 1923.0, fO2_bar=1.0e-8
+    )
+    pb_flag = TraceActivityFlag(pb_estimate, context="gas")
+    assert pb_flag.activity_range == (
+        pb_estimate.activity,
+        pb_estimate.activity,
+    )
+    assert "uncertainty not stated" in str(pb_flag)
+
+
+def _activity_grid_composition(
+    feo_wt_pct: float,
+    mgo_wt_pct: float,
+    trace_oxide: str,
+    trace_wt_pct: float = 0.01,
+    feo_component: str = "FeO",
+) -> dict[str, float]:
+    major = {
+        feo_component: feo_wt_pct / MOLAR_MASS_G_MOL["FeO"],
+        "MgO": mgo_wt_pct / MOLAR_MASS_G_MOL["MgO"],
+        "CaO": 15.0 / MOLAR_MASS_G_MOL["CaO"],
+        "Al2O3": 10.0 / MOLAR_MASS_G_MOL["Al2O3"],
+        "SiO2": (
+            100.0 - feo_wt_pct - mgo_wt_pct - 15.0 - 10.0 - trace_wt_pct
+        ) / MOLAR_MASS_G_MOL["SiO2"],
+    }
+    major[trace_oxide] = trace_wt_pct / MOLAR_MASS_G_MOL[trace_oxide]
+    return major
+
+
+def test_ni_and_co_match_b750046_float_hex_outputs_over_domain_grid() -> None:
+    ni_compositions = [
+        _activity_grid_composition(6.0, 10.0, "NiO"),
+        _activity_grid_composition(0.0, 4.0, "NiO"),
+        _activity_grid_composition(12.0, 4.0, "NiO"),
+        _activity_grid_composition(12.000001, 4.0, "NiO"),
+        _activity_grid_composition(0.0, 20.0, "NiO"),
+        _activity_grid_composition(0.0, 30.0, "NiO"),
+        _activity_grid_composition(0.0, 30.000001, "NiO"),
+        _activity_grid_composition(6.0, 3.999999, "NiO"),
+        _activity_grid_composition(6.0, 30.0, "NiO"),
+        _activity_grid_composition(6.0, 30.000001, "NiO"),
+        _activity_grid_composition(12.0, 30.0, "NiO"),
+        _activity_grid_composition(6.0, 10.0, "NiO", feo_component="FeOeq"),
+    ]
+    co_compositions = [
+        {"CoO" if name == "NiO" else name: amount for name, amount in composition.items()}
+        for composition in ni_compositions[:-1]
+    ]
+    temperatures = (1573.149, 1573.15, 1700.0, 1873.15, 1873.151, 1923.0)
+    delta_iw_values = (None, -3.0000000001, -3.0, -1.25, 1.5, 1.5000000001)
+
+    def hex_value(value: float) -> str:
+        return float(value).hex()
+
+    ni_payload = []
+    for composition in ni_compositions:
+        for temperature in temperatures:
+            for delta_iw in delta_iw_values:
+                result = evaluate_ni_activity(composition, temperature, delta_iw)
+                ni_payload.append([
+                    hex_value(result.activity),
+                    hex_value(result.gamma),
+                    hex_value(result.x_nio),
+                    [hex_value(value) for value in result.activity_spread],
+                    result.notice.code,
+                    list(result.notice.violated_axes),
+                    list(result.notice.limitations),
+                    str(result.notice),
+                ])
+
+    co_payload = []
+    for composition in co_compositions:
+        for temperature in temperatures:
+            for delta_iw in delta_iw_values:
+                result = evaluate_co_activity(
+                    composition, temperature, log10_fO2_over_IW=delta_iw
+                )
+                co_payload.append([
+                    hex_value(result.activity),
+                    hex_value(result.log10_activity),
+                    hex_value(result.gamma),
+                    hex_value(result.x_coo),
+                    [hex_value(value) for value in result.gamma_range],
+                    [hex_value(value) for value in result.activity_range],
+                    result.notice.code,
+                    list(result.notice.violated_axes),
+                    list(result.notice.limitations),
+                    str(result.notice),
+                ])
+
+    def payload_hash(payload: list[list[object]]) -> str:
+        encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
+        return hashlib.sha256(encoded).hexdigest()
+
+    # Baselines captured from b750046; each number is compared through float.hex().
+    assert len(ni_payload) == 432
+    assert len(co_payload) == 396
+    assert payload_hash(ni_payload) == (
+        "b160d9935af2aa0efe10f70ebc005be5cf9f326e4e006c2c32d0f9906fbb0701"
+    )
+    assert payload_hash(co_payload) == (
+        "a49593cf750d325051433049c1f7ba11a4274c0da301f8749749c14603c689e4"
+    )

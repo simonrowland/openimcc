@@ -1,0 +1,34 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "W",
+  "rows": [
+    {
+      "row": "WO3-Di-An-Fo-1923K",
+      "parent_oxide": "WO3",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [0.001, 0.05],
+        "temperature_K": [1923.0, 1923.0]
+      },
+      "fusion_conversion": null,
+      "component": "WO3(l)",
+      "component_basis": "simple WO3 formula-unit mole fraction",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid WO3 at 1 bar and 1923 K",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": ["CaO", "MgO", "Al2O3", "SiO2"]
+      },
+      "temperature_window_K": [1923.0, 1923.0],
+      "log10_fO2_source": null,
+      "source_citation": "Wood & Wade (2013), Contributions to Mineralogy and Petrology 166, 911–921, doi:10.1007/s00410-013-0896-z",
+      "source_locator": "pp. 916–917, exchange reaction (9), fit, and Fig. 4 contours for Diopside–Anorthite–Forsterite at 1,650 °C.",
+      "limitations": [
+        "contour-read (provisional): gamma endpoints are inferred from Fig. 4 contour labels, not a tabulated interval.",
+        "The source reports a fit standard error corresponding to a factor of about 1.5–1.6, not a gamma interval; the full contour range is retained as the band.",
+        "The source describes W as W(VI) several log units below IW but reports no aggregate oxygen-fugacity window."
+      ]
+    }
+  ]
+}

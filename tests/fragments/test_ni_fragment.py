@@ -25,13 +25,14 @@ def test_fragment_row_matches_printed_holzheid_anchors() -> None:
     printed_gamma = 2.70
     printed_spread = 0.52
     printed_count = 77
-    assert row["gamma_NiO_l"] == printed_gamma
-    assert row["reported_spread"]["value"] == printed_spread
+    assert row["gamma_law"]["gamma_point"] == printed_gamma
+    assert row["gamma_law"]["gamma_endpoints"] == [2.18, 3.22]
+    assert row["reported_gamma_spread"]["value"] == printed_spread
     assert row["experiment_count"] == printed_count
-    assert row["T_domain_K"] == pytest.approx((1300 + 273.15, 1600 + 273.15))
-    assert row["fO2_relative_to_IW"] == [-3.0, 1.5]
-    assert row["composition_domain"]["FeO_wt_pct"] == [0.0, 12.0]
-    assert row["composition_domain"]["MgO_wt_pct"] == [4.0, 30.0]
+    assert row["temperature_window_K"] == [1300 + 273.15, 1600 + 273.15]
+    assert row["log10_fO2_source"]["range"] == [-3.0, 1.5]
+    assert row["composition_windows_wt_pct"]["FeO"]["range"] == [0.0, 12.0]
+    assert row["composition_windows_wt_pct"]["MgO"]["range"] == [4.0, 30.0]
 
     # Gurvich et al., TSIV Volume IV, Table 2026.
     source_ni_o = fragment["standards"][0]["source_anchors"]

@@ -43,7 +43,9 @@ class TraceComponentRule:
     gamma_reference: str | None = None
     full_component: bool = False
     activity_fragment: Literal["Ni", "Co", "P", "S"] | None = None
-    review_gamma_element: Literal["Sn", "Ga", "In", "Cu", "Ge", "As", "Bi"] | None = None
+    review_gamma_element: Literal[
+        "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W"
+    ] | None = None
 
 
 _O_MASS = MOLAR_MASS_G_MOL["O"]
@@ -90,6 +92,24 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class_reason="CoO is a basic divalent monoxide",
             activity_fragment="Co",
             gas_parent_oxide="CoO",
+        ),
+        "PbO": TraceComponentRule(
+            MOLAR_MASS_G_MOL["Pb"] + _O_MASS, 1,
+            "one monoxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_monoxide",
+            trace_class_reason="PbO is a basic divalent monoxide with a liquid-standard activity estimate",
+            gas_parent_oxide="PbO",
+            review_gamma_element="Pb",
+        ),
+        "WO3": TraceComponentRule(
+            MOLAR_MASS_G_MOL["W"] + 3.0 * _O_MASS, 1,
+            "one oxide formula unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="acidic",
+            trace_class_reason="WO3 is a hexavalent trace oxide with a liquid-standard activity estimate",
+            gas_parent_oxide="WO3",
+            review_gamma_element="W",
         ),
         "SrO": TraceComponentRule(
             MOLAR_MASS_G_MOL["Sr"] + _O_MASS, 1,

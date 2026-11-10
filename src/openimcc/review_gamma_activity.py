@@ -12,7 +12,10 @@ from openimcc.trace_envelope_calibration import _iw_log10_fO2_bar
 
 _LOG10_BAR_PER_ATM = math.log10(1.01325)
 _TRACE_PARENTS = frozenset(
-    {"SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3"}
+    {
+        "SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3",
+        "NiO", "CoO", "PbO", "WO3",
+    }
 )
 _NON_OXIDE_COMPONENTS = frozenset({"S", "Cl", "F", "Br", "I", "C", "H", "N"})
 
@@ -54,11 +57,32 @@ def evaluate_review_gamma_activity(
     selects a row only when explicitly requested; otherwise it supplies a
     domain flag and does not change the selected coefficient.
     """
+    return _evaluate_review_gamma_activity(
+        element,
+        composition_moles,
+        T_K,
+        parent_oxide=parent_oxide,
+        fO2_bar=fO2_bar,
+    )
+
+
+def _evaluate_review_gamma_activity(
+    element: str,
+    composition_moles: Mapping[str, float],
+    T_K: float,
+    *,
+    parent_oxide: str,
+    fO2_bar: float | None = None,
+    log10_fO2_relative_to_IW: float | None = None,
+) -> ReviewGammaActivityResult:
     temperature = float(T_K)
     if not math.isfinite(temperature) or temperature <= 0.0:
         raise ValueError("temperature must be finite and positive")
 
+    if fO2_bar is not None and log10_fO2_relative_to_IW is not None:
+        raise ValueError("supply either fO2_bar or log10_fO2_relative_to_IW")
     amounts: dict[str, float] = {}
+    input_components = tuple(composition_moles)
     for component, raw_amount in composition_moles.items():
         amount = float(raw_amount)
         if not math.isfinite(amount) or amount < 0.0:
@@ -66,13 +90,20 @@ def evaluate_review_gamma_activity(
         canonical = "FeO" if component == "FeOeq" else component
         amounts[canonical] = amounts.get(canonical, 0.0) + amount
 
-    if fO2_bar is None:
+    if log10_fO2_relative_to_IW is not None:
+        oxygen_offset = float(log10_fO2_relative_to_IW)
+        if not math.isfinite(oxygen_offset):
+            raise ValueError("log10_fO2_relative_to_IW must be finite")
+        log_fO2_bar = None
+    elif fO2_bar is None:
+        oxygen_offset = None
         log_fO2_bar = None
     else:
         oxygen_pressure = float(fO2_bar)
         if not math.isfinite(oxygen_pressure) or oxygen_pressure <= 0.0:
             raise ValueError("fO2_bar must be finite and positive when supplied")
         log_fO2_bar = math.log10(oxygen_pressure)
+        oxygen_offset = None
 
     rows = load_activity_fragment(element)["rows"]
     candidates = [row for row in rows if row.get("parent_oxide") == parent_oxide]
@@ -81,6 +112,12 @@ def evaluate_review_gamma_activity(
             f"no review-gamma row converts to gas parent {parent_oxide!r} for {element!r}"
         )
     row = _select_row(candidates, temperature, amounts)
+    screen = row["composition_screen"]
+    if screen["kind"] == "supported_component_set":
+        supported = frozenset(str(name) for name in screen["components"])
+        for component in input_components:
+            if component not in supported:
+                raise ValueError(f"unsupported oxide component {component!r}")
 
     parent_moles = amounts.get(parent_oxide, 0.0)
     total_moles = math.fsum(amounts.values())
@@ -95,8 +132,11 @@ def evaluate_review_gamma_activity(
         raise ValueError("source_units_per_parent must be finite and positive")
     if not math.isfinite(parent_power) or parent_power <= 0.0:
         raise ValueError("parent_power must be finite and positive")
-    source_basis_total = total_moles - parent_moles + source_units * parent_moles
-    source_x = source_units * parent_moles / source_basis_total
+    if row.get("source_mole_fraction_kind") == "simple_oxide":
+        source_x = parent_moles / total_moles
+    else:
+        source_basis_total = total_moles - parent_moles + source_units * parent_moles
+        source_x = source_units * parent_moles / source_basis_total
 
     gamma, gamma_range = _gamma_for_row(row, temperature)
     fusion = row.get("fusion_conversion")
@@ -125,7 +165,6 @@ def evaluate_review_gamma_activity(
         violated.append("temperature_extrapolated")
         distances.append(f"temperature distance {t_distance:.6g} K")
 
-    screen = row["composition_screen"]
     if screen["kind"] == "family_oxide_set":
         family_distance, _family_size = _family_score(screen, amounts)
         if family_distance > 0.0:
@@ -134,16 +173,25 @@ def evaluate_review_gamma_activity(
     elif screen["kind"] == "an_di_target":
         if not _matches_an_di_target(screen, amounts):
             violated.append("melt_composition_differs_from_An_Di_target")
+    elif screen["kind"] == "supported_component_set":
+        pass
     else:
         raise ValueError(f"unknown composition screen {screen['kind']!r}")
 
     oxygen_window = row.get("log10_fO2_source")
     if oxygen_window is None:
         violated.append("oxygen_fugacity_window_unreported")
-    elif log_fO2_bar is None:
+    elif oxygen_offset is None and log_fO2_bar is None:
         violated.append("oxygen_fugacity_window_unchecked")
     else:
-        if oxygen_window["unit"] == "delta_iw":
+        if oxygen_offset is not None:
+            if oxygen_window["unit"] != "delta_iw":
+                raise ValueError(
+                    "log10_fO2_relative_to_IW requires a delta_iw source window"
+                )
+            oxygen_low, oxygen_high = map(float, oxygen_window["range"])
+            oxygen_value = oxygen_offset
+        elif oxygen_window["unit"] == "delta_iw":
             oxygen_low, oxygen_high = map(float, oxygen_window["range"])
             oxygen_value = log_fO2_bar - _iw_log10_fO2_bar(temperature)
         else:
@@ -158,6 +206,32 @@ def evaluate_review_gamma_activity(
         if oxygen_distance > 0.0:
             violated.append("oxygen_fugacity_extrapolated")
             distances.append(f"oxygen-fugacity distance {oxygen_distance:.6g} dex")
+
+    composition_windows = row.get("composition_windows_wt_pct", {})
+    if composition_windows:
+        total_mass = math.fsum(
+            amount * MOLAR_MASS_G_MOL[component]
+            for component, amount in amounts.items()
+        )
+        weight_pct = {
+            component: amounts.get(component, 0.0)
+            * MOLAR_MASS_G_MOL[component]
+            / total_mass
+            * 100.0
+            for component in composition_windows
+        }
+        for component, window in composition_windows.items():
+            weight = weight_pct[component]
+            low, high = map(float, window["range"])
+            if weight < low or weight > high:
+                violated.append(str(window["outside_flag"]))
+            else:
+                above = window.get("above")
+                if above is not None and weight > float(above["value"]):
+                    violated.append(str(above["flag"]))
+
+    flag_labels = row.get("flag_labels", {})
+    violated = [str(flag_labels.get(flag, flag)) for flag in violated]
 
     reference = (
         f"{row['source_citation']}; {row['source_locator']}; "
@@ -197,7 +271,7 @@ def evaluate_review_gamma_activity(
         parent_oxide=parent_oxide,
         row=str(row["row"]),
         notice=ReviewGammaNotice(
-            code="review_gamma_provisional",
+            code=str(row.get("notice_code", "review_gamma_provisional")),
             violated_axes=tuple(violated),
             limitations=limitations,
         ),

@@ -1,0 +1,35 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Pb",
+  "rows": [
+    {
+      "row": "PbO-BW1102-1923K",
+      "parent_oxide": "PbO",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [0.22, 0.22],
+        "gamma_point": 0.22,
+        "temperature_K": [1923.0, 1923.0]
+      },
+      "fusion_conversion": null,
+      "component": "PbO(l)",
+      "component_basis": "simple PbO formula-unit mole fraction",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid PbO at 1 bar and 1923 K",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": ["SiO2", "Al2O3", "FeO", "MgO", "CaO"],
+        "require_exact_family": true
+      },
+      "temperature_window_K": [1923.0, 1923.0],
+      "log10_fO2_source": null,
+      "source_citation": "Wood & Wade (2013), Contributions to Mineralogy and Petrology 166, 911–921, doi:10.1007/s00410-013-0896-z",
+      "source_locator": "p. 918, PbO–Fe exchange result and Table 1 BW1102; p. 920 conclusion. Table 1 reports the analyzed silicate composition as SiO2 59.4, Al2O3 10.7, FeO 11.3, MgO 10.4, CaO 7.2 wt%.",
+      "limitations": [
+        "uncertainty not stated: the source reports no uncertainty for gamma(PbO); the point band remains [0.22, 0.22].",
+        "The coefficient was calculated for the single BW1102 silica-saturated melt; the screen checks its five-oxide family."
+      ]
+    }
+  ]
+}

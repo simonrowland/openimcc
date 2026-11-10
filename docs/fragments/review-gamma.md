@@ -1,6 +1,6 @@
 # Review-gamma trace activities
 
-These seven trace activities use one row format and one evaluator. A printed bare `range` uses its geometric centre; when a source prints a central value and uncertainty, the point is that printed centre; `activity_range` is calculated from both printed gamma endpoints after applying the row's parent power. `x_source` is the source-component mole fraction, with the parent formula expanded into the declared number of component units. Temperature selects the nearest source row. A composition screen adds a domain flag; Sn's explicit binary-slag rows are selected only when their binary screen is met.
+The source-railed trace activity rows use one format and evaluator. A printed bare `range` uses its geometric centre; when a source prints a central value and uncertainty, the point is that printed centre; `activity_range` is calculated from both printed gamma endpoints after applying the row's parent power. `x_source` is the source-component mole fraction, with the parent formula expanded into the declared number of component units. Temperature selects the nearest source row. A composition screen adds a domain flag; Sn's explicit binary-slag rows are selected only when their binary screen is met.
 
 | Element | Gamma law and value | Component basis | Parent power | Window and composition screen |
 | --- | --- | --- | ---: | --- |
@@ -14,6 +14,16 @@ These seven trace activities use one row format and one evaluator. A printed bar
 | GeO2 | range 0.24–1.50 at 1573 K; geometric centre 0.6000 | liquid GeO2 formula-unit mole fraction | 1 | 1573 K; FeO-CaO-MgO-SiO2 |
 | As | range 0.03–0.56 at 1573 K; geometric centre 0.1296 | liquid AsO1.5 component mole fraction | 2 | 1573 K; FeO-CaO-SiO2 |
 | Bi | range 0.3–0.5 at 1573 K; geometric centre 0.3873 | liquid BiO1.5 component mole fraction | 2 | 1573 K; FeO-CaO-SiO2 |
+| Ni | range 2.18–3.22 at 1573.15–1873.15 K; printed point 2.70 | liquid NiO simple-oxide mole fraction | 1 | ΔIW −3 to +1.5; FeO 0–12 wt%; MgO 4–30 wt% |
+| Co | range 1.23–1.79 at 1573.15–1873.15 K; printed point 1.51 | liquid CoO simple-oxide mole fraction | 1 | ΔIW −3 to +1.5; FeO 0–12 wt%; MgO 4–30 wt%, with a source note above 20 wt% |
+| Pb | point 0.22 at 1923 K; uncertainty not stated | liquid PbO simple-oxide mole fraction | 1 | BW1102 five-oxide family; fO2 unreported |
+| W | range 0.001–0.05 at 1923 K; geometric centre 0.007071 | liquid WO3 simple-oxide mole fraction | 1 | Di-An-Fo; fO2 window unreported; contour-read provisional |
+
+Ni and Co now use this shared evaluator while retaining their source-specific domain flags and result types. The simple-oxide fraction path preserves the original `n/sum(n)` arithmetic; Co retains its reported MgO increase note above 20 wt%.
+
+Wood & Wade (2013), pp. 916–918, supplies the W and Pb rows. The Pb value is for the analyzed BW1102 silica-saturated melt; no uncertainty for its activity coefficient is stated, so its band is the point 0.22. The W endpoints are inferred from Fig. 4 contour labels and remain marked `contour-read`; the full 0.001–0.05 range is surfaced as its band. The default liquid PbO and WO3 parent rows cover 1923 K and use matching pure-liquid component standards, with one parent formula unit per source component.
+
+Wood & Wade's inferred NiO range of 1.5–3 at 1923 K overlaps the existing Holzheid Ni point of 2.70 and reported spread of 0.52. The Holzheid temperature window ends at 1873.15 K, so this is a value-level cross-check outside that window, not same-domain validation; it is not an additional Ni row.
 
 Sn values use Sossi & Fegley (2018), Table 2, which cites Takeda & Yazawa (1989) for the FCS band; the binary range is from Takeda et al. (1990). The standard state is liquid SnO, matching the NG-1848 parent. The NASA/Glenn card cites Gurvich (1991) and covers 1250–2000 K, including 1573 K; only the table's 1200–1250 K segment is a constant-Cp continuation. I found no same-temperature, independently parameterized pure-liquid SnO Gibbs function to quantify a standard offset, so the available evidence does not show a Ga/In-like continuation mismatch at the Sn measurement temperature.
 
@@ -58,4 +68,4 @@ With the single printed central γ (Ga 0.036; In 0.017) the same comparison is G
 
 These closures use Table 8's measured component fractions; the analytical-ppm column is not substituted for those `x` values. Runtime callers instead supply a melt composition, from which openimcc computes the same formula-unit `x_source` basis.
 
-Cu, GeO2, As and Bi ranges are from the cited primary melt studies as summarized in Sossi & Fegley (2018), Table 2. The Cu family text is a flag, not the temperature selector. The As parent remains described as the engine's tier-4 liquid-from-solid estimate, not as independently measured pure liquid As2O3. GeO stays inactive and V remains withheld. Ni and Co continue through their existing helpers.
+Cu, GeO2, As and Bi ranges are from the cited primary melt studies as summarized in Sossi & Fegley (2018), Table 2. The Cu family text is a flag, not the temperature selector. The As parent remains described as the engine's tier-4 liquid-from-solid estimate, not as independently measured pure liquid As2O3. GeO stays inactive and V remains withheld.
