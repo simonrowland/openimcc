@@ -1,0 +1,42 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Sb",
+  "rows": [
+    {
+      "row": "SbO1.5-Norris-2016-1923K",
+      "parent_oxide": "Sb2O3",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [0.11, 8.2],
+        "gamma_point": 1.9,
+        "temperature_K": [1923.0, 1923.0]
+      },
+      "fusion_conversion": null,
+      "component": "SbO1.5(l)",
+      "component_basis": "liquid SbO1.5 one-cation formula-unit mole fraction; two units per Sb2O3 parent",
+      "source_mole_fraction_kind": "one_cation_oxide",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "engine parent P672-Sb2O3-LFS is a liquid-from-solid construction with insufficiently known fusion enthalpy and a 928 K melting marker; Norris gamma is relative to Barin (1973) liquid Sb2O3 extrapolated past its 1729 K boiling point, not this engine parent",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": ["SiO2", "Al2O3", "FeO", "MgO", "CaO"],
+        "require_exact_family": true
+      },
+      "temperature_window_K": [1923.0, 1923.0],
+      "log10_fO2_source": null,
+      "notice_code": "review_gamma_provisional",
+      "source_citation": "Norris, C. Ashley (2016), \"Volatilities of Trace Elements in Silicate Melts\", DPhil thesis, University of Oxford",
+      "source_locator": "Table 4.16 (PDF p. 170, Ch. 4 p. 140), mean 1.9 and range 0.11–8.2 at 1923 K; Table 4.9 (PDF p. 128) gives n/2=1.5 and Sb3+; the data combine sets B+F.",
+      "limitations": [
+        "inferred from metal–silicate partitioning (Kf + γ-in-Fe model); not a measured activity",
+        "provisional",
+        "single temperature 1923 K; the point is the Table 4.16 mean and the band is its printed min–max range",
+        "Section 4.11.2 judges all reported activity coefficients accurate within an order of magnitude; this bound is not used to widen the Table 4.16 band",
+        "the engine parent P672-Sb2O3-LFS has insufficiently known fusion enthalpy and a 928 K melting marker; Norris gamma references Barin (1973) liquid Sb2O3 extrapolated past its 1729 K boiling point, not the engine parent",
+        "Table 4.17 reports that the Sb regression failed; no composition terms are used",
+        "the source composition family is ADF+FeO"
+      ]
+    }
+  ]
+}

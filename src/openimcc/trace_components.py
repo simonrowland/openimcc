@@ -51,7 +51,8 @@ class TraceComponentRule:
     activity_fragment: Literal["Ni", "Co", "P", "S"] | None = None
     uses_review_gamma_evaluator: bool = False
     review_gamma_element: Literal[
-        "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ce", "La"
+        "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ce", "La",
+        "V", "Ag", "Sb", "Tl",
     ] | None = None
 
 
@@ -292,6 +293,46 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class_reason="La2O3 is a trivalent rare-earth oxide with an assessed silicate-melt activity limit",
             gas_parent_oxide="La2O3",
             review_gamma_element="La",
+        ),
+        "V2O3": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["V"] + 3.0 * _O_MASS,
+            1,
+            "one sesquioxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="V(III) sesquioxide is a basic trivalent oxide",
+            gas_parent_oxide="V2O3",
+            review_gamma_element="V",
+        ),
+        "Ag2O": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["Ag"] + _O_MASS,
+            1,
+            "one monovalent oxide formula unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="Ag(I) oxide is a basic oxide with a liquid-standard activity estimate",
+            gas_parent_oxide="Ag2O",
+            review_gamma_element="Ag",
+        ),
+        "Sb2O3": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["Sb"] + 3.0 * _O_MASS,
+            1,
+            "one sesquioxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="Sb(III) sesquioxide is amphoteric",
+            gas_parent_oxide="Sb2O3",
+            review_gamma_element="Sb",
+        ),
+        "Tl2O": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["Tl"] + _O_MASS,
+            1,
+            "one monovalent oxide formula unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="Tl(I) oxide is a basic oxide with a liquid-standard activity estimate",
+            gas_parent_oxide="Tl2O",
+            review_gamma_element="Tl",
         ),
     }
 )

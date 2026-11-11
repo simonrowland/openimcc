@@ -1,0 +1,41 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "V",
+  "rows": [
+    {
+      "row": "VO1.5-Norris-2016-1923K",
+      "parent_oxide": "V2O3",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [0.66, 5.4],
+        "gamma_point": 2.1,
+        "temperature_K": [1923.0, 1923.0]
+      },
+      "fusion_conversion": null,
+      "component": "VO1.5(l)",
+      "component_basis": "liquid VO1.5 one-cation formula-unit mole fraction; two units per V2O3 parent",
+      "source_mole_fraction_kind": "one_cation_oxide",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "pure liquid V2O3 at 1 bar and 1923 K",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": ["SiO2", "Al2O3", "FeO", "MgO", "CaO"],
+        "require_exact_family": true
+      },
+      "temperature_window_K": [1923.0, 1923.0],
+      "log10_fO2_source": null,
+      "notice_code": "review_gamma_provisional",
+      "source_citation": "Norris, C. Ashley (2016), \"Volatilities of Trace Elements in Silicate Melts\", DPhil thesis, University of Oxford",
+      "source_locator": "Table 4.16 (PDF p. 170, Ch. 4 p. 140), mean 2.1 and range 0.66–5.4 at 1923 K; Table 4.9 (PDF p. 128) gives n/2=1.5 and V3+; the graphite capsule contained C-saturated Fe.",
+      "limitations": [
+        "inferred from metal–silicate partitioning (Kf + γ-in-Fe model); not a measured activity",
+        "provisional",
+        "single temperature 1923 K; the point is the Table 4.16 mean and the band is its printed min–max range",
+        "Section 4.11.2 judges all reported activity coefficients accurate within an order of magnitude; this bound is not used to widen the Table 4.16 band",
+        "fO2 was not tabulated; V valence was not measured per run and this row assumes V3+",
+        "the source composition family is ADF+FeO"
+      ]
+    }
+  ]
+}

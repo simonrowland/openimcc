@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 import math
+import re
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
 from openimcc.activity_fragments import load_activity_fragment
@@ -17,6 +18,13 @@ from openimcc.trace_components import (
 _LOG10_BAR_PER_ATM = math.log10(1.01325)
 _TRACE_PARENTS = _review_gamma_parent_oxides(_TRACE_COMPONENT_RULES)
 _NON_OXIDE_COMPONENTS = frozenset({"S", "Cl", "F", "Br", "I", "C", "H", "N"})
+_SINGLE_CATION_OXIDE = re.compile(r"([A-Z][a-z]?)(\d*)O\d*")
+
+
+def _oxide_cation_units(component: str) -> int:
+    """Return the cations in a single-cation oxide formula unit."""
+    match = _SINGLE_CATION_OXIDE.fullmatch(component)
+    return int(match.group(2) or 1) if match is not None else 1
 
 
 @dataclass(frozen=True)
@@ -133,7 +141,27 @@ def _evaluate_review_gamma_activity(
         raise ValueError("parent_power must be finite and positive")
     if row.get("source_mole_fraction_kind") == "simple_oxide":
         source_x = parent_moles / total_moles
+    elif row.get("source_mole_fraction_kind") == "one_cation_oxide":
+        # Premise: Norris and Sossi define x_source on one-cation oxide units;
+        # every solvent M_aO_b formula contributes a cation count of a, while
+        # the M2O_n parent contributes its declared source_units (two here).
+        # Algebra: x_source = source_units*n_parent /
+        # sum_i(cations_i*n_i), replacing the parent's formula count by its
+        # source-unit count. The ratio is dimensionless (mol cations/mol
+        # cations); a(parent)=(gamma*x_source)^k with k=2.
+        # Sanity: V2O3=0.001, SiO2=2, Al2O3=FeO=MgO=CaO=1 gives
+        # x_source=0.002/7.002 and, versus the old 0.002/6.002 denominator,
+        # an old/new activity ratio (7.002/6.002)^2 ~= 1.36.
+        source_basis_total = math.fsum(
+            amount * _oxide_cation_units(component)
+            for component, amount in amounts.items()
+            if component != parent_oxide
+        ) + source_units * parent_moles
+        source_x = source_units * parent_moles / source_basis_total
     else:
+        # Bischof's Table 8 uses MO1.5 component units with its current
+        # parent-only expansion: 1 mol M2O3 + 1 mol SiO2 gives x=2/3 and,
+        # for gamma=1, a(M2O3)=4/9.
         source_basis_total = total_moles - parent_moles + source_units * parent_moles
         source_x = source_units * parent_moles / source_basis_total
 

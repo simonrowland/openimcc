@@ -1,0 +1,43 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Tl",
+  "rows": [
+    {
+      "row": "TlO0.5-Norris-2016-1923K",
+      "parent_oxide": "Tl2O",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [28.0, 1053.0],
+        "gamma_point": 186.0,
+        "temperature_K": [1923.0, 1923.0]
+      },
+      "fusion_conversion": null,
+      "component": "TlO0.5(l)",
+      "component_basis": "liquid TlO0.5 one-cation formula-unit mole fraction; two units per Tl2O parent",
+      "source_mole_fraction_kind": "one_cation_oxide",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "the shipped Tl2O(l) parent at 1923 K uses Pankratz constant-Cp extrapolation above 1000 K, P672-Tl2O-l-CP-EXT-1000; Norris gamma uses Lamoreaux et al. (1987) liquid Tl2O, one-cation ln Kf = 1.67 at 1923 K",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": ["SiO2", "Al2O3", "FeO", "MgO", "CaO"],
+        "require_exact_family": true
+      },
+      "temperature_window_K": [1923.0, 1923.0],
+      "log10_fO2_source": null,
+      "notice_code": "review_gamma_provisional",
+      "source_citation": "Norris, C. Ashley (2016), \"Volatilities of Trace Elements in Silicate Melts\", DPhil thesis, University of Oxford",
+      "source_locator": "Table 4.16 (PDF p. 170, Ch. 4 p. 140), mean 186 and range 28–1053 at 1923 K; Table 4.9 (PDF p. 128) gives n/2=0.5 and Tl+; §4.11.1 notes the Miedema estimate used for Tl.",
+      "limitations": [
+        "inferred from metal–silicate partitioning (Kf + γ-in-Fe model); not a measured activity",
+        "provisional",
+        "single temperature 1923 K; the point is the Table 4.16 mean and the band is its printed min–max range",
+        "Section 4.11.2 judges all reported activity coefficients accurate within an order of magnitude; this bound is not used to widen the Table 4.16 band",
+        "the shipped Tl2O(l) parent at 1923 K uses Pankratz constant-Cp extrapolation above 1000 K, P672-Tl2O-l-CP-EXT-1000; Norris gamma instead uses Lamoreaux et al. (1987) liquid Tl2O, one-cation ln Kf = 1.67 at 1923 K",
+        "Norris §4.11.1 calls the Miedema γ-zero estimate an upper estimate for Bi, Cd, and Tl; the high direction for inferred silicate gamma follows Eq. 4.1, where gamma_silicate is proportional to gamma_metal",
+        "Table 4.9 fixes Tl+ and the one-cation TlO0.5 basis",
+        "the source composition family is ADF+FeO"
+      ]
+    }
+  ]
+}

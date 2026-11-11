@@ -1,0 +1,42 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Ag",
+  "rows": [
+    {
+      "row": "AgO0.5-Norris-2016-1923K",
+      "parent_oxide": "Ag2O",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [0.033, 0.26],
+        "gamma_point": 0.08,
+        "temperature_K": [1923.0, 1923.0]
+      },
+      "fusion_conversion": null,
+      "component": "AgO0.5(l)",
+      "component_basis": "liquid AgO0.5 one-cation formula-unit mole fraction; two units per Ag2O parent",
+      "source_mole_fraction_kind": "one_cation_oxide",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "engine parent P672-Ag2O-LFS is a liquid-from-solid construction with a hypothetical 500 K fusion anchor; Norris gamma is relative to Assal et al. (1997) liquid AgO0.5, ln Kf(1923 K) = -6.493, not this engine parent",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": ["SiO2", "Al2O3", "FeO", "MgO", "CaO"],
+        "require_exact_family": true
+      },
+      "temperature_window_K": [1923.0, 1923.0],
+      "log10_fO2_source": null,
+      "notice_code": "review_gamma_provisional",
+      "source_citation": "Norris, C. Ashley (2016), \"Volatilities of Trace Elements in Silicate Melts\", DPhil thesis, University of Oxford",
+      "source_locator": "Table 4.16 (PDF p. 170, Ch. 4 p. 140), mean 0.080 and range 0.033–0.26 at 1923 K; Table 4.9 (PDF p. 128) gives n/2=0.5 and Ag+; §4.9.1 identifies AgO0.5. The Table 4.16 heading prints AgO1.5, so its oxide label is resolved from Table 4.9 and §4.9.1.",
+      "limitations": [
+        "inferred from metal–silicate partitioning (Kf + γ-in-Fe model); not a measured activity",
+        "provisional",
+        "single temperature 1923 K; the point is the Table 4.16 mean and the band is its printed min–max range",
+        "Section 4.11.2 judges all reported activity coefficients accurate within an order of magnitude; this bound is not used to widen the Table 4.16 band",
+        "the engine parent P672-Ag2O-LFS is a liquid-from-solid construction with a hypothetical 500 K fusion anchor; Norris gamma references Assal et al. (1997) liquid AgO0.5, ln Kf(1923 K) = -6.493, not the engine parent",
+        "Table 4.9 fixes Ag+ and the one-cation AgO0.5 basis",
+        "the source composition family is ADF+FeO"
+      ]
+    }
+  ]
+}

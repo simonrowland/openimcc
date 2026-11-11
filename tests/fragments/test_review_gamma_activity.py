@@ -49,6 +49,18 @@ _CASES = (
     ("Bi", "Bi2O3", 1573.0, 0.3, 0.5, 2.0, {
         "FeO": 1.0, "CaO": 1.0, "SiO2": 2.0,
     }),
+    ("V", "V2O3", 1923.0, 0.66, 5.4, 2.0, {
+        "SiO2": 2.0, "Al2O3": 1.0, "FeO": 1.0, "MgO": 1.0, "CaO": 1.0,
+    }),
+    ("Ag", "Ag2O", 1923.0, 0.033, 0.26, 2.0, {
+        "SiO2": 2.0, "Al2O3": 1.0, "FeO": 1.0, "MgO": 1.0, "CaO": 1.0,
+    }),
+    ("Sb", "Sb2O3", 1923.0, 0.11, 8.2, 2.0, {
+        "SiO2": 2.0, "Al2O3": 1.0, "FeO": 1.0, "MgO": 1.0, "CaO": 1.0,
+    }),
+    ("Tl", "Tl2O", 1923.0, 28.0, 1053.0, 2.0, {
+        "SiO2": 2.0, "Al2O3": 1.0, "FeO": 1.0, "MgO": 1.0, "CaO": 1.0,
+    }),
 )
 
 
@@ -85,12 +97,19 @@ def test_printed_gamma_ranges_and_activity_bands_are_independent_literals(
     parent_moles = composition[parent]
     source_units = 1.0 if power == 1.0 else 2.0
     total = math.fsum(composition.values())
-    x_source = source_units * parent_moles / (
-        total - parent_moles + source_units * parent_moles
-    )
+    if element in {"V", "Ag", "Sb", "Tl"}:
+        x_source = source_units * parent_moles / (7.0 + source_units * parent_moles)
+    else:
+        x_source = source_units * parent_moles / (
+            total - parent_moles + source_units * parent_moles
+        )
     gamma = {
         "Ga": 0.036,
         "In": 0.017,
+        "V": 2.1,
+        "Ag": 0.080,
+        "Sb": 1.9,
+        "Tl": 186.0,
     }.get(element, math.sqrt(gamma_low * gamma_high))
     assert result.gamma == pytest.approx(gamma)
     assert result.gamma_range == (gamma_low, gamma_high)
@@ -100,6 +119,163 @@ def test_printed_gamma_ranges_and_activity_bands_are_independent_literals(
         (gamma_low * x_source) ** power,
         (gamma_high * x_source) ** power,
     ))
+
+
+@pytest.mark.parametrize(
+    ("element", "parent", "temperature", "gamma"),
+    (
+        ("V", "V2O3", 1923.0, 2.1),
+        ("Ag", "Ag2O", 1923.0, 0.080),
+        ("Sb", "Sb2O3", 1923.0, 1.9),
+        ("Tl", "Tl2O", 1923.0, 186.0),
+    ),
+)
+def test_one_cation_basis_conversion_uses_two_source_units_per_parent(
+    element: str, parent: str, temperature: float, gamma: float
+) -> None:
+    result = evaluate_review_gamma_activity(
+        element, {parent: 1.0, "SiO2": 1.0}, temperature,
+        parent_oxide=parent,
+    )
+
+    assert result.gamma == gamma
+    assert result.source_mole_fraction == pytest.approx(2.0 / 3.0)
+    assert result.activity == pytest.approx((gamma * 2.0 / 3.0) ** 2)
+
+
+@pytest.mark.parametrize(
+    ("element", "parent", "temperature", "gamma"),
+    (
+        ("V", "V2O3", 1923.0, 2.1),
+        ("Ag", "Ag2O", 1923.0, 0.080),
+        ("Sb", "Sb2O3", 1923.0, 1.9),
+        ("Tl", "Tl2O", 1923.0, 186.0),
+    ),
+)
+def test_norris_source_fraction_counts_all_melt_cations(
+    element: str, parent: str, temperature: float, gamma: float
+) -> None:
+    result = evaluate_review_gamma_activity(
+        element,
+        {
+            "SiO2": 2.0,
+            "Al2O3": 1.0,
+            "FeO": 1.0,
+            "MgO": 1.0,
+            "CaO": 1.0,
+            parent: 0.001,
+        },
+        temperature,
+        parent_oxide=parent,
+    )
+
+    assert result.source_mole_fraction == pytest.approx(0.002 / 7.002)
+    assert result.activity == pytest.approx((gamma * 0.002 / 7.002) ** 2)
+    old_formula_unit_activity = (gamma * 0.002 / 6.002) ** 2
+    assert old_formula_unit_activity / result.activity == pytest.approx(
+        (7.002 / 6.002) ** 2
+    )
+
+
+@pytest.mark.parametrize(
+    ("element", "parent"),
+    (("V", "V2O3"), ("Ag", "Ag2O"), ("Sb", "Sb2O3"), ("Tl", "Tl2O")),
+)
+def test_norris_rows_flag_temperature_family_and_source_limits(
+    element: str, parent: str
+) -> None:
+    result = evaluate_review_gamma_activity(
+        element,
+        {
+            "SiO2": 50.0,
+            "Al2O3": 15.0,
+            "FeO": 10.0,
+            "MgO": 10.0,
+            "CaO": 15.0,
+            "Na2O": 1.0,
+            parent: 0.001,
+        },
+        1800.0,
+        parent_oxide=parent,
+    )
+
+    assert result.notice.code == "review_gamma_provisional"
+    assert "temperature_extrapolated" in result.notice.violated_axes
+    assert "melt_family_extrapolated" in result.notice.violated_axes
+    assert any("accurate within an order of magnitude" in item for item in result.notice.limitations)
+    assert any("inferred from metal–silicate partitioning (Kf + γ-in-Fe model); not a measured activity" == item for item in result.notice.limitations)
+    assert any("single temperature 1923 K" in item for item in result.notice.limitations)
+    if element == "V":
+        assert any("valence was not measured per run" in item for item in result.notice.limitations)
+    if element == "Ag":
+        assert "P672-Ag2O-LFS" in result.reference
+        assert any("Assal et al. (1997)" in item for item in result.notice.limitations)
+    if element == "Sb":
+        assert "P672-Sb2O3-LFS" in result.reference
+        assert any("Barin (1973)" in item for item in result.notice.limitations)
+    if element == "Tl":
+        assert "P672-Tl2O-l-CP-EXT-1000" in result.reference
+        assert any("upper estimate for Bi, Cd, and Tl" in item for item in result.notice.limitations)
+        assert any("high direction" in item and "Eq. 4.1" in item for item in result.notice.limitations)
+
+
+def test_new_review_gamma_oxides_are_listed_with_existing_trace_classes() -> None:
+    supported = {item.oxide: item for item in supported_trace_oxides()}
+    expected = {
+        "V2O3": ("V", "basic_oxide"),
+        "Ag2O": ("Ag", "basic_oxide"),
+        "Sb2O3": ("Sb", "basic_oxide"),
+        "Tl2O": ("Tl", "basic_oxide"),
+    }
+    for oxide, (element, trace_class) in expected.items():
+        assert supported[oxide].trace_class == trace_class
+        rule = trace_component_rule(oxide)
+        assert rule is not None
+        assert rule.review_gamma_element == element
+
+
+@pytest.mark.parametrize(
+    ("element", "parent", "amount_wt_pct"),
+    (
+        ("V", "V2O3", 0.001),
+        ("Ag", "Ag2O", 0.00001),
+        ("Sb", "Sb2O3", 0.00001),
+        ("Tl", "Tl2O", 0.00001),
+    ),
+)
+def test_norris_rows_give_finite_regolith_gas_pressure_with_domain_flags(
+    element: str, parent: str, amount_wt_pct: float
+) -> None:
+    temperature = 1923.0
+    composition = {
+        "SiO2": 48.5,
+        "TiO2": 2.0,
+        "Al2O3": 15.0,
+        "FeO": 12.0,
+        "MgO": 9.0,
+        "CaO": 11.5,
+        "Na2O": 2.0,
+        parent: amount_wt_pct,
+    }
+    melt = evaluate(
+        composition, temperature, basis_type="wt", allow_extrapolation=True
+    )
+    activities = dict(zip(melt.parent_oxides, melt.parent_activity, strict=True))
+    gas = evaluate_gas(
+        activities,
+        temperature,
+        1.0e-8,
+        load_gas_datapack(),
+        gas_species=(element,),
+        composition_wt_pct=composition,
+    )
+
+    flag = gas.domain_flags[element]
+    assert math.isfinite(gas[element]) and gas[element] > 0.0
+    assert isinstance(flag, TraceActivityFlag)
+    assert flag.code == "review_gamma_provisional"
+    assert "melt-family distance" in str(flag)
+    assert "inferred from metal–silicate partitioning" in str(flag)
 
 
 def test_sn_binary_rows_require_the_matching_binary_composition() -> None:
@@ -216,14 +392,16 @@ def test_bischof_table8_s1_closure_literals_use_the_component_mole_fraction() ->
         assert closure == pytest.approx(expected, rel=5.0e-3)
 
 
-def test_as_parent_wording_and_inactive_ge_v_rows() -> None:
+def test_as_parent_wording_and_inactive_ge_row() -> None:
     arsenic = evaluate_review_gamma_activity(
         "As", {"FeO": 1.0, "CaO": 1.0, "SiO2": 2.0, "As2O3": 0.001},
         1573.0, parent_oxide="As2O3",
     )
     assert "pure liquid As2O3" not in arsenic.reference
     assert trace_component_rule("GeO") is None
-    assert trace_component_rule("V2O3") is None
+    vanadium = trace_component_rule("V2O3")
+    assert vanadium is not None
+    assert vanadium.review_gamma_element == "V"
 
 
 def test_bischof_parent_standard_candidate_matches_the_liquid_kems_constants() -> None:
@@ -989,6 +1167,7 @@ def test_review_gamma_parent_registry_preserves_legacy_screening(monkeypatch) ->
     legacy_parents = frozenset({
         "SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3",
         "Ce2O3", "NiO", "CoO", "PbO", "WO3", "La2O3",
+        "V2O3", "Ag2O", "Sb2O3", "Tl2O",
     })
     assert review_gamma_activity._TRACE_PARENTS == legacy_parents
 

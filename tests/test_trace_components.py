@@ -262,6 +262,10 @@ def test_trace_thresholds_are_inclusive_and_keep_the_existing_refusal() -> None:
     ("traces", "components"),
     [
         ({"NiO": 0.0101, "MnO": 0.05}, ("NiO",)),
+        ({"V2O3": 0.0101}, ("V2O3",)),
+        ({"Ag2O": 0.0101}, ("Ag2O",)),
+        ({"Sb2O3": 0.0101}, ("Sb2O3",)),
+        ({"Tl2O": 0.0101}, ("Tl2O",)),
         ({"NiO": 0.007, "CoO": 0.007, "SrO": 0.007},
          ("CoO", "NiO", "SrO")),
     ],
