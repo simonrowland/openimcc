@@ -2385,12 +2385,15 @@ def evaluate(
             stage_moles = np.geomspace(floor_moles, vector[trace_index], 7)
             y_stage = None
             last_success_y = None
-            for stage_number, trace_moles in enumerate(stage_moles, start=1):
+            # The loop variable must not reuse the name trace_moles: that
+            # mapping holds the trace-oxide moles and is read again after
+            # the solve, when trace activities are resolved.
+            for stage_number, stage_amount in enumerate(stage_moles, start=1):
                 trace_stages = stage_number
                 staged_vector = vector.copy()
                 final_stage = stage_number == len(stage_moles)
                 staged_vector[trace_index] = (
-                    vector[trace_index] if final_stage else float(trace_moles)
+                    vector[trace_index] if final_stage else float(stage_amount)
                 )
                 stage_basis = basis if final_stage else float(staged_vector.sum())
                 try:

@@ -696,3 +696,37 @@ def test_none_warm_start_is_bit_identical_to_omitted_default() -> None:
     assert omitted.convergence == explicit.convergence
     assert omitted.labels == explicit.labels
     assert omitted.extrapolated == explicit.extrapolated
+
+
+def test_staged_recovery_keeps_trace_oxide_moles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A cold-solve failure with a dilute major parent runs the staged
+    # composition recovery. That loop once rebound the name holding the
+    # trace-oxide mole mapping to a numpy scalar, so a later trace-activity
+    # step raised TypeError instead of returning a result.
+    composition = {
+        "SiO2": 0.48, "MgO": 0.12, "FeO": 0.16, "CaO": 0.12,
+        "Al2O3": 0.10, "TiO2": 2.0e-5, "Na2O": 0.005, "K2O": 0.001,
+        "Cr2O3": 0.002,
+    }
+    solve = model._solve_imcc_sf04_with_seed
+    calls = {"n": 0}
+
+    def fail_cold_once(parent_mol: np.ndarray, *args: object, **kwargs: object) -> object:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ImccNonconvergenceError("forced cold-start failure", {})
+        return solve(parent_mol, *args, **kwargs)
+
+    monkeypatch.setattr(model, "_solve_imcc_sf04_with_seed", fail_cold_once)
+    result = evaluate(
+        composition,
+        2328.15,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert calls["n"] > 1
+    assert result.convergence.residual_inf <= 1.0e-12
