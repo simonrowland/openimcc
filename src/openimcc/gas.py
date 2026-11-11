@@ -3175,6 +3175,11 @@ def evaluate_gas(
     trace_fractions: Mapping[str, float] = {}
     trace_activity_estimates: dict[str, TraceActivityEstimate] = {}
     major_bias_flags: dict[str, TraceMajorBiasFlag] = {}
+    allowed_trace_parents = (
+        set(parent_oxides)
+        if parent_oxides_explicit
+        else set(_REACTION_PARENT_OXIDES)
+    )
     if composition_wt_pct is not None:
         from openimcc.model import evaluate as evaluate_melt
 
@@ -3212,43 +3217,81 @@ def evaluate_gas(
                     T,
                     fO2_bar=p_O2,
                 )
-                if (
-                    datapack.condensate_table_digest
-                    == _packaged_pressure_signatures()[1]
-                    and oxide in {"Ga2O3", "In2O3"}
-                ):
+                carrier = trace_component_rule(oxide).gas_parent_oxide
+                if oxide in {"Ga2O3", "In2O3"}:
                     element = "Ga" if oxide == "Ga2O3" else "In"
-                    slope, intercept = {
-                        "Ga": (112079.0, 40.3),
-                        "In": (90606.0, 33.1),
-                    }[element]
-                    gas_row = _nearest_interval_row(
-                        datapack.gas_df, f"{element}(g)", T, True
-                    )
-                    oxygen_row = _nearest_interval_row(
-                        datapack.gas_df, "O2(g)", T, True
-                    )
                     parent_row = _nearest_interval_row(
                         datapack.oxide_df, oxide + "(l)", T, True
                     )
-                    default_parent_k_log = -(
-                        2.0 * _janaf_gibbs(T, gas_row)
-                        + 1.5 * _janaf_gibbs(T, oxygen_row)
-                        - _lamor_gibbs(T, parent_row)
-                    ) / (R_J_MOL_K * T)
-                    bischof_parent_k_log = 2.0 * (
-                        -slope / T + intercept
-                    )
-                    estimate = replace(
-                        estimate,
-                        parent_liquid_standard_offset=ParentLiquidStandardOffset(
-                            code="parent_liquid_standard_offset",
-                            factor=math.exp(
-                                0.5 * (default_parent_k_log - bischof_parent_k_log)
+                    # The opt-in row already has the measured Bischof KEMS
+                    # standard; applying this conversion again would count
+                    # the same standard shift twice. The default NASA liquid
+                    # row instead needs the measured liquid activity converted
+                    # onto its reference before the gas reaction is evaluated.
+                    if (
+                        str(parent_row["Ref"]) != "BISCHOF-KEMS-2023"
+                        and carrier in allowed_trace_parents
+                        and carrier not in act
+                    ):
+                        slope, intercept = {
+                            "Ga": (112079.0, 40.3),
+                            "In": (90606.0, 33.1),
+                        }[element]
+                        gas_row = _nearest_interval_row(
+                            datapack.gas_df, f"{element}(g)", T, True
+                        )
+                        oxygen_row = _nearest_interval_row(
+                            datapack.gas_df, "O2(g)", T, True
+                        )
+                        nasa_parent_k_log = -(
+                            2.0 * _janaf_gibbs(T, gas_row)
+                            + 1.5 * _janaf_gibbs(T, oxygen_row)
+                            - _lamor_gibbs(T, parent_row)
+                        ) / (R_J_MOL_K * T)
+                        bischof_parent_k_log = 2.0 * (
+                            -slope / T + intercept
+                        )
+                        # Premise: the measured KEMS activity and the NASA
+                        # liquid activity represent the same chemical potential:
+                        # G_NASA + RT ln(a_NASA) = G_KEMS + RT ln(a_KEMS).
+                        # Therefore a_NASA = a_KEMS*exp((G_KEMS-G_NASA)/RT).
+                        # For M2O3(l) = 2M(g)+3/2O2(g), log K°=(G_parent-
+                        # G_products)/(RT), so ln(a_NASA/a_KEMS) is exactly
+                        # ln K_Bischof - ln K_NASA. R has J mol^-1 K^-1 and
+                        # G has J mol^-1, making the exponent dimensionless.
+                        # At 1674 K, the In conversion is about 0.00112.
+                        standard_ratio = math.exp(
+                            bischof_parent_k_log - nasa_parent_k_log
+                        )
+                        in_fit_window = 1550.0 <= T <= 1740.0
+                        conversion_range = (
+                            "inside the measured 1550–1740 K KEMS fit"
+                            if in_fit_window
+                            else "extrapolated outside the measured 1550–1740 K KEMS fit"
+                        )
+                        recommendation = (
+                            "Applied the Bischof KEMS-to-NASA parent-standard conversion: "
+                            f"review-γ activity multiplied by a_NASA/a_KEMS="
+                            f"{standard_ratio:.12g} ({conversion_range}); "
+                            "the ratio is exp((G_KEMS-G_NASA)/(RT))."
+                        )
+                        estimate = replace(
+                            estimate,
+                            activity=estimate.activity * standard_ratio,
+                            activity_range=(
+                                (
+                                    estimate.activity_range[0] * standard_ratio,
+                                    estimate.activity_range[1] * standard_ratio,
+                                )
+                                if estimate.activity_range is not None
+                                else None
                             ),
-                            recommendation="Select the opt-in Ga/In KEMS condensate table.",
-                        ),
-                    )
+                            parent_liquid_standard_offset=ParentLiquidStandardOffset(
+                                code="parent_liquid_standard_offset",
+                                factor=standard_ratio,
+                                recommendation=recommendation,
+                            ),
+                        )
                 trace_activity_estimates[oxide] = estimate
 
             carrier_estimates: dict[str, list[TraceActivityEstimate]] = {}
@@ -3256,11 +3299,6 @@ def evaluate_gas(
                 carrier = trace_component_rule(oxide).gas_parent_oxide
                 if carrier is not None:
                     carrier_estimates.setdefault(carrier, []).append(estimate)
-            allowed_trace_parents = (
-                set(parent_oxides)
-                if parent_oxides_explicit
-                else set(_REACTION_PARENT_OXIDES)
-            )
             for carrier, estimates in carrier_estimates.items():
                 if carrier not in allowed_trace_parents:
                     continue

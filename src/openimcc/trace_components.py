@@ -362,7 +362,7 @@ _TRACE_STRICT_BOUND_CAP_DEX = 0.01
 
 @dataclass(frozen=True)
 class ParentLiquidStandardOffset:
-    """Pressure factor caused by the default parent liquid standard."""
+    """Activity ratio converting a measured parent to the selected liquid standard."""
 
     code: Literal["parent_liquid_standard_offset"]
     factor: float

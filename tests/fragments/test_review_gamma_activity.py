@@ -26,6 +26,7 @@ from openimcc.trace_components import (
     _review_gamma_parent_oxides,
     _resolve_trace_activity,
     trace_component_rule,
+    trace_fractions_from_wt,
 )
 
 
@@ -513,49 +514,253 @@ def test_bischof_parent_standard_candidate_matches_the_liquid_kems_constants() -
             assert after_pressure_ratio == pytest.approx(1.0, abs=2.0e-6)
 
 
-def test_default_pack_carries_temperature_dependent_parent_standard_offsets() -> None:
-    temperatures = (1586.4, 1630.8, 1674.2, 1695.4)
-    expected = {
-        "Ga2O3": (9.37, 6.52, 4.65, 3.96),
-        "In2O3": (47.0, 37.1, 29.8, 26.8),
-    }
+def test_default_pack_applies_kems_parent_activity_conversion() -> None:
     major = {"SiO2": 50.34, "Al2O3": 15.40, "MgO": 10.80, "CaO": 23.46}
+    default_pack = load_gas_datapack()
+    candidate_path = (
+        Path(__file__).resolve().parents[2]
+        / "src/openimcc/data/gas/condensate-ga-in-kems-candidate.csv"
+    )
+    candidate_pack = load_gas_datapack(oxide_path=candidate_path)
+    source_constants = {
+        "Ga2O3": ("Ga", 112079.0, 40.3),
+        "In2O3": ("In", 90606.0, 33.1),
+    }
+    ratios_at_reported_temperatures = {
+        "Ga2O3": (0.006116312906, 0.046192692774, 0.122394467160),
+        "In2O3": (0.000302850168, 0.001125827170, 0.002126134242),
+    }
 
-    for oxide, factors in expected.items():
-        composition = _composition_moles(oxide, major)
-        for temperature, expected_factor in zip(temperatures, factors, strict=True):
-            # The gas-path annotation is added by evaluate_gas; verify its
-            # calculation independently from the helper's JSON and the pack rows.
-            default_pack = load_gas_datapack()
-            element = oxide.removesuffix("2O3")
-            gas_row = _nearest_interval_row(default_pack.gas_df, f"{element}(g)", temperature, True)
-            oxygen_row = _nearest_interval_row(default_pack.gas_df, "O2(g)", temperature, True)
-            oxide_row = _nearest_interval_row(default_pack.oxide_df, f"{oxide}(l)", temperature, True)
-            default_log_k = -(
+    for oxide, (element, slope, intercept) in source_constants.items():
+        for temperature, expected_ratio in zip(
+            (1550.0, 1674.0, 1740.0),
+            ratios_at_reported_temperatures[oxide],
+            strict=True,
+        ):
+            gas_row = _nearest_interval_row(
+                default_pack.gas_df, f"{element}(g)", temperature, True
+            )
+            oxygen_row = _nearest_interval_row(
+                default_pack.gas_df, "O2(g)", temperature, True
+            )
+            oxide_row = _nearest_interval_row(
+                default_pack.oxide_df, f"{oxide}(l)", temperature, True
+            )
+            nasa_parent_k_log = -(
                 2.0 * _janaf_gibbs(temperature, gas_row)
                 + 1.5 * _janaf_gibbs(temperature, oxygen_row)
                 - _lamor_gibbs(temperature, oxide_row)
             ) / (R_J_MOL_K * temperature)
-            slope, intercept = {
-                "Ga2O3": (112079.0, 40.3),
-                "In2O3": (90606.0, 33.1),
-            }[oxide]
-            factor = math.exp(
-                0.5 * (default_log_k - 2.0 * (-slope / temperature + intercept))
+            bischof_parent_k_log = 2.0 * (-slope / temperature + intercept)
+            expected_from_rows = math.exp(
+                bischof_parent_k_log - nasa_parent_k_log
             )
-            assert factor == pytest.approx(expected_factor, rel=0.01)
+            assert expected_from_rows == pytest.approx(expected_ratio, rel=2e-8)
 
-    ga_result = evaluate_gas(
-        {}, 1674.2, 1e-5, datapack=default_pack,
-        composition_wt_pct={**major, "Ga2O3": 0.001},
-        parent_oxides=("Ga2O3",), gas_species="Ga",
+            composition = {**major, oxide: 0.001}
+            default_result = evaluate_gas(
+                {}, temperature, 1e-5, datapack=default_pack,
+                composition_wt_pct=composition,
+                gas_species=element,
+            )
+            candidate_result = evaluate_gas(
+                {}, temperature, 1e-5, datapack=candidate_pack,
+                composition_wt_pct=composition,
+                gas_species=element,
+            )
+            default_flag = default_result.domain_flags[element]
+            candidate_flag = candidate_result.domain_flags[element]
+            assert isinstance(default_flag, TraceActivityFlag)
+            assert isinstance(candidate_flag, TraceActivityFlag)
+            conversion = default_flag.parent_liquid_standard_offset
+            assert conversion is not None
+            assert conversion.code == "parent_liquid_standard_offset"
+            assert conversion.factor == pytest.approx(expected_ratio, rel=2e-8)
+            trace_moles, trace_fractions = trace_fractions_from_wt(composition)
+            raw_estimate, _, _ = _resolve_trace_activity(
+                oxide,
+                trace_fractions[oxide],
+                trace_moles,
+                temperature,
+                fO2_bar=1e-5,
+            )
+            assert raw_estimate.activity_range is not None
+            assert default_flag.activity == pytest.approx(
+                raw_estimate.activity * expected_ratio
+            )
+            assert default_flag.activity_range == pytest.approx(
+                tuple(
+                    endpoint * expected_ratio
+                    for endpoint in raw_estimate.activity_range
+                )
+            )
+            assert "Applied the Bischof KEMS-to-NASA parent-standard conversion" in str(
+                default_flag
+            )
+            assert "inside the measured 1550–1740 K KEMS fit" in str(default_flag)
+            assert candidate_flag.parent_liquid_standard_offset is None
+            # The two parent Gibbs functions are independently represented by
+            # a 5-coefficient polynomial and Bischof's two-parameter ln K fit.
+            # Their small residual is the only expected cross-path difference.
+            assert default_result[element] > 0.0
+            assert candidate_result[element] > 0.0
+            # The 5e-6 cross-path pressure tolerance is for monatomic channels
+            # (n_gas=2); n_gas=1 channels inherit roughly twice the fit residual.
+            assert default_result[element] == pytest.approx(
+                candidate_result[element], rel=5e-6
+            )
+
+    for oxide, (element, slope, intercept) in source_constants.items():
+        native_card_start = {"Ga2O3": 2080.0, "In2O3": 2186.0}[oxide]
+        for temperature in (1500.0, 1800.0, native_card_start + 20.0):
+            gas_row = _nearest_interval_row(
+                default_pack.gas_df, f"{element}(g)", temperature, True
+            )
+            oxygen_row = _nearest_interval_row(
+                default_pack.gas_df, "O2(g)", temperature, True
+            )
+            oxide_row = _nearest_interval_row(
+                default_pack.oxide_df, f"{oxide}(l)", temperature, True
+            )
+            nasa_parent_k_log = -(
+                2.0 * _janaf_gibbs(temperature, gas_row)
+                + 1.5 * _janaf_gibbs(temperature, oxygen_row)
+                - _lamor_gibbs(temperature, oxide_row)
+            ) / (R_J_MOL_K * temperature)
+            bischof_parent_k_log = 2.0 * (-slope / temperature + intercept)
+            ratio = math.exp(bischof_parent_k_log - nasa_parent_k_log)
+            result = evaluate_gas(
+                {}, temperature, 1e-5, datapack=default_pack,
+                composition_wt_pct={**major, oxide: 0.001},
+                gas_species=element,
+            )
+            flag = result.domain_flags[element]
+            assert isinstance(flag, TraceActivityFlag)
+            conversion = flag.parent_liquid_standard_offset
+            assert conversion is not None
+            assert conversion.factor == pytest.approx(ratio, rel=1e-8)
+            assert "Applied the Bischof KEMS-to-NASA parent-standard conversion" in str(
+                flag
+            )
+            assert "extrapolated outside the measured 1550–1740 K KEMS fit" in str(
+                flag
+            )
+
+    for oxide, (element, _slope, _intercept) in source_constants.items():
+        composition = {**major, oxide: 0.001}
+        for temperature in (1549.0, 1740.000000000001):
+            default_result = evaluate_gas(
+                {}, temperature, 1e-5, datapack=default_pack,
+                composition_wt_pct=composition, gas_species=element,
+            )
+            candidate_result = evaluate_gas(
+                {}, temperature, 1e-5, datapack=candidate_pack,
+                composition_wt_pct=composition, gas_species=element,
+            )
+            selected_row = _nearest_interval_row(
+                candidate_pack.oxide_df, f"{oxide}(l)", temperature, True
+            )
+            assert str(selected_row["Ref"]) != "BISCHOF-KEMS-2023"
+            default_flag = default_result.domain_flags[element]
+            candidate_flag = candidate_result.domain_flags[element]
+            assert isinstance(default_flag, TraceActivityFlag)
+            assert isinstance(candidate_flag, TraceActivityFlag)
+            assert default_flag.parent_liquid_standard_offset is not None
+            assert candidate_flag.parent_liquid_standard_offset is not None
+            assert candidate_flag.parent_liquid_standard_offset.factor == pytest.approx(
+                default_flag.parent_liquid_standard_offset.factor, rel=2e-8
+            )
+            assert default_result[element] == pytest.approx(
+                candidate_result[element], rel=5e-6
+            )
+
+        for temperature in (1550.0, 1740.0):
+            default_result = evaluate_gas(
+                {}, temperature, 1e-5, datapack=default_pack,
+                composition_wt_pct=composition, gas_species=element,
+            )
+            candidate_result = evaluate_gas(
+                {}, temperature, 1e-5, datapack=candidate_pack,
+                composition_wt_pct=composition, gas_species=element,
+            )
+            selected_row = _nearest_interval_row(
+                candidate_pack.oxide_df, f"{oxide}(l)", temperature, True
+            )
+            assert str(selected_row["Ref"]) == "BISCHOF-KEMS-2023"
+            default_flag = default_result.domain_flags[element]
+            candidate_flag = candidate_result.domain_flags[element]
+            assert isinstance(default_flag, TraceActivityFlag)
+            assert isinstance(candidate_flag, TraceActivityFlag)
+            assert default_flag.parent_liquid_standard_offset is not None
+            assert candidate_flag.parent_liquid_standard_offset is None
+            assert default_result[element] == pytest.approx(
+                candidate_result[element], rel=5e-6
+            )
+
+    hight_pack = load_gas_datapack(
+        oxide_path=(
+            Path(__file__).resolve().parents[2]
+            / "src/openimcc/data/gas/condensate-hight-candidate-v2.csv"
+        )
     )
-    flag = ga_result.domain_flags["Ga"]
-    assert isinstance(flag, TraceActivityFlag)
-    assert flag.parent_liquid_standard_offset is not None
-    assert flag.parent_liquid_standard_offset.code == "parent_liquid_standard_offset"
-    assert flag.parent_liquid_standard_offset.factor == pytest.approx(4.65, rel=0.01)
-    assert "Select the opt-in Ga/In KEMS condensate table." in str(flag)
+    assert hight_pack.condensate_table_digest != default_pack.condensate_table_digest
+    for oxide, (element, _slope, _intercept) in source_constants.items():
+        composition = {**major, oxide: 0.001}
+        default_result = evaluate_gas(
+            {}, 1674.0, 1e-5, datapack=default_pack,
+            composition_wt_pct=composition, gas_species=element,
+        )
+        hight_result = evaluate_gas(
+            {}, 1674.0, 1e-5, datapack=hight_pack,
+            composition_wt_pct=composition, gas_species=element,
+        )
+        default_flag = default_result.domain_flags[element]
+        hight_flag = hight_result.domain_flags[element]
+        assert isinstance(default_flag, TraceActivityFlag)
+        assert isinstance(hight_flag, TraceActivityFlag)
+        hight_row = _nearest_interval_row(
+            hight_pack.oxide_df, f"{oxide}(l)", 1674.0, True
+        )
+        assert str(hight_row["Ref"]) != "BISCHOF-KEMS-2023"
+        assert hight_flag.parent_liquid_standard_offset is not None
+        assert hight_flag.parent_liquid_standard_offset.factor == pytest.approx(
+            default_flag.parent_liquid_standard_offset.factor, rel=2e-8
+        )
+        assert default_result[element] == pytest.approx(
+            hight_result[element], rel=5e-6
+        )
+
+    for oxide, (element, _slope, _intercept) in source_constants.items():
+        composition = {**major, oxide: 0.001}
+        trace_moles, trace_fractions = trace_fractions_from_wt(composition)
+        raw_estimate, _, _ = _resolve_trace_activity(
+            oxide,
+            trace_fractions[oxide],
+            trace_moles,
+            1674.0,
+            fO2_bar=1e-5,
+        )
+        explicit_result = evaluate_gas(
+            {oxide: 0.5}, 1674.0, 1e-5, datapack=default_pack,
+            composition_wt_pct=composition, gas_species=element,
+        )
+        caller_activity_result = evaluate_gas(
+            {oxide: 0.5}, 1674.0, 1e-5, datapack=default_pack,
+            gas_species=element,
+        )
+        explicit_flag = explicit_result.domain_flags[element]
+        assert isinstance(explicit_flag, TraceActivityFlag)
+        assert explicit_flag.parent_liquid_standard_offset is None
+        assert "Applied the Bischof KEMS-to-NASA parent-standard conversion" not in str(
+            explicit_flag
+        )
+        assert explicit_flag.activity == pytest.approx(raw_estimate.activity)
+        assert explicit_flag.activity_range == pytest.approx(
+            raw_estimate.activity_range
+        )
+        assert explicit_result[element] == pytest.approx(
+            caller_activity_result[element], rel=1e-12
+        )
 
 
 def test_all_seven_trace_rows_preserve_nontrace_gas_channels_bit_for_bit() -> None:
@@ -1218,7 +1423,7 @@ def test_existing_review_gamma_rows_are_bit_identical() -> None:
     encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
     assert len(payload) == 16
     assert hashlib.sha256(encoded).hexdigest() == (
-        "37e54be9539e6da01545d06ed659cc6bc2f92f8b2760457202f870305f793de8"
+        "3da80e779683723cd5f9763aa5026bcc655876c6385a04c494f555611ce4014c"
     )
 
 

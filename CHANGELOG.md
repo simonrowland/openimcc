@@ -880,6 +880,19 @@
 
 ### Changes that can break callers
 
+- Default-path composition-derived Ga/In gas pressures now apply the Bischof
+  KEMS-to-NASA parent-standard ratio to the review-γ activity. The default
+  condensate table remains `condensate-default-v1.csv`, and
+  `species_thermo` is unchanged; pure Ga2O3/In2O3 condensation still uses NASA
+  G. At 1550, 1674 and 1740 K, the parent-activity factors are Ga 0.006116,
+  0.04619 and 0.1224, and In 3.029e-4, 1.126e-3 and 2.126e-3. Partial
+  pressures scale as that factor to the power `1/n_gas`: the exponent is 1/2
+  for Ga, GaO, In and InO, and 1 for Ga2O and In2O. At 1674 K, monatomic Ga
+  and In pressures scale by about 0.215 and 0.0336; Ga2O and In2O pressures
+  scale by the activity factor itself. Only a selected parent row whose `Ref`
+  is `BISCHOF-KEMS-2023` skips the conversion. In the shipped opt-in candidate
+  that row is selected from 1550 K through 1740 K inclusive; NASA continuation
+  rows receive the ratio once.
 - Trace-limit refusals in `evaluate()` (an unmodelled trace oxide above 0.01
   mole fraction, or above 0.02 in total) now raise
   `ImccTraceLimitExceededError`, a subclass of

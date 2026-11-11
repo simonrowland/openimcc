@@ -4387,6 +4387,94 @@ def _assert_same_ref_joins_continuous(rows: list[dict[str, str]], *, phase: str)
     )
 
 
+def _default_condensate_join_deltas() -> list[tuple[str, float, float, float, float]]:
+    """Return right-minus-left G, S, and H at every packaged default join."""
+    pack = load_gas_datapack()
+    deltas = []
+    for species, members in pack.oxide_df.groupby(level=0, sort=True):
+        rows = members.sort_values("T_min")
+        for index in range(1, len(rows)):
+            left, right = rows.iloc[index - 1], rows.iloc[index]
+            temperature = float(right["T_min"])
+            if not math.isclose(
+                float(left["T_max"]), temperature, rel_tol=0.0, abs_tol=1.0e-8
+            ):
+                continue
+            left_row, right_row = left.to_dict(), right.to_dict()
+            left_g = _condensate_gibbs(left_row, temperature)
+            right_g = _condensate_gibbs(right_row, temperature)
+            left_s = _condensate_entropy(left_row, temperature)
+            right_s = _condensate_entropy(right_row, temperature)
+            left_h = left_g + temperature * left_s
+            right_h = right_g + temperature * right_s
+            deltas.append((
+                str(species), temperature,
+                right_g - left_g, right_s - left_s, right_h - left_h,
+            ))
+    return deltas
+
+
+def test_packaged_default_condensate_gibbs_is_continuous_at_every_join() -> None:
+    deltas = _default_condensate_join_deltas()
+    assert deltas
+    discontinuities = [
+        (species, temperature, delta_g)
+        for species, temperature, delta_g, _delta_s, _delta_h in deltas
+        if abs(delta_g) > 10.0
+    ]
+    assert not discontinuities, (
+        "packaged default condensate G° discontinuities exceed 10 J/mol: "
+        f"{discontinuities}"
+    )
+
+
+def test_packaged_default_condensate_derivative_jumps_are_bounded() -> None:
+    entropy_limit = 5.0  # J/(mol K); covers the existing fitted joins below.
+    enthalpy_limit = 5000.0  # J/mol; retains the two documented v1 exceptions.
+    deltas = _default_condensate_join_deltas()
+    failures = [
+        (species, temperature, delta_s, delta_h)
+        for species, temperature, _delta_g, delta_s, delta_h in deltas
+        if abs(delta_s) > entropy_limit or abs(delta_h) > enthalpy_limit
+    ]
+    assert not failures, (
+        "packaged default condensate derivative jumps exceed bounds "
+        f"(|ΔS|≤{entropy_limit:g} J/(mol K), "
+        f"|ΔH|≤{enthalpy_limit / 1000:g} kJ/mol): {failures}"
+    )
+
+    # Known v1 joins remain within these bounds and are outside this change's scope.
+    known = {
+        ("Re(cr)", 1200.0): (-3.233869640374081, -3873.531245462924),
+        ("ZrO2(l)", 1500.0): (2.1849550598791154, 3277.464486093726),
+    }
+    for key, expected in known.items():
+        actual = next(
+            (delta_s, delta_h)
+            for species, temperature, _delta_g, delta_s, delta_h in deltas
+            if (species, temperature) == key
+        )
+        assert actual == pytest.approx(expected, abs=0.02)
+
+    # These are the derivative jumps computed from the rejected default v2
+    # artifact. Applying the same bounds rejects that table while
+    # the restored v1 table passes; no v2 table is retained in the package.
+    rejected_v2_join_deltas = (
+        ("Ga2O3(l)", 1550.0, -182.2322309099, -282459.957910),
+        ("Ga2O3(l)", 1740.0, 99.8075134205, 173665.073352),
+        ("Ga2O3(l)", 2080.0, 89.3349636063, 185816.330230),
+        ("In2O3(l)", 1550.0, -78.0684555094, -121006.106040),
+        ("In2O3(l)", 1740.0, -115.7090680926, -201333.778481),
+        ("In2O3(l)", 2186.0, 199.5771224424, 436275.415614),
+    )
+    rejected = [
+        (species, temperature, delta_s, delta_h)
+        for species, temperature, delta_s, delta_h in rejected_v2_join_deltas
+        if abs(delta_s) > entropy_limit or abs(delta_h) > enthalpy_limit
+    ]
+    assert len(rejected) == len(rejected_v2_join_deltas)
+
+
 # Joins the condensate builder could not close inside the donor residual and
 # the donor Cp band, plus reference liquids a shipped pack still uses.
 # K2O(l) K-012 at 2000 K is the pack-reference seam: |dG| = 1.85546 J/mol,
