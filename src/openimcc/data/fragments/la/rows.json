@@ -1,0 +1,39 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "La",
+  "rows": [
+    {
+      "row": "La2O3-Li-2020-SiO2-infinite-dilution",
+      "parent_oxide": "La2O3",
+      "gamma_law": {
+        "kind": "log10_linear",
+        "A_K": -8130.0768,
+        "B": 0.6122121
+      },
+      "component": "La2O3",
+      "component_basis": "La2O3 formula-unit mole fraction as x_La2O3 approaches zero; Li et al.'s RK x1 is inferred to use one La2O3 oxide formula unit per component unit; k=1",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid La2O3(l), 1 bar; liquid Raoult standard, metastable at 1873 K",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": ["SiO2"]
+      },
+      "temperature_window_K": [1773.0, 1873.0],
+      "log10_fO2_source": null,
+      "notice_code": "review_gamma_provisional",
+      "flag_labels": {
+        "melt_family_extrapolated": "The composition contains oxides outside the assessed SiO2-La2O3 binary edge."
+      },
+      "source_citation": "Li et al. (2020), Materials 13, 450, doi:10.3390/ma13020450",
+      "source_locator": "Eq. (1), p. 2; Eq. (2), p. 4; Table 2 La2O3-SiO2 parameters, p. 6; section 3.1.3, p. 9",
+      "limitations": [
+        "assessed phase-diagram fit; not a measured activity. Li et al. report that the La2O3-SiO2 interaction parameters were optimized against phase-diagram data from Toropov (1961) and Bondar (1982).",
+        "uncertainty not stated: Table 2 gives no parameter-fit uncertainty, so the evaluated point is also the band at both endpoints.",
+        "Provisional, infinite-dilution La2O3 formula-unit limit only; no finite-loading cutoff is reported.",
+        "The operational 1773-1873 K window follows the assessed liquid-region work at 1500 and 1600 degrees C; the paper gives no coefficient-fit temperature bounds.",
+        "The evaluated coefficient is the SiO2-edge infinite-dilution limit. Li et al.'s ternary Kohler model with its added -450000*x_La2O3*x_Al2O3*x_SiO2^2 term makes gamma_infinity depend on the Al2O3:SiO2 solvent ratio: at 1873 K it is about 9.8e-6 at x_SiO2=5/6 (19 times below this binary value) and about 1.5e-3 in pure Al2O3 (8 times above it). Any Al2O3 therefore raises the family-extrapolation flag. No CaO/MgO/FeO interaction is modeled, so the bias direction for those basic-melt extrapolations is unknown. For Al2O3-bearing melts, the bias direction depends on the solvent ratio."
+      ]
+    }
+  ]
+}

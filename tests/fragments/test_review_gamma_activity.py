@@ -790,6 +790,110 @@ def test_ce_fusion_direction_band_and_oxygen_screen() -> None:
     assert any("Al2O3 is outside" in axis for axis in chen.notice.violated_axes)
 
 
+def test_la_binary_dilute_limit_recomputes_table_2_and_domain_flags() -> None:
+    # At x_La2O3 -> 0, ln(gamma_inf) = (L0-L1+L2-L3)/(R*T).
+    # Li et al. Table 2 prints L_j = a_j + b_j*T for La2O3-SiO2.
+    parameters = (
+        (-352587.83, 78.86),
+        (-119125.74, 22.64),
+        (513748.94, -211.27),
+        (435926.54, -166.77),
+    )
+    a_sum = math.fsum((-1.0) ** j * a for j, (a, _b) in enumerate(parameters))
+    b_sum = math.fsum((-1.0) ** j * b for j, (_a, b) in enumerate(parameters))
+    expected_A = a_sum / (8.314 * math.log(10.0))
+    expected_B = b_sum / (8.314 * math.log(10.0))
+    assert expected_A == pytest.approx(-8130.0768, abs=5e-5)
+    assert expected_B == pytest.approx(0.6122121, abs=5e-8)
+
+    row = load_activity_fragment("La")["rows"][0]
+    assert row["gamma_law"] == {
+        "kind": "log10_linear",
+        "A_K": pytest.approx(expected_A, abs=5e-5),
+        "B": pytest.approx(expected_B, abs=5e-8),
+    }
+    assert "La2O3 formula-unit mole fraction" in row["component_basis"]
+    assert "one La2O3 oxide formula unit per component unit" in row["component_basis"]
+    assert row["source_units_per_parent"] == row["parent_power"] == 1
+    assert row["temperature_window_K"] == [1773.0, 1873.0]
+    assert row["composition_screen"] == {
+        "kind": "family_oxide_set",
+        "oxides": ["SiO2"],
+    }
+    assert "melt_family_extrapolated" in row["flag_labels"]
+
+    composition = {"SiO2": 1.0, "La2O3": 1e-8}
+    for temperature in (1773.0, 1873.0):
+        result = evaluate_review_gamma_activity(
+            "La", composition, temperature, parent_oxide="La2O3"
+        )
+        assert result.gamma == pytest.approx(10.0 ** (expected_A / temperature + expected_B))
+        assert result.gamma_range == (result.gamma, result.gamma)
+        assert "temperature_extrapolated" not in result.notice.violated_axes
+        assert "melt_family_extrapolated" not in result.notice.violated_axes
+    alumina_bearing = evaluate_review_gamma_activity(
+        "La", {"SiO2": 1.0, "Al2O3": 0.2, "La2O3": 1e-8},
+        1873.0, parent_oxide="La2O3",
+    )
+    assert any(
+        "outside the assessed SiO2-La2O3 binary edge" in item
+        for item in alumina_bearing.notice.violated_axes
+    )
+    reference_value = evaluate_review_gamma_activity(
+        "La", composition, 1873.0, parent_oxide="La2O3"
+    ).gamma
+    assert reference_value == pytest.approx(1.8687e-4, rel=1e-4)
+
+    outside_window = evaluate_review_gamma_activity(
+        "La", composition, 1874.0, parent_oxide="La2O3"
+    )
+    assert "temperature_extrapolated" in outside_window.notice.violated_axes
+    basic_melt = evaluate_review_gamma_activity(
+        "La",
+        {"SiO2": 1.0, "CaO": 0.5, "MgO": 0.2, "FeO": 0.3, "La2O3": 1e-8},
+        1873.0,
+        parent_oxide="La2O3",
+    )
+    assert any(
+        "outside the assessed SiO2-La2O3 binary edge" in item
+        for item in basic_melt.notice.violated_axes
+    )
+    assert any("No CaO/MgO/FeO interaction is modeled" in item for item in basic_melt.notice.limitations)
+    assert any("bias direction for those basic-melt extrapolations is unknown" in item for item in basic_melt.notice.limitations)
+    assert any("bias direction depends on the solvent ratio" in item for item in basic_melt.notice.limitations)
+
+
+def test_la_default_gas_channel_uses_assessed_trace_row_and_flags() -> None:
+    supported = {item.oxide for item in supported_trace_oxides()}
+    assert "La2O3" in supported
+
+    result = evaluate_gas(
+        {},
+        1873.0,
+        1.0e-8,
+        load_gas_datapack(),
+        gas_species=("La",),
+        composition_wt_pct={
+            "SiO2": 49.5,
+            "Al2O3": 15.0,
+            "CaO": 18.0,
+            "MgO": 9.0,
+            "FeO": 8.5,
+            "La2O3": 0.01,
+        },
+    )
+    assert math.isfinite(result["La"]) and result["La"] > 0.0
+    flag = result.domain_flags["La"]
+    assert isinstance(flag, TraceActivityFlag)
+    assert flag.activity_range is not None
+    assert flag.activity_range[0] == flag.activity_range[1]
+    assert "review_gamma_provisional" in str(flag)
+    assert "assessed phase-diagram fit; not a measured activity" in str(flag)
+    assert "uncertainty not stated" in str(flag)
+    assert "No CaO/MgO/FeO interaction is modeled" in str(flag)
+    assert "melt-family distance" in str(flag)
+
+
 def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:
     supported = {item.oxide for item in supported_trace_oxides()}
     assert "Ce2O3" in supported
@@ -827,12 +931,11 @@ def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:
     )
 
 
-def test_existing_review_gamma_rows_are_bit_identical_and_have_no_fusion_block() -> None:
-    elements = ("Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ni", "Co")
+def test_existing_review_gamma_rows_are_bit_identical() -> None:
+    elements = ("Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ni", "Co", "Ce")
     payload = []
     for element in elements:
         for row in load_activity_fragment(element)["rows"]:
-            assert row.get("fusion_conversion") is None
             screen = row["composition_screen"]
             if screen["kind"] == "family_oxide_set":
                 composition = {name: 1.0 for name in screen["oxides"]}
@@ -873,7 +976,7 @@ def test_existing_review_gamma_rows_are_bit_identical_and_have_no_fusion_block()
             ])
 
     encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
-    assert len(payload) == 14
+    assert len(payload) == 16
     assert hashlib.sha256(encoded).hexdigest() == (
-        "6eb3409ef8b0534758c573cbdb601b18754d296f9374d1591e7c87be6cb5970c"
+        "37e54be9539e6da01545d06ed659cc6bc2f92f8b2760457202f870305f793de8"
     )

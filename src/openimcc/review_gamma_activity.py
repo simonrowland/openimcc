@@ -16,6 +16,7 @@ _TRACE_PARENTS = frozenset(
         "SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3",
         "Ce2O3",
         "NiO", "CoO", "PbO", "WO3",
+        "La2O3",
     }
 )
 _NON_OXIDE_COMPONENTS = frozenset({"S", "Cl", "F", "Br", "I", "C", "H", "N"})
