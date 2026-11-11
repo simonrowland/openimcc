@@ -61,6 +61,9 @@ _CASES = (
     ("Tl", "Tl2O", 1923.0, 28.0, 1053.0, 2.0, {
         "SiO2": 2.0, "Al2O3": 1.0, "FeO": 1.0, "MgO": 1.0, "CaO": 1.0,
     }),
+    ("Rb", "Rb2O", 1773.15, 0.000074, 0.00013, 2.0, {
+        "SiO2": 2.0, "Al2O3": 1.0, "FeO": 1.0, "MgO": 1.0, "CaO": 1.0,
+    }),
 )
 
 
@@ -97,7 +100,7 @@ def test_printed_gamma_ranges_and_activity_bands_are_independent_literals(
     parent_moles = composition[parent]
     source_units = 1.0 if power == 1.0 else 2.0
     total = math.fsum(composition.values())
-    if element in {"V", "Ag", "Sb", "Tl"}:
+    if element in {"V", "Ag", "Sb", "Tl", "Rb"}:
         x_source = source_units * parent_moles / (7.0 + source_units * parent_moles)
     else:
         x_source = source_units * parent_moles / (
@@ -110,6 +113,7 @@ def test_printed_gamma_ranges_and_activity_bands_are_independent_literals(
         "Ag": 0.080,
         "Sb": 1.9,
         "Tl": 186.0,
+        "Rb": 0.000074,
     }.get(element, math.sqrt(gamma_low * gamma_high))
     assert result.gamma == pytest.approx(gamma)
     assert result.gamma_range == (gamma_low, gamma_high)
@@ -128,6 +132,7 @@ def test_printed_gamma_ranges_and_activity_bands_are_independent_literals(
         ("Ag", "Ag2O", 1923.0, 0.080),
         ("Sb", "Sb2O3", 1923.0, 1.9),
         ("Tl", "Tl2O", 1923.0, 186.0),
+        ("Rb", "Rb2O", 1773.15, 0.000074),
     ),
 )
 def test_one_cation_basis_conversion_uses_two_source_units_per_parent(
@@ -150,6 +155,7 @@ def test_one_cation_basis_conversion_uses_two_source_units_per_parent(
         ("Ag", "Ag2O", 1923.0, 0.080),
         ("Sb", "Sb2O3", 1923.0, 1.9),
         ("Tl", "Tl2O", 1923.0, 186.0),
+        ("Rb", "Rb2O", 1773.15, 0.000074),
     ),
 )
 def test_norris_source_fraction_counts_all_melt_cations(
@@ -177,12 +183,40 @@ def test_norris_source_fraction_counts_all_melt_cations(
     )
 
 
+def test_sossi_rb_alpha_e_one_is_an_apparent_lower_bound() -> None:
+    # Hertz–Knudsen for open evaporation gives J=alpha_e*gamma*x*p°/sqrt(2πMRT).
+    # Solving at fixed flux gives gamma=J*sqrt(2πMRT)/(alpha_e*x*p°), so
+    # alpha_e=1 is the lower-bound gamma when 0 < alpha_e <= 1.
+    result = evaluate_review_gamma_activity(
+        "Rb", {"Rb2O": 0.001, "SiO2": 1.0}, 1773.15,
+        parent_oxide="Rb2O",
+    )
+
+    assert result.gamma == 0.000074
+    assert result.gamma_range == (0.000074, 0.00013)
+    assert "center-temperature 1773.15 K value" in result.reference
+    assert any("lower-bound γ" in item for item in result.notice.limitations)
+    assert any(
+        "Sossi §4.6" in item and "fit precision only" in item
+        for item in result.notice.limitations
+    )
+    assert any(
+        "factor of 2–3" in item and "Zn 1.7–2.2" in item
+        for item in result.notice.limitations
+    )
+
+
 @pytest.mark.parametrize(
-    ("element", "parent"),
-    (("V", "V2O3"), ("Ag", "Ag2O"), ("Sb", "Sb2O3"), ("Tl", "Tl2O")),
+    ("element", "parent", "temperature"),
+    (
+        ("V", "V2O3", 1800.0),
+        ("Ag", "Ag2O", 1800.0),
+        ("Sb", "Sb2O3", 1800.0),
+        ("Tl", "Tl2O", 1800.0),
+    ),
 )
 def test_norris_rows_flag_temperature_family_and_source_limits(
-    element: str, parent: str
+    element: str, parent: str, temperature: float
 ) -> None:
     result = evaluate_review_gamma_activity(
         element,
@@ -195,7 +229,7 @@ def test_norris_rows_flag_temperature_family_and_source_limits(
             "Na2O": 1.0,
             parent: 0.001,
         },
-        1800.0,
+        temperature,
         parent_oxide=parent,
     )
 
@@ -219,6 +253,27 @@ def test_norris_rows_flag_temperature_family_and_source_limits(
         assert any("high direction" in item and "Eq. 4.1" in item for item in result.notice.limitations)
 
 
+def test_sossi_rb_row_flags_temperature_and_family() -> None:
+    result = evaluate_review_gamma_activity(
+        "Rb",
+        {
+            "SiO2": 50.0,
+            "Al2O3": 15.0,
+            "FeO": 10.0,
+            "MgO": 10.0,
+            "CaO": 15.0,
+            "Na2O": 1.0,
+            "Rb2O": 0.001,
+        },
+        1600.0,
+        parent_oxide="Rb2O",
+    )
+
+    assert "temperature_extrapolated" in result.notice.violated_axes
+    assert "melt_family_extrapolated" in result.notice.violated_axes
+    assert result.notice.code == "review_gamma_provisional"
+
+
 def test_new_review_gamma_oxides_are_listed_with_existing_trace_classes() -> None:
     supported = {item.oxide: item for item in supported_trace_oxides()}
     expected = {
@@ -226,6 +281,7 @@ def test_new_review_gamma_oxides_are_listed_with_existing_trace_classes() -> Non
         "Ag2O": ("Ag", "basic_oxide"),
         "Sb2O3": ("Sb", "basic_oxide"),
         "Tl2O": ("Tl", "basic_oxide"),
+        "Rb2O": ("Rb", "basic_oxide"),
     }
     for oxide, (element, trace_class) in expected.items():
         assert supported[oxide].trace_class == trace_class
@@ -235,18 +291,18 @@ def test_new_review_gamma_oxides_are_listed_with_existing_trace_classes() -> Non
 
 
 @pytest.mark.parametrize(
-    ("element", "parent", "amount_wt_pct"),
+    ("element", "parent", "amount_wt_pct", "temperature"),
     (
-        ("V", "V2O3", 0.001),
-        ("Ag", "Ag2O", 0.00001),
-        ("Sb", "Sb2O3", 0.00001),
-        ("Tl", "Tl2O", 0.00001),
+        ("V", "V2O3", 0.001, 1923.0),
+        ("Ag", "Ag2O", 0.00001, 1923.0),
+        ("Sb", "Sb2O3", 0.00001, 1923.0),
+        ("Tl", "Tl2O", 0.00001, 1923.0),
+        ("Rb", "Rb2O", 0.0005, 1773.15),
     ),
 )
-def test_norris_rows_give_finite_regolith_gas_pressure_with_domain_flags(
-    element: str, parent: str, amount_wt_pct: float
+def test_new_review_gamma_rows_give_finite_regolith_gas_pressure_with_domain_flags(
+    element: str, parent: str, amount_wt_pct: float, temperature: float
 ) -> None:
-    temperature = 1923.0
     composition = {
         "SiO2": 48.5,
         "TiO2": 2.0,
@@ -275,7 +331,10 @@ def test_norris_rows_give_finite_regolith_gas_pressure_with_domain_flags(
     assert isinstance(flag, TraceActivityFlag)
     assert flag.code == "review_gamma_provisional"
     assert "melt-family distance" in str(flag)
-    assert "inferred from metal–silicate partitioning" in str(flag)
+    if element == "Rb":
+        assert "lower-bound γ" in str(flag)
+    else:
+        assert "inferred from metal–silicate partitioning" in str(flag)
 
 
 def test_sn_binary_rows_require_the_matching_binary_composition() -> None:
@@ -1167,7 +1226,7 @@ def test_review_gamma_parent_registry_preserves_legacy_screening(monkeypatch) ->
     legacy_parents = frozenset({
         "SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3",
         "Ce2O3", "NiO", "CoO", "PbO", "WO3", "La2O3",
-        "V2O3", "Ag2O", "Sb2O3", "Tl2O",
+        "V2O3", "Ag2O", "Sb2O3", "Tl2O", "Rb2O",
     })
     assert review_gamma_activity._TRACE_PARENTS == legacy_parents
 

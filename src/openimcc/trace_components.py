@@ -52,7 +52,7 @@ class TraceComponentRule:
     uses_review_gamma_evaluator: bool = False
     review_gamma_element: Literal[
         "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ce", "La",
-        "V", "Ag", "Sb", "Tl",
+        "V", "Ag", "Sb", "Tl", "Rb",
     ] | None = None
 
 
@@ -333,6 +333,16 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class_reason="Tl(I) oxide is a basic oxide with a liquid-standard activity estimate",
             gas_parent_oxide="Tl2O",
             review_gamma_element="Tl",
+        ),
+        "Rb2O": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["Rb"] + _O_MASS,
+            1,
+            "one alkali-oxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="Rb(I) oxide is a basic alkali oxide with a liquid-standard activity estimate",
+            gas_parent_oxide="Rb2O",
+            review_gamma_element="Rb",
         ),
     }
 )

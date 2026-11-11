@@ -1,0 +1,42 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Rb",
+  "rows": [
+    {
+      "row": "RbO0.5-Sossi-2019-1673-1823K",
+      "parent_oxide": "Rb2O",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [0.000074, 0.00013],
+        "gamma_point": 0.000074,
+        "temperature_K": [1673.15, 1823.15]
+      },
+      "fusion_conversion": null,
+      "component": "RbO0.5(l)",
+      "component_basis": "liquid RbO0.5 one-cation formula-unit mole fraction; two units per Rb2O parent",
+      "source_mole_fraction_kind": "one_cation_oxide",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "pure liquid Rb2O at 1 bar over the source's 1673.15–1823.15 K range",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": ["SiO2", "Al2O3", "FeO", "MgO", "CaO"],
+        "require_exact_family": true
+      },
+      "temperature_window_K": [1673.15, 1823.15],
+      "log10_fO2_source": null,
+      "notice_code": "review_gamma_provisional",
+      "source_citation": "Sossi, P. A., Klemme, S., O'Neill, H. St.C., Berndt, J. & Moynier, F. (2019), \"Evaporation of moderately volatile elements from silicate melts: experiments and theory\", Geochimica et Cosmochimica Acta 260, 204–231, doi:10.1016/j.gca.2019.06.021",
+      "source_locator": "Table 4 (PDF p. 57), apparent γi(RbO0.5)=1.3×10−4 at 1673.15 K, 7.4×10−5 at 1773.15 K, and 9.0×10−5 at 1823.15 K; reaction RbO0.5(l)=Rb(g)+1/4 O2; αe=1; FCMAS, 1 bar CO–CO2.",
+      "selection_note": "Use the printed center-temperature 1773.15 K value 7.4e-5 as the point because the three Table 4 values are nonmonotonic; no log-linear temperature fit is justified.",
+      "limitations": [
+        "apparent activity coefficient calculated with αe=1; not a directly measured melt activity",
+        "provisional range law over the three reported temperatures; the band is their min–max and is not a fitted uncertainty interval",
+        "Table 4 reports fit precision for the 1673.15 and 1773.15 K values but no uncertainty for the 1823.15 K value",
+        "Sossi §4.6 says Table 4 uncertainties are fit precision only and exclude αe, which is close to unity within a factor of 2–3; some inverted Table 4 αe values exceed 1 (Zn 1.7–2.2) and are inversion artifacts",
+        "by the open-evaporation Hertz–Knudsen relation, αe=1 gives a lower-bound γ when 0 < αe <= 1 and other terms are fixed",
+        "the source composition family is FCMAS"
+      ]
+    }
+  ]
+}
