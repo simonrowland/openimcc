@@ -1,6 +1,7 @@
 import hashlib
 import json
 import math
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -18,9 +19,11 @@ from openimcc.gas import (
 from openimcc.co_activity import evaluate_co_activity
 from openimcc.ni import evaluate_ni_activity
 from openimcc.review_gamma_activity import evaluate_review_gamma_activity
+import openimcc.review_gamma_activity as review_gamma_activity
 from openimcc.trace_components import (
     TraceActivityEstimate,
     TraceActivityFlag,
+    _review_gamma_parent_oxides,
     _resolve_trace_activity,
     trace_component_rule,
 )
@@ -980,3 +983,59 @@ def test_existing_review_gamma_rows_are_bit_identical() -> None:
     assert hashlib.sha256(encoded).hexdigest() == (
         "37e54be9539e6da01545d06ed659cc6bc2f92f8b2760457202f870305f793de8"
     )
+
+
+def test_review_gamma_parent_registry_preserves_legacy_screening(monkeypatch) -> None:
+    legacy_parents = frozenset({
+        "SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3",
+        "Ce2O3", "NiO", "CoO", "PbO", "WO3", "La2O3",
+    })
+    assert review_gamma_activity._TRACE_PARENTS == legacy_parents
+
+    new_rule = replace(trace_component_rule("PbO"), gas_parent_oxide="Xx2O3")
+    assert "Xx2O3" in _review_gamma_parent_oxides({"new": new_rule})
+
+    elements = ("Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ce", "La", "Ni", "Co")
+
+    def grid_payload() -> list[list[object]]:
+        payload = []
+        for element in elements:
+            for row in load_activity_fragment(element)["rows"]:
+                screen = row["composition_screen"]
+                if screen["kind"] == "family_oxide_set":
+                    base = {name: 1.0 for name in screen["oxides"]}
+                    variants = (base, {**base, "FeO": 0.5}, {**base, "Al2O3": 0.25})
+                elif screen["kind"] == "an_di_target":
+                    base = {
+                        name: float(weight) / MOLAR_MASS_G_MOL[name]
+                        for name, weight in screen["major_wt_pct"].items()
+                    }
+                    variants = (base, {**base, "MgO": 0.3}, {**base, "CaO": base.get("CaO", 0.0) * 1.1})
+                elif screen["kind"] == "supported_component_set":
+                    base = {name: 1.0 for name in screen["components"]}
+                    variants = (base, {**base, "FeO": 0.5}, {**base, "SiO2": 0.25})
+                else:
+                    raise AssertionError(screen["kind"])
+
+                parent = row["parent_oxide"]
+                low, high = map(float, row["temperature_window_K"])
+                for index, composition in enumerate(variants):
+                    amounts = {**composition, parent: 0.001 * (index + 1)}
+                    result = evaluate_review_gamma_activity(
+                        element, amounts, (low + high) / 2.0, parent_oxide=parent
+                    )
+                    payload.append([
+                        element, row["row"], index,
+                        float(result.activity).hex(), float(result.source_activity).hex(),
+                        float(result.gamma).hex(),
+                        [float(value).hex() for value in result.gamma_range],
+                        float(result.source_mole_fraction).hex(),
+                        [float(value).hex() for value in result.activity_range],
+                        result.notice.violated_axes, result.notice.limitations,
+                    ])
+        return payload
+
+    registry_payload = grid_payload()
+    monkeypatch.setattr(review_gamma_activity, "_TRACE_PARENTS", legacy_parents)
+    legacy_payload = grid_payload()
+    assert registry_payload == legacy_payload

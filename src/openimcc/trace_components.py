@@ -49,6 +49,7 @@ class TraceComponentRule:
     full_component: bool = False
     gas_channel_blocked_above_mole_fraction: float | None = None
     activity_fragment: Literal["Ni", "Co", "P", "S"] | None = None
+    uses_review_gamma_evaluator: bool = False
     review_gamma_element: Literal[
         "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ce", "La"
     ] | None = None
@@ -89,6 +90,7 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class="basic_monoxide",
             trace_class_reason="NiO is a basic divalent monoxide",
             activity_fragment="Ni",
+            uses_review_gamma_evaluator=True,
             gas_parent_oxide="NiO",
         ),
         "CoO": TraceComponentRule(
@@ -97,6 +99,7 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class="basic_monoxide",
             trace_class_reason="CoO is a basic divalent monoxide",
             activity_fragment="Co",
+            uses_review_gamma_evaluator=True,
             gas_parent_oxide="CoO",
         ),
         "PbO": TraceComponentRule(
@@ -292,6 +295,15 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
         ),
     }
 )
+
+
+def _review_gamma_parent_oxides(rules: Mapping[str, TraceComponentRule]) -> frozenset[str]:
+    return frozenset(
+        rule.gas_parent_oxide
+        for rule in rules.values()
+        if rule.gas_parent_oxide is not None
+        and (rule.activity_model == "review_gamma" or rule.uses_review_gamma_evaluator)
+    )
 
 _TRACE_ENVELOPE_CAP_DEX = 0.02
 _TRACE_STRICT_BOUND_CAP_DEX = 0.01

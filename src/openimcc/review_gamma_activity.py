@@ -9,16 +9,13 @@ import math
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
 from openimcc.activity_fragments import load_activity_fragment
 from openimcc.trace_envelope_calibration import _iw_log10_fO2_bar
+from openimcc.trace_components import (
+    _TRACE_COMPONENT_RULES,
+    _review_gamma_parent_oxides,
+)
 
 _LOG10_BAR_PER_ATM = math.log10(1.01325)
-_TRACE_PARENTS = frozenset(
-    {
-        "SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3",
-        "Ce2O3",
-        "NiO", "CoO", "PbO", "WO3",
-        "La2O3",
-    }
-)
+_TRACE_PARENTS = _review_gamma_parent_oxides(_TRACE_COMPONENT_RULES)
 _NON_OXIDE_COMPONENTS = frozenset({"S", "Cl", "F", "Br", "I", "C", "H", "N"})
 
 
