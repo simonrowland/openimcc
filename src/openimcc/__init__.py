@@ -92,6 +92,7 @@ from openimcc.p2o5 import (
     P2O5FeIIINotice,
     evaluate_p2o5_activity,
 )
+from openimcc.mqm_mgo_sio2 import MgOSiO2MQMResult, evaluate_mgo_sio2_mqm
 from openimcc.sulfur import (
     SulfurComparisonBand,
     SulfurNotice,
@@ -364,6 +365,9 @@ __all__ = [
     "P2O5ActivityResult",
     "P2O5FeIIINotice",
     "evaluate_p2o5_activity",
+    # --- opt-in experimental MgO–SiO2 MQM binary ------------------------
+    "MgOSiO2MQMResult",
+    "evaluate_mgo_sio2_mqm",
     # --- opt-in sulfur solubility and matte saturation -------------------
     "SulfurNotice",
     "SulfurComparisonBand",

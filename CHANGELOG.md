@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Opt-in candidate
+
+- Added an experimental, binary-only Wu 1993 MQM evaluator for MgO–SiO₂.
+  It refuses other positive oxides, reports OpenIMCC liquid-standard
+  activities, and does not change the default model. See
+  `docs/mgo-sio2-mqm-candidate.md`.
+- Arutyunyan et al. (2005) is the sole genuinely independent activity check
+  for this candidate. Chen and Presnall remeasured the Bowen and Andersen
+  peritectic fitted by Wu, so that comparison is a consistency check.
+
 ### Default combination
 
 | Kind | File | SHA-256 |
