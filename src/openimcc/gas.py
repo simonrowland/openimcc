@@ -41,6 +41,7 @@ from openimcc._constants import (
 from openimcc.activity_fragments import load_activity_fragment
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
+    ImccCompositionIncompleteError,
     ImccRefusal,
     ImccTraceMajorBiasError,
     _canonical_published_serialization,
@@ -3183,6 +3184,26 @@ def evaluate_gas(
     )
     if composition_wt_pct is not None:
         from openimcc.model import evaluate as evaluate_melt
+
+        declared_major_weights: dict[str, float] = {}
+        for oxide in IMCC_PARENT_OXIDES:
+            if oxide not in composition_wt_pct:
+                continue
+            raw_amount = composition_wt_pct[oxide]
+            try:
+                declared_major_weights[oxide] = float(raw_amount)
+            except (OverflowError, TypeError, ValueError) as exc:
+                raise ImccCompositionIncompleteError(
+                    f"composition value for {oxide} is not a number: {raw_amount!r}"
+                ) from exc
+        if any(not math.isfinite(amount) for amount in declared_major_weights.values()):
+            raise ImccCompositionIncompleteError(
+                "composition contains non-finite values"
+            )
+        if any(amount < 0.0 for amount in declared_major_weights.values()):
+            raise ImccCompositionIncompleteError(
+                "composition contains negative values"
+            )
 
         melt_composition = {
             name: amount

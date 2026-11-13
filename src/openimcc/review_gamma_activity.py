@@ -265,7 +265,9 @@ def _evaluate_review_gamma_activity(
         distances.append(f"temperature distance {t_distance:.6g} K")
 
     if screen["kind"] == "family_oxide_set":
-        family_distance, _family_size = _family_score(screen, amounts)
+        family_distance, _family_size = _family_score(
+            screen, amounts, parent_oxide=parent_oxide
+        )
         if family_distance > 0.0:
             violated.append("melt_family_extrapolated")
             distances.append(f"melt-family distance {family_distance:.6g} mole fraction")
@@ -306,28 +308,7 @@ def _evaluate_review_gamma_activity(
             violated.append("oxygen_fugacity_extrapolated")
             distances.append(f"oxygen-fugacity distance {oxygen_distance:.6g} dex")
 
-    composition_windows = row.get("composition_windows_wt_pct", {})
-    if composition_windows:
-        total_mass = math.fsum(
-            amount * _component_molar_mass(component)
-            for component, amount in amounts.items()
-        )
-        weight_pct = {
-            component: amounts.get(component, 0.0)
-            * _component_molar_mass(component)
-            / total_mass
-            * 100.0
-            for component in composition_windows
-        }
-        for component, window in composition_windows.items():
-            weight = weight_pct[component]
-            low, high = map(float, window["range"])
-            if weight < low or weight > high:
-                violated.append(str(window["outside_flag"]))
-            else:
-                above = window.get("above")
-                if above is not None and weight > float(above["value"]):
-                    violated.append(str(above["flag"]))
+    violated.extend(_composition_window_violations(row, amounts))
 
     flag_labels = row.get("flag_labels", {})
     violated = [str(flag_labels.get(flag, flag)) for flag in violated]
@@ -355,6 +336,8 @@ def _evaluate_review_gamma_activity(
         reference += "; limitation: " + " ".join(limitations)
     if distances:
         reference += "; extrapolated: " + ", ".join(distances)
+    if "melt_composition_differs_from_An_Di_target" in violated:
+        reference += "; out of domain: melt_composition_differs_from_An_Di_target"
     if "oxygen_fugacity_window_unchecked" in violated:
         reference += "; oxygen-fugacity window unchecked"
     if "oxygen_fugacity_window_unreported" in violated:
@@ -413,28 +396,33 @@ def _select_row(
     ):
         return min(
             nearest,
-            key=lambda row: _family_score(row["composition_screen"], amounts),
+            key=lambda row: _family_score(
+                row["composition_screen"],
+                amounts,
+                parent_oxide=str(row["parent_oxide"]),
+            ),
         )
     return nearest[0]
 
 
 def _family_score(
-    screen: Mapping[str, object], amounts: Mapping[str, float]
+    screen: Mapping[str, object],
+    amounts: Mapping[str, float],
+    *,
+    parent_oxide: str,
 ) -> tuple[float, int]:
     family = frozenset(str(name) for name in screen["oxides"])
-    major_total = math.fsum(
-        amount
-        for name, amount in amounts.items()
-        if name not in _TRACE_PARENTS and name not in _NON_OXIDE_COMPONENTS
-    )
+    # Source rows give a solvent-oxide family, not a filtered melt total. Use
+    # the declared total for the distance denominator, including trace-parent
+    # and non-oxide moles. The selected analyte parent is part of that total
+    # but not an out-of-family solvent component.
+    declared_total = math.fsum(amounts.values())
     outside = math.fsum(
         amount
         for name, amount in amounts.items()
-        if name not in _TRACE_PARENTS
-        and name not in _NON_OXIDE_COMPONENTS
-        and name not in family
+        if name != parent_oxide and name not in family
     )
-    distance = outside / major_total if major_total > 0.0 else 1.0
+    distance = outside / declared_total if declared_total > 0.0 else 1.0
     if screen.get("require_exact_family"):
         present_family = sum(amounts.get(name, 0.0) > 0.0 for name in family)
         if present_family != len(family) or outside > 0.0:
@@ -449,14 +437,20 @@ def _matches_an_di_target(
     for component, amount in amounts.items():
         if amount <= 0.0 or component in target:
             continue
-        if component in _TRACE_PARENTS or component in _NON_OXIDE_COMPONENTS:
-            continue
-        return False
+        if component not in _TRACE_PARENTS and component not in _NON_OXIDE_COMPONENTS:
+            return False
+    # The source's target is a whole-melt weight-percent composition. In the
+    # absence of an exclusion for trace parents or non-oxides, compare it with
+    # the declared total mass so those components cannot disappear on
+    # renormalisation to the target oxides.
+    total_mass = math.fsum(
+        amount * _component_molar_mass(component)
+        for component, amount in amounts.items()
+    )
     masses = {
         component: amounts.get(component, 0.0) * MOLAR_MASS_G_MOL[component]
         for component in target
     }
-    total_mass = math.fsum(masses.values())
     if total_mass <= 0.0:
         return False
     tolerance = float(screen["tolerance_wt_pct"])
@@ -464,6 +458,34 @@ def _matches_an_di_target(
         abs(masses[component] / total_mass * 100.0 - expected) <= tolerance
         for component, expected in target.items()
     )
+
+
+def _composition_window_violations(
+    row: Mapping[str, object], amounts: Mapping[str, float]
+) -> tuple[str, ...]:
+    composition_windows = row.get("composition_windows_wt_pct", {})
+    if not composition_windows:
+        return ()
+    total_mass = math.fsum(
+        amount * _component_molar_mass(component)
+        for component, amount in amounts.items()
+    )
+    violations: list[str] = []
+    for component, window in composition_windows.items():
+        weight = (
+            amounts.get(component, 0.0)
+            * _component_molar_mass(component)
+            / total_mass
+            * 100.0
+        )
+        low, high = map(float, window["range"])
+        if weight < low or weight > high:
+            violations.append(str(window["outside_flag"]))
+        else:
+            above = window.get("above")
+            if above is not None and weight > float(above["value"]):
+                violations.append(str(above["flag"]))
+    return tuple(violations)
 
 
 def _gamma_for_row(

@@ -896,6 +896,16 @@
   changes by up to about ±5% versus the former frozen-residual calculation
   (−4.8% at 1700 K, +3.8% at 2100 K). Ce and CeO partial pressures shift by
   about half as much.
+- `evaluate_gas(..., composition_wt_pct=...)` now raises
+  `ImccCompositionIncompleteError` for negative or non-finite declared major
+  oxide weights instead of dropping them during trace-fraction conversion.
+- Review-gamma family and An-Di screens now include declared review-gamma
+  parents and non-oxide components in source-composition checks. Inputs that
+  passed after target-only renormalisation can now carry out-of-family flags,
+  and An-Di failures are included in published trace-activity flags.
+- Ni and Co trace-activity flags now publish FeO/MgO weight-window violations
+  from the declared composition and disclose unsupported components omitted
+  from the helper activity calculation.
 - Default-path composition-derived Ga/In gas pressures now apply the Bischof
   KEMS-to-NASA parent-standard ratio to the review-γ activity. The default
   condensate table remains `condensate-default-v1.csv`, and

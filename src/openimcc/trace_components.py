@@ -813,11 +813,15 @@ def _resolve_trace_activity(
             rule.activity_fragment, composition_moles, T_K, fO2_bar=fO2_bar
         )
         if helper_result is not None:
-            activity, source_is_valid = helper_result
+            activity, source_is_valid, reference = helper_result
             if source_is_valid:
                 return (
                     TraceActivityEstimate(
-                        oxide, activity, x, "source_grounded_helper_activity"
+                        oxide,
+                        activity,
+                        x,
+                        "source_grounded_helper_activity",
+                        reference=reference,
                     ),
                     None,
                     None,
@@ -864,10 +868,41 @@ def _activity_fragment_result(
     T_K: float,
     *,
     fO2_bar: float | None,
-) -> tuple[float, bool] | None:
+) -> tuple[float, bool, str | None] | None:
+    def declared_composition_reference(
+        supported_components: frozenset[str],
+    ) -> str | None:
+        from openimcc.activity_fragments import load_activity_fragment
+        from openimcc.review_gamma_activity import (
+            _composition_window_violations,
+            _select_row,
+        )
+
+        row = _select_row(
+            load_activity_fragment(element)["rows"], T_K, composition_moles
+        )
+        details = []
+        unsupported = [
+            name for name in composition_moles if name not in supported_components
+        ]
+        if unsupported:
+            details.append(
+                "unsupported components omitted from helper value: "
+                + ", ".join(unsupported)
+            )
+        window_flags = _composition_window_violations(row, composition_moles)
+        if window_flags:
+            details.append(
+                "declared-composition window flags: " + ", ".join(window_flags)
+            )
+        if not details:
+            return None
+        return "declared composition checks: " + "; ".join(details)
+
     if element == "Ni":
         from openimcc.ni import _SUPPORTED_COMPONENTS, evaluate_ni_activity
 
+        declared_reference = declared_composition_reference(_SUPPORTED_COMPONENTS)
         helper_composition = {
             name: amount
             for name, amount in composition_moles.items()
@@ -877,10 +912,11 @@ def _activity_fragment_result(
             result = evaluate_ni_activity(helper_composition, T_K)
         except ValueError:
             return None
-        return result.activity, True
+        return result.activity, True, declared_reference
     if element == "Co":
         from openimcc.co_activity import _OXIDE_COMPONENTS, evaluate_co_activity
 
+        declared_reference = declared_composition_reference(_OXIDE_COMPONENTS)
         helper_composition = {
             name: amount
             for name, amount in composition_moles.items()
@@ -890,7 +926,7 @@ def _activity_fragment_result(
             result = evaluate_co_activity(helper_composition, T_K)
         except ValueError:
             return None
-        return result.activity, True
+        return result.activity, True, declared_reference
     if element == "P":
         from openimcc.p2o5 import _SUPPORTED_COMPONENTS, evaluate_p2o5_activity
 
@@ -903,7 +939,7 @@ def _activity_fragment_result(
             result = evaluate_p2o5_activity(helper_composition, T_K)
         except ValueError:
             return None
-        return result.activity, not result.notice.violated_axes
+        return result.activity, not result.notice.violated_axes, None
     if element == "S":
         from openimcc.sulfur import _OXIDES, evaluate_sulfur
 
@@ -930,7 +966,7 @@ def _activity_fragment_result(
             return None
         if result.log10_fS2 is None:
             return None
-        return 10.0**result.log10_fS2, True
+        return 10.0**result.log10_fS2, True, None
     return None
 
 

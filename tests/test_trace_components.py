@@ -890,6 +890,57 @@ def test_redox_sweeps_recompute_stored_class_envelopes() -> None:
     assert cr_minus_6 < cr_minus_4
 
 
+@pytest.mark.parametrize(
+    ("bad_silica", "trace_composition", "gas_species"),
+    (
+        (-50.0, {"Ga2O3": 0.001}, "Ga"),
+        (math.nan, {"Ga2O3": 0.001}, "Ga"),
+        (-50.0, {"Cl": 0.05}, "Na"),
+    ),
+)
+def test_gas_refuses_declared_bad_major_before_trace_projection(
+    bad_silica: float,
+    trace_composition: dict[str, float],
+    gas_species: str,
+    packaged_gas_pack,
+) -> None:
+    with pytest.raises(ImccCompositionIncompleteError):
+        evaluate_gas(
+            {},
+            1674.0,
+            1.0e-5,
+            packaged_gas_pack,
+            gas_species=gas_species,
+            composition_wt_pct={"SiO2": bad_silica, **trace_composition},
+        )
+
+
+def test_gas_an_di_flag_uses_declared_total_for_ga_trace_parent(
+    packaged_gas_pack,
+) -> None:
+    composition = {
+        "SiO2": 50.34,
+        "Al2O3": 15.4,
+        "MgO": 10.8,
+        "CaO": 23.46,
+        "Ga2O3": 2.5,
+    }
+    assert 50.34 - 50.34 / 102.5 * 100.0 == pytest.approx(1.2278, abs=1e-3)
+
+    result = evaluate_gas(
+        {},
+        1674.0,
+        1.0e-5,
+        packaged_gas_pack,
+        gas_species="Ga",
+        composition_wt_pct=composition,
+    )
+    flag = result.domain_flags["Ga"]
+
+    assert isinstance(flag, TraceActivityFlag)
+    assert "melt_composition_differs_from_An_Di_target" in str(flag)
+
+
 @pytest.mark.parametrize("oxide", ["Cl", "F", "S", "SO3"])
 def test_halogen_and_sulfur_channels_refuse_only_above_point_one_mol_percent(
     oxide: str, packaged_gas_pack

@@ -254,6 +254,105 @@ def test_norris_rows_flag_temperature_family_and_source_limits(
         assert any("high direction" in item and "Eq. 4.1" in item for item in result.notice.limitations)
 
 
+def test_family_screen_counts_declared_review_gamma_parents_and_nonoxides() -> None:
+    solvent = {
+        "SiO2": 0.594,
+        "Al2O3": 0.107,
+        "FeO": 0.113,
+        "MgO": 0.104,
+        "CaO": 0.072,
+        "PbO": 1.0e-4,
+    }
+    for component in ("Ga2O3", "Cl"):
+        composition = {**solvent, component: 1.0}
+        result = evaluate_review_gamma_activity(
+            "Pb", composition, 1923.0, parent_oxide="PbO"
+        )
+
+        assert "melt_family_extrapolated" in result.notice.violated_axes
+        assert "melt-family distance 1.50249 mole fraction" in result.reference
+
+
+def test_an_di_screen_renormalizes_against_declared_trace_and_nonoxide_mass() -> None:
+    target_wt_pct = {
+        "SiO2": 50.34,
+        "Al2O3": 15.4,
+        "MgO": 10.8,
+        "CaO": 23.46,
+    }
+    target_moles = {
+        component: weight / MOLAR_MASS_G_MOL[component]
+        for component, weight in target_wt_pct.items()
+    }
+    reported_inputs = (
+        {**target_moles, "Ga2O3": 0.02},
+        {**target_moles, "Ga2O3": 1.0e-6, "Cl": 0.05},
+    )
+
+    for composition in reported_inputs:
+        result = evaluate_review_gamma_activity(
+            "Ga",
+            composition,
+            1700.0,
+            parent_oxide="Ga2O3",
+            fO2_bar=3.640629388810509e-08,
+        )
+        assert "melt_composition_differs_from_An_Di_target" in (
+            result.notice.violated_axes
+        )
+
+
+def test_an_di_failure_is_included_in_the_default_melt_trace_flag() -> None:
+    composition = {
+        "SiO2": 45.99,
+        "Al2O3": 15.0,
+        "FeO": 8.0,
+        "CaO": 25.0,
+        "MgO": 3.96,
+        "NiO": 0.05,
+        "Ga2O3": 2.0,
+    }
+    result = evaluate(composition, 1700.0, basis_type="wt")
+    ga_flag = next(
+        item
+        for item in result.labels.notices
+        if isinstance(item, TraceActivityFlag) and item.oxide == "Ga2O3"
+    )
+
+    assert "melt_composition_differs_from_An_Di_target" in str(ga_flag)
+
+
+@pytest.mark.parametrize(
+    ("trace_oxide", "window_flag"),
+    (
+        ("NiO", "MgO_wt_pct_outside_4_to_30"),
+        ("CoO", "MgO_outside_4_to_30_wt_pct"),
+    ),
+)
+def test_nico_flags_check_declared_weight_window_with_unsupported_oxide(
+    trace_oxide: str, window_flag: str
+) -> None:
+    composition = {
+        "SiO2": 45.99,
+        "Al2O3": 15.0,
+        "FeO": 8.0,
+        "CaO": 25.0,
+        "MgO": 3.96,
+        trace_oxide: 0.05,
+        "Ga2O3": 2.0,
+    }
+    result = evaluate(composition, 1700.0, basis_type="wt")
+    flag = next(
+        item
+        for item in result.labels.notices
+        if isinstance(item, TraceActivityFlag) and item.oxide == trace_oxide
+    )
+
+    assert flag.code == "source_grounded_helper_activity"
+    assert window_flag in str(flag)
+    assert "unsupported components omitted from helper value: Ga2O3" in str(flag)
+
+
 def test_sossi_rb_row_flags_temperature_and_family() -> None:
     result = evaluate_review_gamma_activity(
         "Rb",
