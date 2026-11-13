@@ -928,6 +928,16 @@
   parents and non-oxide components in source-composition checks. Inputs that
   passed after target-only renormalisation can now carry out-of-family flags,
   and An-Di failures are included in published trace-activity flags.
+- Review-gamma family distance now uses declared oxide moles, excludes
+  non-oxides, and flags missing listed family oxides. An-Di target checks now
+  renormalize declared target majors alone, so trace parents and non-oxides do
+  not dilute the source's printed target. References identify both revisions.
+- Ce review-gamma references now identify the Ce2O3 liquid-standard Gibbs
+  conversion revision, and Ga/In range-law references identify the printed-
+  point estimator. Row ids, central activities, and endpoint bands are
+  unchanged.
+- A review-gamma selector no-match now returns the nearest-row estimate with
+  an explicit DEPENDS flag instead of silently presenting that row as a match.
 - Ni and Co trace-activity flags now publish FeO/MgO weight-window violations
   from the declared composition and disclose unsupported components omitted
   from the helper activity calculation.

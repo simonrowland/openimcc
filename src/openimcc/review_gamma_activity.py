@@ -71,7 +71,8 @@ def evaluate_review_gamma_activity(
     used when provided. Printed endpoints propagate through the activity
     conversion. Temperature picks the nearest source row. A family screen
     selects a row only when explicitly requested; otherwise it supplies a
-    domain flag and does not change the selected coefficient.
+    domain flag and does not change the selected coefficient. An-Di targets
+    compare declared major oxides after renormalizing those majors alone.
     """
     return _evaluate_review_gamma_activity(
         element,
@@ -127,7 +128,9 @@ def _evaluate_review_gamma_activity(
         raise ValueError(
             f"no review-gamma row converts to gas parent {parent_oxide!r} for {element!r}"
         )
-    row = _select_row(candidates, temperature, amounts)
+    row, selector_no_match = _select_row_with_status(
+        candidates, temperature, amounts
+    )
     screen = row["composition_screen"]
     if screen["kind"] == "supported_component_set":
         supported = frozenset(str(name) for name in screen["components"])
@@ -265,12 +268,19 @@ def _evaluate_review_gamma_activity(
         distances.append(f"temperature distance {t_distance:.6g} K")
 
     if screen["kind"] == "family_oxide_set":
-        family_distance, _family_size = _family_score(
+        family_distance, missing_family_members = _family_score(
             screen, amounts, parent_oxide=parent_oxide
         )
-        if family_distance > 0.0:
+        if family_distance > 0.0 or missing_family_members > 0:
             violated.append("melt_family_extrapolated")
-            distances.append(f"melt-family distance {family_distance:.6g} mole fraction")
+            distances.append(
+                f"melt-family distance {family_distance:.6g} oxide mole fraction "
+                "(source-family-distance-v2)"
+            )
+            if missing_family_members:
+                distances.append(
+                    f"{missing_family_members} required family oxides absent"
+                )
     elif screen["kind"] == "an_di_target":
         if not _matches_an_di_target(screen, amounts):
             violated.append("melt_composition_differs_from_An_Di_target")
@@ -278,6 +288,9 @@ def _evaluate_review_gamma_activity(
         pass
     else:
         raise ValueError(f"unknown composition screen {screen['kind']!r}")
+
+    if selector_no_match:
+        violated.append("review_gamma_selector_no_match")
 
     oxygen_window = row.get("log10_fO2_source")
     if oxygen_window is None:
@@ -322,6 +335,12 @@ def _evaluate_review_gamma_activity(
     )
     if row["gamma_law"]["kind"] == "range":
         reference += "; nearest-temperature source row"
+        if "gamma_point" in row["gamma_law"]:
+            reference += "; gamma-range-printed-point-v1"
+    if screen["kind"] == "an_di_target":
+        reference += "; an-di-target-basis=major-oxides-only-v2"
+    if conversion is not None:
+        reference += "; ce2o3-liquid-standard-gibbs-v3"
     selection_note = row.get("selection_note")
     if selection_note:
         reference += f"; {selection_note}"
@@ -342,6 +361,11 @@ def _evaluate_review_gamma_activity(
         reference += "; oxygen-fugacity window unchecked"
     if "oxygen_fugacity_window_unreported" in violated:
         reference += "; oxygen-fugacity window not reported"
+    if selector_no_match:
+        reference += (
+            "; DEPENDS: review_gamma_selector_no_match; nearest row shown "
+            "with this flag"
+        )
 
     return ReviewGammaActivityResult(
         activity=activity,
@@ -366,6 +390,17 @@ def _select_row(
     temperature: float,
     amounts: Mapping[str, float],
 ) -> Mapping[str, object]:
+    row, _selector_no_match = _select_row_with_status(
+        candidates, temperature, amounts
+    )
+    return row
+
+
+def _select_row_with_status(
+    candidates: list[Mapping[str, object]],
+    temperature: float,
+    amounts: Mapping[str, float],
+) -> tuple[Mapping[str, object], bool]:
     def temperature_distance(row: Mapping[str, object]) -> float:
         source_temperature = row["gamma_law"].get(
             "temperature_K", row["temperature_window_K"]
@@ -376,6 +411,12 @@ def _select_row(
     nearest_distance = min(temperature_distance(row) for row in candidates)
     nearest = [
         row for row in candidates if temperature_distance(row) == nearest_distance
+    ]
+    selector_rows = [
+        row
+        for row in nearest
+        if row.get("select_when_component_zero") is not None
+        or row.get("select_when_component_positive") is not None
     ]
     component_selection = []
     for row in nearest:
@@ -390,7 +431,9 @@ def _select_row(
     if component_selection:
         if len(component_selection) != 1:
             raise ValueError("review-gamma component selectors must identify one row")
-        return component_selection[0]
+        return component_selection[0], False
+    if selector_rows:
+        return nearest[0], True
     if len(nearest) > 1 and any(
         row["composition_screen"].get("select_tie_by_family") for row in nearest
     ):
@@ -401,8 +444,8 @@ def _select_row(
                 amounts,
                 parent_oxide=str(row["parent_oxide"]),
             ),
-        )
-    return nearest[0]
+        ), False
+    return nearest[0], False
 
 
 def _family_score(
@@ -412,22 +455,27 @@ def _family_score(
     parent_oxide: str,
 ) -> tuple[float, int]:
     family = frozenset(str(name) for name in screen["oxides"])
-    # Source rows give a solvent-oxide family, not a filtered melt total. Use
-    # the declared total for the distance denominator, including trace-parent
-    # and non-oxide moles. The selected analyte parent is part of that total
-    # but not an out-of-family solvent component.
-    declared_total = math.fsum(amounts.values())
+    # Source rows give solvent-oxide families. Keep other declared trace oxides
+    # in the solvent total, but leave non-oxides to their own trace screens.
+    oxide_total = math.fsum(
+        amount
+        for name, amount in amounts.items()
+        if name not in _NON_OXIDE_COMPONENTS
+    )
     outside = math.fsum(
         amount
         for name, amount in amounts.items()
-        if name != parent_oxide and name not in family
+        if name != parent_oxide
+        and name not in family
+        and name not in _NON_OXIDE_COMPONENTS
     )
-    distance = outside / declared_total if declared_total > 0.0 else 1.0
-    if screen.get("require_exact_family"):
-        present_family = sum(amounts.get(name, 0.0) > 0.0 for name in family)
-        if present_family != len(family) or outside > 0.0:
-            distance += 1.0
-    return distance, len(family)
+    missing_family_members = sum(amounts.get(name, 0.0) <= 0.0 for name in family)
+    distance = outside / oxide_total if oxide_total > 0.0 else 1.0
+    if screen.get("require_exact_family") and (
+        missing_family_members > 0 or outside > 0.0
+    ):
+        distance += 1.0
+    return distance, missing_family_members
 
 
 def _matches_an_di_target(
@@ -439,18 +487,13 @@ def _matches_an_di_target(
             continue
         if component not in _TRACE_PARENTS and component not in _NON_OXIDE_COMPONENTS:
             return False
-    # The source's target is a whole-melt weight-percent composition. In the
-    # absence of an exclusion for trace parents or non-oxides, compare it with
-    # the declared total mass so those components cannot disappear on
-    # renormalisation to the target oxides.
-    total_mass = math.fsum(
-        amount * _component_molar_mass(component)
-        for component, amount in amounts.items()
-    )
     masses = {
         component: amounts.get(component, 0.0) * MOLAR_MASS_G_MOL[component]
         for component in target
     }
+    # The source target is printed on a major-oxide basis. Normalize only its
+    # declared target majors; trace parents and non-oxides are screened apart.
+    total_mass = math.fsum(masses.values())
     if total_mass <= 0.0:
         return False
     tolerance = float(screen["tolerance_wt_pct"])

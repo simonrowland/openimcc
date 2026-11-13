@@ -2,6 +2,8 @@
 
 The source-railed trace activity rows use one format and evaluator. A printed bare `range` uses its geometric centre; when a source prints a central value and uncertainty, the point is that printed centre; `activity_range` is calculated from both printed gamma endpoints after applying the row's parent power. `x_source` follows the row's declared basis: one-cation rows count all oxide cations and replace the parent formula by its declared source units, while other component rows retain their parent-only expansion. Ga and In use the latter path as anchored to Bischof's Table 8 basis. Temperature selects the nearest source row. A composition screen adds a domain flag; Sn's explicit binary-slag rows are selected only when their binary screen is met.
 
+Family screens compare the listed solvent-oxide family against declared oxides, count each absent family oxide, and exclude non-oxides such as S, Cl and F from the oxide distance. Other declared trace oxides remain part of the solvent context. The An-Di target is a printed major-oxide composition: compare it after renormalizing the declared target majors alone, excluding trace parents and non-oxides. Those components remain subject to their own trace checks. Result references identify the current family-distance and An-Di-basis revisions.
+
 | Element | Gamma law and value | Component basis | Parent power | Window and composition screen |
 | --- | --- | --- | ---: | --- |
 | Sn, FCS silicate | range 5.0–6.2 at 1573 K; geometric centre 5.5678 | SnO(l) formula-unit mole fraction | 1 | 1573 K; FeO-CaO-SiO2 |

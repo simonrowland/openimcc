@@ -270,11 +270,42 @@ def test_family_screen_counts_declared_review_gamma_parents_and_nonoxides() -> N
             "Pb", composition, 1923.0, parent_oxide="PbO"
         )
 
-        assert "melt_family_extrapolated" in result.notice.violated_axes
-        assert "melt-family distance 1.50249 mole fraction" in result.reference
+        if component == "Ga2O3":
+            assert "melt_family_extrapolated" in result.notice.violated_axes
+            assert (
+                "melt-family distance 1.50249 oxide mole fraction"
+                in result.reference
+            )
+        else:
+            assert "melt_family_extrapolated" not in result.notice.violated_axes
 
 
-def test_an_di_screen_renormalizes_against_declared_trace_and_nonoxide_mass() -> None:
+def test_family_screen_counts_missing_oxides_and_excludes_nonoxides() -> None:
+    ge = evaluate_review_gamma_activity(
+        "Ge", {"SiO2": 1.0, "GeO2": 0.001}, 1573.0, parent_oxide="GeO2"
+    )
+    assert "melt_family_extrapolated" in ge.notice.violated_axes
+    assert "melt-family distance 0 oxide mole fraction" in ge.reference
+    assert "3 required family oxides absent" in ge.reference
+
+    ce_with_sulfur = evaluate_review_gamma_activity(
+        "Ce",
+        {
+            "CaO": 1.0,
+            "MgO": 1.0,
+            "Al2O3": 1.0,
+            "SiO2": 1.0,
+            "Ce2O3": 0.1,
+            "S": 0.5,
+        },
+        1873.0,
+        parent_oxide="Ce2O3",
+        fO2_bar=4.76e-16 * 1.01325,
+    )
+    assert "melt_family_extrapolated" not in ce_with_sulfur.notice.violated_axes
+
+
+def test_an_di_screen_renormalizes_declared_major_oxides_only() -> None:
     target_wt_pct = {
         "SiO2": 50.34,
         "Al2O3": 15.4,
@@ -298,9 +329,21 @@ def test_an_di_screen_renormalizes_against_declared_trace_and_nonoxide_mass() ->
             parent_oxide="Ga2O3",
             fO2_bar=3.640629388810509e-08,
         )
-        assert "melt_composition_differs_from_An_Di_target" in (
+        assert "melt_composition_differs_from_An_Di_target" not in (
             result.notice.violated_axes
         )
+        assert "an-di-target-basis=major-oxides-only-v2" in result.reference
+
+    off_target_major = evaluate_review_gamma_activity(
+        "Ga",
+        {**target_moles, "FeO": 0.05, "Ga2O3": 1.0e-6},
+        1700.0,
+        parent_oxide="Ga2O3",
+        fO2_bar=3.640629388810509e-08,
+    )
+    assert "melt_composition_differs_from_An_Di_target" in (
+        off_target_major.notice.violated_axes
+    )
 
 
 def test_an_di_failure_is_included_in_the_default_melt_trace_flag() -> None:
@@ -547,7 +590,10 @@ def test_ga_in_anchors_are_liquid_coefficients_without_a_second_fusion_step() ->
     assert indium.gamma_range == (0.005, 0.029)
     assert "published x_source anchor 0.0172 at 429 ppm" in ga.reference
     assert "declared formula-unit MO1.5 basis" in ga.reference
+    assert "gamma-range-printed-point-v1" in ga.reference
     assert "published x_source anchor 6.9e-05 at 0.05 ppm" in indium.reference
+    assert "gamma-range-printed-point-v1" in indium.reference
+    assert "an-di-target-basis=major-oxides-only-v2" in ga.reference
 
 
 def test_bischof_table8_s1_closure_literals_use_the_component_mole_fraction() -> None:
@@ -1400,6 +1446,7 @@ def test_ce_standard_conversion_tracks_temperature_and_keeps_band_width() -> Non
         result = evaluate_review_gamma_activity(
             "Ce", composition, temperature, parent_oxide="Ce2O3"
         )
+        assert "ce2o3-liquid-standard-gibbs-v3" in result.reference
         delta_g = -R_J_MOL_K * temperature * math.log(result.gamma / solid_gamma)
         assert delta_g == pytest.approx(_ce_parent_standard_delta_g(temperature), abs=1.0)
         assert delta_g == pytest.approx(expected, abs=1.0)
@@ -1421,6 +1468,54 @@ def test_ce_standard_conversion_tracks_temperature_and_keeps_band_width() -> Non
             assert result.activity == pytest.approx(
                 float.fromhex("0x1.023f9a65705dep-28"), rel=1e-9
             )
+
+
+def test_selector_no_match_returns_a_depends_flagged_nearest_row(monkeypatch) -> None:
+    def selector_row(name: str, component: str) -> dict[str, object]:
+        return {
+            "row": name,
+            "parent_oxide": "SnO",
+            "gamma_law": {
+                "kind": "range",
+                "gamma_endpoints": [1.0, 1.0],
+                "gamma_point": 1.0,
+                "temperature_K": [1800.0, 1800.0],
+            },
+            "source_units_per_parent": 1.0,
+            "parent_power": 1.0,
+            "source_mole_fraction_kind": "simple_oxide",
+            "temperature_window_K": [1800.0, 1800.0],
+            "composition_screen": {
+                "kind": "supported_component_set",
+                "components": ["SiO2", "SnO"],
+            },
+            "select_when_component_positive": component,
+            "component": "SnO(l)",
+            "component_basis": "liquid SnO formula-unit mole fraction",
+            "parent_standard_state": "pure liquid SnO, 1 bar",
+            "source_citation": "Synthetic selector case",
+            "source_locator": "test rows",
+            "log10_fO2_source": None,
+            "limitations": [],
+        }
+
+    rows = [
+        selector_row("SnO-select-Al2O3", "Al2O3"),
+        selector_row("SnO-select-MgO", "MgO"),
+    ]
+    monkeypatch.setattr(
+        review_gamma_activity,
+        "load_activity_fragment",
+        lambda _element: {"rows": rows},
+    )
+
+    result = evaluate_review_gamma_activity(
+        "Sn", {"SiO2": 1.0, "SnO": 0.001}, 1800.0, parent_oxide="SnO"
+    )
+
+    assert result.row == "SnO-select-Al2O3"
+    assert "review_gamma_selector_no_match" in result.notice.violated_axes
+    assert "DEPENDS: review_gamma_selector_no_match" in result.reference
 
 
 def test_la_binary_dilute_limit_recomputes_table_2_and_domain_flags() -> None:
@@ -1614,8 +1709,10 @@ def test_existing_review_gamma_rows_are_bit_identical() -> None:
 
     encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
     assert len(payload) == 16
+    # Numeric values are unchanged; the moved reference hashes identify the
+    # printed-point, An-Di basis, and Ce standard-conversion revisions.
     assert hashlib.sha256(encoded).hexdigest() == (
-        "f43bfdc0cb41b9fefe8177d0d0770970b890002452e7f614e5b903a2c1b703ac"
+        "34586de178d2d51a0c1916a1a8989bfc94a4a80263710a49dd04bbe54fb02092"
     )
 
     def payload_hash(rows: list[list[object]]) -> str:
@@ -1624,10 +1721,10 @@ def test_existing_review_gamma_rows_are_bit_identical() -> None:
         ).hexdigest()
 
     assert payload_hash(non_ce_payload) == (
-        "e7dbcbdf16e5203a735152a551eda720f8b1fbd53c4ac823db9debdefb4c6de3"
+        "8f2038e228d8dbab0818a04b13e81a1b7d8b2f000fe5a78e5a09218f4e7cb43c"
     )
     assert payload_hash(ce_payload) == (
-        "6f3faac93f5ce8a4816849c02d60bb9bdb5cefe443e433f51488dc4950243fb8"
+        "cf1226c0a8fc05611178ac34c4196f784ca909447044cfd8638922b238bff3dc"
     )
 
 
