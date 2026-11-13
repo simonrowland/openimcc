@@ -3294,20 +3294,74 @@ def evaluate_gas(
                         fit_window_label = (
                             f"{fit_window_low:g}–{fit_window_high:g} K"
                         )
-                        conversion_range = (
-                            f"inside the measured {fit_window_label} KEMS fit"
-                            if in_fit_window
-                            else "extrapolated outside the measured "
-                            f"{fit_window_label} KEMS fit"
+                        from openimcc.review_gamma_activity import (
+                            evaluate_review_gamma_activity,
                         )
+                        fit_result = evaluate_review_gamma_activity(
+                            element,
+                            composition_moles,
+                            T,
+                            parent_oxide=oxide,
+                            fO2_bar=p_O2,
+                        )
+                        unknown_fit_checks = {
+                            "oxygen_fugacity_window_unchecked",
+                            "oxygen_fugacity_window_unreported",
+                        }
+                        failed_fit_checks = tuple(
+                            axis for axis in fit_result.notice.violated_axes
+                            if axis not in unknown_fit_checks
+                        )
+                        unknown_checks = tuple(
+                            axis for axis in fit_result.notice.violated_axes
+                            if axis in unknown_fit_checks
+                        )
+                        fit_check_status = "; ".join(
+                            part
+                            for part in (
+                                (
+                                    "out of domain: "
+                                    + ", ".join(failed_fit_checks)
+                                    if failed_fit_checks
+                                    else ""
+                                ),
+                                (
+                                    "DEPENDS: " + ", ".join(unknown_checks)
+                                    if unknown_checks
+                                    else ""
+                                ),
+                            )
+                            if part
+                        )
+                        if not fit_check_status:
+                            conversion_range = (
+                                f"inside the measured {fit_window_label} KEMS fit"
+                            )
+                        elif not in_fit_window:
+                            conversion_range = (
+                                f"extrapolated outside the measured "
+                                f"{fit_window_label} KEMS fit; {fit_check_status}"
+                            )
+                        else:
+                            conversion_range = fit_check_status
                         recommendation = (
                             "Applied the Bischof KEMS-to-NASA parent-standard conversion: "
-                            f"review-γ activity multiplied by a_NASA/a_KEMS="
+                            "nasa_standard_activity_ratio_v1; review-γ activity "
+                            "multiplied by the full activity ratio a_NASA/a_KEMS="
                             f"{standard_ratio:.12g} ({conversion_range}); "
                             "the ratio is exp((G_KEMS-G_NASA)/(RT))."
                         )
+                        nasa_reference = estimate.reference
+                        if nasa_reference is not None:
+                            nasa_reference = nasa_reference.replace(
+                                str(fragment_row["parent_standard_state"]),
+                                f"pure liquid {oxide} on the NASA standard "
+                                "(Bischof KEMS conversion v1)",
+                            )
                         estimate = replace(
                             estimate,
+                            code="nasa_standard_converted_activity_v1",
+                            reference=nasa_reference,
                             activity=estimate.activity * standard_ratio,
                             activity_range=(
                                 (
@@ -3819,12 +3873,20 @@ def evaluate_gas(
                     first_major_flag.scoreable,
                     limiting_bound_dex=first_major_flag.limiting_bound_dex,
                     limiting_cap_dex=first_major_flag.limiting_cap_dex,
-                    prior_flags=tuple(flags),
+                    prior_flags=tuple(dict.fromkeys((
+                        *first_major_flag.prior_flags,
+                        *flags,
+                    ))),
                     additional_major_flags=first_major_flag.additional_major_flags,
                     envelope_flags=first_major_flag.envelope_flags,
                 )
             else:
                 first_major_flag = channel_major_flags[0]
+                melt_prior_flags = tuple(
+                    prior_flag
+                    for major_flag in channel_major_flags
+                    for prior_flag in major_flag.prior_flags
+                )
                 domain_flags[gas_name] = TraceMajorBiasFlag(
                     first_major_flag.major_oxide,
                     first_major_flag.x_free,
@@ -3832,7 +3894,10 @@ def evaluate_gas(
                     all(item.scoreable for item in channel_major_flags),
                     limiting_bound_dex=first_major_flag.limiting_bound_dex,
                     limiting_cap_dex=first_major_flag.limiting_cap_dex,
-                    prior_flags=tuple(flags),
+                    prior_flags=tuple(dict.fromkeys((
+                        *melt_prior_flags,
+                        *flags,
+                    ))),
                     additional_major_flags=tuple(channel_major_flags[1:]),
                     envelope_flags=first_major_flag.envelope_flags,
                 )

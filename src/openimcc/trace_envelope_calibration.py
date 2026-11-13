@@ -17,6 +17,10 @@ ENVELOPE_T_RANGE_K = (1400.0, 2200.0)
 ENVELOPE_DELTA_IW_GRID = (-6.0, -4.0, -2.0, 0.0, 2.0, 4.0)
 ENVELOPE_T_GRID_K = (1400.0, 1600.0, 1800.0, 2000.0, 2200.0)
 
+# v3 names the current 1400–2200 K / ΔIW −6 to +4 calibration grid.
+MN_CALIBRATED_ENVELOPE_ID = "mn_calibrated_envelope_v3"
+CR_CALIBRATED_ENVELOPE_ID = "cr_calibrated_envelope_v3"
+
 
 # At 1 bar, log10(fO2/bar) = 6.57 - 27215/T from Eugster & Wones (1962),
 # J. Petrology 3(1), 82–125, https://doi.org/10.1093/petrology/3.1.82. This

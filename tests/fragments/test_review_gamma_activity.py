@@ -349,7 +349,7 @@ def test_nico_flags_check_declared_weight_window_with_unsupported_oxide(
         if isinstance(item, TraceActivityFlag) and item.oxide == trace_oxide
     )
 
-    assert flag.code == "source_grounded_helper_activity"
+    assert flag.code == "depends_helper_activity"
     assert window_flag in str(flag)
     assert "unsupported components omitted from helper value: Ga2O3" in str(flag)
 
@@ -378,7 +378,13 @@ def test_nico_resolver_accepts_feoeq_and_preserves_helper_activity(
         else evaluate_co_activity(helper_composition, 1700.0)
     )
 
-    assert estimate.code == "source_grounded_helper_activity"
+    assert estimate.code == "depends_helper_activity"
+    oxygen_flag = (
+        "oxygen_fugacity_relative_to_IW_not_supplied"
+        if trace_oxide == "NiO"
+        else "oxygen_fugacity_domain_unchecked"
+    )
+    assert oxygen_flag in (estimate.reference or "")
     assert estimate.activity.hex() == expected.activity.hex()
 
 
@@ -732,7 +738,9 @@ def test_default_pack_applies_kems_parent_activity_conversion() -> None:
             assert "Applied the Bischof KEMS-to-NASA parent-standard conversion" in str(
                 default_flag
             )
-            assert "inside the measured 1550–1740 K KEMS fit" in str(default_flag)
+            assert "out of domain: oxygen_fugacity_extrapolated" in str(
+                default_flag
+            )
             assert candidate_flag.parent_liquid_standard_offset is None
             # The two parent Gibbs functions are independently represented by
             # a 5-coefficient polynomial and Bischof's two-parameter ln K fit.

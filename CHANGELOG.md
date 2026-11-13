@@ -897,6 +897,24 @@
 - `evaluate_redox(..., melt_pack=...)` now raises
   `ImccUnprovenDatapackError` when a loaded wrapper contains an unbound raw
   melt datapack.
+- Basic-monoxide and amphoteric trace bounds now use the strict mass-balance
+  bound when the calibration melt and oxygen conditions are not evidenced.
+  `evaluate()` has no fO2 input, so these cases carry a `DEPENDS` flag and use
+  the 0.01 dex cap; rows beyond that cap keep the existing activity refusal.
+  Envelope identifiers now include the `v3` calibration revision.
+- Ni, Co, P2O5 and sulfur helper estimates now use `depends_helper_activity`
+  when declared source checks or applicable sulfur-capacity calibration checks
+  fail or are unknown. Redox-backed trace estimates use
+  `depends_associate_activity` when a required upstream redox row is
+  extrapolated. The estimates remain available with the failed axes or notices
+  in their references.
+- Redox composition flags now include every positive unsupported cation,
+  including fractions at or below the former 1% cutoff.
+- Default-path Ga/In converted activities now use the
+  `nasa_standard_converted_activity_v1` code and a reference naming the NASA
+  parent standard. The conversion recommendation identifies the full
+  `a_NASA/a_KEMS` factor as `nasa_standard_activity_ratio_v1`, and the KEMS fit
+  status checks temperature, An-Di composition and oxygen fugacity.
 - Ce2O3 review-γ activity now converts the solid-A standard to the Ce2O3(l)
   parent with the temperature-dependent Gibbs difference. At 1873 K the
   activity changes by less than 1e-9 relative; off that temperature the result

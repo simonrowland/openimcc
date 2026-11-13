@@ -12,11 +12,12 @@ from typing import Any, Literal
 from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.kernel import ImccRefusal
 from openimcc.trace_envelope_calibration import (
-    AMPHOTERIC_ENVELOPE_K,
-    BASIC_MONOXIDE_ENVELOPE_K,
+    CR_CALIBRATED_ENVELOPE_ID,
     ENVELOPE_DELTA_IW_GRID,
     ENVELOPE_LOG10_FO2_RANGE_BAR,
     ENVELOPE_T_RANGE_K,
+    MN_CALIBRATED_ENVELOPE_ID,
+    _iw_log10_fO2_bar,
 )
 
 
@@ -366,7 +367,6 @@ def _review_gamma_parent_oxides(rules: Mapping[str, TraceComponentRule]) -> froz
         and (rule.activity_model == "review_gamma" or rule.uses_review_gamma_evaluator)
     )
 
-_TRACE_ENVELOPE_CAP_DEX = 0.02
 _TRACE_STRICT_BOUND_CAP_DEX = 0.01
 
 
@@ -483,12 +483,12 @@ class TraceMajorBiasFlag(str):
     ):
         disposition = "scoreable" if scoreable else "refused"
         envelope_domains = {
-            "mn_calibrated_envelope": {
+            MN_CALIBRATED_ENVELOPE_ID: {
                 "temperature_range_K": ENVELOPE_T_RANGE_K,
                 "log10_fO2_range_bar": ENVELOPE_LOG10_FO2_RANGE_BAR,
                 "delta_IW_grid": ENVELOPE_DELTA_IW_GRID,
             },
-            "cr_calibrated_envelope": {
+            CR_CALIBRATED_ENVELOPE_ID: {
                 "temperature_range_K": ENVELOPE_T_RANGE_K,
                 "log10_fO2_range_bar": ENVELOPE_LOG10_FO2_RANGE_BAR,
                 "delta_IW_grid": ENVELOPE_DELTA_IW_GRID,
@@ -530,7 +530,7 @@ class TraceMajorBiasFlag(str):
                     **envelope_domains[name],
                 })
                 for name, k, calibrant, trace_class in envelope_flags
-                if name == "mn_calibrated_envelope"
+                if name == MN_CALIBRATED_ENVELOPE_ID
             ),
             None,
         )
@@ -541,7 +541,7 @@ class TraceMajorBiasFlag(str):
                     **envelope_domains[name],
                 })
                 for name, k, calibrant, trace_class in envelope_flags
-                if name == "cr_calibrated_envelope"
+                if name == CR_CALIBRATED_ENVELOPE_ID
             ),
             None,
         )
@@ -798,12 +798,24 @@ def _resolve_trace_activity(
             if rule.gamma is None:
                 raise
         else:
+            extrapolated_rows = tuple(redox_result.extrapolated_redox_rows)
+            reference = None
+            code = "source_grounded_associate_activity"
+            if extrapolated_rows:
+                code = "depends_associate_activity"
+                reference = (
+                    "required redox rows extrapolated: "
+                    + ", ".join(extrapolated_rows)
+                    + "; redox flags: "
+                    + "; ".join(redox_result.flags)
+                )
             return (
                 TraceActivityEstimate(
                     oxide,
                     float(redox_result.parent_activity[oxide]),
                     x,
-                    "source_grounded_associate_activity",
+                    code,
+                    reference=reference,
                 ),
                 redox_result,
                 redox_state,
@@ -814,18 +826,21 @@ def _resolve_trace_activity(
         )
         if helper_result is not None:
             activity, source_is_valid, reference = helper_result
-            if source_is_valid:
-                return (
-                    TraceActivityEstimate(
-                        oxide,
-                        activity,
-                        x,
-                        "source_grounded_helper_activity",
-                        reference=reference,
+            return (
+                TraceActivityEstimate(
+                    oxide,
+                    activity,
+                    x,
+                    (
+                        "source_grounded_helper_activity"
+                        if source_is_valid
+                        else "depends_helper_activity"
                     ),
-                    None,
-                    None,
-                )
+                    reference=reference,
+                ),
+                None,
+                None,
+            )
     if rule.activity_model == "review_gamma" and rule.review_gamma_element is not None:
         from openimcc.review_gamma_activity import evaluate_review_gamma_activity
 
@@ -869,9 +884,18 @@ def _activity_fragment_result(
     *,
     fO2_bar: float | None,
 ) -> tuple[float, bool, str | None] | None:
+    def relative_oxygen_offset() -> float | None:
+        if fO2_bar is None:
+            return None
+        oxygen = float(fO2_bar)
+        if not math.isfinite(oxygen) or oxygen <= 0.0:
+            raise ValueError("fO2_bar must be finite and positive")
+        return math.log10(oxygen) - _iw_log10_fO2_bar(T_K)
+
     def declared_composition_reference(
         supported_components: frozenset[str],
-    ) -> str | None:
+        violated_axes: tuple[str, ...] = (),
+    ) -> tuple[bool, str | None]:
         from openimcc.activity_fragments import load_activity_fragment
         from openimcc.review_gamma_activity import (
             _canonicalize_composition_moles,
@@ -882,6 +906,12 @@ def _activity_fragment_result(
         row = _select_row(
             load_activity_fragment(element)["rows"], T_K, composition_moles
         )
+        declared_window_flags = _composition_window_violations(
+            row, _canonicalize_composition_moles(composition_moles)
+        )
+        source_checks = tuple(dict.fromkeys(
+            (*declared_window_flags, *violated_axes)
+        ))
         details = []
         unsupported = [
             name for name in composition_moles if name not in supported_components
@@ -891,45 +921,65 @@ def _activity_fragment_result(
                 "unsupported components omitted from helper value: "
                 + ", ".join(unsupported)
             )
-        window_flags = _composition_window_violations(
-            row, _canonicalize_composition_moles(composition_moles)
-        )
-        if window_flags:
+        if source_checks:
             details.append(
-                "declared-composition window flags: " + ", ".join(window_flags)
+                "declared source checks: " + ", ".join(source_checks)
             )
         if not details:
-            return None
-        return "declared composition checks: " + "; ".join(details)
+            return True, None
+        return (
+            not unsupported and not source_checks,
+            "declared composition checks: " + "; ".join(details),
+        )
 
     if element == "Ni":
         from openimcc.ni import _SUPPORTED_COMPONENTS, evaluate_ni_activity
 
-        declared_reference = declared_composition_reference(_SUPPORTED_COMPONENTS)
         helper_composition = {
             name: amount
             for name, amount in composition_moles.items()
             if name in _SUPPORTED_COMPONENTS
         }
         try:
-            result = evaluate_ni_activity(helper_composition, T_K)
+            result = evaluate_ni_activity(
+                helper_composition, T_K, relative_oxygen_offset()
+            )
         except ValueError:
             return None
-        return result.activity, True, declared_reference
+        violated_axes = result.notice.violated_axes
+        source_is_valid, reference = declared_composition_reference(
+            _SUPPORTED_COMPONENTS, violated_axes
+        )
+        return (
+            result.activity,
+            source_is_valid,
+            reference,
+        )
     if element == "Co":
         from openimcc.co_activity import _OXIDE_COMPONENTS, evaluate_co_activity
 
-        declared_reference = declared_composition_reference(_OXIDE_COMPONENTS)
         helper_composition = {
             name: amount
             for name, amount in composition_moles.items()
             if name in _OXIDE_COMPONENTS
         }
         try:
-            result = evaluate_co_activity(helper_composition, T_K)
+            result = evaluate_co_activity(
+                helper_composition,
+                T_K,
+                log10_fO2_over_IW=relative_oxygen_offset(),
+            )
         except ValueError:
             return None
-        return result.activity, True, declared_reference
+        violated_axes = result.notice.violated_axes
+        source_is_valid, reference = declared_composition_reference(
+            _OXIDE_COMPONENTS, violated_axes
+        )
+        return (
+            result.activity,
+            source_is_valid,
+            reference,
+        )
     if element == "P":
         from openimcc.p2o5 import _SUPPORTED_COMPONENTS, evaluate_p2o5_activity
 
@@ -942,7 +992,15 @@ def _activity_fragment_result(
             result = evaluate_p2o5_activity(helper_composition, T_K)
         except ValueError:
             return None
-        return result.activity, not result.notice.violated_axes, None
+        violated_axes = tuple(result.notice.violated_axes) + tuple(
+            notice.code for notice in result.additional_notices
+        )
+        reference = (
+            "declared chemistry checks: " + "; ".join(violated_axes)
+            if violated_axes
+            else None
+        )
+        return result.activity, not violated_axes, reference
     if element == "S":
         from openimcc.sulfur import _OXIDES, evaluate_sulfur
 
@@ -969,7 +1027,25 @@ def _activity_fragment_result(
             return None
         if result.log10_fS2 is None:
             return None
-        return 10.0**result.log10_fS2, True, None
+        calibration_notices = tuple(
+            notice
+            for notice in result.notices
+            if notice.code.startswith("capacity-")
+            and "outside-calibration" in notice.code
+        )
+        reference = (
+            "sulfur capacity calibration notices: "
+            + "; ".join(
+                f"{notice.code} ({notice.axis})" for notice in calibration_notices
+            )
+            if calibration_notices
+            else None
+        )
+        return (
+            10.0**result.log10_fS2,
+            not calibration_notices,
+            reference,
+        )
     return None
 
 

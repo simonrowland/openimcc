@@ -1826,7 +1826,7 @@ def _make_flags(
             )
         outside = [
             element for element, amount in cation_totals.items()
-            if element not in supported and amount / total_cations > 0.01
+            if element not in supported and amount > 0.0
         ] if total_cations > 0.0 else []
         if outside:
             has_cr_row = any(_linear_composition_coefficients(row) is not None for row in conditioned_rows)

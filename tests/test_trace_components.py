@@ -374,7 +374,7 @@ def test_per_major_bounds_flag_rows_and_trace_target_returns_estimate() -> None:
     assert result.activity("P2O5") == pytest.approx(notice.activities["P2O5"].activity)
 
 
-def test_basic_monoxide_envelope_scores_dilute_cobalt_and_caps_major_rows() -> None:
+def test_unverified_monoxide_envelope_uses_strict_bound_and_caps_major_rows() -> None:
     dilute = evaluate(
         _mole_fraction_composition(_MARE_BASALT_WT, "CoO", 0.001),
         1800.0,
@@ -386,18 +386,18 @@ def test_basic_monoxide_envelope_scores_dilute_cobalt_and_caps_major_rows() -> N
         if isinstance(item, TraceMajorBiasFlag)
     ]
     sodium = next(item for item in dilute_flags if item.major_oxide == "Na2O")
-    assert sodium.scoreable
-    assert sodium.bias_bound_dex <= 0.02
-    assert dict(sodium.mn_calibrated_envelope) == {
-        "k": BASIC_MONOXIDE_ENVELOPE_K,
-        "calibrant": "MnO",
-        "class": "basic_monoxide",
-        "temperature_range_K": (1400.0, 2200.0),
-        "log10_fO2_range_bar": trace_components.ENVELOPE_LOG10_FO2_RANGE_BAR,
-        "delta_IW_grid": (-6.0, -4.0, -2.0, 0.0, 2.0, 4.0),
-    }
-    assert "mn_calibrated_envelope" in str(sodium)
-    assert math.isfinite(dilute.activity("Na2O"))
+    assert sodium.bias_bound_dex == pytest.approx(
+        math.log10(1.0 + 0.002 / sodium.x_free)
+    )
+    assert sodium.envelope_flags == ()
+    assert sodium.mn_calibrated_envelope is None
+    assert "DEPENDS" in str(sodium)
+    assert "calibration melt and oxygen conditions are not evidenced" in str(sodium)
+    assert "mn_calibrated_envelope_v3" in str(sodium)
+    assert sodium.limiting_cap_dex == 0.01
+    assert not sodium.scoreable
+    with pytest.raises(ImccTraceMajorBiasError):
+        dilute.activity("Na2O")
 
     concentrated = evaluate(
         _mole_fraction_composition(_MARE_BASALT_WT, "CoO", 0.01),
@@ -411,17 +411,34 @@ def test_basic_monoxide_envelope_scores_dilute_cobalt_and_caps_major_rows() -> N
     ]
     assert concentrated_flags
     assert all(not item.scoreable for item in concentrated_flags)
-    assert all(item.bias_bound_dex > 0.02 for item in concentrated_flags)
-    with pytest.raises(ImccComponentOutsideDomainError, match="exceeds 0.02 dex"):
+    assert all(item.bias_bound_dex > 0.01 for item in concentrated_flags)
+    with pytest.raises(ImccComponentOutsideDomainError, match="exceeds 0.01 dex"):
         concentrated.activity("Na2O")
 
+    amphoteric = evaluate(
+        _mole_fraction_composition(_MARE_BASALT_WT, "Cr2O3", 0.001),
+        1800.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+    )
+    chromium = next(
+        item for item in amphoteric.labels.notices
+        if isinstance(item, TraceMajorBiasFlag) and item.major_oxide == "Na2O"
+    )
+    weighted_cr_trace = (
+        1.0 + trace_component_rule("Cr2O3").nu
+    ) * 0.001
+    assert chromium.bias_bound_dex == pytest.approx(
+        math.log10(1.0 + weighted_cr_trace / chromium.x_free)
+    )
+    assert chromium.cr_calibrated_envelope is None
+    assert "cr_calibrated_envelope_v3" in str(chromium)
+    assert "DEPENDS" in str(chromium)
 
-@pytest.mark.parametrize(
-    ("temperature_K", "uses_envelope"),
-    [(1399.0, False), (1400.0, True), (2200.0, True), (2201.0, False)],
-)
-def test_trace_envelope_temperature_gate_is_inclusive(
-    temperature_K: float, uses_envelope: bool
+
+@pytest.mark.parametrize("temperature_K", [1399.0, 1400.0, 2200.0, 2201.0])
+def test_trace_envelope_requires_evidenced_melt_and_oxygen_conditions(
+    temperature_K: float,
 ) -> None:
     result = evaluate(
         _mole_fraction_composition(_MARE_BASALT_WT, "CoO", 0.001),
@@ -433,21 +450,18 @@ def test_trace_envelope_temperature_gate_is_inclusive(
         item for item in result.labels.notices
         if isinstance(item, TraceMajorBiasFlag) and item.major_oxide == "Na2O"
     )
-    if uses_envelope:
-        assert sodium.envelope_flags
-        assert sodium.limiting_cap_dex == 0.02
-        assert sodium.scoreable
-    else:
-        assert sodium.envelope_flags == ()
-        assert sodium.limiting_cap_dex == 0.01
-        assert "temperature outside 1400–2200 K" in str(sodium)
-        assert not sodium.scoreable
+    assert sodium.envelope_flags == ()
+    assert sodium.limiting_cap_dex == 0.01
+    assert "mn_calibrated_envelope_v3" in str(sodium)
+    assert "DEPENDS" in str(sodium)
+    if temperature_K < 1400.0 or temperature_K > 2200.0:
+        assert f"temperature outside 1400–2200 K" in str(sodium)
 
 
 def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
     def evaluate_composition(x_coo: float) -> tuple[dict[str, float], dict[str, float]]:
         mole_composition = _mole_fraction_composition(
-            _MARE_BASALT_WT, "CoO", x_coo
+            {name: 1.0 for name in IMCC_PARENT_OXIDES}, "CoO", x_coo
         )
         weight_composition = {
             oxide: amount * MOLAR_MASS_G_MOL[oxide]
@@ -462,22 +476,31 @@ def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
         return _major_activities(melt), weight_composition
 
     dilute_activities, dilute_composition = evaluate_composition(0.001)
+    with pytest.raises(ImccTraceMajorBiasError) as sodium_refusal:
+        evaluate_gas(
+            dilute_activities,
+            1800.0,
+            1.0e-8,
+            packaged_gas_pack,
+            gas_species="Na",
+            composition_wt_pct=dilute_composition,
+        )
+    assert sodium_refusal.value.major_oxide == "Na2O"
+
     dilute_gas = evaluate_gas(
         dilute_activities,
         1800.0,
         1.0e-8,
         packaged_gas_pack,
-        gas_species=("Na", "SiO", "Mg"),
+        gas_species="Mg",
         composition_wt_pct=dilute_composition,
     )
-    assert "Na" in dilute_gas
-    sodium_flag = dilute_gas.domain_flags["Na"]
-    assert isinstance(sodium_flag, TraceMajorBiasFlag)
-    assert sodium_flag.mn_calibrated_envelope is not None
-    assert sodium_flag.scoreable
+    assert "Mg" in dilute_gas
     magnesium_flag = dilute_gas.domain_flags["Mg"]
     assert isinstance(magnesium_flag, TraceMajorBiasFlag)
-    assert magnesium_flag.mn_calibrated_envelope is not None
+    assert magnesium_flag.mn_calibrated_envelope is None
+    assert "DEPENDS" in str(magnesium_flag)
+    assert magnesium_flag.scoreable
     assert any(
         "constant-Cp supercooled-liquid continuation" in flag
         for flag in magnesium_flag.prior_flags
@@ -497,6 +520,77 @@ def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
     assert isinstance(refusal.value, ImccComponentOutsideDomainError)
     assert refusal.value.code == TraceMajorBiasFlag.code
     assert refusal.value.major_oxide == "Na2O"
+
+
+def test_ga_gas_conversion_identity_and_kems_fit_domain(packaged_gas_pack) -> None:
+    temperature = 1700.0
+    an_di = {
+        "SiO2": 50.34,
+        "Al2O3": 15.4,
+        "MgO": 10.8,
+        "CaO": 23.46,
+        "Ga2O3": 0.05,
+    }
+
+    def gas_at(composition: dict[str, float], delta_iw: float, T: float = temperature):
+        f_o2 = 10.0 ** (_iw_log10_fO2_bar(T) + delta_iw)
+        return evaluate_gas(
+            {}, T, f_o2, packaged_gas_pack,
+            gas_species="Ga", composition_wt_pct=composition,
+        )
+
+    inside = gas_at(an_di, 2.0)
+    inside_flag = inside.domain_flags["Ga"]
+    assert inside_flag.code == "nasa_standard_converted_activity_v1"
+    assert inside_flag.reference is not None
+    assert "NASA standard" in inside_flag.reference
+    assert "pure liquid Ga2O3 on the Bischof KEMS parent standard" not in (
+        inside_flag.reference
+    )
+    assert inside_flag.parent_liquid_standard_offset is not None
+    assert "nasa_standard_activity_ratio_v1" in (
+        inside_flag.parent_liquid_standard_offset.recommendation
+    )
+    assert "inside the measured 1550–1740 K KEMS fit" in str(inside_flag)
+
+    oxygen_outside = gas_at(an_di, -6.0)
+    oxygen_flag = oxygen_outside.domain_flags["Ga"]
+    assert "out of domain: oxygen_fugacity_extrapolated" in str(oxygen_flag)
+    assert "inside the measured 1550–1740 K KEMS fit" not in str(oxygen_flag)
+
+    composition_outside = gas_at(
+        {"SiO2": 90.0, "Al2O3": 5.0, "MgO": 2.0, "CaO": 2.0, "Ga2O3": 0.05},
+        2.0,
+    )
+    assert "out of domain: melt_composition_differs_from_An_Di_target" in str(
+        composition_outside.domain_flags["Ga"]
+    )
+
+    temperature_outside = gas_at(an_di, 2.0, T=1741.0)
+    assert "out of domain: temperature_extrapolated" in str(
+        temperature_outside.domain_flags["Ga"]
+    )
+
+    indium_composition = {
+        "SiO2": 50.34,
+        "Al2O3": 15.4,
+        "MgO": 10.8,
+        "CaO": 23.46,
+        "In2O3": 0.05,
+    }
+    indium_temperature = 1674.0
+    indium_f_o2 = 10.0 ** (
+        _iw_log10_fO2_bar(indium_temperature) + 2.0
+    )
+    indium = evaluate_gas(
+        {}, indium_temperature, indium_f_o2, packaged_gas_pack,
+        gas_species="In", composition_wt_pct=indium_composition,
+    )
+    indium_flag = indium.domain_flags["In"]
+    assert indium_flag.code == "nasa_standard_converted_activity_v1"
+    assert indium_flag.reference is not None
+    assert "NASA standard" in indium_flag.reference
+    assert "inside the measured 1550–1740 K KEMS fit" in str(indium_flag)
 
 
 def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() -> None:
@@ -547,7 +641,7 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() 
         item for item in co_result.labels.notices
         if isinstance(item, TraceComponentsOutsideMeltModelNotice)
     )
-    assert co_notice.activities["CoO"].code == "source_grounded_helper_activity"
+    assert co_notice.activities["CoO"].code == "depends_helper_activity"
 
     sulfur_moles = {
         "SiO2": 0.50,
@@ -563,7 +657,8 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() 
     sulfur = trace_components.resolve_trace_activity(
         "S", 0.001, sulfur_moles, 1673.0, fO2_bar=10.0**-8.97
     )
-    assert sulfur.code == "source_grounded_helper_activity"
+    assert sulfur.code == "depends_helper_activity"
+    assert "capacity-composition-outside-calibration" in (sulfur.reference or "")
 
     cr_composition = _weight_composition({"Cr2O3": 0.001})
     cr_result = evaluate(
@@ -574,7 +669,9 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() 
         if isinstance(item, TraceComponentsOutsideMeltModelNotice)
     )
     cr_estimate = cr_notice.activities["Cr2O3"]
-    assert cr_estimate.code == "source_grounded_associate_activity"
+    assert cr_estimate.code == "depends_associate_activity"
+    assert cr_estimate.reference is not None
+    assert "required redox rows extrapolated" in cr_estimate.reference
 
     mn_composition = _weight_composition({"MnO": 0.002})
     mn_result = evaluate(
@@ -602,6 +699,119 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() 
         isinstance(item, TraceComponentsOutsideMeltModelNotice)
         for item in full_mn_result.labels.notices
     )
+
+
+def test_trace_helper_validity_uses_declared_checks_and_keeps_activity_values() -> None:
+    ni_outside_window = trace_components.resolve_trace_activity(
+        "NiO",
+        0.001,
+        {"SiO2": 1.0, "FeO": 0.4, "NiO": 0.001},
+        1700.0,
+        fO2_bar=1.0e-8,
+    )
+    assert ni_outside_window.code == "depends_helper_activity"
+    assert ni_outside_window.activity > 0.0
+    assert "FeO_wt_pct_outside_0_to_12" in (ni_outside_window.reference or "")
+    assert "MgO_wt_pct_outside_4_to_30" in (ni_outside_window.reference or "")
+
+    ni_unknown_oxygen = trace_components.resolve_trace_activity(
+        "NiO",
+        0.001,
+        {
+            "SiO2": 50.0,
+            "MgO": 10.0,
+            "FeO": 6.0,
+            "CaO": 20.0,
+            "Al2O3": 14.0,
+            "NiO": 0.05,
+        },
+        1700.0,
+    )
+    assert ni_unknown_oxygen.code == "depends_helper_activity"
+    assert ni_unknown_oxygen.activity > 0.0
+    assert "oxygen_fugacity_relative_to_IW_not_supplied" in (
+        ni_unknown_oxygen.reference or ""
+    )
+
+    co_outside_window = trace_components.resolve_trace_activity(
+        "CoO",
+        0.001,
+        _mole_fraction_composition(_MARE_BASALT_WT, "CoO", 0.001),
+        1700.0,
+        fO2_bar=1.0e-8,
+    )
+    assert co_outside_window.code == "depends_helper_activity"
+    assert co_outside_window.activity > 0.0
+    assert "FeO_outside_0_to_12_wt_pct" in (co_outside_window.reference or "")
+
+
+def test_trace_associate_validity_carries_redox_extrapolations() -> None:
+    estimate = trace_components.resolve_trace_activity(
+        "ZnO",
+        0.001,
+        {"SiO2": 0.5, "MgO": 0.2, "FeO": 0.1, "CaO": 0.2, "ZnO": 0.001},
+        1400.0,
+        fO2_bar=1.0e-8,
+    )
+    assert estimate.code == "depends_associate_activity"
+    assert estimate.activity > 0.0
+    assert "redox_row_temperature_extrapolation" in (estimate.reference or "")
+    assert "FeO(l)" in (estimate.reference or "")
+
+
+def test_sulfur_trace_validity_carries_capacity_calibration_notices() -> None:
+    estimate = trace_components.resolve_trace_activity(
+        "S", 0.001, {"SiO2": 1.0, "S": 0.001}, 1673.0, fO2_bar=1.0e-8
+    )
+    assert estimate.code == "depends_helper_activity"
+    assert estimate.activity > 0.0
+    assert "capacity-composition-outside-calibration" in (
+        estimate.reference or ""
+    )
+
+
+def test_p2o5_trace_validity_includes_ferric_chemistry_notice() -> None:
+    estimate = trace_components.resolve_trace_activity(
+        "P2O5",
+        0.002,
+        {
+            "CaO": 0.4,
+            "MgO": 0.08,
+            "FeO": 0.12,
+            "SiO2": 0.39,
+            "P2O5": 0.002,
+            "Fe2O3": 0.0001,
+        },
+        1873.0,
+    )
+    assert estimate.code == "depends_helper_activity"
+    assert estimate.activity > 0.0
+    assert "p2o5_feiii_phosphate_chemistry_not_modelled" in (
+        estimate.reference or ""
+    )
+
+
+def test_redox_composition_screen_flags_any_unsupported_cation() -> None:
+    inventory = {
+        "Si": 0.3,
+        "Mg": 0.1,
+        "Fe": 0.1,
+        "Ca": 0.15,
+        "Al": 0.1,
+        "Ti": 0.01,
+        "Na": 0.01,
+        "K": 0.001,
+        "Cr": 0.002,
+        "O": 1.05,
+        "P": 0.003,
+    }
+    result = evaluate_redox(
+        inventory,
+        1673.0,
+        "imposed",
+        lambda_imposed=math.log(1.0e-8),
+    )
+    assert any("unsupported major cations=P" in flag for flag in result.flags)
 
 
 @pytest.mark.parametrize("oxide", ["SrO", "Li2O", "ZnO", "Yb2O3"])
@@ -1000,7 +1210,7 @@ def test_gas_trace_activity_flag_uses_the_same_ladder(packaged_gas_pack) -> None
     )
     assert "Ni" in gas
     assert isinstance(gas.domain_flags["Ni"], TraceActivityFlag)
-    assert gas.domain_flags["Ni"].code == "source_grounded_helper_activity"
+    assert gas.domain_flags["Ni"].code == "depends_helper_activity"
     assert gas.domain_flags["Ni"].estimates[0].oxide == "NiO"
 
     p2o5_composition = {

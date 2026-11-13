@@ -63,12 +63,11 @@ from openimcc.kernel import (
 from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import build_calculation_receipt
 from openimcc.trace_envelope_calibration import (
+    CR_CALIBRATED_ENVELOPE_ID,
     ENVELOPE_T_RANGE_K,
+    MN_CALIBRATED_ENVELOPE_ID,
 )
 from openimcc.trace_components import (
-    AMPHOTERIC_ENVELOPE_K,
-    BASIC_MONOXIDE_ENVELOPE_K,
-    _TRACE_ENVELOPE_CAP_DEX,
     _TRACE_COMPONENT_MAX_MOLE_FRACTION,
     _TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION,
     _TRACE_STRICT_BOUND_CAP_DEX,
@@ -2847,14 +2846,11 @@ def evaluate(
             trace_activity_flags.append(TraceActivityFlag(estimate))
 
         # The input limits give Σ(1+ν)x ≤ 4·0.02 = 0.08 (ν≤3), which keeps
-        # the strict bound finite when x_free > 0. For the calibrated basic
-        # monoxide and amphoteric classes, use their measured class envelope
-        # k·Σ(1+ν)x. All other traces retain the mass-balance bound: the worst
-        # relative perturbation is r = Σ(1+ν)x/x_free, hence
-        # b = log10(1+r) dex. For mixed classes the dex contributions add,
-        # which is conservative by the triangle inequality. Empirical rows
-        # must satisfy the 0.02 dex envelope cap; any strict contribution must
-        # also satisfy its original 0.01 dex cap.
+        # the strict bound finite when x_free > 0. evaluate() has no fO2 input
+        # or runtime identity for the calibrated melt, so the measured class
+        # envelopes cannot be verified against this declared input. Use the
+        # mass-balance bound for every unmodelled trace: the worst relative
+        # perturbation is r = Σ(1+ν)x/x_free, hence b = log10(1+r) dex.
         weighted_trace = math.fsum(
             (1.0 + trace_component_rule(oxide).nu) * x_trace
             for oxide, x_trace in unmodelled_trace_fractions.items()
@@ -2865,7 +2861,6 @@ def evaluate(
             )
         basic_monoxide_weighted = 0.0
         amphoteric_weighted = 0.0
-        strict_weighted = 0.0
         for oxide, x_trace in unmodelled_trace_fractions.items():
             rule = trace_component_rule(oxide)
             contribution = (1.0 + rule.nu) * x_trace
@@ -2873,48 +2868,33 @@ def evaluate(
                 basic_monoxide_weighted += contribution
             elif rule.trace_class == "amphoteric":
                 amphoteric_weighted += contribution
-            else:
-                strict_weighted += contribution
+        strict_weighted = weighted_trace
         envelope_in_temperature_domain = (
             ENVELOPE_T_RANGE_K[0] <= float(T_K) <= ENVELOPE_T_RANGE_K[1]
         )
-        calibrated_bounds: list[tuple[str, float]] = []
-        envelope_flags: list[tuple[str, float, str, str]] = []
         envelope_fallback_flags: list[str] = []
-        if basic_monoxide_weighted > 0.0 and envelope_in_temperature_domain:
-            calibrated_bounds.append((
-                "basic_monoxide",
-                BASIC_MONOXIDE_ENVELOPE_K * basic_monoxide_weighted,
-            ))
-            envelope_flags.append((
-                "mn_calibrated_envelope",
-                BASIC_MONOXIDE_ENVELOPE_K,
-                "MnO",
-                "basic_monoxide",
-            ))
-        elif basic_monoxide_weighted > 0.0:
-            strict_weighted += basic_monoxide_weighted
+        if basic_monoxide_weighted > 0.0:
+            temperature_check = (
+                ""
+                if envelope_in_temperature_domain
+                else f"out of domain: temperature outside "
+                     f"{ENVELOPE_T_RANGE_K[0]:g}–{ENVELOPE_T_RANGE_K[1]:g} K; "
+            )
             envelope_fallback_flags.append(
-                "mn_calibrated_envelope_not_used: temperature outside "
-                f"{ENVELOPE_T_RANGE_K[0]:g}–{ENVELOPE_T_RANGE_K[1]:g} K; "
+                f"{temperature_check}DEPENDS: {MN_CALIBRATED_ENVELOPE_ID} "
+                "calibration melt and oxygen conditions are not evidenced; "
                 "using strict per-major bound"
             )
-        if amphoteric_weighted > 0.0 and envelope_in_temperature_domain:
-            calibrated_bounds.append((
-                "amphoteric",
-                AMPHOTERIC_ENVELOPE_K * amphoteric_weighted,
-            ))
-            envelope_flags.append((
-                "cr_calibrated_envelope",
-                AMPHOTERIC_ENVELOPE_K,
-                "Cr2O3",
-                "amphoteric",
-            ))
-        elif amphoteric_weighted > 0.0:
-            strict_weighted += amphoteric_weighted
+        if amphoteric_weighted > 0.0:
+            temperature_check = (
+                ""
+                if envelope_in_temperature_domain
+                else f"out of domain: temperature outside "
+                     f"{ENVELOPE_T_RANGE_K[0]:g}–{ENVELOPE_T_RANGE_K[1]:g} K; "
+            )
             envelope_fallback_flags.append(
-                "cr_calibrated_envelope_not_used: temperature outside "
-                f"{ENVELOPE_T_RANGE_K[0]:g}–{ENVELOPE_T_RANGE_K[1]:g} K; "
+                f"{temperature_check}DEPENDS: {CR_CALIBRATED_ENVELOPE_ID} "
+                "calibration melt and oxygen conditions are not evidenced; "
                 "using strict per-major bound"
             )
         major_bias_bounds: dict[str, float] = {}
@@ -2932,43 +2912,17 @@ def evaluate(
                         else 0.0
                     )
                 )
-                bound = strict_bound + math.fsum(
-                    contribution for _trace_class, contribution in calibrated_bounds
-                )
+                bound = strict_bound
                 major_bias_bounds[major] = bound
-                has_empirical_envelope = bool(calibrated_bounds)
-                scoreable = (
-                    strict_bound <= _TRACE_STRICT_BOUND_CAP_DEX
-                    and all(
-                        contribution <= _TRACE_ENVELOPE_CAP_DEX
-                        for _trace_class, contribution in calibrated_bounds
-                    )
-                    and bound <= (
-                        _TRACE_ENVELOPE_CAP_DEX
-                        if has_empirical_envelope
-                        else _TRACE_STRICT_BOUND_CAP_DEX
-                    )
-                )
-                limiting_bound = (
-                    strict_bound
-                    if strict_bound > _TRACE_STRICT_BOUND_CAP_DEX
-                    else bound
-                )
-                limiting_cap = (
-                    _TRACE_STRICT_BOUND_CAP_DEX
-                    if strict_bound > _TRACE_STRICT_BOUND_CAP_DEX
-                    or not has_empirical_envelope
-                    else _TRACE_ENVELOPE_CAP_DEX
-                )
+                scoreable = bound <= _TRACE_STRICT_BOUND_CAP_DEX
                 major_flag = TraceMajorBiasFlag(
                     major,
                     x_free,
                     bound,
                     scoreable,
-                    limiting_bound_dex=limiting_bound,
-                    limiting_cap_dex=limiting_cap,
+                    limiting_bound_dex=bound,
+                    limiting_cap_dex=_TRACE_STRICT_BOUND_CAP_DEX,
                     prior_flags=tuple(envelope_fallback_flags),
-                    envelope_flags=tuple(envelope_flags),
                 )
                 trace_major_flags.append(major_flag)
                 flags.append(str(major_flag))
