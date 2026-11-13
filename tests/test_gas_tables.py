@@ -55,6 +55,17 @@ LH84_DATA = ROOT / "data-src" / "lh84"
 LH87_DATA = ROOT / "data-src" / "lh87"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
 _BASE_INTERVAL_1_SHA256 = "aa46b44c69f6f226f4a18841ae0faf3951c2bf4f0073ed81eab61cd27104884f"
+_PROMOTED_CONDENSATE_BASELINE_ROW_KEYS = {
+    ("Na2O(l)", "l", "1200", "1500", "Na-013", None),
+    ("Na2O(l)", "l", "1500", "3000", "Na-013", None),
+    ("SiO2(l)", "l", "1200", "1500", "O-038-SC-CP", None),
+    ("SiO2(l)", "l", "1500", "1800", "O-038-SC-CP", None),
+    ("SiO2(l)", "l", "1800", "3000", "O-038", None),
+}
+_PROMOTED_CONDENSATE_ROW_COUNT = 12
+_PROMOTED_CONDENSATE_ROWS_SHA256 = (
+    "073cde20a3b85c5257e2b6cf4df33af130479739883d41a25107c8aa7752de3a"
+)
 _ION_GAS_PROVENANCE_SPECIES = tuple(
     source[0]
     for source in (
@@ -4196,7 +4207,7 @@ def _meets_same_ref_neighbour(row: dict[str, str], rows: list[dict[str, str]]) -
     return False
 
 
-def test_existing_table_rows_are_bit_identical_to_base() -> None:
+def _load_current_gas_tables() -> dict[str, list[dict[str, str]]]:
     current_by_table = {}
     for filename in ("gas-shomate.csv", "condensate.csv"):
         current_by_table[filename] = list(
@@ -4204,6 +4215,11 @@ def test_existing_table_rows_are_bit_identical_to_base() -> None:
                 io.StringIO((GAS_DATA / filename).read_text(encoding="utf-8"))
             )
         )
+    return current_by_table
+
+
+def test_existing_table_rows_are_bit_identical_to_base() -> None:
+    current_by_table = _load_current_gas_tables()
     baseline_tables = {
         filename: list(
             csv.DictReader(
@@ -4220,6 +4236,24 @@ def test_existing_table_rows_are_bit_identical_to_base() -> None:
         )
         for filename in current_by_table
     }
+    promoted_condensate_rows = [
+        row
+        for row in current_by_table["condensate.csv"]
+        if row["species_name"] in {"SiO2(l)", "Na2O(l)"}
+    ]
+    promoted_rows_csv = io.StringIO(newline="")
+    promoted_rows_writer = csv.DictWriter(
+        promoted_rows_csv,
+        fieldnames=current_by_table["condensate.csv"][0].keys(),
+        lineterminator="\n",
+    )
+    promoted_rows_writer.writeheader()
+    promoted_rows_writer.writerows(promoted_condensate_rows)
+    assert len(promoted_condensate_rows) == _PROMOTED_CONDENSATE_ROW_COUNT
+    assert hashlib.sha256(promoted_rows_csv.getvalue().encode("utf-8")).hexdigest() == (
+        _PROMOTED_CONDENSATE_ROWS_SHA256
+    ), "reviewed condensate promotion rows changed"
+
     changed_minima = {
         "H2O(g)": 1000.0,
         "Zn(g)": 1000.0,
@@ -4232,9 +4266,12 @@ def test_existing_table_rows_are_bit_identical_to_base() -> None:
     for filename, old_rows in baseline_tables.items():
         current_rows = current_by_table[filename]
         for old in old_rows:
-            if filename == "condensate.csv" and old["species_name"] in {
-                "SiO2(l)", "Na2O(l)"
-            }:
+            if filename == "condensate.csv" and tuple(
+                old.get(column)
+                for column in (
+                    "species_name", "state", "T_min", "T_max", "Ref", "T_interval"
+                )
+            ) in _PROMOTED_CONDENSATE_BASELINE_ROW_KEYS:
                 continue
             matching = [
                 row
@@ -4316,6 +4353,28 @@ def test_existing_table_rows_are_bit_identical_to_base() -> None:
                     )
                 assert struct.pack(">d", old_g) == struct.pack(">d", new_g)
                 assert struct.pack(">d", old_cp) == struct.pack(">d", new_cp)
+
+
+def test_promoted_condensate_coefficient_mutation_fails_bit_identity_gate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current_by_table = _load_current_gas_tables()
+    promoted_row = next(
+        row
+        for row in current_by_table["condensate.csv"]
+        if row["species_name"] == "SiO2(l)"
+        and row["T_min"] == "1996"
+        and row["Ref"] == "O-038"
+    )
+    promoted_row["dG_A"] = str(float(promoted_row["dG_A"]) + 1.0)
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "_load_current_gas_tables",
+        lambda: current_by_table,
+    )
+
+    with pytest.raises(AssertionError, match="reviewed condensate promotion rows changed"):
+        test_existing_table_rows_are_bit_identical_to_base()
 
 
 def _condensate_entropy(row: dict, temperature: float) -> float:
