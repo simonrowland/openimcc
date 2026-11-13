@@ -890,6 +890,13 @@
 
 ### Changes that can break callers
 
+- Trace-aware `evaluate_gas(..., composition_wt_pct=...)` now validates a
+  composition even when it has no positive major oxide. Trace-only inputs that
+  exceed the melt trace limits, such as 100 wt% Cr₂O₃, raise
+  `ImccTraceLimitExceededError` instead of returning gas pressures.
+- `evaluate_redox(..., melt_pack=...)` now raises
+  `ImccUnprovenDatapackError` when a loaded wrapper contains an unbound raw
+  melt datapack.
 - Ce2O3 review-γ activity now converts the solid-A standard to the Ce2O3(l)
   parent with the temperature-dependent Gibbs difference. At 1873 K the
   activity changes by less than 1e-9 relative; off that temperature the result

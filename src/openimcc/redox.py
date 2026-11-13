@@ -26,6 +26,7 @@ from openimcc.model import (
     ImccLoadedDatapack,
     ImccMalformedDatapackError,
     ImccTOutsideDatapackDomainError,
+    ImccUnprovenDatapackError,
     DEFAULT_MELT_PACK_NAME,
     PackRowParticipation,
     _pack_row_participation,
@@ -2196,6 +2197,12 @@ def _evaluate_redox_with_packs(
             "excess-Gibbs terms"
         )
     base_datapack = loaded.kernel_datapack
+    if base_datapack.binding_digest is None:
+        raise ImccUnprovenDatapackError(
+            "raw ImccDatapack has no proven identity; load a frozen JSON pack "
+            "with load_datapack() or apply explicit non-published provenance "
+            "with label_research_datapack()"
+        )
     if loaded_redox_pack is not None:
         redox_pack = loaded_redox_pack
     elif redox_pack_path is None:

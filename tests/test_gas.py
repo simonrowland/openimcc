@@ -24,7 +24,12 @@ import pandas as pd
 import pytest
 import yaml
 
-from openimcc import EvidenceReference, LiquidReferenceAuthority, evaluate
+from openimcc import (
+    EvidenceReference,
+    ImccTraceLimitExceededError,
+    LiquidReferenceAuthority,
+    evaluate,
+)
 from openimcc import gas as gas_module
 from tools import build_gas_tables
 from openimcc.gas import (
@@ -1195,6 +1200,25 @@ def test_default_janaf_basalt_at_1800_predicts_and_flags_source_rows(
     assert result.domain_flags["SiO"] is None
     assert "2130 K" in result.domain_flags["Ti"]
     assert result.provenance_class["SiO"] == "janaf_fitted"
+
+
+def test_trace_only_gas_composition_obeys_melt_trace_limit(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    composition = {"Cr2O3": 100.0}
+
+    with pytest.raises(ImccTraceLimitExceededError):
+        evaluate(composition, 1800.0, basis_type="wt")
+
+    with pytest.raises(ImccTraceLimitExceededError):
+        evaluate_gas(
+            {"Na2O": 0.1},
+            1800.0,
+            1.0e-8,
+            gas_pack,
+            gas_species=("Na", "Cr"),
+            composition_wt_pct=composition,
+        )
 
 
 def test_o2_pin_is_never_domain_flagged_at_3200_k(

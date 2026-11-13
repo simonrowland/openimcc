@@ -2271,6 +2271,37 @@ def test_unreadable_default_pack_is_a_typed_refusal_without_a_full_path(
     assert "Permission denied" in str(refusal.value)
 
 
+def test_redox_rejects_unproven_inner_melt_pack() -> None:
+    from dataclasses import replace
+
+    from openimcc.kernel import ImccDatapack
+    from openimcc.model import ImccUnprovenDatapackError
+
+    loaded = load_datapack()
+    source = loaded.kernel_datapack
+    raw = ImccDatapack(
+        reactions=source.reactions,
+        nu=source.nu,
+        A=source.A,
+        B=source.B,
+        domains=source.domains,
+        version=source.version,
+        parent_oxides=source.parent_oxides,
+        paper_domains=source.paper_domains,
+    )
+    unproven_wrapper = replace(loaded, kernel_datapack=raw)
+
+    with pytest.raises(ImccUnprovenDatapackError) as refused:
+        evaluate_redox(
+            {"Fe": 1.0, "O": 1.0},
+            1800.0,
+            "imposed",
+            -10.0,
+            melt_pack=unproven_wrapper,
+        )
+    assert refused.value.code == "imcc_unproven_datapack"
+
+
 def test_valence_fields_and_synthetic_nested_pack_selection(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

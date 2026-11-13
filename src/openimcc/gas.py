@@ -3214,23 +3214,19 @@ def evaluate_gas(
             melt_composition
         )
         if trace_fractions:
-            major_total = math.fsum(
-                composition_moles.get(name, 0.0) for name in IMCC_PARENT_OXIDES
+            melt_result = evaluate_melt(
+                melt_composition,
+                T,
+                profile=profile,
+                basis_type="wt",
+                allow_extrapolation=True,
+                allow_out_of_envelope=True,
             )
-            if major_total > 0.0:
-                melt_result = evaluate_melt(
-                    melt_composition,
-                    T,
-                    profile=profile,
-                    basis_type="wt",
-                    allow_extrapolation=True,
-                    allow_out_of_envelope=True,
-                )
-                major_bias_flags = {
-                    item.major_oxide: item
-                    for item in melt_result.labels.notices
-                    if isinstance(item, TraceMajorBiasFlag)
-                }
+            major_bias_flags = {
+                item.major_oxide: item
+                for item in melt_result.labels.notices
+                if isinstance(item, TraceMajorBiasFlag)
+            }
             for oxide, x_trace in trace_fractions.items():
                 estimate = resolve_trace_activity(
                     oxide,
