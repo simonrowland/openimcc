@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 import math
 import re
 
@@ -25,6 +26,15 @@ def _oxide_cation_units(component: str) -> int:
     """Return the cations in a single-cation oxide formula unit."""
     match = _SINGLE_CATION_OXIDE.fullmatch(component)
     return int(match.group(2) or 1) if match is not None else 1
+
+
+@lru_cache(maxsize=1)
+def _packaged_ce2o3_liquid_rows():
+    """Return the shipped Ce2O3(l) Gibbs rows used for standard conversion."""
+    from openimcc.gas import _PACKAGED_CONDENSATE_NAME, _read_packaged_table
+
+    table, _path = _read_packaged_table(_PACKAGED_CONDENSATE_NAME)
+    return table.loc[["Ce2O3(l)"]]
 
 
 @dataclass(frozen=True)
@@ -169,22 +179,65 @@ def _evaluate_review_gamma_activity(
     conversion = row.get("fusion_conversion")
     if conversion is not None:
         transitions = conversion["transitions"]
-        delta_g = float(conversion.get("delta_G_heat_capacity_correction_J_mol", 0.0))
+        source_solid = conversion["source_solid_gibbs"]
+        reference_temperature = float(source_solid["reference_temperature_K"])
+        enthalpy_increment = 0.0
+        entropy_increment = 0.0
+        for coefficient, power in zip(
+            source_solid["heat_capacity_coefficients"],
+            source_solid["heat_capacity_powers"],
+            strict=True,
+        ):
+            coefficient = float(coefficient)
+            power = int(power)
+            if power == -1:
+                enthalpy_increment += coefficient * math.log(
+                    temperature / reference_temperature
+                )
+            else:
+                enthalpy_increment += coefficient * (
+                    temperature ** (power + 1)
+                    - reference_temperature ** (power + 1)
+                ) / (power + 1)
+            if power == 0:
+                entropy_increment += coefficient * math.log(
+                    temperature / reference_temperature
+                )
+            else:
+                entropy_increment += coefficient * (
+                    temperature**power - reference_temperature**power
+                ) / power
+        g_stable_solid = (
+            float(source_solid["delta_Hf_298_J_mol"])
+            + enthalpy_increment
+            - temperature
+            * (float(source_solid["S_298_J_mol_K"]) + entropy_increment)
+        )
+
+        from openimcc.gas import _lamor_gibbs, _nearest_interval_row
+
+        liquid_row = _nearest_interval_row(
+            _packaged_ce2o3_liquid_rows(), "Ce2O3(l)", temperature, True
+        )
+        g_parent_liquid = _lamor_gibbs(temperature, liquid_row)
+        delta_g = g_parent_liquid - g_stable_solid
         transition_variance = 0.0
         for transition in transitions:
             transition_temperature = float(transition["T_K"])
-            delta_h = float(transition["delta_H_J_mol"])
-            delta_g += delta_h * (1.0 - temperature / transition_temperature)
             delta_h_uncertainty = float(transition["delta_H_uncertainty_J_mol"])
             transition_variance += (
                 delta_h_uncertainty * (1.0 - temperature / transition_temperature)
             ) ** 2
-        # At phase equilibrium, μ°_solid + RT ln(a_s) = μ°_parent + RT ln(a_l),
-        # so ln(a_l) = ln(a_s) - [G°_parent(T)-G°_stable-solid(T)]/(RT).
-        # The transition sum uses ΔCp≈0; the source's integrated phase heat
-        # capacities correct its central ΔG to the shipped liquid-parent Gibbs
-        # function. The exponent is dimensionless and positive ΔG makes the
-        # parent-liquid activity smaller than the stable-solid activity.
+        # Premise: this source activity a_A is on the pure stable A-phase
+        # standard, while the gas parent activity a_l is on pure Ce2O3(l).
+        # At equilibrium μ°_A + RT ln(a_A) = μ°_l + RT ln(a_l), hence
+        # a_l = a_A exp(-(G°_l(T)-G°_A(T))/(RT)). G_A uses the shipped Konings
+        # et al. (2014) A-phase Cp function; G_l uses the shipped Ce2O3(l) row.
+        # ΔG/(R T) has units (J/mol)/(J mol^-1 K^-1 × K) = 1.
+        # Sanity: the residual beyond the transition sum is 1533, 843 and
+        # 199 J/mol at 1700, 1873 and 2100 K; total ΔG is 42684, 32749 and
+        # 19974 J/mol at those temperatures. The band keeps the transition
+        # enthalpy uncertainties; their derivative is σ_H(1-T/T_tr).
         factor = math.exp(-delta_g / (R_J_MOL_K * temperature))
         gamma *= factor
         closure_rms = float(row["gamma_law"].get("ln_gamma_rms_closure", 0.0))

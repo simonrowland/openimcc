@@ -1079,7 +1079,7 @@ def _ce_source_moles(weights: dict[str, float]) -> dict[str, float]:
     return {name: amount / masses[name] for name, amount in weights.items()}
 
 
-def _ce_parent_standard_factor(temperature: float = 1873.0) -> float:
+def _ce_parent_standard_delta_g(temperature: float) -> float:
     source_path = Path(__file__).resolve().parents[2] / "data-src/konings/ce.json"
     source = json.loads(source_path.read_text())["condensates"]["Ce2O3(l)"]
     phase_a = source["phases"][0]
@@ -1113,8 +1113,13 @@ def _ce_parent_standard_factor(temperature: float = 1873.0) -> float:
     gas_pack = load_gas_datapack()
     liquid_row = _nearest_interval_row(gas_pack.oxide_df, "Ce2O3(l)", temperature, True)
     g_parent_liquid = _lamor_gibbs(temperature, liquid_row)
-    delta_g = g_parent_liquid - g_stable_solid
-    assert delta_g == pytest.approx(32_749.41, abs=0.02)
+    return g_parent_liquid - g_stable_solid
+
+
+def _ce_parent_standard_factor(temperature: float = 1873.0) -> float:
+    delta_g = _ce_parent_standard_delta_g(temperature)
+    if temperature == 1873.0:
+        assert delta_g == pytest.approx(32_749.41, abs=0.02)
     return math.exp(-delta_g / (R_J_MOL_K * temperature))
 
 
@@ -1233,6 +1238,46 @@ def test_ce_fusion_direction_band_and_oxygen_screen() -> None:
     )
     assert chen.row == "Ce2O3-Chen-2020-CMAS-1873K"
     assert any("Al2O3 is outside" in axis for axis in chen.notice.violated_axes)
+
+
+def test_ce_standard_conversion_tracks_temperature_and_keeps_band_width() -> None:
+    composition = _ce_source_moles({
+        "CaO": 22.5, "SiO2": 57.5, "Al2O3": 5.0, "MgO": 5.0,
+        "Ce2O3": 10.0,
+    })
+    solid_gamma = math.exp(3.46 * ((22.5 + 0.72 * 5.0) / 57.5) - 14.93)
+    expected_delta_g = {
+        1700.0: 42_684.311,
+        1800.0: 36_922.417,
+        1873.0: 32_749.411,
+        2000.0: 25_562.620,
+        2100.0: 19_974.126,
+    }
+    for temperature, expected in expected_delta_g.items():
+        result = evaluate_review_gamma_activity(
+            "Ce", composition, temperature, parent_oxide="Ce2O3"
+        )
+        delta_g = -R_J_MOL_K * temperature * math.log(result.gamma / solid_gamma)
+        assert delta_g == pytest.approx(_ce_parent_standard_delta_g(temperature), abs=1.0)
+        assert delta_g == pytest.approx(expected, abs=1.0)
+
+        transition_variance = math.fsum((
+            (8_000.0 * (1.0 - temperature / 2392.0)) ** 2,
+            (5_000.0 * (1.0 - temperature / 2406.0)) ** 2,
+            (10_000.0 * (1.0 - temperature / 2512.0)) ** 2,
+        ))
+        ln_band = math.hypot(
+            0.2919, math.sqrt(transition_variance) / (R_J_MOL_K * temperature)
+        )
+        assert result.gamma_range == pytest.approx((
+            result.gamma * math.exp(-ln_band),
+            result.gamma * math.exp(ln_band),
+        ))
+
+        if temperature == 1873.0:
+            assert result.activity == pytest.approx(
+                float.fromhex("0x1.023f9a65705dep-28"), rel=1e-9
+            )
 
 
 def test_la_binary_dilute_limit_recomputes_table_2_and_domain_flags() -> None:
@@ -1379,6 +1424,8 @@ def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:
 def test_existing_review_gamma_rows_are_bit_identical() -> None:
     elements = ("Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ni", "Co", "Ce")
     payload = []
+    non_ce_payload = []
+    ce_payload = []
     for element in elements:
         for row in load_activity_fragment(element)["rows"]:
             screen = row["composition_screen"]
@@ -1403,7 +1450,7 @@ def test_existing_review_gamma_rows_are_bit_identical() -> None:
                 (low + high) / 2.0,
                 parent_oxide=parent,
             )
-            payload.append([
+            row_payload = [
                 element,
                 row["row"],
                 float(result.activity).hex(),
@@ -1418,12 +1465,26 @@ def test_existing_review_gamma_rows_are_bit_identical() -> None:
                 list(result.notice.limitations),
                 str(result.notice),
                 result.reference,
-            ])
+            ]
+            payload.append(row_payload)
+            (ce_payload if element == "Ce" else non_ce_payload).append(row_payload)
 
     encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
     assert len(payload) == 16
     assert hashlib.sha256(encoded).hexdigest() == (
-        "3da80e779683723cd5f9763aa5026bcc655876c6385a04c494f555611ce4014c"
+        "f43bfdc0cb41b9fefe8177d0d0770970b890002452e7f614e5b903a2c1b703ac"
+    )
+
+    def payload_hash(rows: list[list[object]]) -> str:
+        return hashlib.sha256(
+            json.dumps(rows, separators=(",", ":"), ensure_ascii=True).encode()
+        ).hexdigest()
+
+    assert payload_hash(non_ce_payload) == (
+        "e7dbcbdf16e5203a735152a551eda720f8b1fbd53c4ac823db9debdefb4c6de3"
+    )
+    assert payload_hash(ce_payload) == (
+        "6f3faac93f5ce8a4816849c02d60bb9bdb5cefe443e433f51488dc4950243fb8"
     )
 
 

@@ -890,6 +890,12 @@
 
 ### Changes that can break callers
 
+- Ce2O3 review-γ activity now converts the solid-A standard to the Ce2O3(l)
+  parent with the temperature-dependent Gibbs difference. At 1873 K the
+  activity changes by less than 1e-9 relative; off that temperature the result
+  changes by up to about ±5% versus the former frozen-residual calculation
+  (−4.8% at 1700 K, +3.8% at 2100 K). Ce and CeO partial pressures shift by
+  about half as much.
 - Default-path composition-derived Ga/In gas pressures now apply the Bischof
   KEMS-to-NASA parent-standard ratio to the review-γ activity. The default
   condensate table remains `condensate-default-v1.csv`, and
