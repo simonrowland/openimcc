@@ -890,6 +890,11 @@
 
 ### Changes that can break callers
 
+- Trace activity estimates now retain review-gamma violated axes and
+  limitations, which appear in melt and gas trace-activity flag text.
+  `ImccGasSaturationResult` now exposes the evaluated gas channels'
+  `provenance_class` map. Callers matching exact flag strings or saturation
+  result fields should account for these additions.
 - Wood & Wade (2013) W, Pb, and Cu review-γ activities now use the source's
   single-cation oxide mole fractions. In Al- or alkali-bearing melts, those
   source activities change from the former formula-unit values by the

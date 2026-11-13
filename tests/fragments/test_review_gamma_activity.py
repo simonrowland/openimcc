@@ -1,6 +1,7 @@
 import hashlib
 import json
 import math
+import pickle
 from dataclasses import replace
 from pathlib import Path
 
@@ -21,8 +22,10 @@ from openimcc.ni import evaluate_ni_activity
 from openimcc.review_gamma_activity import evaluate_review_gamma_activity
 import openimcc.review_gamma_activity as review_gamma_activity
 from openimcc.trace_components import (
+    ParentLiquidStandardOffset,
     TraceActivityEstimate,
     TraceActivityFlag,
+    TraceMajorBiasFlag,
     _review_gamma_parent_oxides,
     _resolve_trace_activity,
     resolve_trace_activity,
@@ -1737,6 +1740,9 @@ def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:
     assert math.isfinite(result["Ce"]) and result["Ce"] > 0.0
     assert math.isfinite(result["CeO"]) and result["CeO"] > 0.0
 
+    gas_flag = result.domain_flags["Ce"]
+    assert isinstance(gas_flag, TraceActivityFlag)
+
     dilute_composition = _ce_source_moles({
         **{name: composition[name] for name in ("SiO2", "Al2O3", "CaO", "MgO", "FeO")},
         "Ce2O3": composition["Ce2O3"],
@@ -1749,6 +1755,48 @@ def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:
         "Ce2O3 differs from the 10 wt%" in axis
         for axis in dilute_activity.notice.violated_axes
     )
+    estimate = gas_flag.estimates[0]
+    assert estimate.violated_axes == dilute_activity.notice.violated_axes
+    assert estimate.limitations == dilute_activity.notice.limitations
+    assert any(axis in str(gas_flag) for axis in estimate.violated_axes)
+    assert all(item in str(gas_flag) for item in estimate.limitations)
+
+    melt = evaluate(composition, 1873.0, basis_type="wt")
+    melt_flag = next(
+        notice for notice in melt.labels.notices
+        if isinstance(notice, TraceActivityFlag) and notice.oxide == "Ce2O3"
+    )
+    assert any(axis in str(melt_flag) for axis in estimate.violated_axes)
+    assert any(item in str(melt_flag) for item in estimate.limitations)
+
+
+def test_trace_activity_flag_pickle_preserves_constructor_fields() -> None:
+    estimate = TraceActivityEstimate(
+        "Ce2O3", 0.25, 0.01, "review_gamma_provisional",
+        gamma=2.5,
+        reference="source",
+        activity_range=(0.2, 0.3),
+        x_source=0.005,
+        parent_liquid_standard_offset=ParentLiquidStandardOffset(
+            "parent_liquid_standard_offset", 1.25, "convert to selected standard"
+        ),
+    )
+    major_flag = TraceMajorBiasFlag(
+        "MgO", 0.2, 0.004, False,
+        prior_flags=("out of domain: gas row interval",),
+    )
+    flag = TraceActivityFlag(
+        estimate,
+        context="gas",
+        prior_flags=("gas channel used extrapolated row",),
+        major_flags=(major_flag,),
+    )
+
+    restored = pickle.loads(pickle.dumps(flag))
+
+    assert str(restored) == str(flag)
+    assert vars(restored) == vars(flag)
+    assert vars(restored.major_flags[0]) == vars(major_flag)
 
 
 def test_review_gamma_payloads_pin_changed_and_unchanged_rows() -> None:

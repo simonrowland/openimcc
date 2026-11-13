@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import partial
 import math
 import re
 from types import MappingProxyType
@@ -390,6 +391,8 @@ class TraceActivityEstimate:
     activity_range: tuple[float, float] | None = None
     x_source: float | None = None
     parent_liquid_standard_offset: ParentLiquidStandardOffset | None = None
+    violated_axes: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
 
 
 class TraceActivityFlag(str):
@@ -406,6 +409,8 @@ class TraceActivityFlag(str):
     parent_liquid_standard_offset: ParentLiquidStandardOffset | None
     estimates: tuple[TraceActivityEstimate, ...]
     major_flags: tuple["TraceMajorBiasFlag", ...]
+    context: str
+    prior_flags: tuple[str, ...]
 
     def __new__(
         cls,
@@ -437,9 +442,20 @@ class TraceActivityFlag(str):
                     f" {offset.code}={offset.factor:.12g}; "
                     f"{offset.recommendation}"
                 )
-            if item.reference:
-                message += f"; {item.reference}"
+            if item.violated_axes:
+                message += "; violated axes: " + "; ".join(item.violated_axes)
+            reference = item.reference
+            if item.limitations:
+                limitation_text = " ".join(item.limitations)
+                embedded_limitations = f"; limitation: {limitation_text}"
+                if reference and embedded_limitations in reference:
+                    reference = reference.replace(embedded_limitations, "", 1)
+                message += f"; limitations: {limitation_text}"
+            if reference:
+                message += f"; {reference}"
             estimate_text.append(message)
+        prior_flags = tuple(prior_flags)
+        major_flags = tuple(major_flags)
         major_text = tuple(str(flag) for flag in major_flags)
         message = "; ".join((*prior_flags, *major_text, *estimate_text))
         flag = super().__new__(cls, message)
@@ -454,13 +470,22 @@ class TraceActivityFlag(str):
         flag.x_source = first.x_source
         flag.parent_liquid_standard_offset = first.parent_liquid_standard_offset
         flag.estimates = tuple(estimates)
-        flag.major_flags = tuple(major_flags)
+        flag.major_flags = major_flags
+        flag.context = context
+        flag.prior_flags = prior_flags
         return flag
 
     def __reduce__(self):
-        return type(self), (self.estimates,), {
-            "major_flags": self.major_flags,
-        }
+        return (
+            partial(
+                type(self),
+                self.estimates,
+                context=self.context,
+                prior_flags=self.prior_flags,
+                major_flags=self.major_flags,
+            ),
+            (),
+        )
 
 
 class TraceMajorBiasFlag(str):
@@ -861,6 +886,8 @@ def _resolve_trace_activity(
                 result.reference,
                 result.activity_range,
                 result.source_mole_fraction,
+                violated_axes=result.notice.violated_axes,
+                limitations=result.notice.limitations,
             ),
             None,
             None,

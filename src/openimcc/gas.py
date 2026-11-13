@@ -616,6 +616,7 @@ class ImccGasSaturationResult:
     )
     liquid_reference_status: Mapping[str, CertificationStatus] = field(default_factory=dict)
     _pack_standard_notices: InitVar[tuple[PackStandardNotice, ...]] = ()
+    provenance_class: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(
         self,
@@ -623,7 +624,10 @@ class ImccGasSaturationResult:
         _pack_standard_notices: tuple[PackStandardNotice, ...],
     ) -> None:
         object.__setattr__(self, "_pack_standard_notices", _pack_standard_notices)
-        for name in ("species_pressures_bar", "channel_pressures_bar", "mole_fractions", "diagnostics", "domain_flags"):
+        for name in (
+            "species_pressures_bar", "channel_pressures_bar", "mole_fractions",
+            "diagnostics", "domain_flags", "provenance_class",
+        ):
             object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
         object.__setattr__(
             self, "liquid_reference_status",
@@ -5237,6 +5241,7 @@ def evaluate_gas_saturation(
             )
         ),
         liquid_reference_status=getattr(result, "liquid_reference_status", {}),
+        provenance_class=result.provenance_class,
     )
 
 
@@ -5317,4 +5322,5 @@ def gas_boiling_temperature(
             },
         ),
         liquid_reference_status=getattr(state, "liquid_reference_status", {}),
+        provenance_class=state.provenance_class,
     )

@@ -6817,6 +6817,8 @@ def test_fixed_composition_saturation_pure_cao_stoichiometry_and_neutral_match(
     direct = evaluate_gas(activities, 1800.0, sat.pO2_bar, gas_pack,
                           parent_oxides=("CaO",), allow_extrapolation=True)
     assert dict(direct) == dict(sat.species_pressures_bar)
+    assert dict(sat.provenance_class) == dict(direct.provenance_class)
+    assert set(sat.provenance_class) == set(sat.channel_pressures_bar)
     assert math.isclose(sum(sat.mole_fractions.values()), 1.0)
     assert sat.diagnostics["root_uniqueness"] == "proved"
 
@@ -6892,6 +6894,9 @@ def test_saturation_sampled_root_diagnostic_does_not_claim_uniqueness(
 ) -> None:
     class Result(dict):
         domain_flags: dict[str, str | None] = {}
+        provenance_class = {
+            name: "synthetic" for name in ("O2", "SO2", "Ca")
+        }
 
     monkeypatch.setattr(
         gas_module, "_default_reactions",
@@ -6916,6 +6921,7 @@ def test_saturation_sampled_root_diagnostic_does_not_claim_uniqueness(
     )
     assert result.diagnostics["root_uniqueness"] == "sampled"
     assert result.diagnostics["log10_pO2_bracket"] == pytest.approx((0.3, 0.325))
+    assert dict(result.provenance_class) == Result.provenance_class
 
 
 @pytest.mark.parametrize("bracket", ((math.nan, 2.0), (1.0, math.inf), (-math.inf, 2.0)))
@@ -6940,6 +6946,7 @@ def test_boiling_temperature_forwards_include_ions(monkeypatch: pytest.MonkeyPat
             P_sat_bar=temperature, diagnostics={}, pO2_bar=1.0,
             species_pressures_bar={}, channel_pressures_bar={},
             mole_fractions={}, mode="synthetic", domain_flags={},
+            provenance_class={"Ca": "test-source"},
         )
 
     monkeypatch.setattr(gas_module, "evaluate_gas_saturation", saturation)
@@ -6948,6 +6955,7 @@ def test_boiling_temperature_forwards_include_ions(monkeypatch: pytest.MonkeyPat
     )
     assert temperature == pytest.approx(1.5)
     assert state.P_sat_bar == pytest.approx(1.5)
+    assert dict(state.provenance_class) == {"Ca": "test-source"}
     assert seen and all(seen)
 
 
