@@ -6,7 +6,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
 import math
-import re
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
 from openimcc.activity_fragments import load_activity_fragment
@@ -14,18 +13,18 @@ from openimcc.trace_envelope_calibration import _iw_log10_fO2_bar
 from openimcc.trace_components import (
     _TRACE_COMPONENT_RULES,
     _review_gamma_parent_oxides,
+    _single_cation_oxide_counts,
 )
 
 _LOG10_BAR_PER_ATM = math.log10(1.01325)
 _TRACE_PARENTS = _review_gamma_parent_oxides(_TRACE_COMPONENT_RULES)
 _NON_OXIDE_COMPONENTS = frozenset({"S", "Cl", "F", "Br", "I", "C", "H", "N"})
-_SINGLE_CATION_OXIDE = re.compile(r"([A-Z][a-z]?)(\d*)O\d*")
 
 
 def _oxide_cation_units(component: str) -> int:
     """Return the cations in a single-cation oxide formula unit."""
-    match = _SINGLE_CATION_OXIDE.fullmatch(component)
-    return int(match.group(2) or 1) if match is not None else 1
+    oxide_counts = _single_cation_oxide_counts(component)
+    return oxide_counts[0] if oxide_counts is not None else 1
 
 
 @lru_cache(maxsize=1)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
 import math
+import re
 
 import numpy as np
 import pytest
@@ -85,6 +86,37 @@ def _weight_composition(trace_fractions: dict[str, float]) -> dict[str, float]:
 
 def _major_activities(result) -> dict[str, float]:
     return dict(zip(result.parent_oxides, result.parent_activity, strict=True))
+
+
+def test_shared_oxide_counts_match_previous_logic_for_default_components() -> None:
+    components = set(load_datapack().parent_oxides)
+    redox_pack = load_redox_pack()
+    components.update(str(parent["parent_oxide"]) for parent in redox_pack.parents)
+    components.update(str(name) for name in redox_pack.content["thermo_species"])
+    components.update(trace_components._TRACE_COMPONENT_RULES)
+
+    for component in sorted(components):
+        model_match = re.fullmatch(r"([A-Z][a-z]?)(\d*)O(\d*)", component)
+        old_model_counts = (
+            None
+            if model_match is None
+            else (
+                int(model_match.group(2) or 1),
+                int(model_match.group(3) or 1),
+            )
+        )
+        assert (
+            trace_components._single_cation_oxide_counts(component)
+            == old_model_counts
+        )
+
+        gamma_match = re.fullmatch(r"([A-Z][a-z]?)(\d*)O\d*", component)
+        old_gamma_cations = (
+            int(gamma_match.group(2) or 1) if gamma_match is not None else 1
+        )
+        new_counts = trace_components._single_cation_oxide_counts(component)
+        new_gamma_cations = new_counts[0] if new_counts is not None else 1
+        assert new_gamma_cations == old_gamma_cations
 
 
 def _mole_fraction_composition(

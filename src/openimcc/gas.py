@@ -38,6 +38,7 @@ from openimcc._constants import (
     ATOMIC_MASS_G_MOL as _ATOMIC_MASS_G_MOL,
     R_PUBLISHED_GAS_J_MOL_K as R_J_MOL_K,
 )
+from openimcc.activity_fragments import load_activity_fragment
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
     ImccRefusal,
@@ -3217,9 +3218,15 @@ def evaluate_gas(
                     T,
                     fO2_bar=p_O2,
                 )
-                carrier = trace_component_rule(oxide).gas_parent_oxide
-                if oxide in {"Ga2O3", "In2O3"}:
-                    element = "Ga" if oxide == "Ga2O3" else "In"
+                trace_rule = trace_component_rule(oxide)
+                carrier = trace_rule.gas_parent_oxide
+                element = trace_rule.review_gamma_element
+                if element in {"Ga", "In"}:
+                    fragment_row = next(
+                        row
+                        for row in load_activity_fragment(element)["rows"]
+                        if row.get("parent_oxide") == oxide
+                    )
                     parent_row = _nearest_interval_row(
                         datapack.oxide_df, oxide + "(l)", T, True
                     )
@@ -3263,11 +3270,18 @@ def evaluate_gas(
                         standard_ratio = math.exp(
                             bischof_parent_k_log - nasa_parent_k_log
                         )
-                        in_fit_window = 1550.0 <= T <= 1740.0
+                        fit_window_low, fit_window_high = map(
+                            float, fragment_row["temperature_window_K"]
+                        )
+                        in_fit_window = fit_window_low <= T <= fit_window_high
+                        fit_window_label = (
+                            f"{fit_window_low:g}–{fit_window_high:g} K"
+                        )
                         conversion_range = (
-                            "inside the measured 1550–1740 K KEMS fit"
+                            f"inside the measured {fit_window_label} KEMS fit"
                             if in_fit_window
-                            else "extrapolated outside the measured 1550–1740 K KEMS fit"
+                            else "extrapolated outside the measured "
+                            f"{fit_window_label} KEMS fit"
                         )
                         recommendation = (
                             "Applied the Bischof KEMS-to-NASA parent-standard conversion: "

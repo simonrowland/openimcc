@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import math
-import re
 from dataclasses import dataclass, field, replace
 from fractions import Fraction
 from importlib import resources
@@ -77,6 +76,7 @@ from openimcc.trace_components import (
     TraceActivityEstimate,
     TraceComponentsOutsideMeltModelNotice,
     TraceMajorBiasFlag,
+    _single_cation_oxide_counts,
     _resolve_trace_activity,
     trace_component_rule,
 )
@@ -2985,11 +2985,10 @@ def evaluate(
     # from pack stoichiometry rather than from a species-name list.
     acid_sink_indices: list[int] = []
     for parent_index, parent_name in enumerate(parent_oxides):
-        oxide_formula = re.fullmatch(r"([A-Z][a-z]?)(\d*)O(\d*)", parent_name)
-        if oxide_formula is None:
+        oxide_counts = _single_cation_oxide_counts(parent_name)
+        if oxide_counts is None:
             continue
-        cation_count = int(oxide_formula.group(2) or 1)
-        oxygen_count = int(oxide_formula.group(3) or 1)
+        cation_count, oxygen_count = oxide_counts
         if 2 * oxygen_count < 3 * cation_count:
             continue
         if any(

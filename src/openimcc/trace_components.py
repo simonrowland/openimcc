@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 import math
+import re
 from types import MappingProxyType
 from typing import Any, Literal
 
@@ -28,6 +29,15 @@ _SOSSI_FEGLY_2018 = (
 _TRACE_COMPONENT_MAX_MOLE_FRACTION = 0.01
 _TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION = 0.02
 _TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION = 0.001
+_SINGLE_CATION_OXIDE = re.compile(r"([A-Z][a-z]?)(\d*)O(\d*)")
+
+
+def _single_cation_oxide_counts(component: str) -> tuple[int, int] | None:
+    """Return cation and oxygen counts for an ``M_aO_b`` formula."""
+    match = _SINGLE_CATION_OXIDE.fullmatch(component)
+    if match is None:
+        return None
+    return int(match.group(2) or 1), int(match.group(3) or 1)
 
 
 @dataclass(frozen=True)
