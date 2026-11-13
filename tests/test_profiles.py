@@ -168,6 +168,7 @@ def test_gas_boiling_temperature_accepts_profile_without_datapack(monkeypatch) -
             mole_fractions={},
             mode="synthetic",
             domain_flags={},
+            provenance_class={},
         )
 
     monkeypatch.setattr(gas_module, "evaluate_gas_saturation", fake_saturation)
