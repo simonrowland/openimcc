@@ -25,6 +25,7 @@ from openimcc.trace_components import (
     TraceActivityFlag,
     _review_gamma_parent_oxides,
     _resolve_trace_activity,
+    resolve_trace_activity,
     trace_component_rule,
     trace_fractions_from_wt,
 )
@@ -351,6 +352,41 @@ def test_nico_flags_check_declared_weight_window_with_unsupported_oxide(
     assert flag.code == "source_grounded_helper_activity"
     assert window_flag in str(flag)
     assert "unsupported components omitted from helper value: Ga2O3" in str(flag)
+
+
+@pytest.mark.parametrize("trace_oxide", ("NiO", "CoO"))
+def test_nico_resolver_accepts_feoeq_and_preserves_helper_activity(
+    trace_oxide: str,
+) -> None:
+    composition = _activity_grid_composition(
+        6.0, 10.0, trace_oxide, feo_component="FeOeq"
+    )
+    estimate, _, _ = _resolve_trace_activity(
+        trace_oxide,
+        composition[trace_oxide],
+        composition,
+        1700.0,
+    )
+    helper_composition = {
+        name: amount
+        for name, amount in composition.items()
+        if trace_oxide == "NiO" or name != "FeOeq"
+    }
+    expected = (
+        evaluate_ni_activity(helper_composition, 1700.0)
+        if trace_oxide == "NiO"
+        else evaluate_co_activity(helper_composition, 1700.0)
+    )
+
+    assert estimate.code == "source_grounded_helper_activity"
+    assert estimate.activity.hex() == expected.activity.hex()
+
+
+@pytest.mark.parametrize("trace_oxide", ("NiO", "CoO"))
+def test_nico_resolver_handles_zero_mole_composition(trace_oxide: str) -> None:
+    estimate = resolve_trace_activity(trace_oxide, 0.0, {}, 1700.0)
+
+    assert isinstance(estimate, TraceActivityEstimate)
 
 
 def test_sossi_rb_row_flags_temperature_and_family() -> None:

@@ -874,6 +874,7 @@ def _activity_fragment_result(
     ) -> str | None:
         from openimcc.activity_fragments import load_activity_fragment
         from openimcc.review_gamma_activity import (
+            _canonicalize_composition_moles,
             _composition_window_violations,
             _select_row,
         )
@@ -890,7 +891,9 @@ def _activity_fragment_result(
                 "unsupported components omitted from helper value: "
                 + ", ".join(unsupported)
             )
-        window_flags = _composition_window_violations(row, composition_moles)
+        window_flags = _composition_window_violations(
+            row, _canonicalize_composition_moles(composition_moles)
+        )
         if window_flags:
             details.append(
                 "declared-composition window flags: " + ", ".join(window_flags)

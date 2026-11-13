@@ -97,14 +97,14 @@ def _evaluate_review_gamma_activity(
 
     if fO2_bar is not None and log10_fO2_relative_to_IW is not None:
         raise ValueError("supply either fO2_bar or log10_fO2_relative_to_IW")
-    amounts: dict[str, float] = {}
+    validated_amounts: dict[str, float] = {}
     input_components = tuple(composition_moles)
     for component, raw_amount in composition_moles.items():
         amount = float(raw_amount)
         if not math.isfinite(amount) or amount < 0.0:
             raise ValueError(f"moles for {component} must be finite and nonnegative")
-        canonical = "FeO" if component == "FeOeq" else component
-        amounts[canonical] = amounts.get(canonical, 0.0) + amount
+        validated_amounts[component] = amount
+    amounts = _canonicalize_composition_moles(validated_amounts)
 
     if log10_fO2_relative_to_IW is not None:
         oxygen_offset = float(log10_fO2_relative_to_IW)
@@ -470,6 +470,8 @@ def _composition_window_violations(
         amount * _component_molar_mass(component)
         for component, amount in amounts.items()
     )
+    if total_mass <= 0.0:
+        return ()
     violations: list[str] = []
     for component, window in composition_windows.items():
         weight = (
@@ -486,6 +488,16 @@ def _composition_window_violations(
             if above is not None and weight > float(above["value"]):
                 violations.append(str(above["flag"]))
     return tuple(violations)
+
+
+def _canonicalize_composition_moles(
+    composition_moles: Mapping[str, float],
+) -> dict[str, float]:
+    amounts: dict[str, float] = {}
+    for component, amount in composition_moles.items():
+        canonical = "FeO" if component == "FeOeq" else component
+        amounts[canonical] = amounts.get(canonical, 0.0) + amount
+    return amounts
 
 
 def _gamma_for_row(
