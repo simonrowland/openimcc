@@ -890,6 +890,12 @@
 
 ### Changes that can break callers
 
+- Wood & Wade (2013) W, Pb, and Cu review-γ activities now use the source's
+  single-cation oxide mole fractions. In Al- or alkali-bearing melts, those
+  source activities change from the former formula-unit values by the
+  composition-dependent `N_f/N_c` factor; the source γ values are unchanged.
+  Since openimcc reports Cu₂O from two CuO₀.₅ units, its Cu₂O parent activity
+  changes by `(N_f/N_c)^2`.
 - Trace-aware `evaluate_gas(..., composition_wt_pct=...)` now validates a
   composition even when it has no positive major oxide. Trace-only inputs that
   exceed the melt trace limits, such as 100 wt% Cr₂O₃, raise

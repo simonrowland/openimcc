@@ -1041,9 +1041,11 @@ def test_wood_wade_pb_point_carries_the_reported_uncertainty_status() -> None:
     printed_gamma = 0.22
     assert result.gamma == printed_gamma
     assert result.gamma_range == (printed_gamma, printed_gamma)
-    assert result.source_mole_fraction == (
-        composition["PbO"] / math.fsum(composition.values())
-    )
+    cation_basis_total = math.fsum(
+        amount * (2.0 if name == "Al2O3" else 1.0)
+        for name, amount in composition.items() if name != "PbO"
+    ) + composition["PbO"]
+    assert result.source_mole_fraction == composition["PbO"] / cation_basis_total
     assert result.activity == printed_gamma * result.source_mole_fraction
     assert result.activity_range == (
         printed_gamma * result.source_mole_fraction,
@@ -1055,6 +1057,93 @@ def test_wood_wade_pb_point_carries_the_reported_uncertainty_status() -> None:
     assert "uncertainty not stated" in result.notice.limitations[0]
     assert "oxygen_fugacity_window_unreported" in result.notice.violated_axes
     assert "melt_family_extrapolated" not in result.notice.violated_axes
+
+
+@pytest.mark.parametrize(
+    ("element", "parent", "temperature", "composition", "gamma", "expected_hex"),
+    [
+        (
+            "W", "WO3", 1923.0,
+            {"SiO2": 3.0, "Al2O3": 0.5, "MgO": 2.0, "CaO": 1.0, "WO3": 0.001},
+            math.sqrt(0.001 * 0.05), "0x1.0f1f3d2cd4b36p-20",
+        ),
+        (
+            "Pb", "PbO", 1923.0,
+            {"SiO2": 3.0, "Al2O3": 0.5, "FeO": 1.0, "MgO": 2.0, "CaO": 1.0, "PbO": 0.001},
+            0.22, "0x1.cd50d6aa3de41p-16",
+        ),
+        (
+            "Cu", "Cu2O", 1923.0,
+            {"SiO2": 3.0, "Al2O3": 0.5, "MgO": 2.0, "CaO": 1.0, "Cu2O": 0.001},
+            3.5, "0x1.0c4839ac5f19ep-20",
+        ),
+    ],
+)
+def test_wood_wade_rows_use_single_cation_basis_on_alumina_melts(
+    element, parent, temperature, composition, gamma, expected_hex
+) -> None:
+    row = next(
+        item for item in load_activity_fragment(element)["rows"]
+        if item["parent_oxide"] == parent
+        and item["source_citation"].startswith("Wood & Wade (2013)")
+    )
+    assert row["source_mole_fraction_kind"] == "one_cation_oxide"
+    result = evaluate_review_gamma_activity(
+        element, composition, temperature, parent_oxide=parent
+    )
+
+    source_units = float(row["source_units_per_parent"])
+    numerator = source_units * composition[parent]
+    formula_basis_total = math.fsum(
+        amount * (source_units if name == parent else 1.0)
+        for name, amount in composition.items()
+    )
+    cation_basis_total = math.fsum(
+        amount * (2.0 if name == "Al2O3" else 1.0)
+        for name, amount in composition.items() if name != parent
+    ) + numerator
+    parent_power = float(row["parent_power"])
+    old_activity = (gamma * (numerator / formula_basis_total)) ** parent_power
+    expected_activity = (gamma * (numerator / cation_basis_total)) ** parent_power
+
+    assert result.gamma == gamma
+    assert result.gamma_range == tuple(
+        float(value) for value in row["gamma_law"]["gamma_endpoints"]
+    )
+    assert result.source_mole_fraction == numerator / cation_basis_total
+    assert result.activity.hex() == expected_hex
+    assert result.activity == expected_activity
+    assert result.activity == pytest.approx(
+        old_activity * (formula_basis_total / cation_basis_total) ** parent_power,
+        rel=1e-15,
+    )
+
+
+@pytest.mark.parametrize(
+    ("element", "parent", "temperature"),
+    [("W", "WO3", 1923.0), ("Pb", "PbO", 1923.0), ("Cu", "Cu2O", 1923.0)],
+)
+def test_wood_wade_rows_are_unchanged_for_silica_only_melts(
+    element, parent, temperature
+) -> None:
+    parent_moles = 0.001
+    composition = {"SiO2": 1.0, parent: parent_moles}
+    row = next(
+        item for item in load_activity_fragment(element)["rows"]
+        if item["parent_oxide"] == parent
+        and item["source_citation"].startswith("Wood & Wade (2013)")
+    )
+    source_units = float(row["source_units_per_parent"])
+    result = evaluate_review_gamma_activity(
+        element, composition, temperature, parent_oxide=parent
+    )
+    old_formula_x = source_units * parent_moles / (
+        1.0 + source_units * parent_moles
+    )
+
+    assert row["source_mole_fraction_kind"] == "one_cation_oxide"
+    assert result.source_mole_fraction == old_formula_x
+    assert result.activity == (result.gamma * old_formula_x) ** float(row["parent_power"])
 
 
 def test_wood_wade_tungsten_contour_band_reaches_gas_flags() -> None:
@@ -1076,6 +1165,9 @@ def test_wood_wade_tungsten_contour_band_reaches_gas_flags() -> None:
         0.05 * result.source_mole_fraction,
     )
     assert result.row == "WO3-Di-An-Fo-1923K"
+    assert "assumes W⁶⁺ dominance" in " ".join(result.notice.limitations)
+    assert "ΔIW −3.5" in " ".join(result.notice.limitations)
+    assert "lower-fO₂ use requires W speciation" in " ".join(result.notice.limitations)
     assert "a(WO3)=(gamma*x_source)^1" in result.reference
     assert "pure liquid WO3 at 1 bar" in result.reference
     assert "contour-read (provisional)" in result.notice.limitations[0]
@@ -1659,11 +1751,17 @@ def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:
     )
 
 
-def test_existing_review_gamma_rows_are_bit_identical() -> None:
+def test_review_gamma_payloads_pin_changed_and_unchanged_rows() -> None:
     elements = ("Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ni", "Co", "Ce")
     payload = []
     non_ce_payload = []
     ce_payload = []
+    unchanged_payload = []
+    changed_wood_wade_rows = {
+        ("Cu", "CuO0.5-1923K"),
+        ("Pb", "PbO-BW1102-1923K"),
+        ("W", "WO3-Di-An-Fo-1923K"),
+    }
     for element in elements:
         for row in load_activity_fragment(element)["rows"]:
             screen = row["composition_screen"]
@@ -1706,13 +1804,16 @@ def test_existing_review_gamma_rows_are_bit_identical() -> None:
             ]
             payload.append(row_payload)
             (ce_payload if element == "Ce" else non_ce_payload).append(row_payload)
+            if (element, row["row"]) not in changed_wood_wade_rows:
+                unchanged_payload.append(row_payload)
 
     encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
     assert len(payload) == 16
-    # Numeric values are unchanged; the moved reference hashes identify the
-    # printed-point, An-Di basis, and Ce standard-conversion revisions.
+    # The full and non-Ce hashes move because the W, Pb, and Cu Wood & Wade
+    # activities and source-x references changed. Separate hashes pin the
+    # unaffected rows and the unchanged Ce payload.
     assert hashlib.sha256(encoded).hexdigest() == (
-        "34586de178d2d51a0c1916a1a8989bfc94a4a80263710a49dd04bbe54fb02092"
+        "73b21a31c6ae377d53c304ff4f53e0c785ffc31e5c8db7c08b012d726093546f"
     )
 
     def payload_hash(rows: list[list[object]]) -> str:
@@ -1721,7 +1822,10 @@ def test_existing_review_gamma_rows_are_bit_identical() -> None:
         ).hexdigest()
 
     assert payload_hash(non_ce_payload) == (
-        "8f2038e228d8dbab0818a04b13e81a1b7d8b2f000fe5a78e5a09218f4e7cb43c"
+        "5aed62db57c28b8becaa92438b1e9e94a14f9975327fb8ec75997d8a1be154d9"
+    )
+    assert payload_hash(unchanged_payload) == (
+        "e736ce1b850b2f72c1aacffdbb96cfb3c5bca48dbce694596279e2c05b84a1e9"
     )
     assert payload_hash(ce_payload) == (
         "cf1226c0a8fc05611178ac34c4196f784ca909447044cfd8638922b238bff3dc"
