@@ -45,20 +45,19 @@ mixing).
 oxides when each is at most 1 mol% and their combined amount is at most 2 mol%.
 It solves the eight majors after renormalizing over those majors. A typed
 `trace_components_outside_melt_model` notice lists each trace mole fraction,
-the total, and a per-major `bias_bound_dex`. Basic-monoxide traces such as CoO,
-NiO, and ZnO use the measured MnO-calibrated envelope
-`b = k · Σ((1 + ν) x_trace)`, capped at 0.02 dex. Amphoteric Cr₂O₃ uses its
-separate Cr₂O₃-calibrated envelope with the same cap. Other classes, including
-acidic P₂O₅, retain the strict per-major bound based on the solved free-major
-fraction and registered maximum binding stoichiometry, capped at 0.01 dex.
-The two empirical envelopes apply from 1400 to 2200 K. Their calibration
-domain is ΔIW −6, −4, −2, 0, +2, and +4 at each of 1400, 1600, 1800, 2000,
-and 2200 K; each stored `k` is the maximum over this grid. Outside the
-temperature range, `evaluate()` uses the strict per-major bound.
-Rows above their applicable cap refuse that major's `activity()` request while
-preserving the other rows. The calibration table and derivation are beside the
-shared trace registration. Components with modeled associate rows, such as
-MnO in the redox pack, remain full components and do not enter the trace bound.
+the total, and a per-major `bias_bound_dex`. Each row uses the strict
+mass-balance bound `b = log10(1 + Σ((1 + ν) x_trace) / x_free)`, where `x_free`
+is the solved free-major fraction and `ν` is the registered maximum binding
+stoichiometry. The bound is capped at 0.01 dex; rows above the cap refuse that
+major's `activity()` request while preserving the other rows.
+
+The MnO and Cr₂O₃ class calibration grids span 1400–2200 K and ΔIW −6 to +4.
+Because `evaluate()` has no fO2 input or calibrated-melt identity, it cannot
+establish those conditions. The `mn_calibrated_envelope_v3` and
+`cr_calibrated_envelope_v3` flags therefore report `DEPENDS` and use the strict
+bound. The calibration table and derivation are beside the shared trace
+registration. Components with modeled associate rows, such as MnO in the
+redox pack, remain full components and do not enter the trace bound.
 
 Each registered component uses the best available activity estimate: source
 associate rows or helpers first, then a published `γ·x` guide, then ideal

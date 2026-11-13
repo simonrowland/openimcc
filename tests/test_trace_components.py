@@ -745,6 +745,45 @@ def test_trace_helper_validity_uses_declared_checks_and_keeps_activity_values() 
     assert "FeO_outside_0_to_12_wt_pct" in (co_outside_window.reference or "")
 
 
+@pytest.mark.parametrize("trace_oxide", ("NiO", "CoO"))
+@pytest.mark.parametrize("fO2_bar", (0.0, -1.0, math.nan))
+def test_nico_invalid_oxygen_keeps_helper_activity_and_depends(
+    trace_oxide: str, fO2_bar: float
+) -> None:
+    composition = {
+        "SiO2": 50.0,
+        "MgO": 10.0,
+        "FeO": 6.0,
+        "CaO": 20.0,
+        "Al2O3": 14.0,
+        trace_oxide: 0.05,
+    }
+    x_trace = composition[trace_oxide] / math.fsum(composition.values())
+
+    if trace_oxide == "NiO":
+        from openimcc.ni import evaluate_ni_activity
+
+        expected = evaluate_ni_activity(composition, 1700.0).activity
+    else:
+        from openimcc.co_activity import evaluate_co_activity
+
+        expected = evaluate_co_activity(composition, 1700.0).activity
+
+    estimate = trace_components.resolve_trace_activity(
+        trace_oxide,
+        x_trace,
+        composition,
+        1700.0,
+        fO2_bar=fO2_bar,
+    )
+    flag = trace_components.TraceActivityFlag(estimate)
+
+    assert estimate.activity.hex() == expected.hex()
+    assert flag.code == "depends_helper_activity"
+    assert "oxygen_fugacity_not_finite_or_positive" in str(flag)
+    assert "ideal_mixing_assumption" not in str(flag)
+
+
 def test_trace_associate_validity_carries_redox_extrapolations() -> None:
     estimate = trace_components.resolve_trace_activity(
         "ZnO",
@@ -1125,7 +1164,7 @@ def test_gas_refuses_declared_bad_major_before_trace_projection(
         )
 
 
-def test_gas_an_di_flag_uses_declared_total_for_ga_trace_parent(
+def test_gas_an_di_flag_uses_majors_only_for_ga_trace_parent(
     packaged_gas_pack,
 ) -> None:
     composition = {
@@ -1148,7 +1187,8 @@ def test_gas_an_di_flag_uses_declared_total_for_ga_trace_parent(
     flag = result.domain_flags["Ga"]
 
     assert isinstance(flag, TraceActivityFlag)
-    assert "melt_composition_differs_from_An_Di_target" in str(flag)
+    assert "melt_composition_differs_from_An_Di_target" not in str(flag)
+    assert "an-di-target-basis=major-oxides-only-v2" in str(flag)
 
 
 @pytest.mark.parametrize("oxide", ["Cl", "F", "S", "SO3"])

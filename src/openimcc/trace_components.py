@@ -884,12 +884,16 @@ def _activity_fragment_result(
     *,
     fO2_bar: float | None,
 ) -> tuple[float, bool, str | None] | None:
+    invalid_oxygen = False
+
     def relative_oxygen_offset() -> float | None:
+        nonlocal invalid_oxygen
         if fO2_bar is None:
             return None
         oxygen = float(fO2_bar)
         if not math.isfinite(oxygen) or oxygen <= 0.0:
-            raise ValueError("fO2_bar must be finite and positive")
+            invalid_oxygen = True
+            return None
         return math.log10(oxygen) - _iw_log10_fO2_bar(T_K)
 
     def declared_composition_reference(
@@ -947,6 +951,11 @@ def _activity_fragment_result(
         except ValueError:
             return None
         violated_axes = result.notice.violated_axes
+        if invalid_oxygen:
+            violated_axes = (
+                *violated_axes,
+                "oxygen_fugacity_not_finite_or_positive",
+            )
         source_is_valid, reference = declared_composition_reference(
             _SUPPORTED_COMPONENTS, violated_axes
         )
@@ -972,6 +981,11 @@ def _activity_fragment_result(
         except ValueError:
             return None
         violated_axes = result.notice.violated_axes
+        if invalid_oxygen:
+            violated_axes = (
+                *violated_axes,
+                "oxygen_fugacity_not_finite_or_positive",
+            )
         source_is_valid, reference = declared_composition_reference(
             _OXIDE_COMPONENTS, violated_axes
         )

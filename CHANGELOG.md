@@ -52,19 +52,19 @@
 - `evaluate()` accepts registered unmodelled components outside the eight-oxide
   melt model at up to 1 mol% each and 2 mol% combined. It renormalizes the major
   oxides and reports the typed `trace_components_outside_melt_model` notice with
-  per-major `bias_bound_dex`. Basic-monoxide traces use the measured MnO-class
-  envelope and amphoteric Cr2O3 uses its measured Cr2O3-class envelope, both
-  capped at 0.02 dex from 1400 to 2200 K. Calibration spans ΔIW −6, −4, −2,
-  0, +2, and +4 at 1400, 1600, 1800, 2000, and 2200 K; the class constants
-  are the maximum over this grid. Outside the temperature range,
-  `evaluate()` falls back to the strict per-major bound. Gas evaluation uses
-  those same per-major bounds and flags. Other classes, including acidic P2O5,
-  retain the strict per-major bound capped at 0.01 dex. Modeled associates such
-  as MnO remain full components. Trace activities use source-grounded rows or
-  helpers, published `γ·x` guides, or a flagged ideal estimate. In gas
-  evaluation, Cl, F, S, or SO3 above 0.1 mol% refuses Na/K and sulfur-bearing
-  channels. The `γ·x` guide values (MnO 1.9 and CrO1.5 31.1) are cited to Sossi
-  and Fegley (2018), Table 2, pp. 409–410, doi:10.2138/rmg.2018.84.11.
+  per-major `bias_bound_dex`. Each row uses the strict mass-balance bound
+  `b = log10(1 + Σ((1 + ν) x_trace) / x_free)`, where `x_free` is the solved
+  free-major fraction and `ν` is the registered maximum binding stoichiometry.
+  The bound is capped at 0.01 dex; rows above the cap refuse that major's
+  `activity()` request while preserving the other rows. Because `evaluate()`
+  has no fO2 input or calibrated-melt identity, the
+  `mn_calibrated_envelope_v3` and `cr_calibrated_envelope_v3` flags report
+  `DEPENDS` and use the strict bound. Modeled associates such as MnO remain
+  full components. Trace activities use source-grounded rows or helpers,
+  published `γ·x` guides, or a flagged ideal estimate. In gas evaluation, Cl,
+  F, S, or SO3 above 0.1 mol% refuses Na/K and sulfur-bearing channels. The
+  `γ·x` guide values (MnO 1.9 and CrO1.5 31.1) are cited to Sossi and Fegley
+  (2018), Table 2, pp. 409–410, doi:10.2138/rmg.2018.84.11.
 
 - The trace-component activity ladder uses registered Ni, Co, P, and S helpers
   before published γ·x guides or ideal mixing. It also uses the redox-v5
@@ -929,18 +929,18 @@
 - `evaluate_gas(..., composition_wt_pct=...)` now raises
   `ImccCompositionIncompleteError` for negative or non-finite declared major
   oxide weights instead of dropping them during trace-fraction conversion.
-- Review-gamma family and An-Di screens now include declared review-gamma
-  parents and non-oxide components in source-composition checks. Inputs that
-  passed after target-only renormalisation can now carry out-of-family flags,
-  and An-Di failures are included in published trace-activity flags.
+- Review-gamma family screens now include declared review-gamma parents and
+  non-oxide components in source-composition checks. An-Di target comparisons
+  remain major-only, and An-Di failures are included in published trace-activity
+  flags.
 - Review-gamma family distance now uses declared oxide moles, excludes
   non-oxides, and flags missing listed family oxides. An-Di target checks now
   renormalize declared target majors alone, so trace parents and non-oxides do
   not dilute the source's printed target. References identify both revisions.
 - Ce review-gamma references now identify the Ce2O3 liquid-standard Gibbs
-  conversion revision, and Ga/In range-law references identify the printed-
-  point estimator. Row ids, central activities, and endpoint bands are
-  unchanged.
+  conversion revision, and Ag, Co, Ga, In, Ni, Pb, Rb, Sb, Tl, and V gamma-range
+  references identify the printed-point estimator. Row ids, central activities,
+  and endpoint bands are unchanged.
 - A review-gamma selector no-match now returns the nearest-row estimate with
   an explicit DEPENDS flag instead of silently presenting that row as a match.
 - Ni and Co trace-activity flags now publish FeO/MgO weight-window violations
