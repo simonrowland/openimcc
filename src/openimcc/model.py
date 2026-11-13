@@ -247,6 +247,7 @@ _SCORED_PACK_IDENTITIES = MappingProxyType(
                 "alkali-bias": "−1.17 to −1.22 dex",
                 "na2o-activity-bias": None,
                 "cao-sio2-activity-bias": None,
+                "cao-tio2-activity-bias": None,
                 "multicomponent-activity-pattern": None,
                 "anorthite-row-sensitivity": None,
                 "silicate-vapour-product-low-near-liquidus": None,
@@ -540,19 +541,48 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
 # 1973 K, so that map is outside the notice window.
 #
 # Gates use the loaded parent mole vector after wt→mol conversion,
-# including extension parents when they are present. Let sum(n) be that
-# vector's total. Effectively binary when both of the following hold:
-#   (n_CaO + n_SiO2) / sum(n) >= 0.98   (inclusive)
-#   every other parent n_i / sum(n) < 0.01
-# Sub-basis x(CaO) = n_CaO / (n_CaO + n_SiO2), and both amounts must be
-# positive:
+# including extension parents when they are present. Effectively binary when
+# the named pair makes up at least 0.98 of total parent moles and every other
+# parent is below 0.01 of the total. Both pair amounts must be positive.
+_BINARY_PAIR_MIN_SHARE = 0.98
+_BINARY_PAIR_OTHER_PARENT_MAX = 0.01
+
+
+def _effectively_binary_pair_moles(
+    parent_oxides: Sequence[str],
+    moles: np.ndarray,
+    first_oxide: str,
+    second_oxide: str,
+) -> tuple[float, float, float] | None:
+    try:
+        first_index = parent_oxides.index(first_oxide)
+        second_index = parent_oxides.index(second_oxide)
+    except ValueError:
+        return None
+    total = float(moles.sum())
+    if total <= 0.0:
+        return None
+    first = float(moles[first_index])
+    second = float(moles[second_index])
+    if first <= 0.0 or second <= 0.0:
+        return None
+    binary = first + second
+    if binary / total < _BINARY_PAIR_MIN_SHARE:
+        return None
+    for index, name in enumerate(parent_oxides):
+        if name in (first_oxide, second_oxide):
+            continue
+        if float(moles[index]) / total >= _BINARY_PAIR_OTHER_PARENT_MAX:
+            return None
+    return first, second, binary
+
+
+# Sub-basis x(CaO) = n_CaO / (n_CaO + n_SiO2):
 #   moderate: 0.42 <= x(CaO) < 0.56
 #   strong:   0.56 <= x(CaO) <= 0.70
 # Temperature is inclusive on [1873, 1933] K. Below 1873 K, above 1933 K,
 # and at the unvalidated 1973 K map, the notice is absent. A miss on any
 # gate emits nothing. The notice does not alter activities.
-_CAO_SIO2_BINARY_SHARE = 0.98
-_CAO_SIO2_OTHER_PARENT_MAX = 0.01
 _CAO_SIO2_XCAO_MODERATE_MIN = 0.42
 _CAO_SIO2_XCAO_STRONG_MIN = 0.56
 _CAO_SIO2_XCAO_MAX = 0.70
@@ -576,6 +606,35 @@ _CAO_SIO2_STRONG_NOTICE = (
     "default residuals are not carried as v5 scores; this pack shifts predicted "
     "log10(a(SiO2)) non-monotonically by 0.076–0.479 dex, peaking near "
     "x(CaO)=0.614"
+)
+
+
+# Shornikov et al. (2020), Table 3 reports the KEMS pressures; Table 5 gives
+# pure-liquid-standard activities, a(CaO) from Eq. 23 and a(TiO2) from Eq. 22,
+# independently checked against Eqs. 17–18. Using that preferred pair for all
+# ten 2278 K points, the D066 v5 residuals
+# log10(predicted/measured) span −0.790 to +0.499 dex for CaO and −1.543 to
+# −0.009 dex for TiO2. Between x(TiO2)=0.3791 and 0.4666, CaO is high by
+# +0.235 to +0.499 dex and TiO2 is low by 1.348 to 1.543 dex. Table 2's
+# x(TiO2)=0.5 comparators establish the 2100–2315 K evidence window. A
+# two-associate refit was tried and not adopted pending independent data.
+_CAO_TIO2_XTIO2_MIN = 0.379
+_CAO_TIO2_XTIO2_MAX = 0.693
+_CAO_TIO2_T_MIN_K = 2100.0
+_CAO_TIO2_T_MAX_K = 2315.0
+_CAO_TIO2_NOTICE_CODE = "cao-tio2-activity-bias"
+_CAO_TIO2_UNSCORED_CODE = "cao-tio2-activity-bias-unscored"
+_CAO_TIO2_NOTICE = (
+    f"{_CAO_TIO2_NOTICE_CODE}: effectively binary CaO–TiO2 melt with "
+    "x(TiO2) in [0.379, 0.693] on the CaO–TiO2 sub-basis at 2100–2315 K; "
+    "Shornikov et al. (2020, Tables 3 and 5; KEMS, 2278 K) pure-liquid-"
+    "standard activities (a(CaO), Eq. 23; a(TiO2), Eq. 22) give D066 v5 "
+    "log10(predicted/measured) "
+    "residuals across ten points of −0.790 to +0.499 dex for a(CaO) and "
+    "−1.543 to −0.009 dex for a(TiO2). On x(TiO2)=0.3791–0.4666, a(CaO) "
+    "is high by +0.235 to +0.499 dex and a(TiO2) is low by 1.348 to "
+    "1.543 dex. A two-associate refit was tried and not adopted pending "
+    "independent data."
 )
 
 _SILICATE_PRODUCT_ROWS = (
@@ -670,26 +729,12 @@ def _cao_sio2_activity_bias_notice(
     temperature_K = float(temperature_K)
     if temperature_K < _CAO_SIO2_T_MIN_K or temperature_K > _CAO_SIO2_T_MAX_K:
         return None
-    try:
-        cao_index = parent_oxides.index("CaO")
-        silica_index = parent_oxides.index("SiO2")
-    except ValueError:
+    pair = _effectively_binary_pair_moles(
+        parent_oxides, moles, "CaO", "SiO2"
+    )
+    if pair is None:
         return None
-    total = float(moles.sum())
-    if total <= 0.0:
-        return None
-    cao = float(moles[cao_index])
-    silica = float(moles[silica_index])
-    if cao <= 0.0 or silica <= 0.0:
-        return None
-    binary = cao + silica
-    if binary / total < _CAO_SIO2_BINARY_SHARE:
-        return None
-    for index, name in enumerate(parent_oxides):
-        if name in ("CaO", "SiO2"):
-            continue
-        if float(moles[index]) / total >= _CAO_SIO2_OTHER_PARENT_MAX:
-            return None
+    cao, silica, binary = pair
     x_cao = cao / binary
     if x_cao < _CAO_SIO2_XCAO_MODERATE_MIN or x_cao > _CAO_SIO2_XCAO_MAX:
         return None
@@ -706,6 +751,50 @@ def _cao_sio2_activity_bias_notice(
         )
     return _coded_melt_notice(
         "cao-sio2-activity-bias", score, _CAO_SIO2_STRONG_NOTICE
+    )
+
+
+def _cao_tio2_unscored_notice(model_id: str) -> str:
+    measured_model_id, measured_binding_digest = _SCORED_D066_V5_IDENTITY
+    return (
+        f"{_CAO_TIO2_UNSCORED_CODE}: the CaO–TiO2 activity-bias evidence was "
+        f"measured on {measured_model_id} "
+        f"(binding digest {measured_binding_digest}) and has not "
+        f"been re-scored for this {model_id} pack"
+    )
+
+
+def _cao_tio2_activity_bias_notice(
+    parent_oxides: Sequence[str],
+    moles: np.ndarray,
+    temperature_K: float,
+    model_id: str,
+    binding_digest: str,
+) -> str | None:
+    """Return the effectively binary CaO–TiO2 activity-bias notice, or None."""
+    temperature_K = float(temperature_K)
+    if temperature_K < _CAO_TIO2_T_MIN_K or temperature_K > _CAO_TIO2_T_MAX_K:
+        return None
+    pair = _effectively_binary_pair_moles(
+        parent_oxides, moles, "CaO", "TiO2"
+    )
+    if pair is None:
+        return None
+    cao, tio2, binary = pair
+    x_tio2 = tio2 / binary
+    if x_tio2 < _CAO_TIO2_XTIO2_MIN or x_tio2 > _CAO_TIO2_XTIO2_MAX:
+        return None
+    score = _melt_notice_score(
+        _CAO_TIO2_NOTICE_CODE, (model_id, binding_digest)
+    )
+    if score == "unscored":
+        return _coded_melt_notice(
+            _CAO_TIO2_NOTICE_CODE,
+            score,
+            _cao_tio2_unscored_notice(model_id),
+        )
+    return _coded_melt_notice(
+        _CAO_TIO2_NOTICE_CODE, score, _CAO_TIO2_NOTICE
     )
 
 
@@ -3120,6 +3209,12 @@ def evaluate(
     )
     if cao_sio2_notice is not None:
         notices.append(cao_sio2_notice)
+
+    cao_tio2_notice = _cao_tio2_activity_bias_notice(
+        parent_oxides, vector, T_K, model_id, binding_digest
+    )
+    if cao_tio2_notice is not None:
+        notices.append(cao_tio2_notice)
 
     multicomponent_activity_pattern_notice = (
         _multicomponent_activity_pattern_notice(

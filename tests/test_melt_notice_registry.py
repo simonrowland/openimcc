@@ -507,6 +507,7 @@ def test_default_v4_and_explicit_v5_notice_scoring_are_separate(default_pack) ->
     families = (
         "na2o-activity-bias",
         "cao-sio2-activity-bias",
+        "cao-tio2-activity-bias",
         "multicomponent-activity-pattern",
         "anorthite-row-sensitivity",
         "silicate-vapour-product-low-near-liquidus",
@@ -531,6 +532,7 @@ def test_candidate_and_d066_v2_keep_family_scoring_scoped() -> None:
         "na2o-activity-bias",
         "k-al-over-sequestration",
         "cao-sio2-activity-bias",
+        "cao-tio2-activity-bias",
         "multicomponent-activity-pattern",
         "anorthite-row-sensitivity",
         "silicate-vapour-product-low-near-liquidus",
@@ -649,6 +651,46 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
     )
     assert cao_forwarded == (
         ("cao-sio2-activity-bias-unscored", DEFAULT_CAO_SIO2_MODERATE_NOTICE),
+    )
+
+    # Preserve this chemistry check's score metadata through the existing
+    # typed sulfur notice projection.
+    binary_tio2 = {"CaO": 49.95, "TiO2": 49.95, "FeO": 0.1}
+    v5 = load_datapack(PACKS / "imcc-sf04-d066-v5.json")
+    scored_tio2 = evaluate_sulfur(
+        binary_tio2,
+        2278.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=v5,
+    )
+    scored_tio2_forwarded = tuple(
+        notice
+        for notice in scored_tio2.notices
+        if notice.model == "openimcc-melt-pack"
+        and notice.code.startswith("cao-tio2-activity-bias")
+    )
+    assert len(scored_tio2_forwarded) == 1
+    assert scored_tio2_forwarded[0].code == "cao-tio2-activity-bias"
+    assert scored_tio2_forwarded[0].message.startswith("cao-tio2-activity-bias:")
+
+    unscored_tio2 = evaluate_sulfur(
+        binary_tio2,
+        2278.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=load_datapack(),
+    )
+    unscored_tio2_forwarded = tuple(
+        notice
+        for notice in unscored_tio2.notices
+        if notice.model == "openimcc-melt-pack"
+        and notice.code.startswith("cao-tio2-activity-bias")
+    )
+    assert len(unscored_tio2_forwarded) == 1
+    assert unscored_tio2_forwarded[0].code == "cao-tio2-activity-bias-unscored"
+    assert unscored_tio2_forwarded[0].message.startswith(
+        "cao-tio2-activity-bias-unscored:"
     )
 
     v2 = load_datapack(PACKS / "imcc-sf04-d066-v2.json")

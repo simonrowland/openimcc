@@ -37,6 +37,8 @@ _MELT_NOTICE_FORWARD_CODES = {
     ),
     ("cao-sio2-activity-bias", "scored"): "cao-sio2-activity-bias",
     ("cao-sio2-activity-bias", "unscored"): "cao-sio2-activity-bias-unscored",
+    ("cao-tio2-activity-bias", "scored"): "cao-tio2-activity-bias",
+    ("cao-tio2-activity-bias", "unscored"): "cao-tio2-activity-bias-unscored",
     ("multicomponent-activity-pattern", "scored"): "multicomponent-activity-pattern",
     ("multicomponent-activity-pattern", "unscored"): (
         "multicomponent-activity-pattern-unscored"

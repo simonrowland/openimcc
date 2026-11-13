@@ -890,6 +890,11 @@
 
 ### Changes that can break callers
 
+- Added the caller-visible `cao-tio2-activity-bias` notice and its
+  `-unscored` identity-scoped form for effectively binary CaO–TiO₂ melts in
+  the evidenced 2100–2315 K range. Both are included in the typed validity
+  notice path; solved activities are unchanged. A two-associate refit was
+  tried and not adopted pending independent data.
 - Trace activity estimates now retain review-gamma violated axes and
   limitations, which appear in melt and gas trace-activity flag text.
   `ImccGasSaturationResult` now exposes the evaluated gas channels'

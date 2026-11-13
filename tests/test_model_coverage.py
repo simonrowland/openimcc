@@ -774,6 +774,119 @@ def test_cao_sio2_other_pack_gets_the_unscored_notice() -> None:
     )
 
 
+def _cao_tio2_bias_notices(result) -> tuple[str, ...]:
+    return tuple(
+        notice
+        for notice in result.labels.notices
+        if notice.startswith(
+            ("cao-tio2-activity-bias:", "cao-tio2-activity-bias-unscored:")
+        )
+    )
+
+
+_CAO_TIO2_SCORED = (
+    "cao-tio2-activity-bias: effectively binary CaO–TiO2 melt with "
+    "x(TiO2) in [0.379, 0.693] on the CaO–TiO2 sub-basis at 2100–2315 K; "
+    "Shornikov et al. (2020, Tables 3 and 5; KEMS, 2278 K) pure-liquid-"
+    "standard activities (a(CaO), Eq. 23; a(TiO2), Eq. 22) give D066 v5 "
+    "log10(predicted/measured) "
+    "residuals across ten points of −0.790 to +0.499 dex for a(CaO) and "
+    "−1.543 to −0.009 dex for a(TiO2). On x(TiO2)=0.3791–0.4666, a(CaO) "
+    "is high by +0.235 to +0.499 dex and a(TiO2) is low by 1.348 to "
+    "1.543 dex. A two-associate refit was tried and not adopted pending "
+    "independent data."
+)
+_CAO_TIO2_UNSCORED = (
+    "cao-tio2-activity-bias-unscored: the CaO–TiO2 activity-bias evidence was "
+    f"measured on {model._SCORED_D066_V5_IDENTITY[0]} "
+    f"(binding digest {model._SCORED_D066_V5_IDENTITY[1]}) and has not "
+    "been re-scored for this IMCC-SF04-D066 pack"
+)
+
+
+@pytest.mark.parametrize(
+    ("x_tio2", "expected"),
+    ((0.379, True), (0.693, True), (0.378999, False), (0.693001, False)),
+)
+def test_cao_tio2_activity_bias_composition_edges(
+    scored_v5_pack, x_tio2: float, expected: bool
+) -> None:
+    result = evaluate(
+        {"CaO": 1.0 - x_tio2, "TiO2": x_tio2},
+        2278.0,
+        pack=scored_v5_pack,
+    )
+    assert bool(_cao_tio2_bias_notices(result)) is expected
+
+
+@pytest.mark.parametrize(
+    ("temperature_K", "expected"),
+    ((2100.0, True), (2315.0, True), (2099.0, False), (2316.0, False)),
+)
+def test_cao_tio2_activity_bias_temperature_edges(
+    scored_v5_pack, temperature_K: float, expected: bool
+) -> None:
+    result = evaluate(
+        {"CaO": 0.5, "TiO2": 0.5}, temperature_K, pack=scored_v5_pack
+    )
+    assert bool(_cao_tio2_bias_notices(result)) is expected
+
+
+def test_cao_tio2_activity_bias_rejects_nonbinary_melts(scored_v5_pack) -> None:
+    # A 98% pair share is accepted when every other parent stays below 1%.
+    at_share = evaluate(
+        {"CaO": 49.0, "TiO2": 49.0, "MgO": 0.9, "FeO": 0.9, "Al2O3": 0.2},
+        2278.0,
+        pack=scored_v5_pack,
+    )
+    assert len(_cao_tio2_bias_notices(at_share)) == 1
+
+    # Below 98% is rejected, even when each additional parent is below 1%.
+    below_share = evaluate(
+        {"CaO": 48.95, "TiO2": 49.0, "MgO": 0.8, "FeO": 0.8, "Al2O3": 0.45},
+        2278.0,
+        pack=scored_v5_pack,
+    )
+    assert _cao_tio2_bias_notices(below_share) == ()
+
+    # An additional parent at exactly 1% is rejected.
+    at_other_limit = evaluate(
+        {"CaO": 49.5, "TiO2": 49.5, "MgO": 1.0},
+        2278.0,
+        pack=scored_v5_pack,
+    )
+    assert _cao_tio2_bias_notices(at_other_limit) == ()
+
+
+def test_cao_tio2_activity_bias_is_a_scored_validity_label_only(scored_v5_pack) -> None:
+    composition = {"CaO": 0.5, "TiO2": 0.5}
+    scored = evaluate(composition, 2278.0, pack=scored_v5_pack)
+    notices = _cao_tio2_bias_notices(scored)
+    assert notices == (_CAO_TIO2_SCORED,)
+    assert notices[0].family == "cao-tio2-activity-bias"
+    assert notices[0].score == "scored"
+    assert scored.parent_activity[
+        scored.parent_oxides.index("CaO")
+    ] == pytest.approx(0.0300626671882, rel=1e-12, abs=0.0)
+    assert scored.parent_activity[
+        scored.parent_oxides.index("TiO2")
+    ] == pytest.approx(0.0300626671882, rel=1e-12, abs=0.0)
+
+    default = load_datapack()
+    assert model._melt_notice_score(
+        "cao-tio2-activity-bias", _identity(default)
+    ) == "unscored"
+    unscored = evaluate(composition, 2278.0, pack=default)
+    unscored_notices = _cao_tio2_bias_notices(unscored)
+    assert unscored_notices == (_CAO_TIO2_UNSCORED,)
+    assert unscored_notices[0].family == "cao-tio2-activity-bias"
+    assert unscored_notices[0].score == "unscored"
+
+    candidate = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
+    candidate_result = evaluate(composition, 2278.0, pack=candidate)
+    assert _cao_tio2_bias_notices(candidate_result) == (_CAO_TIO2_UNSCORED,)
+
+
 _MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS = (
     "multicomponent-activity-pattern:",
     "multicomponent-activity-pattern-unscored:",
