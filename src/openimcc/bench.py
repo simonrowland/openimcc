@@ -180,7 +180,9 @@ _BINARY_POPULATIONS = frozenset(
 _KUME_LIQUID_ACTIVITY_WARNING = (
     "unconverted solid standard state; not an accuracy figure for liquid activities"
 )
-_CONVERTED_LIQUID_STANDARD_STATE = "pure-liquid (converted from pure-solid)"
+_CONVERTED_LIQUID_STANDARD_STATE = (
+    "pure-liquid (converted from pure-solid; Gibbs conversion v2)"
+)
 _SOLID_STANDARD_JANAF_CRYSTAL_TABLES = {
     "CaO": "Ca-027",
     "MgO": "Mg-008",
@@ -1155,6 +1157,19 @@ def run_bench(
             converted_residual, converted_ratio = _residual_and_ratio(
                 row.predicted, measured_liquid, score=row.score
             )
+            if row.parent_oxide == "SiO2":
+                conversion_sources = (
+                    "liquid and crystal Gibbs from the closed O-035 SiO2 "
+                    "condensate pair"
+                )
+            else:
+                crystal_table = _SOLID_STANDARD_JANAF_CRYSTAL_TABLES[
+                    row.parent_oxide
+                ]
+                conversion_sources = (
+                    "liquid Gibbs from packaged condensate rows and "
+                    f"JANAF {crystal_table} apparent crystal Gibbs"
+                )
             converted_rows.append(
                 replace(
                     row,
@@ -1164,7 +1179,8 @@ def run_bench(
                     standard_state=_CONVERTED_LIQUID_STANDARD_STATE,
                     convention=(
                         f"{row.convention}; measured activity converted from "
-                        "pure-solid to pure-liquid with JANAF fusion Gibbs energy"
+                        "pure-solid to pure-liquid (Gibbs conversion v2), "
+                        f"using {conversion_sources}"
                     ),
                 )
             )

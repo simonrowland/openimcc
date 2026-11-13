@@ -915,6 +915,11 @@
   parent standard. The conversion recommendation identifies the full
   `a_NASA/a_KEMS` factor as `nasa_standard_activity_ratio_v1`, and the KEMS fit
   status checks temperature, An-Di composition and oxygen fugacity.
+- The benchmark pure-solid to pure-liquid conversion now reports the versioned
+  `pure-liquid (converted from pure-solid; Gibbs conversion v2)` standard-state
+  label. Its convention names the packaged liquid condensate and crystal
+  Gibbs source used for each oxide; consumers matching the previous exact
+  label should update that match.
 - Ce2O3 review-γ activity now converts the solid-A standard to the Ce2O3(l)
   parent with the temperature-dependent Gibbs difference. At 1873 K the
   activity changes by less than 1e-9 relative; off that temperature the result

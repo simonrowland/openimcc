@@ -855,9 +855,25 @@ def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
 
     assert len(report.converted_points) == 292
     assert all(
-        row.standard_state == "pure-liquid (converted from pure-solid)"
+        row.standard_state
+        == "pure-liquid (converted from pure-solid; Gibbs conversion v2)"
         for row in report.converted_points
     )
+    converted_by_oxide = {
+        row.parent_oxide: row for row in report.converted_points
+    }
+    assert "closed O-035 SiO2 condensate pair" in converted_by_oxide[
+        "SiO2"
+    ].convention
+    for oxide, crystal_table in (
+        ("CaO", "Ca-027"),
+        ("MgO", "Mg-008"),
+        ("Al2O3", "Al-096"),
+    ):
+        assert (
+            f"JANAF {crystal_table} apparent crystal Gibbs"
+            in converted_by_oxide[oxide].convention
+        )
     converted_counts = {
         row.key.split(" × ")[1]: row.n for row in report.converted_slices
     }
@@ -868,7 +884,7 @@ def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
         "SiO2": 86,
     }
     assert all(
-        "pure-liquid (converted from pure-solid)" in row.key
+        "pure-liquid (converted from pure-solid; Gibbs conversion v2)" in row.key
         for row in report.converted_slices
     )
     assert {row.key.split(" × ")[1] for row in report.solid_standard_slices} == {
@@ -883,7 +899,8 @@ def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
     for table in ("Table 1", "Table 2", "Table 3", "Table 4"):
         assert any(table in key and "pure-solid" in key for key in table_slices)
         assert any(
-            table in key and "pure-liquid (converted from pure-solid)" in key
+            table in key
+            and "pure-liquid (converted from pure-solid; Gibbs conversion v2)" in key
             for key in table_slices
         )
 
@@ -1028,6 +1045,60 @@ def test_solid_to_liquid_conversion_matches_independent_table_calculation() -> N
         assert _convert_solid_activity_to_liquid(
             activity_solid, oxide, temperature_K
         ) == pytest.approx(expected, rel=1.0e-10)
+
+
+def test_bench_conversion_identity_names_current_gibbs_sources(
+    tmp_path: Path,
+) -> None:
+    temperature_K = 1600.0
+    activity_solid = 0.37
+    fixture = _write_fixture(
+        tmp_path / "bench.yaml",
+        [
+            {
+                "id": "mg_solid_1600",
+                "population": "inline_mgo",
+                "composition_id": "cmas_in_domain",
+                "material_class": "cmas_slag",
+                "temperature_K": temperature_K,
+                "parent_oxide": "MgO",
+                "species": "MgO",
+                "observable": "activity",
+                "measured": activity_solid,
+                "units": "dimensionless",
+                "score": True,
+                "convention": "pure-solid MgO activity at 1 bar",
+            }
+        ],
+    )
+    converted = run_bench(fixture, DATAPACK_PATH).converted_points[0]
+
+    liquid_row = _independent_csv_row(
+        "src/openimcc/data/gas/condensate.csv", "MgO(l)", temperature_K
+    )
+    liquid_gibbs = _independent_condensate_gibbs_j_mol(
+        liquid_row, temperature_K
+    )
+    crystal_gibbs = _independent_janaf_apparent_gibbs_j_mol(
+        "Mg-008", temperature_K
+    )
+    expected = 10.0 ** (
+        math.log10(activity_solid)
+        - (liquid_gibbs - crystal_gibbs)
+        / (
+            R_PUBLISHED_GAS_J_MOL_K
+            * temperature_K
+            * math.log(10.0)
+        )
+    )
+
+    assert converted.measured == pytest.approx(expected, rel=1.0e-10)
+    assert converted.standard_state == (
+        "pure-liquid (converted from pure-solid; Gibbs conversion v2)"
+    )
+    assert "Gibbs conversion v2" in converted.convention
+    assert "liquid Gibbs from packaged condensate rows" in converted.convention
+    assert "JANAF Mg-008 apparent crystal Gibbs" in converted.convention
 
 
 def test_solid_reference_pairs_close_at_each_melting_point() -> None:
