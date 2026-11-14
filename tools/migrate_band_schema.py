@@ -14,52 +14,127 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
-SOURCE_UNCERTAINTY_KINDS = {
-    "TSIV dfH298 ±1.0 kJ/mol uncertainty plus Phi uncertainty, propagated fusion-input spread, and quadratic crystal-Cp extrapolation band",
-    "reviewed fusion-enthalpy and transition-temperature spreads plus crystal-Cp extension model spread",
-    "maximum envelope of TSIV Phi uncertainty (linearly interpolated between stated knots and multiplied by T) and the estimated ±5 kJ/mol fusion-enthalpy contribution dG = dH_fus(1 − T/Tm) below Tm; max avoids an unsupported independence assumption; formation-anchor uncertainty is separate",
-    "TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate",
-    "TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate; the estimated 40 kJ/mol fusion enthalpy has no stated numeric uncertainty, so no fusion term is added",
-    "propagated OECD/NEA fusion-input uncertainty plus crystal-extension model spread",
-    "propagated fusion-input uncertainty plus crystal-extension model spread",
-    "propagated source-reported ΔfH°298 and S°298 uncertainties",
-    "propagated printed formation, transition, fusion and temperature uncertainties",
-    "propagated printed phase-chain uncertainty",
-    "propagated printed formation",
-    "propagated source-reported formation-enthalpy uncertainty",
-    "propagated fusion-input, fusion-temperature, and liquid-Cp uncertainty",
-    "TSIV dfH298 uncertainty, Phi uncertainty, and fitted crystal-Cp extension band",
+
+def _normalized_controlled_value(value: Any) -> str:
+    text = str(value or "").lower().replace("-", " ").replace("_", " ")
+    return " ".join(text.split())
+
+
+# Keys are the exact normalized values in the committed migration inputs.
+# Unlisted values take the conservative class in each classifier below.
+_SOURCE_BAND_CLASS_BY_KIND = {
+    'mixed source parent scale inconsistency': 'measured_construction',
+    'not separately quantified by selected source': None,
+    'measured held cp continuation error envelope against published source tables': 'measured_construction',
+    'tsiv dfh298 ±1.0 kj/mol uncertainty plus phi uncertainty, propagated fusion input spread, and quadratic crystal cp extrapolation band': 'source_uncertainty',
+    'measured rocksalt monoxide fusion input range plus published cp versus held cp extension difference': 'measured_construction',
+    'measured held cp continuation error envelope against published liquid source tables': 'measured_construction',
+    'repository held cp continuation error envelope against published source tables': 'measured_construction',
+    'reviewed fusion enthalpy and transition temperature spreads plus crystal cp extension model spread': 'source_uncertainty',
+    'constant cp alternative continuation envelope': 'measured_construction',
+    'table 1436 prints accuracy class 4 e; numeric uncertainty band is not quantified by the cited page': None,
+    'shared redox liquid from solid below fusion band, including tier 3 fusion entropy and liquid cp spreads and the measured fusion temperature interval; the fitted row residual is included': 'measured_construction',
+    'repository held cp continuation error envelope': 'measured_construction',
+    'tier 3 leave one out liquid from solid gibbs error against 48 janaf fusion pairs; uncertainty estimate is extrapolated above +800 k': 'measured_construction',
+    'tier 3 leave one out liquid from solid gibbs error against 48 janaf fusion pairs; envelope slope continues 1500 2500 k past decomposition near the 500 k construction anchor': 'measured_construction',
+    'tier 3 leave one out liquid from solid gibbs envelope with its +800 k calibrated slope continued 1500 2500 k past decomposition near the 500 k anchor': 'measured_construction',
+    'held cp continuation envelope': 'measured_construction',
+    'printed cp rounding envelope': 'measured_construction',
+    'maximum envelope of tsiv phi uncertainty (linearly interpolated between stated knots and multiplied by t) and the estimated ±5 kj/mol fusion enthalpy contribution dg = dh fus(1 − t/tm) below tm; max avoids an unsupported independence assumption; formation anchor uncertainty is separate': 'source_uncertainty',
+    'tsiv phi uncertainty, linearly interpolated between stated knots and multiplied by t; formation anchor uncertainty is separate': 'source_uncertainty',
+    'tsiv phi uncertainty, linearly interpolated between stated knots and multiplied by t; formation anchor uncertainty is separate; the estimated 40 kj/mol fusion enthalpy has no stated numeric uncertainty, so no fusion term is added': 'source_uncertainty',
+    'measured g app difference from pankratz bulletin 672': 'measured_construction',
+    'not numerically quantified by source; tsiv accuracy class 4 f': None,
+    'propagated oecd/nea fusion input uncertainty plus crystal extension model spread': 'source_uncertainty',
+    'propagated fusion input uncertainty plus crystal extension model spread': 'source_uncertainty',
+    'propagated source reported δfh°298 and s°298 uncertainties': 'source_uncertainty',
+    'propagated printed formation, transition, fusion and temperature uncertainties': 'source_uncertainty',
+    'propagated printed phase chain uncertainty': 'source_uncertainty',
+    'propagated printed formation': 'source_uncertainty',
+    'propagated source reported formation enthalpy uncertainty': 'source_uncertainty',
+    'propagated fusion input, fusion temperature, and liquid cp uncertainty': 'source_uncertainty',
 }
-UNQUANTIFIED_BAND_KINDS = {
-    "not separately quantified by selected source",
-    "Table 1436 prints accuracy class 4-E; numeric uncertainty band is not quantified by the cited page",
-    "not numerically quantified by source; TSIV accuracy class 4-F",
+_LIQUID_INPUT_BAND_CLASS_BY_KIND = {
+    'tsiv dfh298 uncertainty, phi uncertainty, and fitted crystal cp extension band': 'source_uncertainty',
+    'tier 3 liquid from solid leave one out gibbs error against the 48 janaf crystal/liquid pairs': 'measured_construction',
+    'tier 3 liquid from solid leave one out gibbs error against 17 measured class c janaf pairs': 'measured_construction',
+}
+_REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE = {
+    ('tier1 direct assessed', 'direct assessed liquid function; reaction residual is at most 0.31 kj/mol against the directly fitted janaf elemental references over 1700 3000 k. the band records reaction fit residual, not thermochemical accuracy; no fe(l) fusion anchor adjustment is applied.', False, 'condensate phi'): 'fit_only',
+    ('tier1 direct assessed', 'the 1200 1500 k interval uses the existing lower janaf shomate fit; the original 1500 3000 k coefficients are retained unchanged. both intervals reproduce their janaf source nodes within 1 j/mol.', False, 'janaf shomate'): 'fit_only',
+    ('tier1 direct assessed', 'separate alpha, gamma, and delta fits use the phase side h h(298), s, and cp values at the 1184 and 1665 k transitions. the delta fit extends nine kelvin beyond the final 1800 k node to the transition marker. this band records source node fit residual only, not thermochemical accuracy.', False, 'condensate phi'): 'fit_only',
+    ('tier1 direct assessed', 'the 1700 3000 k fe(l) fit uses the cited fe 006 nodes directly. its maximum source node fit residual is 1.507 j/mol; the 2.345 j/mol fe(cr)/fe(l) seam at the 1809 k fusion marker remains unadjusted and is within the 10 j/mol fit gate. this band records fit residual only, not thermochemical accuracy.', False, 'condensate phi'): 'fit_only',
+    ('tier1 direct assessed', 'stable pure iron reference state uses the crystal below the janaf 1809 k fusion point and liquid at and above it; a fe is fixed to one for the saturation reference. the 2.345 j/mol branch seam residual is within the 10 j/mol fit gate; this band records fit and seam residual only, not thermochemical accuracy.', False, 'piecewise'): 'fit_only',
+    ('tier3 flagged estimate', 'the central nominal fusion value follows the explicit lesher and spera secondary transcription; the genuine sugawara and akaogi primary estimate is retained as an uncertainty bound. the tier 2 liquid component cp is used centrally with its stated uncertainty and a high temperature extrapolation flag; the hypothetical hematite phase remains metastable.', True, 'condensate phi'): 'source_uncertainty',
+    ('tier3 flagged estimate', 'stoichiometric pseudo complex reference; it adds no independent gibbs function.', False, 'linear combination'): 'source_uncertainty',
+    ('tier1 direct assessed', 'elemental standard fitted with the existing condensate φ fitter.', False, 'condensate phi'): 'fit_only',
+    ('tier1 direct assessed', 'the original 1600 2200 k coefficients are retained; separate condensate φ fits use the cited janaf liquid nodes over 1200 1600 k and 2200 3000 k. their maximum source residual is 0.524 j/mol.', False, 'condensate phi'): 'fit_only',
+    ('tier3 flagged estimate', 'uses the existing al 100 sc cp continuation over 1200 2500 k and the direct liquid fit over 2500 3000 k; the numeric band remains based on the measured tier 1 leave one out maximum at fusion.', False, 'condensate phi'): 'measured_construction',
+    ('tier4 systematic estimate', "the original 1600 2200 k coefficients are retained. the same liquid from solid construction is independently fitted below and above that interval on 100 k nodes; maximum outer interval residual is 0.271 j/mol. the construction uses the tool's leave one out mean fusion entropy per formula atom; ivtan's 40 ± 5 kj/mol fusion enthalpy is a cross check only.", True, 'condensate phi'): 'measured_construction',
+    ('tier4 systematic estimate', 'the original 1500 2000 k coefficients are retained. the same liquid from solid construction is fitted on source nodes in 1200 1500 k and 2000 3000 k; the largest additional source node residual is 2.278 j/mol. no activity data were used to select coefficients.', True, 'condensate phi'): 'measured_construction',
+    ('tier4 systematic estimate', 'the original 1500 2000 k coefficients are retained. the same liquid from solid construction is fitted on source nodes in 1200 1500 k and 2000 3000 k; the largest additional source node residual is 3.510 j/mol. no activity data were used to select coefficients.', True, 'condensate phi'): 'measured_construction',
+    ('tier4 systematic estimate', 'the original 1600 2200 k coefficients are retained. the same liquid from solid construction is fitted below and above that interval on 100 k nodes; the maximum additional source node residual is 0.975 j/mol. chen activities were not used to select coefficients.', True, 'condensate phi'): 'measured_construction',
+    ('tier3 flagged estimate', 'uses the existing supercooled branch below the direct liquid function interval.', False, 'condensate phi'): 'fit_only',
+    ('tier1 direct assessed', 'uses the direct assessed liquid function from its tabulated interval.', False, 'condensate phi'): 'fit_only',
+    ('tier3 flagged estimate', 'the two existing standard state branches meet within 0.01 kj/mol at their 1800 k join.', False, 'piecewise'): 'fit_only',
+}
+_REDOX_REACTION_BAND_CLASS_BY_EVIDENCE = {
+    ('maximum absolute reaction gibbs residual against the janaf feo formation gibbs values over 1700 3000 k.', 'the 0.39 kj/mol band bounds the fitted reaction gibbs residual against janaf feo values; it is a residual band, not a thermochemical accuracy estimate. the fe(cr) endpoint extrapolation is separately flagged.'): 'fit_only',
+    ('conservative sum of one half the propagated fe2o3 fusion enthalpy and tier 2 liquid cp band, the feo reaction band, and one quarter the o2 fit band.', 'the band includes the primary fusion estimate bound and stated tier 2 cp uncertainty; high temperature cp extrapolation and hypothetical hematite metastability remain flagged.'): 'source_uncertainty',
+    ('conservative sum of the below fusion mno construction band using the seven rock salt monoxide maximum residuals, the mn(l) source fit band, and one half the o2 fit band.', 'the mno liquid reference is supercooled throughout the declared domain; the below fusion band uses domain matched measured monoxide residuals and the measured leave one out anchor.'): 'measured_construction',
+    ('sum of the mnsio3(l) band from interpolated tier 3 leave one out columns, its independent fusion temperature interval and fit residual, the mno(l) band, and the sio2(l) band.', 'the leave one out columns are interpolated to t t fus; the same residuals are not also stacked as propagated entropy and heat capacity spreads. the chen activity data remain held out.'): 'measured_construction',
+    ('sum of the mn2sio4(l) band from interpolated tier 3 leave one out columns, its independent source enthalpy and fusion temperature uncertainties and fit residual, two mno(l) bands, and the sio2(l) band.', 'the leave one out columns are interpolated to t t fus; the same residuals are not also stacked as propagated entropy and heat capacity spreads. the primary tephroite enthalpy uncertainty is counted once. the chen activity data remain held out.'): 'measured_construction',
+    ('sum of the constructed galaxite band, including its crystal formation enthalpy and entropy uncertainties, the mno(l) band, and the existing al2o3(l) supercooled reference band.', 'the heat capacity fit is extrapolated above its measured range and the formation enthalpy is assessed rather than directly measured. chen activity data were held out and did not select the equilibrium constant.'): 'measured_construction',
+}
+_MELT_DIAGNOSTIC_SPLIT_BY_KEY = {
+    'translation candidates/fc87/max abs residual dex': 'held_out_or_candidate',
+    'translation candidates/lam/max abs residual dex': 'held_out_or_candidate',
+    'k translation/max abs residual dex': 'held_out_or_candidate',
+    'k translation/residual at t min dex': 'held_out_or_candidate',
+    'k translation/residual at t max dex': 'held_out_or_candidate',
+    'provenance/max abs heldout log10k residual': 'held_out',
+    'standard state refit/max abs residual dex': 'held_out_or_candidate',
 }
 
 
-def _tokens(value: Any) -> set[str]:
-    return set(re.findall(r"[a-z0-9]+", str(value).lower()))
+def _liquid_input_band_class(kind: Any) -> str | None:
+    return _LIQUID_INPUT_BAND_CLASS_BY_KIND.get(
+        _normalized_controlled_value(kind)
+    )
 
 
-_NEGATION_TOKENS = frozenset({"not", "never", "un", "non", "no", "without"})
+def _redox_species_band_class(row: dict[str, Any]) -> str:
+    provenance = row.get("provenance", {})
+    construction = row.get("construction", False)
+    if type(construction) is not bool:
+        return "fit_only"
+    key = (
+        _normalized_controlled_value(provenance.get("tier")),
+        _normalized_controlled_value(provenance.get("selection_rationale")),
+        construction,
+        _normalized_controlled_value(row.get("evaluator")),
+    )
+    return _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE.get(key, "fit_only")
 
 
-def _has_affirmative_token(value: Any, marker: str) -> bool:
-    for clause in re.split(r"[,;.!?:\n]+", str(value).lower()):
-        tokens = _tokens(clause)
-        if marker in tokens and not (_NEGATION_TOKENS & tokens):
-            return True
-    return False
+def _redox_reaction_band_class(method: Any, note: Any) -> str:
+    key = (
+        _normalized_controlled_value(method),
+        _normalized_controlled_value(note),
+    )
+    return _REDOX_REACTION_BAND_CLASS_BY_EVIDENCE.get(key, "fit_only")
 
 
-def _contains_token_phrase(value: Any, phrase: str) -> bool:
-    text = str(value).lower()
-    marker = re.escape(phrase.lower())
-    return re.search(rf"(?<![a-z0-9]){marker}(?![a-z0-9])", text) is not None
-
-
-def _has_measured_evidence(value: Any) -> bool:
-    return _has_affirmative_token(value, "measured")
+def _melt_held_out_split(diagnostic_keys: Any) -> str:
+    for key in diagnostic_keys:
+        if (
+            _MELT_DIAGNOSTIC_SPLIT_BY_KEY.get(
+                _normalized_controlled_value(key)
+            )
+            == "held_out"
+        ):
+            return "held_out"
+    return "held_out_or_candidate"
 
 
 def independent_check(reason: str) -> dict[str, Any]:
@@ -85,14 +160,13 @@ def _temperature(record: dict[str, Any]) -> Any:
     return deepcopy(value)
 
 
-def _source_band_kind(value: Any, row: dict[str, Any]) -> tuple[str | None, str]:
+def _source_band_kind(value: Any) -> tuple[str | None, str]:
     """Classify a published band using its declared provenance kind."""
     explanation = str(value.get("kind", "")) if isinstance(value, dict) else ""
-    if explanation in UNQUANTIFIED_BAND_KINDS:
-        return None, explanation
-    if explanation in SOURCE_UNCERTAINTY_KINDS:
-        return "source_uncertainty", explanation or "Uncertainty reported or propagated from the source."
-    return "measured_construction", explanation or "Measured construction envelope."
+    kind = _SOURCE_BAND_CLASS_BY_KIND.get(
+        _normalized_controlled_value(explanation)
+    )
+    return kind, explanation or "Unclassified source band kind."
 
 
 def _redox(root: Path, path: Path | None = None) -> None:
@@ -120,13 +194,13 @@ def _redox(root: Path, path: Path | None = None) -> None:
             ):
                 fit["temperature_range"] = _temperature(row)
                 changed = True
-            rationale = str(row.get("provenance", {}).get("selection_rationale", "")).lower()
+            band_class = _redox_species_band_class(row)
             basis = row.get("band_basis")
             if (
                 isinstance(basis, dict)
                 and basis.get("kind") == "source_uncertainty"
                 and row.get("provenance", {}).get("tier") == "tier3_flagged_estimate"
-                and _has_measured_evidence(rationale)
+                and band_class == "measured_construction"
             ):
                 basis["kind"] = "measured_construction"
                 changed = True
@@ -135,32 +209,19 @@ def _redox(root: Path, path: Path | None = None) -> None:
         value = row.pop("band_kj_mol")
         legacy_method = row.pop("band_method", None)
         rationale = row.get("provenance", {}).get("selection_rationale", "")
-        construction = row.get("construction")
-        tier = row.get("provenance", {}).get("tier")
-        rationale_tokens = _tokens(rationale)
-        measured_evidence = _has_measured_evidence(rationale)
-        source_band = bool(construction) or tier == "tier4_systematic_estimate" or (
-            (
-                tier == "tier3_flagged_estimate"
-                and (
-                    any(
-                        word in rationale_tokens
-                        for word in ("uncertainty", "construction", "fusion")
-                    )
-                    or measured_evidence
-                )
-            ) or row.get("evaluator") == "linear_combination"
-        )
+        band_class = _redox_species_band_class(row)
+        source_band = band_class != "fit_only"
         if source_band:
-            explanation = str(legacy_method or rationale or construction)
+            explanation = str(
+                legacy_method or rationale or row.get("construction") or ""
+            )
             row["accuracy_band"] = {
                 "value": value, "unit": "kJ mol^-1 species",
                 "temperature_points_or_range": "T_domain_K", "coverage": explanation,
             }
-            kind = "measured_construction" if (
-                construction and tier == "tier4_systematic_estimate"
-            ) or measured_evidence else "source_uncertainty"
-            row["band_basis"] = band_basis(kind, explanation, row.get("provenance", {}).get("source"))
+            row["band_basis"] = band_basis(
+                band_class, explanation, row.get("provenance", {}).get("source")
+            )
             row["fit_residual"] = None
         else:
             row["fit_residual"] = {
@@ -192,23 +253,8 @@ def _redox(root: Path, path: Path | None = None) -> None:
         method = str(row.pop("band_method", ""))
         note = str(row.get("uncertainty_note", ""))
         row_number = row.get("row")
-        classification = f"{method} {note}".lower()
-        classification_tokens = _tokens(classification)
-        construction_band = bool(
-            {"construction", "constructed", "census"} & classification_tokens
-        ) or bool(
-            _contains_token_phrase(classification, "leave-one-out")
-        )
-        source_band = not construction_band and any(
-            _contains_token_phrase(classification, marker)
-            for marker in (
-                "fusion-enthalpy",
-                "source uncertainty",
-                "tier-2 liquid-cp uncertainty",
-                "propagated fe2o3",
-            )
-        )
-        if source_band or construction_band:
+        band_class = _redox_reaction_band_class(method, note)
+        if band_class != "fit_only":
             row["accuracy_band"] = {
                 "value": value, "unit": "kJ mol^-1 reaction",
                 "temperature_points_or_range": "T_domain_K",
@@ -216,7 +262,7 @@ def _redox(root: Path, path: Path | None = None) -> None:
             }
             row["fit_residual"] = None
             row["band_basis"] = band_basis(
-                "source_uncertainty" if source_band else "measured_construction",
+                band_class,
                 note or method, row.get("provenance_class"),
             )
         else:
@@ -405,7 +451,16 @@ def _gas(root: Path) -> None:
             row["fit_residual"] = None
         if old_band is not None:
             kind = str(old_band.get("kind", ""))
-            basis_kind, basis_explanation = _source_band_kind(old_band, row)
+            basis_kind, basis_explanation = _source_band_kind(old_band)
+            if (
+                basis_kind is None
+                and _normalized_controlled_value(kind)
+                not in _SOURCE_BAND_CLASS_BY_KIND
+            ):
+                basis_explanation = (
+                    "Unlisted source band kind; original band: "
+                    + json.dumps(old_band, sort_keys=True, ensure_ascii=False)
+                )
             if "combined_band" in old_band:
                 basis_kind = "measured_construction"
                 basis_explanation = "Tier-2 fusion-entropy and liquid-Cp census envelopes combined with the selected input spreads."
@@ -512,9 +567,18 @@ def _liquid_inputs(root: Path) -> None:
         if (
             isinstance(existing_basis, dict)
             and existing_basis.get("kind") == "measured_construction"
-            and current_kind in SOURCE_UNCERTAINTY_KINDS
+            and current_kind
         ):
-            existing_basis["kind"] = "source_uncertainty"
+            current_class = _liquid_input_band_class(current_kind)
+            if current_class is None:
+                row["accuracy_band"] = None
+                existing_basis["kind"] = "none"
+                existing_basis["explanation"] = (
+                    "Unlisted liquid-input band kind; original band: "
+                    + json.dumps(current_band, sort_keys=True, ensure_ascii=False)
+                )
+            else:
+                existing_basis["kind"] = current_class
         extension_metadata = row.get("crystal_cp_extrapolation_band")
         if extension_metadata is None and isinstance(current_value, dict) and "source_limit_K" in current_value and "values_J_per_mol" not in current_value:
             extension_metadata = current_value
@@ -528,14 +592,23 @@ def _liquid_inputs(root: Path) -> None:
         old_extension = row.pop("crystal_cp_extrapolation_band", None) or extension_metadata
         if old_measured is not None:
             measured_kind = str(old_measured.get("kind", ""))
-            basis_kind = "source_uncertainty" if measured_kind == "TSIV dfH298 uncertainty, Phi uncertainty, and fitted crystal-Cp extension band" else "measured_construction"
-            row["accuracy_band"] = {
-                "value": old_measured,
-                "unit": "J mol^-1",
-                "temperature_points_or_range": list(old_measured.get("values_J_per_mol", {}).keys()),
-                "coverage": old_measured.get("kind", "measured construction envelope"),
-            }
-            row["band_basis"] = band_basis(basis_kind, old_measured.get("source", old_measured.get("kind", "")), formula)
+            basis_kind = _liquid_input_band_class(measured_kind)
+            if basis_kind is None:
+                row["accuracy_band"] = None
+                row["band_basis"] = band_basis(
+                    "none",
+                    "Unlisted legacy band kind; no accuracy class was inferred.",
+                    f"{formula}; unlisted legacy band: "
+                    + json.dumps(old_measured, sort_keys=True, ensure_ascii=False),
+                )
+            else:
+                row["accuracy_band"] = {
+                    "value": old_measured,
+                    "unit": "J mol^-1",
+                    "temperature_points_or_range": list(old_measured.get("values_J_per_mol", {}).keys()),
+                    "coverage": old_measured.get("kind", "measured construction envelope"),
+                }
+                row["band_basis"] = band_basis(basis_kind, old_measured.get("source", old_measured.get("kind", "")), formula)
         elif old_extension is not None:
             row["accuracy_band"] = None
             row["band_basis"] = band_basis(
@@ -545,7 +618,11 @@ def _liquid_inputs(root: Path) -> None:
             )
         else:
             row["accuracy_band"] = None
-            row["band_basis"] = band_basis("source_uncertainty" if row.get("tier") else "none", "Input provenance only; no composed liquid Gibbs band stored on this input row.", formula)
+            row["band_basis"] = band_basis(
+                "none",
+                "Input provenance only; no composed liquid Gibbs band stored on this input row.",
+                formula,
+            )
         row["fit_residual"] = None
         row["independent_check"] = independent_check("This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded.")
     path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
@@ -603,11 +680,7 @@ def migrate_melt_row(row: dict[str, Any]) -> None:
 
     move_residuals(row, top=True)
     diagnostics = {**existing_diagnostics, **diagnostics}
-    split = (
-        "held_out"
-        if any(_has_affirmative_token(key, "heldout") for key in diagnostics)
-        else "held_out_or_candidate"
-    )
+    split = _melt_held_out_split(diagnostics)
     row["fit_residual"] = None if not diagnostics else {
         "value": diagnostics,
         "unit": "source-specific",

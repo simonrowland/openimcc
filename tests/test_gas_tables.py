@@ -12,6 +12,7 @@ import re
 import struct
 import subprocess
 import sys
+from collections import Counter
 from dataclasses import FrozenInstanceError, replace
 from decimal import Decimal, ROUND_HALF_UP
 from functools import lru_cache
@@ -54,6 +55,407 @@ PUBLISHED_DATA = ROOT / "data-src" / "published-thermo"
 LH84_DATA = ROOT / "data-src" / "lh84"
 LH87_DATA = ROOT / "data-src" / "lh87"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
+
+# Exact compilation values present in the shipped gas and parent provenance.
+_COMPILATION_CLASS_BY_SOURCE_FILE = {
+    'al-005.yaml': 'JANAF',
+    'al-007.txt': 'JANAF',
+    'al-074.yaml': 'JANAF',
+    'al-076.txt': 'JANAF',
+    'al-077.yaml': 'JANAF',
+    'al-078.txt': 'JANAF',
+    'al-080.yaml': 'JANAF',
+    'al-092.yaml': 'JANAF',
+    'al-094.yaml': 'JANAF',
+    'al-100.yaml': 'JANAF',
+    'b-005.txt': 'JANAF',
+    'b-006.txt': 'JANAF',
+    'b-007.txt': 'JANAF',
+    'b-078.txt': 'JANAF',
+    'b-079.txt': 'JANAF',
+    'b-080.txt': 'JANAF',
+    'b-093.txt': 'JANAF',
+    'b-094.txt': 'JANAF',
+    'b-096.txt': 'JANAF',
+    'b-098.txt': 'JANAF',
+    'ba-005.yaml': 'JANAF',
+    'ba-006.yaml': 'JANAF',
+    'ba-007.yaml': 'JANAF',
+    'ba-011.yaml': 'JANAF',
+    'ba-012.yaml': 'JANAF',
+    'ba-016.yaml': 'JANAF',
+    'ba-017.yaml': 'JANAF',
+    'ba-022.yaml': 'JANAF',
+    'ba-029.yaml': 'JANAF',
+    'ba-033.yaml': 'JANAF',
+    'ba-035.yaml': 'JANAF',
+    'ba-037.yaml': 'JANAF',
+    'bismuth-ion-sources.json': 'other',
+    'br-001.yaml': 'JANAF',
+    'br-004.yaml': 'JANAF',
+    'br-010.yaml': 'JANAF',
+    'br-018.yaml': 'JANAF',
+    'br-022.yaml': 'JANAF',
+    'br-023.yaml': 'JANAF',
+    'br-030.yaml': 'JANAF',
+    'br-034.yaml': 'JANAF',
+    'br-040.yaml': 'JANAF',
+    'br-044.yaml': 'JANAF',
+    'br-055.yaml': 'JANAF',
+    'br-056.yaml': 'JANAF',
+    'br-060.yaml': 'JANAF',
+    'br-064.yaml': 'JANAF',
+    'br-073.yaml': 'JANAF',
+    'br-092.yaml': 'JANAF',
+    'burcat-au-minus.json': 'other',
+    'burcat-au-plus.json': 'other',
+    'burcat-au.json': 'other',
+    'burcat-hg.json': 'other',
+    'burcat-ir.json': 'other',
+    'burcat-os.json': 'other',
+    'burcat-pd-plus.json': 'other',
+    'burcat-pd.json': 'other',
+    'burcat-pt-minus.json': 'other',
+    'burcat-pt-plus.json': 'other',
+    'burcat-pt.json': 'other',
+    'burcat-th-plus.json': 'other',
+    'c-002.yaml': 'JANAF',
+    'c-093.yaml': 'JANAF',
+    'c-095.yaml': 'JANAF',
+    'ca-006.yaml': 'JANAF',
+    'ca-007.yaml': 'JANAF',
+    'ca-008.yaml': 'JANAF',
+    'ca-012.yaml': 'JANAF',
+    'ca-013.yaml': 'JANAF',
+    'ca-017.yaml': 'JANAF',
+    'ca-022.yaml': 'JANAF',
+    'ca-026.yaml': 'JANAF',
+    'ca-028.yaml': 'JANAF',
+    'ca-030.yaml': 'JANAF',
+    'ce.json': 'Konings',
+    'cl-001.yaml': 'JANAF',
+    'cl-008.yaml': 'JANAF',
+    'cl-026.yaml': 'JANAF',
+    'cl-039.yaml': 'JANAF',
+    'cl-044.yaml': 'JANAF',
+    'cl-049.yaml': 'JANAF',
+    'cl-056.yaml': 'JANAF',
+    'cl-069.yaml': 'JANAF',
+    'cl-073.yaml': 'JANAF',
+    'cl-078.yaml': 'JANAF',
+    'cl-091.yaml': 'JANAF',
+    'cl-092.yaml': 'JANAF',
+    'cl-096.yaml': 'JANAF',
+    'cl-098.yaml': 'JANAF',
+    'cl-122.yaml': 'JANAF',
+    'cl-150.yaml': 'JANAF',
+    'co-005.yaml': 'JANAF',
+    'co-006.yaml': 'JANAF',
+    'co-007.yaml': 'JANAF',
+    'constructed-ion-sources.json': 'other',
+    'cr-005.yaml': 'JANAF',
+    'cr-007.txt': 'JANAF',
+    'cr-010.yaml': 'JANAF',
+    'cr-011.yaml': 'JANAF',
+    'cr-012.yaml': 'JANAF',
+    'cr-015.yaml': 'JANAF',
+    'crystal-thermochemistry.json': 'TSIV',
+    'cs-005.txt': 'JANAF',
+    'cs-006.txt': 'JANAF',
+    'cs-007.txt': 'JANAF',
+    'cs-011.yaml': 'JANAF',
+    'cs-017.txt': 'JANAF',
+    'cs-019.yaml': 'JANAF',
+    'cs-021.txt': 'JANAF',
+    'cu-005.txt': 'JANAF',
+    'cu-006.txt': 'JANAF',
+    'cu-007.txt': 'JANAF',
+    'cu-016.txt': 'JANAF',
+    'cu-018.txt': 'JANAF',
+    'cu-020.txt': 'JANAF',
+    'd-020.txt': 'JANAF',
+    'dy.json': 'Konings',
+    'er.json': 'Konings',
+    'eu.json': 'Konings',
+    'f-001.yaml': 'JANAF',
+    'f-005.yaml': 'JANAF',
+    'f-020.yaml': 'JANAF',
+    'f-024.yaml': 'JANAF',
+    'f-026.yaml': 'JANAF',
+    'f-036.yaml': 'JANAF',
+    'f-049.yaml': 'JANAF',
+    'f-054.yaml': 'JANAF',
+    'f-069.yaml': 'JANAF',
+    'f-071.yaml': 'JANAF',
+    'f-075.yaml': 'JANAF',
+    'f-082.yaml': 'JANAF',
+    'f-105.yaml': 'JANAF',
+    'f-129.yaml': 'JANAF',
+    'fe-008.yaml': 'JANAF',
+    'fe-010.txt': 'JANAF',
+    'fe-021.yaml': 'JANAF',
+    'ga-005.txt': 'JANAF',
+    'ga-006.txt': 'JANAF',
+    'ga-007.txt': 'JANAF',
+    'gd.json': 'Konings',
+    'h-001.yaml': 'JANAF',
+    'h-005.yaml': 'JANAF',
+    'h-038.yaml': 'JANAF',
+    'h-050.yaml': 'JANAF',
+    'h-064.yaml': 'JANAF',
+    'hf-006.txt': 'JANAF',
+    'hf-007.txt': 'JANAF',
+    'hf-008.txt': 'JANAF',
+    'hg-004.txt': 'JANAF',
+    'ho.json': 'Konings',
+    'i-001.yaml': 'JANAF',
+    'i-007.yaml': 'JANAF',
+    'i-011.yaml': 'JANAF',
+    'i-012.yaml': 'JANAF',
+    'i-020.yaml': 'JANAF',
+    'i-027.yaml': 'JANAF',
+    'i-028.yaml': 'JANAF',
+    'i-029.yaml': 'JANAF',
+    'i-033.yaml': 'JANAF',
+    'i-044.yaml': 'JANAF',
+    'ivtan-table-264.json': 'TSIV',
+    'jung-hudon-p2o5.json': 'JANAF',
+    'k-005.yaml': 'JANAF',
+    'k-006.txt': 'JANAF',
+    'k-007.txt': 'JANAF',
+    'k-008.yaml': 'JANAF',
+    'k-009.txt': 'JANAF',
+    'k-011.yaml': 'JANAF',
+    'k-012.yaml': 'JANAF',
+    'kelley-1960-sbo.json': 'Pankratz',
+    'la.json': 'Konings',
+    'li-005.txt': 'JANAF',
+    'li-006.txt': 'JANAF',
+    'li-007.txt': 'JANAF',
+    'li-011.txt': 'JANAF',
+    'li-012.txt': 'JANAF',
+    'li-015.txt': 'JANAF',
+    'li-017.txt': 'JANAF',
+    'li-019.txt': 'JANAF',
+    'lu.json': 'Konings',
+    'mg-005.yaml': 'JANAF',
+    'mg-009.yaml': 'JANAF',
+    'mg-011.yaml': 'JANAF',
+    'mn-005.yaml': 'JANAF',
+    'mn-006.yaml': 'JANAF',
+    'mo-005.yaml': 'JANAF',
+    'mo-006.yaml': 'JANAF',
+    'mo-007.yaml': 'JANAF',
+    'mo-008.yaml': 'JANAF',
+    'mo-010.yaml': 'JANAF',
+    'mo-015.yaml': 'JANAF',
+    'mo-017.yaml': 'JANAF',
+    'n-002.yaml': 'JANAF',
+    'n-005.yaml': 'JANAF',
+    'n-007.yaml': 'JANAF',
+    'n-023.yaml': 'JANAF',
+    'na-005.yaml': 'JANAF',
+    'na-006.txt': 'JANAF',
+    'na-007.txt': 'JANAF',
+    'na-008.yaml': 'JANAF',
+    'na-009.txt': 'JANAF',
+    'na-011.yaml': 'JANAF',
+    'na-012.yaml': 'JANAF',
+    'na-013.yaml': 'JANAF',
+    'nb-005.yaml': 'JANAF',
+    'nb-007.txt': 'JANAF',
+    'nb-011.yaml': 'JANAF',
+    'nb-013.yaml': 'JANAF',
+    'nb-015.yaml': 'JANAF',
+    'nd.json': 'Konings',
+    'ng-0074.json': 'NASA',
+    'ng-0085.json': 'NASA',
+    'ng-0086.json': 'NASA',
+    'ng-0185.json': 'NASA',
+    'ng-0200.json': 'NASA',
+    'ng-0205.json': 'NASA',
+    'ng-0208.json': 'NASA',
+    'ng-0210.json': 'NASA',
+    'ng-0211.json': 'NASA',
+    'ng-0212.json': 'NASA',
+    'ng-0511.json': 'NASA',
+    'ng-0515.json': 'NASA',
+    'ng-0524.json': 'NASA',
+    'ng-0528.json': 'NASA',
+    'ng-0760.json': 'NASA',
+    'ng-0831.json': 'NASA',
+    'ng-0832.json': 'NASA',
+    'ng-0833.json': 'NASA',
+    'ng-0834.json': 'NASA',
+    'ng-0893.json': 'NASA',
+    'ng-0904.json': 'NASA',
+    'ng-0905.json': 'NASA',
+    'ng-0926.json': 'NASA',
+    'ng-1018.json': 'NASA',
+    'ng-1019.json': 'NASA',
+    'ng-1020.json': 'NASA',
+    'ng-1022.json': 'NASA',
+    'ng-1030.json': 'NASA',
+    'ng-1031.json': 'NASA',
+    'ng-1032.json': 'NASA',
+    'ng-1033.json': 'NASA',
+    'ng-1074.json': 'NASA',
+    'ng-1087.json': 'NASA',
+    'ng-1088.json': 'NASA',
+    'ng-1090.json': 'NASA',
+    'ng-1092.json': 'NASA',
+    'ng-1206.json': 'NASA',
+    'ng-1224.json': 'NASA',
+    'ng-1230.json': 'NASA',
+    'ng-1235.json': 'NASA',
+    'ng-12403.json': 'NASA',
+    'ng-12434.json': 'NASA',
+    'ng-1258.json': 'NASA',
+    'ng-12662.json': 'NASA',
+    'ng-1276.json': 'NASA',
+    'ng-1329.json': 'NASA',
+    'ng-1352.json': 'NASA',
+    'ng-1841.json': 'NASA',
+    'ng-1842.json': 'NASA',
+    'ng-1843.json': 'NASA',
+    'ng-1845.json': 'NASA',
+    'ng-1846.json': 'NASA',
+    'ng-1847.json': 'NASA',
+    'ng-1848.json': 'NASA',
+    'ng-1849.json': 'NASA',
+    'ng-1857.json': 'NASA',
+    'ng-1977.json': 'NASA',
+    'ng-4060.json': 'NASA',
+    'ng-4071.json': 'NASA',
+    'ng-5066.json': 'NASA',
+    'ng-5178.json': 'NASA',
+    'ng-5186.json': 'NASA',
+    'ng-5197.json': 'NASA',
+    'ng-5331.json': 'NASA',
+    'ng-5339.json': 'NASA',
+    'ng-6005.json': 'NASA',
+    'ng-6131.json': 'NASA',
+    'ng-6243.json': 'NASA',
+    'ng-beo-l-1352.json': 'NASA',
+    'ni-005.yaml': 'JANAF',
+    'ni-006.yaml': 'JANAF',
+    'ni-007.yaml': 'JANAF',
+    'nureg-cr-4308-teo.json': 'other',
+    'o-001.yaml': 'JANAF',
+    'o-003.txt': 'JANAF',
+    'o-004.yaml': 'JANAF',
+    'o-007.txt': 'JANAF',
+    'o-009.txt': 'JANAF',
+    'o-010.yaml': 'JANAF',
+    'o-011.yaml': 'JANAF',
+    'o-012.yaml': 'JANAF',
+    'o-014.yaml': 'JANAF',
+    'o-016.yaml': 'JANAF',
+    'o-017.yaml': 'JANAF',
+    'o-022.yaml': 'JANAF',
+    'o-026.yaml': 'JANAF',
+    'o-027.yaml': 'JANAF',
+    'o-028.yaml': 'JANAF',
+    'o-029.yaml': 'JANAF',
+    'o-031.txt': 'JANAF',
+    'o-032.yaml': 'JANAF',
+    'o-034.yaml': 'JANAF',
+    'o-035.yaml': 'JANAF',
+    'o-038.yaml': 'JANAF',
+    'o-040.yaml': 'JANAF',
+    'o-041.yaml': 'JANAF',
+    'o-044.yaml': 'JANAF',
+    'o-046.yaml': 'JANAF',
+    'o-048.yaml': 'JANAF',
+    'o-053.yaml': 'JANAF',
+    'o-055.yaml': 'JANAF',
+    'o-058.yaml': 'JANAF',
+    'o-063.yaml': 'JANAF',
+    'o-066.yaml': 'JANAF',
+    'o-068.yaml': 'JANAF',
+    'o-076.yaml': 'JANAF',
+    'o-078.yaml': 'JANAF',
+    'o-087.yaml': 'JANAF',
+    'o-088.yaml': 'JANAF',
+    'o-092.yaml': 'JANAF',
+    'o-093.yaml': 'JANAF',
+    'o-095.yaml': 'JANAF',
+    'o-096.yaml': 'JANAF',
+    'p-008.yaml': 'JANAF',
+    'p-011.yaml': 'JANAF',
+    'p-012.yaml': 'JANAF',
+    'p-013.yaml': 'JANAF',
+    'pankratz-bulletin-672.json': 'Pankratz',
+    'pankratz-bulletin-677-re.json': 'Pankratz',
+    'pankratz-bulletin-696.json': 'Pankratz',
+    'pankratz-hf.json': 'Pankratz',
+    'pankratz-rh.json': 'Pankratz',
+    'pankratz-ru.json': 'Pankratz',
+    'pb-005.txt': 'JANAF',
+    'pb-006.txt': 'JANAF',
+    'pb-007.txt': 'JANAF',
+    'pedley-marshall-1983-yo.json': 'other',
+    'pr.json': 'Konings',
+    'rb-005.txt': 'JANAF',
+    'rb-006.txt': 'JANAF',
+    'rb-007.txt': 'JANAF',
+    's-006.yaml': 'JANAF',
+    's-012.yaml': 'JANAF',
+    's-016.yaml': 'JANAF',
+    's-017.yaml': 'JANAF',
+    's-018.yaml': 'JANAF',
+    's-019.yaml': 'JANAF',
+    's-020.yaml': 'JANAF',
+    's-021.yaml': 'JANAF',
+    'si-005.yaml': 'JANAF',
+    'si-007.txt': 'JANAF',
+    'si-008.yaml': 'JANAF',
+    'si-009.yaml': 'JANAF',
+    'sm.json': 'Konings',
+    'sr-006.yaml': 'JANAF',
+    'sr-007.yaml': 'JANAF',
+    'ta-005.yaml': 'JANAF',
+    'tb.json': 'Konings',
+    'ti-006.yaml': 'JANAF',
+    'ti-008.txt': 'JANAF',
+    'tm.json': 'Konings',
+    'tsiv-table-1334.json': 'TSIV',
+    'tsiv-table-1335.json': 'TSIV',
+    'tsiv-table-1436.json': 'TSIV',
+    'tsiv-table-1603.json': 'TSIV',
+    'tsiv-table-2026.json': 'TSIV',
+    'v-005.yaml': 'JANAF',
+    'v-007.txt': 'JANAF',
+    'w-005.yaml': 'JANAF',
+    'w-006.yaml': 'JANAF',
+    'w-007.yaml': 'JANAF',
+    'yb.json': 'Konings',
+    'zn-005.txt': 'JANAF',
+    'zn-006.txt': 'JANAF',
+    'zn-007.txt': 'JANAF',
+    'zr-006.yaml': 'JANAF',
+    'zr-007.yaml': 'JANAF',
+    'zr-008.yaml': 'JANAF',
+}
+_COMPILATION_CLASS_BY_MISSING_SOURCE_IDENTITY = {
+    ('primary_measurement_reanchored', '', ''): 'JANAF',
+    ('published_fitted', 'lh87', 'lh87'): 'other',
+    ('published_fitted', 'nasa-tn-d-7123', 'nasa-tn-d-7123'): 'NASA',
+}
+
+
+def _compilation(row: dict[str, object]) -> str:
+    source_path = row.get("source_path")
+    if source_path:
+        return _COMPILATION_CLASS_BY_SOURCE_FILE.get(
+            Path(str(source_path)).name.casefold(), "other"
+        )
+    identity = tuple(
+        str(row.get(key) or "").casefold()
+        for key in ("authority", "table_id", "source_table_id")
+    )
+    return _COMPILATION_CLASS_BY_MISSING_SOURCE_IDENTITY.get(identity, "other")
+
 _BASE_INTERVAL_1_SHA256 = "aa46b44c69f6f226f4a18841ae0faf3951c2bf4f0073ed81eab61cd27104884f"
 _PROMOTED_CONDENSATE_BASELINE_ROW_KEYS = {
     ("Na2O(l)", "l", "1200", "1500", "Na-013", None),
@@ -6341,6 +6743,52 @@ def test_na_k_gas_anchor_and_parent_scale_bands_recompute() -> None:
     assert len(seen) == 10
 
 
+def test_compilation_controlled_vocabulary_census() -> None:
+    assert len(_COMPILATION_CLASS_BY_SOURCE_FILE) == 378
+    assert len(_COMPILATION_CLASS_BY_MISSING_SOURCE_IDENTITY) == 3
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    rows = provenance["rows"]
+    source_files = {
+        Path(row["source_path"]).name.casefold()
+        for row in rows
+        if row.get("source_path")
+    }
+    assert source_files == set(_COMPILATION_CLASS_BY_SOURCE_FILE)
+    missing_source_identities = {
+        (
+            str(row.get("authority") or "").casefold(),
+            str(row.get("table_id") or "").casefold(),
+            str(row.get("source_table_id") or "").casefold(),
+        )
+        for row in rows
+        if not row.get("source_path")
+    }
+    assert missing_source_identities == set(
+        _COMPILATION_CLASS_BY_MISSING_SOURCE_IDENTITY
+    )
+    for source_file, expected in _COMPILATION_CLASS_BY_SOURCE_FILE.items():
+        assert _compilation({"source_path": f"data-src/any/{source_file}"}) == expected
+    for identity, expected in _COMPILATION_CLASS_BY_MISSING_SOURCE_IDENTITY.items():
+        authority, table_id, source_table_id = identity
+        assert _compilation(
+            {
+                "authority": authority,
+                "table_id": table_id,
+                "source_table_id": source_table_id,
+            }
+        ) == expected
+    assert Counter(_compilation(row) for row in rows) == {
+        "JANAF": 480,
+        "NASA": 147,
+        "Pankratz": 112,
+        "Konings": 120,
+        "TSIV": 16,
+        "other": 79,
+    }
+    assert _compilation({"source": {"note": "incidental janaf marker"}}) == "other"
+    assert _compilation({"source_path": "data-src/unknown/nonjanaf.json"}) == "other"
+
+
 def test_mixed_compilation_pairs_have_disclosure_or_named_exception(
     packaged_gas_pack,
 ) -> None:
@@ -6407,36 +6855,14 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception(
         },
     }
 
-    def compilation(row: dict) -> str:
-        source = " ".join(
-            str(row.get(key, ""))
-            for key in (
-                "source_path", "authority", "table_id", "source_table_id",
-                "source",
-            )
-        ).lower()
-        tokens = set(re.findall(r"[a-z0-9]+", source))
-        if "janaf" in tokens:
-            return "JANAF"
-        if "nasa" in tokens:
-            return "NASA"
-        if {"tsiv", "ivtan"} & tokens:
-            return "TSIV"
-        if {"pankratz", "bulletin", "p672"} & tokens:
-            return "Pankratz"
-        if "konings" in tokens:
-            return "Konings"
-        if {"construction", "estimated", "lam1987"} & tokens:
-            return "construction"
-        return "other"
-
     nasa_row = {
         "source_path": "data-src/nasa-glenn/NG-0905.json",
         "authority": "nasa_glenn_fitted",
         "table_id": "NG-0905",
     }
-    assert compilation(nasa_row) == "NASA"
-    assert compilation({**nasa_row, "source": {"note": "nonjanaf"}}) == "NASA"
+    assert _compilation(nasa_row) == "NASA"
+    assert _compilation({**nasa_row, "source": {"note": "nonjanaf"}}) == "NASA"
+    assert _compilation({"source_path": "data-src/unknown/nonjanaf.json"}) == "other"
 
     unbanded_mixed = set()
     import openimcc.gas as gas_module
@@ -6453,17 +6879,17 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception(
         ]
         if not rows or not parents:
             continue
-        parent_compilations = {compilation(row) for row in parents}
-        gas_compilations = {compilation(row) for row in rows}
+        parent_compilations = {_compilation(row) for row in parents}
+        gas_compilations = {_compilation(row) for row in rows}
         pair_compilations = gas_compilations | parent_compilations
         if n_o2 and oxygen_rows:
-            pair_compilations |= {compilation(row) for row in oxygen_rows}
+            pair_compilations |= {_compilation(row) for row in oxygen_rows}
         if side_reactant:
             parent_gas = f"{parent}(g)"
             parent_gas_rows = [
                 row for row in gas_rows if row["species_name"] == parent_gas
             ]
-            pair_compilations |= {compilation(row) for row in parent_gas_rows}
+            pair_compilations |= {_compilation(row) for row in parent_gas_rows}
         if len(pair_compilations) <= 1:
             continue
         disclosed = all(

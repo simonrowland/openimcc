@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 import yaml
@@ -21,6 +22,9 @@ from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
 from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
 from openimcc.json_utils import DuplicateJsonKeyError
 from openimcc.bench import (
+    _PACK_OVERLAY_BY_VERSION,
+    _PACK_OVERLAY_MODEL_BY_VERSION,
+    _STANDARD_STATE_BY_CONVENTION,
     _binary_subslice,
     _convert_solid_activity_to_liquid,
     _evaluate_imcc,
@@ -32,6 +36,7 @@ from openimcc.bench import (
     render_report,
     run_bench,
     _solid_to_liquid_log10_shift,
+    _controlled_text,
 )
 
 DATAPACK_PATH = Path("src/openimcc/data/packs/imcc-sf04-v1.0.2.json")
@@ -518,10 +523,42 @@ def test_unsupported_observable_is_not_coerced(tmp_path: Path) -> None:
     assert report.status_counts["unsupported_observable"] == 2
 
 
-def test_research_overlay_marker_requires_a_complete_token() -> None:
+def test_research_overlay_controlled_vocabulary_census() -> None:
+    assert len(_PACK_OVERLAY_BY_VERSION) == 32
+    packs = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in sorted((_REPO_ROOT / "src/openimcc/data/packs").glob("*.json"))
+        if path.name != "MANIFEST.json"
+    ]
+    assert len(packs) == len(_PACK_OVERLAY_BY_VERSION)
+    assert {
+        str(pack.get("imcc_sf04_datapack_version") or pack.get("version"))
+        for pack in packs
+    } == set(_PACK_OVERLAY_BY_VERSION)
+    for pack in packs:
+        model = pack.get("model_id") or pack.get("model")
+        version = str(
+            pack.get("imcc_sf04_datapack_version") or pack.get("version")
+        )
+        expected_overlay = _PACK_OVERLAY_BY_VERSION[version]
+        if expected_overlay:
+            assert str(model).casefold() == _PACK_OVERLAY_MODEL_BY_VERSION[
+                version
+            ].casefold()
+        assert _is_research_overlay(pack) is expected_overlay
     assert not _is_research_overlay({"model_id": "IMCC-SF04-CONTEXT"})
-    assert _is_research_overlay({"model_id": "IMCC-SF04-EXT"})
-    assert _is_research_overlay({"imcc_sf04_datapack_version": "1.0.2-ext-sp-2"})
+    assert not _is_research_overlay(
+        {
+            "model_id": "IMCC-SF04-CONTEXT",
+            "imcc_sf04_datapack_version": "1.0.2-ext-sp-2",
+        }
+    )
+    assert not _is_research_overlay(
+        {
+            "model_id": "MODEL-EXT",
+            "imcc_sf04_datapack_version": "unlisted-ext-version",
+        }
+    )
 
 
 def test_load_pack_does_not_fallback_for_context_model_name(tmp_path: Path) -> None:
@@ -539,29 +576,50 @@ def test_load_pack_does_not_fallback_for_context_model_name(tmp_path: Path) -> N
         load_pack(path)
 
 
-@pytest.mark.parametrize(
-    ("convention", "expected"),
-    [
+def test_standard_state_controlled_vocabulary_census() -> None:
+    assert len(_STANDARD_STATE_BY_CONVENTION) == 14
+    benchmark = load_bench_set(
+        _REPO_ROOT / "benchmarks/sets/basalt-bench-set-v1.yaml"
+    )
+    actual_pairs = {
         (
-            "pure-liquid (converted from pure-solid; Gibbs conversion v2)",
-            "pure-liquid",
-        ),
-        ("pure-solid converted from pure-liquid", "pure-solid"),
-        ("pure-solid MgO activity at 1 bar", "pure-solid"),
-        ("pure-liquid MgO activity at 1 bar", "pure-liquid"),
-        ("not pure-solid; pure-liquid standard", "pure-liquid"),
+            _controlled_text(point.get("convention")),
+            str(point.get("observable", "")).strip().casefold(),
+        )
+        for point in benchmark["points"]
+    }
+    assert actual_pairs <= set(_STANDARD_STATE_BY_CONVENTION)
+    actual = [
+        _standard_state_for_point(point)
+        for point in benchmark["points"]
+    ]
+    assert len(actual) == 402
+    assert Counter(actual) == {
+        "pure-solid": 292,
+        "pure-liquid": 97,
+        "pure-liquid parent": 6,
+        "CMAS basis": 3,
+        "unspecified": 4,
+    }
+    for (convention, observable), expected in _STANDARD_STATE_BY_CONVENTION.items():
+        assert _standard_state_for_point(
+            {"convention": convention, "observable": observable}
+        ) == expected
+
+
+@pytest.mark.parametrize(
+    "convention",
+    [
+        "formerly pure-solid; now pure-liquid",
+        "pure-solid/pure-liquid",
+        "pure-solid without conversion",
+        "not pure-solid; pure-liquid standard",
     ],
 )
-def test_standard_state_uses_current_affirmative_reference(
-    convention: str,
-    expected: str,
-) -> None:
+def test_unlisted_standard_state_text_is_unspecified(convention: str) -> None:
     assert _standard_state_for_point(
-        {
-            "observable": "activity",
-            "convention": convention,
-        }
-    ) == expected
+        {"observable": "activity", "convention": convention}
+    ) == "unspecified"
 
 
 def test_bench_reports_the_engine_verbatim(tmp_path: Path) -> None:

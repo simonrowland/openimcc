@@ -183,6 +183,71 @@ _KUME_LIQUID_ACTIVITY_WARNING = (
 _CONVERTED_LIQUID_STANDARD_STATE = (
     "pure-liquid (converted from pure-solid; Gibbs conversion v2)"
 )
+_CONTROLLED_TEXT_SEPARATORS = str.maketrans({"-": " ", "_": " "})
+
+
+def _controlled_text(value: Any) -> str:
+    return " ".join(str(value or "").lower().translate(_CONTROLLED_TEXT_SEPARATORS).split())
+
+
+_STANDARD_STATE_BY_CONVENTION = {
+    # The complete normalized convention and observable pairs in the tracked
+    # benchmark set, plus its explicit converted-liquid constant and bare
+    # controlled conventions used by callers.
+    (_controlled_text("Printed activity against the authors' pure-solid oxide standard state (column headers a SiO2(s), a CaO(s), a AlO1.5(s), a MgO(s)). Entered as printed. Alumina is stored on the Al2O3 formula-unit basis as a(AlO1.5)^2; the printed a(AlO1.5) is retained in published_a_AlO1.5. No solid-to-liquid conversion is applied."), "activity"): "pure-solid",
+    (_controlled_text("a(Na2O) on the parent-oxide formula-unit basis against a pure-liquid-Na2O standard state, evaluated from the published authors-own least-squares coefficients and retained without proxy conversion. No single-cation conversion or square root applied."), "activity"): "pure-liquid",
+    (_controlled_text("Parent-oxide formula-unit activity. The as-published Tridymite-reference value is preserved above; measured is the controller-directed pure-liquid reference conversion. No single-cation conversion or square root applied."), "activity"): "pure-liquid",
+    (_controlled_text("a(SiO2) on the parent-oxide formula-unit basis against a pure-liquid-SiO2 standard state, entered exactly as published with no single-cation conversion."), "activity"): "pure-liquid",
+    (_controlled_text("a(Na2O) on the parent-oxide formula-unit basis against a pure-liquid-Na2O standard state, entered exactly as published and retained without proxy conversion."), "activity"): "pure-liquid",
+    (_controlled_text("measured K(g); common analytical gas layer; IW+2.4 fO2 pin"), "partial_pressure"): "pure-liquid parent",
+    (_controlled_text("measured SiO(g); common analytical gas layer; IW+2.4 fO2 pin"), "partial_pressure"): "pure-liquid parent",
+    (_controlled_text("gamma_Mg on Berman CMAS pure-liquid parent reference"), "activity_coefficient"): "pure-liquid",
+    (_controlled_text("gamma_Si inferred with SiO(g) carrier on the published CMAS basis"), "activity_coefficient"): "CMAS basis",
+    (_controlled_text(""), "evaporation_flux"): "unspecified",
+    (_controlled_text(_CONVERTED_LIQUID_STANDARD_STATE), "activity"): "pure-liquid",
+    (_controlled_text("pure-solid"), "activity"): "pure-solid",
+    (_controlled_text("pure-liquid"), "activity"): "pure-liquid",
+    (_controlled_text("pure-solid converted from pure-liquid"), "activity"): "pure-solid",
+}
+
+_PACK_OVERLAY_BY_VERSION = {
+    "1.0.3-d066-ext-v1": True,
+    "1.0.9-d066-feo-hess-candidate": False,
+    "1.0.3-d066-feo-liquid-candidate": False,
+    "1.0.6-d066-sio2-na2o-candidate": False,
+    "1.0.3-d066-v1-kcaalsi2o7": False,
+    "1.0.3-d066-v1": False,
+    "1.0.4-d066-v2": False,
+    "1.0.5-d066-v3": False,
+    "1.0.6-d066-v4": False,
+    "1.0.7-d066-v5": False,
+    "1.0.2-ext-sp-2": True,
+    "1.0.2": False,
+    "1.5.0-cr-candidate": False,
+    "1.6.0-cr-candidate": False,
+    "1.7.0-cr-candidate": False,
+    "1.4.0-cr-candidate": False,
+    "1.7.0-cr-ti-candidate": False,
+    "1.8.0-cr-ti-candidate": False,
+    "1.9.0-cr-ti-candidate": False,
+    "1.6.0-cr-ti-candidate": False,
+    "1.6.0-feo-liquid-candidate": False,
+    "1.5.0-feo-liquid-candidate": False,
+    "1.7.0-sio2-na2o-candidate": False,
+    "1.6.0-ti-candidate": False,
+    "1.7.0-ti-candidate": False,
+    "1.8.0-ti-candidate": False,
+    "1.5.0-ti-candidate": False,
+    "1.4.0": False,
+    "1.5.0": False,
+    "1.6.0": False,
+    "1.7.0": False,
+    "1.8.0-cr-candidate": False,
+}
+_PACK_OVERLAY_MODEL_BY_VERSION = {
+    "1.0.3-d066-ext-v1": "IMCC-SF04-D066",
+    "1.0.2-ext-sp-2": "IMCC-SF04-EXT",
+}
 _SOLID_STANDARD_JANAF_CRYSTAL_TABLES = {
     "CaO": "Ca-027",
     "MgO": "Mg-008",
@@ -301,36 +366,12 @@ def _reason_line(value: Any) -> str:
 
 
 def _standard_state_for_point(point: Mapping[str, Any]) -> str:
-    """Normalize the comparison reference named by a point's convention."""
-    convention = " ".join(str(point.get("convention") or "").lower().split())
-    if convention == _CONVERTED_LIQUID_STANDARD_STATE.lower():
-        return "pure-liquid"
-    current_reference = re.split(r"\bconverted\s+from\b", convention, maxsplit=1)[0]
-    standard_pattern = re.compile(
-        r"(?<![a-z0-9])pure[- ](?P<phase>solid|liquid)(?![a-z0-9])"
+    """Classify only complete conventions in the controlled vocabulary."""
+    key = (
+        _controlled_text(point.get("convention")),
+        str(point.get("observable") or "").strip().casefold(),
     )
-    for match in standard_pattern.finditer(current_reference):
-        separators = ",;.!?:"
-        clause_start = max(
-            (current_reference.rfind(separator, 0, match.start()) for separator in separators),
-            default=-1,
-        ) + 1
-        following_separators = (
-            current_reference.find(separator, match.end())
-            for separator in separators
-        )
-        clause_ends = [position for position in following_separators if position >= 0]
-        clause_end = min(clause_ends, default=len(current_reference))
-        clause = current_reference[clause_start:clause_end]
-        clause_tokens = set(re.findall(r"[a-z0-9]+", clause))
-        if clause_tokens & {"not", "never", "un", "non", "no", "without"}:
-            continue
-        return f"pure-{match.group('phase')}"
-    if point.get("observable") == "partial_pressure":
-        return "pure-liquid parent"
-    if "cmas basis" in convention:
-        return "CMAS basis"
-    return "unspecified"
+    return _STANDARD_STATE_BY_CONVENTION.get(key, "unspecified")
 
 
 def _is_binary_point(point: Mapping[str, Any]) -> bool:
@@ -642,12 +683,11 @@ def _point_is_scored(point: Mapping[str, Any]) -> bool:
 
 
 def _is_research_overlay(raw: Mapping[str, Any]) -> bool:
-    model = str(raw.get("model_id") or raw.get("model") or "")
-    version = str(raw.get("imcc_sf04_datapack_version") or "")
-    return any(
-        "EXT" in re.findall(r"[A-Z0-9]+", value.upper())
-        for value in (model, version)
-    )
+    model = str(raw.get("model_id") or raw.get("model") or "").strip().casefold()
+    version = str(raw.get("imcc_sf04_datapack_version") or "").strip().lower()
+    if not _PACK_OVERLAY_BY_VERSION.get(version, False):
+        return False
+    return model == _PACK_OVERLAY_MODEL_BY_VERSION[version].casefold()
 
 
 def _load_research_overlay(raw: Mapping[str, Any]) -> ImccDatapack:

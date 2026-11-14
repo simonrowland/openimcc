@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import tarfile
+from copy import deepcopy
 from collections import Counter
 from collections.abc import Mapping
 from pathlib import Path
@@ -15,7 +16,22 @@ import yaml
 from openimcc.redox_pack import canonical_redox_digest
 from openimcc.model import ImccMalformedDatapackError, _validate_band_schema_rows
 from openimcc.redox_pack import RedoxSchemaError, _validate_band_schema
-from tools.migrate_band_schema import _redox, migrate, migrate_melt_row
+from tools.migrate_band_schema import (
+    _LIQUID_INPUT_BAND_CLASS_BY_KIND,
+    _MELT_DIAGNOSTIC_SPLIT_BY_KEY,
+    _REDOX_REACTION_BAND_CLASS_BY_EVIDENCE,
+    _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE,
+    _SOURCE_BAND_CLASS_BY_KIND,
+    _liquid_input_band_class,
+    _melt_held_out_split,
+    _normalized_controlled_value,
+    _redox,
+    _redox_reaction_band_class,
+    _redox_species_band_class,
+    _source_band_kind,
+    migrate,
+    migrate_melt_row,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIELDS = {"fit_residual", "accuracy_band", "band_basis", "independent_check"}
@@ -31,6 +47,16 @@ _HG_DUPLICATE_INTERVALS = {
     ("gas", "Hg(g)", "BU-2587", 1, (1500.0, 3000.0)),
     ("gas", "Hg(g)", "BU-2587", 2, (1200.0, 1500.0)),
 }
+
+
+def _committed_document(revision: str, path: str) -> dict:
+    content = subprocess.run(
+        ["git", "show", f"{revision}:{path}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    return yaml.safe_load(content) if path.endswith((".yaml", ".yml")) else json.loads(content)
 
 
 def _baseline_band_record() -> dict:
@@ -56,6 +82,144 @@ def _baseline_band_record() -> dict:
     }
 
 
+def test_source_band_kind_controlled_vocabulary() -> None:
+    assert len(_SOURCE_BAND_CLASS_BY_KIND) == 30
+    for kind, expected in _SOURCE_BAND_CLASS_BY_KIND.items():
+        assert _source_band_kind({"kind": kind})[0] == expected
+    assert _source_band_kind({"kind": "measured fit residual"})[0] is None
+    historical_documents = (
+        _committed_document(
+            "b5f1172^", "src/openimcc/data/gas/PROVENANCE.yaml"
+        ),
+        _committed_document(
+            "f013bba", "src/openimcc/data/gas/PROVENANCE.yaml"
+        ),
+    )
+    kinds = set()
+    for document in historical_documents:
+        for row in document["rows"]:
+            band = row.get("uncertainty_band")
+            if isinstance(band, dict) and band.get("kind"):
+                kinds.add(_normalized_controlled_value(band["kind"]))
+    assert kinds == set(_SOURCE_BAND_CLASS_BY_KIND)
+
+
+def test_liquid_input_band_kind_controlled_vocabulary() -> None:
+    assert len(_LIQUID_INPUT_BAND_CLASS_BY_KIND) == 3
+    for kind, expected in _LIQUID_INPUT_BAND_CLASS_BY_KIND.items():
+        assert _liquid_input_band_class(kind) == expected
+    assert _liquid_input_band_class("unlisted measured construction") is None
+    kinds = set()
+    for revision in ("b5f1172^",):
+        document = _committed_document(
+            revision, "data-src/liquid-from-solid-inputs.json"
+        )
+        for row in document["rows"].values():
+            band = row.get("measured_band")
+            if isinstance(band, dict) and band.get("kind"):
+                kinds.add(_normalized_controlled_value(band["kind"]))
+    current = json.loads(
+        (ROOT / "data-src/liquid-from-solid-inputs.json").read_text()
+    )
+    for row in current["rows"].values():
+        band = row.get("accuracy_band")
+        value = band.get("value") if isinstance(band, dict) else None
+        if isinstance(value, dict) and value.get("kind"):
+            kinds.add(_normalized_controlled_value(value["kind"]))
+    assert kinds == set(_LIQUID_INPUT_BAND_CLASS_BY_KIND)
+
+
+def test_redox_species_band_controlled_vocabulary() -> None:
+    assert len(_REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE) == 17
+    for key, expected in _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE.items():
+        tier, rationale, construction, evaluator = key
+        row = {
+            "provenance": {"tier": tier, "selection_rationale": rationale},
+            "construction": construction,
+            "evaluator": evaluator,
+        }
+        assert _redox_species_band_class(row) == expected
+    key = next(
+        key
+        for key, expected in _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE.items()
+        if expected == "measured_construction"
+    )
+    tier, rationale, _, evaluator = key
+    unlisted_construction = {
+        "provenance": {"tier": tier, "selection_rationale": rationale},
+        "evaluator": evaluator,
+    }
+    for value in (None, "false", "not construction", 1):
+        assert _redox_species_band_class(
+            {**unlisted_construction, "construction": value}
+        ) == "fit_only"
+    legacy = _committed_document(
+        "b5f1172^", "src/openimcc/data/packs/openimcc-redox-v1.json"
+    )
+    evidence = set()
+    for row in legacy["thermo_species"].values():
+        if "band_kj_mol" not in row:
+            continue
+        provenance = row.get("provenance", {})
+        evidence.add((
+            _normalized_controlled_value(provenance.get("tier")),
+            _normalized_controlled_value(provenance.get("selection_rationale")),
+            bool(row.get("construction")),
+            _normalized_controlled_value(row.get("evaluator")),
+        ))
+    assert evidence == set(_REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE)
+
+
+def test_redox_reaction_band_controlled_vocabulary() -> None:
+    assert len(_REDOX_REACTION_BAND_CLASS_BY_EVIDENCE) == 6
+    for (method, note), expected in _REDOX_REACTION_BAND_CLASS_BY_EVIDENCE.items():
+        assert _redox_reaction_band_class(method, note) == expected
+    for method, note in (
+        ("not construction", ""),
+        ("measured fit residual without correction", ""),
+        ("construction", "formerly measured; now fit-only"),
+    ):
+        assert _redox_reaction_band_class(method, note) == "fit_only"
+    legacy = _committed_document(
+        "b5f1172^", "src/openimcc/data/packs/openimcc-redox-v1.json"
+    )
+    evidence = {
+        (
+            _normalized_controlled_value(row.get("band_method")),
+            _normalized_controlled_value(row.get("uncertainty_note")),
+        )
+        for row in legacy["rows"]
+        if "band_kj_mol" in row
+    }
+    assert evidence == set(_REDOX_REACTION_BAND_CLASS_BY_EVIDENCE)
+
+
+def test_melt_diagnostic_split_controlled_vocabulary() -> None:
+    assert len(_MELT_DIAGNOSTIC_SPLIT_BY_KEY) == 7
+    for key, expected in _MELT_DIAGNOSTIC_SPLIT_BY_KEY.items():
+        assert _melt_held_out_split([key]) == expected
+    for key in (
+        "not.heldout_residual",
+        "not_heldout_residual",
+        "not-heldout-residual",
+        "not: measured fit residual",
+        "isn't measured",
+        "withheldout_residual",
+    ):
+        assert _melt_held_out_split([key]) == "held_out_or_candidate"
+    actual = set()
+    for path in sorted((ROOT / "src/openimcc/data/packs").glob("imcc-sf04*.json")):
+        document = json.loads(path.read_text())
+        for row in document["rows"] + document.get("sp_extension", {}).get("rows", []):
+            replayed = deepcopy(row)
+            migrate_melt_row(replayed)
+            fit = replayed.get("fit_residual")
+            value = fit.get("value") if isinstance(fit, dict) else None
+            if isinstance(value, dict):
+                actual.update(_normalized_controlled_value(key) for key in value)
+    assert actual == set(_MELT_DIAGNOSTIC_SPLIT_BY_KEY)
+
+
 @pytest.mark.parametrize(
     "rationale",
     [
@@ -66,6 +230,10 @@ def _baseline_band_record() -> dict:
         "no measured fit residual",
         "without measured support, fit residual",
         "un-measured fit residual",
+        "not: measured fit residual",
+        "isn't measured",
+        "measured fit residual without correction",
+        "formerly measured fit residual",
     ],
 )
 def test_redox_migration_requires_affirmative_measured_evidence(
@@ -96,8 +264,8 @@ def test_redox_migration_requires_affirmative_measured_evidence(
         "rows": [
             {
                 "band_kj_mol": 1.0,
-                "band_method": "source uncertainty",
-                "uncertainty_note": "reconstruction disabled",
+                "band_method": "not construction",
+                "uncertainty_note": "",
                 "row": 2,
                 "reaction": "Fe + 1/2 O2 = FeO",
                 "T_domain_K": [1000.0, 2000.0],
@@ -113,10 +281,16 @@ def test_redox_migration_requires_affirmative_measured_evidence(
     assert feo["accuracy_band"] is None
     assert feo["fit_residual"]["value"] == 1.0
     assert feo["band_basis"]["kind"] == "fit_only"
-    assert migrated["rows"][0]["band_basis"]["kind"] == "source_uncertainty"
+    assert migrated["rows"][0]["band_basis"]["kind"] == "fit_only"
 
 
 def test_redox_migration_accepts_affirmative_measured_evidence(tmp_path: Path) -> None:
+    key = next(
+        key
+        for key, band_class in _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE.items()
+        if band_class == "measured_construction"
+    )
+    tier, rationale, construction, evaluator = key
     pack_path = tmp_path / "redox.json"
     pack = {
         "units": {},
@@ -125,9 +299,11 @@ def test_redox_migration_accepts_affirmative_measured_evidence(tmp_path: Path) -
                 "band_kj_mol": 1.0,
                 "T_domain_K": [1000.0, 2000.0],
                 "provenance": {
-                    "tier": "tier3_flagged_estimate",
-                    "selection_rationale": "measured construction residual",
+                    "tier": tier,
+                    "selection_rationale": rationale,
                 },
+                "construction": construction,
+                "evaluator": evaluator,
             },
             "Fe(metal)": {},
             "Fe(l)": {},
@@ -160,7 +336,8 @@ def test_redox_migration_accepts_affirmative_measured_evidence(tmp_path: Path) -
 @pytest.mark.parametrize(
     ("diagnostic_key", "expected"),
     [
-        ("heldout_residual", "held_out"),
+        ("provenance/max_abs_heldout_log10K_residual", "held_out"),
+        ("heldout_residual", "held_out_or_candidate"),
         ("notheldout_residual", "held_out_or_candidate"),
         ("withheldout_residual", "held_out_or_candidate"),
         ("not_heldout_residual", "held_out_or_candidate"),
