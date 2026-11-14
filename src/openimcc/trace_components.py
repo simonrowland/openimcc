@@ -1249,7 +1249,8 @@ def _activity_fragment_result(
         reference = (
             "sulfur calibration notices: "
             + "; ".join(
-                f"{notice.code} ({notice.axis})" for notice in failed_notices
+                f"{notice.code} ({notice.model}; {notice.axis})"
+                for notice in failed_notices
             )
             if failed_notices
             else None

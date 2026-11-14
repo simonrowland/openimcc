@@ -1000,6 +1000,26 @@ def test_sulfur_trace_uses_only_returned_capacity_and_pressure_checks() -> None:
     assert low_pressure.violated_axes == ("total_pressure_bar",)
 
 
+def test_sulfur_pressure_notice_names_each_calibrated_model() -> None:
+    composition = {**_MARE_BASALT_WT, "S": 0.001}
+    composition_moles, fractions = trace_fractions_from_wt(composition)
+    estimate, _, _ = trace_components._resolve_trace_activity(
+        "S",
+        fractions["S"],
+        composition_moles,
+        1673.0,
+        fO2_bar=1.0e-8,
+        total_pressure_bar=0.1,
+    )
+
+    assert estimate.code == "out_of_domain_helper_activity"
+    assert estimate.violated_axes == ("total_pressure_bar",)
+    assert estimate.reference is not None
+    assert estimate.reference.count("pressure-below-calibration") == 2
+    assert estimate.reference.count("Boulliung-Wood-2023-capacities") == 1
+    assert estimate.reference.count("Smythe-2017-SCSS") == 1
+
+
 def test_manganese_redox_messages_are_carried_once() -> None:
     result = evaluate(
         _weight_composition({"MnO": 0.002}),
@@ -1024,6 +1044,36 @@ def test_manganese_redox_messages_are_carried_once() -> None:
         )) == 1
         for message in redox_messages
     )
+
+
+def test_mixed_redox_traces_render_shared_messages_once() -> None:
+    composition = {**_MARE_BASALT_WT, "MnO": 0.001, "Li2O": 0.001}
+    result = evaluate(
+        composition, 1800.0, basis_type="wt", allow_extrapolation=True
+    )
+    rendered = "\n".join((
+        *result.labels.flags,
+        *(str(item) for item in result.labels.notices),
+    ))
+    assert rendered.count("RED: unmodelled_redox_couples") == 1
+
+    composition_moles, fractions = trace_fractions_from_wt(composition)
+    flags = {
+        item.oxide: item
+        for item in result.labels.notices
+        if isinstance(item, TraceActivityFlag)
+    }
+    for oxide in ("MnO", "Li2O"):
+        expected = trace_components.resolve_trace_activity(
+            oxide,
+            fractions[oxide],
+            composition_moles,
+            1800.0,
+        )
+        estimate = flags[oxide].estimates[0]
+        assert estimate.code == expected.code
+        assert estimate.violated_axes == expected.violated_axes
+        assert estimate.dependency_axes == expected.dependency_axes
 
 
 @pytest.mark.parametrize("trace_oxide", ("NiO", "CoO"))

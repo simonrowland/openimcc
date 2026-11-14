@@ -2945,7 +2945,20 @@ def evaluate(
                 # labels.flags; keep the trace notice's typed axes only.
                 estimate = replace(estimate, reference=None)
             trace_activity_estimates[oxide] = estimate
-            trace_activity_flags.append(TraceActivityFlag(estimate))
+
+        if redox_pack_participation is not None:
+            # Shared redox messages are already on labels.flags. Keep the
+            # typed estimate axes, but render those messages only once.
+            for oxide, estimate in tuple(trace_activity_estimates.items()):
+                rule = trace_component_rule(oxide)
+                if rule is not None and rule.activity_model == "redox_associates":
+                    trace_activity_estimates[oxide] = replace(
+                        estimate, reference=None
+                    )
+        trace_activity_flags.extend(
+            TraceActivityFlag(estimate)
+            for estimate in trace_activity_estimates.values()
+        )
 
         # The input limits give Σ(1+ν)x ≤ 4·0.02 = 0.08 (ν≤3), which keeps
         # the strict bound finite when x_free > 0. evaluate() has no fO2 input
