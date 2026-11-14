@@ -602,7 +602,8 @@ def test_ga_in_anchors_are_liquid_coefficients_without_a_second_fusion_step() ->
 def test_bischof_table8_s1_closure_reproduces_source_constants() -> None:
     # Bischof et al. (2023), §3.2, p. 4, Eqs. 22–23 derive gamma from the
     # measured melt pressures and x, so this pressure ratio reduces to
-    # K_engine/K_source rather than independently checking melt activity.
+    # K_engine/K_source (both per MO1.5; sqrt(K_engine/K_source) per M2O3)
+    # rather than independently checking melt activity.
     # p scales with gamma (a=(gamma*x)^2, n_gas=2); printed p is three figures
     # (<=0.5%) and gamma four (<=0.2%), so rel=5e-3.
     candidate_path = (
