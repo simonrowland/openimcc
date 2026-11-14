@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import difflib
+import importlib.util
 import json
 import subprocess
 import tarfile
@@ -17,6 +19,7 @@ from openimcc.redox_pack import canonical_redox_digest
 from openimcc.model import ImccMalformedDatapackError, _validate_band_schema_rows
 from openimcc.redox_pack import RedoxSchemaError, _validate_band_schema
 from tools.migrate_band_schema import (
+    _CONSTRUCTION_RECORD_KEYSETS,
     _LIQUID_INPUT_BAND_CLASS_BY_KIND,
     _MELT_DIAGNOSTIC_SPLIT_BY_KEY,
     _REDOX_REACTION_BAND_CLASS_BY_EVIDENCE,
@@ -27,6 +30,7 @@ from tools.migrate_band_schema import (
     _normalized_controlled_value,
     _redox,
     _redox_reaction_band_class,
+    _redox_species_band_evidence,
     _redox_species_band_class,
     _source_band_kind,
     migrate,
@@ -131,6 +135,7 @@ def test_liquid_input_band_kind_controlled_vocabulary() -> None:
 
 def test_redox_species_band_controlled_vocabulary() -> None:
     assert len(_REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE) == 17
+    assert len(_CONSTRUCTION_RECORD_KEYSETS) == 4
     for key, expected in _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE.items():
         tier, rationale, construction, evaluator = key
         row = {
@@ -156,18 +161,75 @@ def test_redox_species_band_controlled_vocabulary() -> None:
     legacy = _committed_document(
         "b5f1172^", "src/openimcc/data/packs/openimcc-redox-v1.json"
     )
+    valid_record = next(
+        row["construction"]
+        for row in legacy["thermo_species"].values()
+        if isinstance(row.get("construction"), dict)
+    )
+    for malformed_record in (
+        {**valid_record, "unlisted_field": True},
+        {**valid_record, "fusion_temperature_K": "1895"},
+    ):
+        assert _redox_species_band_class(
+            {**unlisted_construction, "construction": malformed_record}
+        ) == "fit_only"
     evidence = set()
     for row in legacy["thermo_species"].values():
         if "band_kj_mol" not in row:
             continue
-        provenance = row.get("provenance", {})
-        evidence.add((
-            _normalized_controlled_value(provenance.get("tier")),
-            _normalized_controlled_value(provenance.get("selection_rationale")),
-            bool(row.get("construction")),
-            _normalized_controlled_value(row.get("evaluator")),
-        ))
+        key = _redox_species_band_evidence(row)
+        assert key is not None
+        evidence.add(key)
+        assert _redox_species_band_class(row) == (
+            _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE[key]
+        )
     assert evidence == set(_REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE)
+
+
+def test_redox_migration_replay_matches_base_script_from_historical_input(
+    tmp_path: Path,
+) -> None:
+    pack_path = "src/openimcc/data/packs/openimcc-redox-v1.json"
+    historical_pack = subprocess.run(
+        ["git", "show", f"b5f1172^:{pack_path}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    historical_script = subprocess.run(
+        ["git", "show", "601f411:tools/migrate_band_schema.py"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    base_root = tmp_path / "base"
+    candidate_root = tmp_path / "candidate"
+    base_pack = base_root / pack_path
+    candidate_pack = candidate_root / pack_path
+    base_pack.parent.mkdir(parents=True)
+    candidate_pack.parent.mkdir(parents=True)
+    base_pack.write_bytes(historical_pack)
+    candidate_pack.write_bytes(historical_pack)
+    base_script = base_root / "tools/migrate_band_schema.py"
+    base_script.parent.mkdir(parents=True)
+    base_script.write_bytes(historical_script)
+    spec = importlib.util.spec_from_file_location(
+        "base_migrate_band_schema", base_script
+    )
+    assert spec is not None and spec.loader is not None
+    base_migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(base_migration)
+    base_migration._redox(base_root)
+    _redox(candidate_root, path=candidate_pack)
+    base_output = base_pack.read_bytes()
+    candidate_output = candidate_pack.read_bytes()
+    difference = list(difflib.unified_diff(
+        base_output.decode().splitlines(),
+        candidate_output.decode().splitlines(),
+        fromfile="601f411 base-script output",
+        tofile="controlled-vocabulary output",
+    ))
+    assert candidate_output == base_output, "\n".join(difference[:80])
 
 
 def test_redox_reaction_band_controlled_vocabulary() -> None:

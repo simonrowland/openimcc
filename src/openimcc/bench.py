@@ -191,9 +191,8 @@ def _controlled_text(value: Any) -> str:
 
 
 _STANDARD_STATE_BY_CONVENTION = {
-    # The complete normalized convention and observable pairs in the tracked
-    # benchmark set, plus its explicit converted-liquid constant and bare
-    # controlled conventions used by callers.
+    # Each complete normalized convention and observable pair occurs in the
+    # tracked basalt benchmark set; free-text variants remain unspecified.
     (_controlled_text("Printed activity against the authors' pure-solid oxide standard state (column headers a SiO2(s), a CaO(s), a AlO1.5(s), a MgO(s)). Entered as printed. Alumina is stored on the Al2O3 formula-unit basis as a(AlO1.5)^2; the printed a(AlO1.5) is retained in published_a_AlO1.5. No solid-to-liquid conversion is applied."), "activity"): "pure-solid",
     (_controlled_text("a(Na2O) on the parent-oxide formula-unit basis against a pure-liquid-Na2O standard state, evaluated from the published authors-own least-squares coefficients and retained without proxy conversion. No single-cation conversion or square root applied."), "activity"): "pure-liquid",
     (_controlled_text("Parent-oxide formula-unit activity. The as-published Tridymite-reference value is preserved above; measured is the controller-directed pure-liquid reference conversion. No single-cation conversion or square root applied."), "activity"): "pure-liquid",
@@ -204,10 +203,6 @@ _STANDARD_STATE_BY_CONVENTION = {
     (_controlled_text("gamma_Mg on Berman CMAS pure-liquid parent reference"), "activity_coefficient"): "pure-liquid",
     (_controlled_text("gamma_Si inferred with SiO(g) carrier on the published CMAS basis"), "activity_coefficient"): "CMAS basis",
     (_controlled_text(""), "evaporation_flux"): "unspecified",
-    (_controlled_text(_CONVERTED_LIQUID_STANDARD_STATE), "activity"): "pure-liquid",
-    (_controlled_text("pure-solid"), "activity"): "pure-solid",
-    (_controlled_text("pure-liquid"), "activity"): "pure-liquid",
-    (_controlled_text("pure-solid converted from pure-liquid"), "activity"): "pure-solid",
 }
 
 _PACK_OVERLAY_BY_VERSION = {

@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
+import math
 import re
 from copy import deepcopy
 from pathlib import Path
@@ -78,6 +79,55 @@ _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE = {
     ('tier1 direct assessed', 'uses the direct assessed liquid function from its tabulated interval.', False, 'condensate phi'): 'fit_only',
     ('tier3 flagged estimate', 'the two existing standard state branches meet within 0.01 kj/mol at their 1800 k join.', False, 'piecewise'): 'fit_only',
 }
+_CONSTRUCTION_RECORD_KEYSETS = frozenset(
+    {
+        frozenset({
+            "alternate_construction", "band_scope", "crystal_source_table",
+            "fit_T_K", "fit_intervals_K", "fitter", "fusion_enthalpy_kj_mol",
+            "fusion_enthalpy_spread_kj_mol", "fusion_entropy_derivation",
+            "fusion_entropy_j_mol_K", "fusion_entropy_spread_j_mol_K",
+            "fusion_temperature_K", "fusion_temperature_status",
+            "liquid_heat_capacity_flag", "liquid_heat_capacity_j_mol_K",
+            "liquid_heat_capacity_method", "liquid_heat_capacity_spread_j_mol_K",
+            "runtime_T_K",
+        }),
+        frozenset({
+            "crystal_source_table", "fit_T_K", "fit_intervals_K", "fitter",
+            "fusion_entropy_j_mol_K", "fusion_entropy_spread_j_mol_K",
+            "fusion_temperature_K", "fusion_temperature_spread_K",
+            "liquid_heat_capacity_j_mol_K", "liquid_heat_capacity_spread_j_mol_K",
+            "runtime_T_K",
+        }),
+        frozenset({
+            "crystal_formation_enthalpy_spread_kj_mol", "crystal_source_table",
+            "fit_T_K", "fit_intervals_K", "fitter", "fusion_entropy_j_mol_K",
+            "fusion_entropy_spread_j_mol_K", "fusion_temperature_K",
+            "fusion_temperature_spread_K", "liquid_heat_capacity_j_mol_K",
+            "liquid_heat_capacity_spread_j_mol_K", "runtime_T_K",
+        }),
+        frozenset({
+            "crystal_entropy_spread_j_mol_K",
+            "crystal_formation_enthalpy_spread_kj_mol", "crystal_source_table",
+            "fit_T_K", "fit_intervals_K", "fitter", "fusion_entropy_j_mol_K",
+            "fusion_entropy_spread_j_mol_K", "fusion_temperature_K",
+            "fusion_temperature_spread_K", "liquid_heat_capacity_j_mol_K",
+            "liquid_heat_capacity_spread_j_mol_K", "runtime_T_K",
+        }),
+    }
+)
+_CONSTRUCTION_NUMERIC_FIELDS = frozenset({
+    "fusion_temperature_K", "fusion_temperature_spread_K",
+    "fusion_enthalpy_kj_mol", "fusion_enthalpy_spread_kj_mol",
+    "fusion_entropy_j_mol_K", "fusion_entropy_spread_j_mol_K",
+    "liquid_heat_capacity_j_mol_K", "liquid_heat_capacity_spread_j_mol_K",
+    "crystal_formation_enthalpy_spread_kj_mol",
+    "crystal_entropy_spread_j_mol_K",
+})
+_CONSTRUCTION_STRING_FIELDS = frozenset({
+    "crystal_source_table", "fusion_temperature_status",
+    "fusion_entropy_derivation", "liquid_heat_capacity_method",
+    "liquid_heat_capacity_flag", "band_scope", "fitter",
+})
 _REDOX_REACTION_BAND_CLASS_BY_EVIDENCE = {
     ('maximum absolute reaction gibbs residual against the janaf feo formation gibbs values over 1700 3000 k.', 'the 0.39 kj/mol band bounds the fitted reaction gibbs residual against janaf feo values; it is a residual band, not a thermochemical accuracy estimate. the fe(cr) endpoint extrapolation is separately flagged.'): 'fit_only',
     ('conservative sum of one half the propagated fe2o3 fusion enthalpy and tier 2 liquid cp band, the feo reaction band, and one quarter the o2 fit band.', 'the band includes the primary fusion estimate bound and stated tier 2 cp uncertainty; high temperature cp extrapolation and hypothetical hematite metastability remain flagged.'): 'source_uncertainty',
@@ -103,18 +153,93 @@ def _liquid_input_band_class(kind: Any) -> str | None:
     )
 
 
-def _redox_species_band_class(row: dict[str, Any]) -> str:
+def _finite_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _numeric_pair(value: Any) -> bool:
+    return type(value) is list and len(value) == 2 and all(
+        _finite_number(item) for item in value
+    )
+
+
+def _valid_construction_record(value: Any) -> bool:
+    if type(value) is not dict or frozenset(value) not in _CONSTRUCTION_RECORD_KEYSETS:
+        return False
+    if any(
+        not _finite_number(value[key])
+        for key in _CONSTRUCTION_NUMERIC_FIELDS
+        if key in value
+    ):
+        return False
+    if any(
+        type(value[key]) is not str or not value[key]
+        for key in _CONSTRUCTION_STRING_FIELDS
+        if key in value
+    ):
+        return False
+    if value.get("fitter") != "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row":
+        return False
+    if not _numeric_pair(value.get("fit_T_K")) or not _numeric_pair(
+        value.get("runtime_T_K")
+    ):
+        return False
+    intervals = value.get("fit_intervals_K")
+    if type(intervals) is not list or not intervals or not all(
+        _numeric_pair(interval) for interval in intervals
+    ):
+        return False
+    if "alternate_construction" in value:
+        alternate = value["alternate_construction"]
+        if type(alternate) is not dict or frozenset(alternate) != {
+            "fusion_enthalpy_kj_mol", "fusion_enthalpy_spread_kj_mol",
+            "fusion_entropy_j_mol_K", "source",
+        }:
+            return False
+        if any(
+            not _finite_number(alternate[key])
+            for key in (
+                "fusion_enthalpy_kj_mol", "fusion_enthalpy_spread_kj_mol",
+                "fusion_entropy_j_mol_K",
+            )
+        ) or type(alternate["source"]) is not str or not alternate["source"]:
+            return False
+    return True
+
+
+def _redox_species_band_evidence(
+    row: dict[str, Any],
+) -> tuple[str, str, bool, str] | None:
     provenance = row.get("provenance", {})
-    construction = row.get("construction", False)
-    if type(construction) is not bool:
-        return "fit_only"
-    key = (
+    if type(provenance) is not dict:
+        return None
+    if "construction" not in row:
+        construction = False
+    else:
+        construction_value = row["construction"]
+        if type(construction_value) is bool:
+            construction = construction_value
+        elif _valid_construction_record(construction_value):
+            construction = True
+        else:
+            return None
+    return (
         _normalized_controlled_value(provenance.get("tier")),
         _normalized_controlled_value(provenance.get("selection_rationale")),
         construction,
         _normalized_controlled_value(row.get("evaluator")),
     )
-    return _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE.get(key, "fit_only")
+
+
+def _redox_species_band_class(row: dict[str, Any]) -> str:
+    evidence = _redox_species_band_evidence(row)
+    if evidence is None:
+        return "fit_only"
+    return _REDOX_SPECIES_BAND_CLASS_BY_EVIDENCE.get(evidence, "fit_only")
 
 
 def _redox_reaction_band_class(method: Any, note: Any) -> str:

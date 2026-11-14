@@ -577,7 +577,7 @@ def test_load_pack_does_not_fallback_for_context_model_name(tmp_path: Path) -> N
 
 
 def test_standard_state_controlled_vocabulary_census() -> None:
-    assert len(_STANDARD_STATE_BY_CONVENTION) == 14
+    assert len(_STANDARD_STATE_BY_CONVENTION) == 10
     benchmark = load_bench_set(
         _REPO_ROOT / "benchmarks/sets/basalt-bench-set-v1.yaml"
     )
@@ -588,7 +588,7 @@ def test_standard_state_controlled_vocabulary_census() -> None:
         )
         for point in benchmark["points"]
     }
-    assert actual_pairs <= set(_STANDARD_STATE_BY_CONVENTION)
+    assert actual_pairs == set(_STANDARD_STATE_BY_CONVENTION)
     actual = [
         _standard_state_for_point(point)
         for point in benchmark["points"]
@@ -601,10 +601,6 @@ def test_standard_state_controlled_vocabulary_census() -> None:
         "CMAS basis": 3,
         "unspecified": 4,
     }
-    for (convention, observable), expected in _STANDARD_STATE_BY_CONVENTION.items():
-        assert _standard_state_for_point(
-            {"convention": convention, "observable": observable}
-        ) == expected
 
 
 @pytest.mark.parametrize(
@@ -612,6 +608,7 @@ def test_standard_state_controlled_vocabulary_census() -> None:
     [
         "formerly pure-solid; now pure-liquid",
         "pure-solid/pure-liquid",
+        "pure-solid converted from pure-liquid",
         "pure-solid without conversion",
         "not pure-solid; pure-liquid standard",
     ],
