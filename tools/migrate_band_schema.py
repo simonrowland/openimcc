@@ -41,6 +41,17 @@ def _tokens(value: Any) -> set[str]:
     return set(re.findall(r"[a-z0-9]+", str(value).lower()))
 
 
+_NEGATION_TOKENS = frozenset({"not", "never", "un", "non", "no", "without"})
+
+
+def _has_affirmative_token(value: Any, marker: str) -> bool:
+    for clause in re.split(r"[,;.!?:\n]+", str(value).lower()):
+        tokens = _tokens(clause)
+        if marker in tokens and not (_NEGATION_TOKENS & tokens):
+            return True
+    return False
+
+
 def _contains_token_phrase(value: Any, phrase: str) -> bool:
     text = str(value).lower()
     marker = re.escape(phrase.lower())
@@ -48,13 +59,7 @@ def _contains_token_phrase(value: Any, phrase: str) -> bool:
 
 
 def _has_measured_evidence(value: Any) -> bool:
-    text = str(value)
-    tokens = _tokens(text)
-    return (
-        "measured" in tokens
-        and "unmeasured" not in tokens
-        and not re.search(r"\bnot[\W_]+measured\b", text, re.IGNORECASE)
-    )
+    return _has_affirmative_token(value, "measured")
 
 
 def independent_check(reason: str) -> dict[str, Any]:
@@ -600,7 +605,7 @@ def migrate_melt_row(row: dict[str, Any]) -> None:
     diagnostics = {**existing_diagnostics, **diagnostics}
     split = (
         "held_out"
-        if any("heldout" in _tokens(key) for key in diagnostics)
+        if any(_has_affirmative_token(key, "heldout") for key in diagnostics)
         else "held_out_or_candidate"
     )
     row["fit_residual"] = None if not diagnostics else {

@@ -899,12 +899,20 @@
 - The gas disclosure check classifies source families by whole token so incidental text cannot hide mixed-source pairs.
 - Redox band migration treats unmeasured rationales as fit-only evidence and keeps reconstruction distinct from measured construction.
 - Melt band migration requires a standalone `heldout` diagnostic token before assigning held-out status.
+- Redox band migration requires affirmative measured evidence; negated mentions
+  remain fit-only.
+- Held-out migration checks split diagnostic tokens and ignores negated
+  held-out names.
 
 ### Changes that can break callers
 
 - The benchmark research-overlay fallback recognizes `EXT` only as a complete token in the model identifier or version.
 - Benchmark convention parsing recognizes the converted-liquid standard before historical pure-solid markers.
 - Unsupported benchmark observables retain `unsupported_observable` attribution when melt evaluation also refuses.
+- Benchmark conventions follow the current standard before “converted from,” so
+  the historical reference cannot override it.
+- Unsupported observable points preserve a concurrent melt refusal as a
+  secondary point and report notice.
 
 - Weighted oxygen transport closure uses its original relative criterion and
   refuses near-equilibrium closures below float64 pressure resolution with an

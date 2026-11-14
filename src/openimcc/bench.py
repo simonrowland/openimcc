@@ -305,10 +305,27 @@ def _standard_state_for_point(point: Mapping[str, Any]) -> str:
     convention = " ".join(str(point.get("convention") or "").lower().split())
     if convention == _CONVERTED_LIQUID_STANDARD_STATE.lower():
         return "pure-liquid"
-    if re.search(r"(?<![a-z0-9])pure[- ]liquid(?![a-z0-9])", convention):
-        return "pure-liquid"
-    if re.search(r"(?<![a-z0-9])pure[- ]solid(?![a-z0-9])", convention):
-        return "pure-solid"
+    current_reference = re.split(r"\bconverted\s+from\b", convention, maxsplit=1)[0]
+    standard_pattern = re.compile(
+        r"(?<![a-z0-9])pure[- ](?P<phase>solid|liquid)(?![a-z0-9])"
+    )
+    for match in standard_pattern.finditer(current_reference):
+        separators = ",;.!?:"
+        clause_start = max(
+            (current_reference.rfind(separator, 0, match.start()) for separator in separators),
+            default=-1,
+        ) + 1
+        following_separators = (
+            current_reference.find(separator, match.end())
+            for separator in separators
+        )
+        clause_ends = [position for position in following_separators if position >= 0]
+        clause_end = min(clause_ends, default=len(current_reference))
+        clause = current_reference[clause_start:clause_end]
+        clause_tokens = set(re.findall(r"[a-z0-9]+", clause))
+        if clause_tokens & {"not", "never", "un", "non", "no", "without"}:
+            continue
+        return f"pure-{match.group('phase')}"
     if point.get("observable") == "partial_pressure":
         return "pure-liquid parent"
     if "cmas basis" in convention:
@@ -1098,6 +1115,7 @@ def run_bench(
         if not score and point.get("dropped_reason") and status == "ok":
             status = "refused"
             engine_reason = str(point["dropped_reason"])
+        engine_status = status
         enriched = {**point, "composition_wt_pct": composition}
         (
             predicted,
@@ -1118,6 +1136,15 @@ def run_bench(
             gas_extrapolation_labels=gas_extrapolation_labels,
             initial_domain_flag=engine_domain_flag,
         )
+        point_notices = engine_notices
+        if (
+            str(point.get("observable")) not in _SUPPORTED_OBSERVABLES
+            and engine_status != "ok"
+        ):
+            point_notices = (
+                *point_notices,
+                f"melt evaluation {engine_status}: {engine_reason}",
+            )
         measured = float(point["measured"])
         residual, ratio = _residual_and_ratio(predicted, measured, score=score)
         provenance = point.get("provenance")
@@ -1151,7 +1178,7 @@ def run_bench(
             ),
             binary_subslice=_binary_subslice(point),
             provenance_class=provenance_class,
-            notices=engine_notices,
+            notices=point_notices,
             source_table=source_table,
         )
         rows.append(row)

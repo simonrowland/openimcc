@@ -510,6 +510,10 @@ def test_unsupported_observable_is_not_coerced(tmp_path: Path) -> None:
         point.reason == "unsupported observable 'evaporation_flux'"
         for point in report.points
     )
+    refusal_notices = report.points[1].notices
+    assert len(refusal_notices) == 1
+    assert refusal_notices[0].startswith("melt evaluation out_of_domain:")
+    assert refusal_notices[0] in report.notices
     assert report.rmse is None
     assert report.status_counts["unsupported_observable"] == 2
 
@@ -535,13 +539,29 @@ def test_load_pack_does_not_fallback_for_context_model_name(tmp_path: Path) -> N
         load_pack(path)
 
 
-def test_converted_liquid_standard_precedes_historical_solid_marker() -> None:
+@pytest.mark.parametrize(
+    ("convention", "expected"),
+    [
+        (
+            "pure-liquid (converted from pure-solid; Gibbs conversion v2)",
+            "pure-liquid",
+        ),
+        ("pure-solid converted from pure-liquid", "pure-solid"),
+        ("pure-solid MgO activity at 1 bar", "pure-solid"),
+        ("pure-liquid MgO activity at 1 bar", "pure-liquid"),
+        ("not pure-solid; pure-liquid standard", "pure-liquid"),
+    ],
+)
+def test_standard_state_uses_current_affirmative_reference(
+    convention: str,
+    expected: str,
+) -> None:
     assert _standard_state_for_point(
         {
             "observable": "activity",
-            "convention": "pure-liquid (converted from pure-solid; Gibbs conversion v2)",
+            "convention": convention,
         }
-    ) == "pure-liquid"
+    ) == expected
 
 
 def test_bench_reports_the_engine_verbatim(tmp_path: Path) -> None:

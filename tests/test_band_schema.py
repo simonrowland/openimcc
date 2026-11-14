@@ -56,7 +56,22 @@ def _baseline_band_record() -> dict:
     }
 
 
-def test_redox_migration_uses_positive_marker_tokens(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "rationale",
+    [
+        "unmeasured fit residual",
+        "not directly measured fit residual",
+        "never measured fit residual",
+        "non-measured fit residual",
+        "no measured fit residual",
+        "without measured support, fit residual",
+        "un-measured fit residual",
+    ],
+)
+def test_redox_migration_requires_affirmative_measured_evidence(
+    tmp_path: Path,
+    rationale: str,
+) -> None:
     pack_path = tmp_path / "redox.json"
     pack = {
         "units": {},
@@ -66,7 +81,7 @@ def test_redox_migration_uses_positive_marker_tokens(tmp_path: Path) -> None:
                 "T_domain_K": [1000.0, 2000.0],
                 "provenance": {
                     "tier": "tier3_flagged_estimate",
-                    "selection_rationale": "unmeasured fit residual",
+                    "selection_rationale": rationale,
                 },
             },
             "Fe(metal)": {},
@@ -101,12 +116,59 @@ def test_redox_migration_uses_positive_marker_tokens(tmp_path: Path) -> None:
     assert migrated["rows"][0]["band_basis"]["kind"] == "source_uncertainty"
 
 
+def test_redox_migration_accepts_affirmative_measured_evidence(tmp_path: Path) -> None:
+    pack_path = tmp_path / "redox.json"
+    pack = {
+        "units": {},
+        "thermo_species": {
+            "FeO(l)": {
+                "band_kj_mol": 1.0,
+                "T_domain_K": [1000.0, 2000.0],
+                "provenance": {
+                    "tier": "tier3_flagged_estimate",
+                    "selection_rationale": "measured construction residual",
+                },
+            },
+            "Fe(metal)": {},
+            "Fe(l)": {},
+            "Fe(cr)": {},
+            "O2(g)": {},
+            "MnO(l)": {},
+            "MnSiO3(l)": {},
+            "Mn2SiO4(l)": {},
+            "MnAl2O4(l)": {},
+        },
+        "rows": [
+            {
+                "band_kj_mol": 1.0,
+                "row": 2,
+                "reaction": "Fe + 1/2 O2 = FeO",
+                "T_domain_K": [1000.0, 2000.0],
+            }
+        ],
+    }
+    pack_path.write_text(json.dumps(pack), encoding="utf-8")
+
+    _redox(tmp_path, pack_path)
+
+    migrated = json.loads(pack_path.read_text(encoding="utf-8"))
+    assert migrated["thermo_species"]["FeO(l)"]["band_basis"]["kind"] == (
+        "measured_construction"
+    )
+
+
 @pytest.mark.parametrize(
     ("diagnostic_key", "expected"),
     [
         ("heldout_residual", "held_out"),
         ("notheldout_residual", "held_out_or_candidate"),
         ("withheldout_residual", "held_out_or_candidate"),
+        ("not_heldout_residual", "held_out_or_candidate"),
+        ("not-heldout-residual", "held_out_or_candidate"),
+        ("non_heldout_residual", "held_out_or_candidate"),
+        ("never_heldout_residual", "held_out_or_candidate"),
+        ("un_heldout_residual", "held_out_or_candidate"),
+        ("no-heldout-residual", "held_out_or_candidate"),
     ],
 )
 def test_melt_migration_requires_heldout_token(
