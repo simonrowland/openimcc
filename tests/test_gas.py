@@ -5654,6 +5654,34 @@ def test_generic_oxygen_balance_reports_refinement_cost_for_curved_model() -> No
     )
 
 
+@pytest.mark.parametrize(
+    ("epsilon", "message"),
+    [
+        (1e-314, "physical flux scale is below 1e-300"),
+        (1e-10, "relative residual"),
+    ],
+)
+def test_generic_oxygen_balance_does_not_certify_small_flux_closure(
+    epsilon: float,
+    message: str,
+) -> None:
+    species = {
+        "A": OxygenBalanceSpeciesMetadata(1.0, 1.0, 0.0, 1.0),
+        "B": OxygenBalanceSpeciesMetadata(2.0, 0.0, 1.0, 0.0),
+    }
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {
+            "A": epsilon * (1.0 + 0.5 * math.tanh(1e15 * (logp + 2.123456789))),
+            "B": epsilon,
+        }
+
+    with pytest.raises(ImccGasOxygenBalanceError, match=message):
+        oxygen_balance_from_pressure_model(
+            pressure_model, species, bracket=(-3.0, -1.0),
+        )
+
+
 def test_generic_oxygen_balance_validates_model_pressures() -> None:
     metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
 
@@ -6446,6 +6474,7 @@ def test_weighted_oxygen_root_frozen_inputs_and_read_only_results() -> None:
 
 
 def test_weighted_oxygen_root_reaches_signed_closure_refusal() -> None:
+    # The 1 bar jump is far above the half-ULP pressure-subtraction floor.
     def discontinuous(x: float) -> dict[str, float]:
         return {"X": 0.0 if x < 0.123456789 else 2.0}
     with pytest.raises(ImccGasOxygenBalanceError, match="failed signed closure"):
@@ -6453,6 +6482,34 @@ def test_weighted_oxygen_root_reaches_signed_closure_refusal() -> None:
             discontinuous, {"X": 1.0}, conductance_mol_m2_s_Pa={"X": 1.0},
             bulk_pressures_bar={"X": 1.0}, log10_pO2_bracket=(-1.0, 1.0),
         )
+
+
+@pytest.mark.parametrize(
+    ("epsilon", "criterion"),
+    [
+        (1e-4, None),
+        (1e-8, "absolute pressure-roundoff criterion"),
+        (1e-14, "absolute pressure-roundoff criterion"),
+    ],
+)
+def test_weighted_oxygen_root_accepts_pressure_roundoff_limited_closure(
+    epsilon: float,
+    criterion: str | None,
+) -> None:
+    result = gas_module.weighted_oxygen_balance_from_pressure_model(
+        lambda x: {"A": 1.0 + epsilon * (x + 3.0), "B": 2.0 + epsilon},
+        {"A": 1.0, "B": -1.0},
+        conductance_mol_m2_s_Pa={"A": 1.0, "B": math.sqrt(2.0)},
+        bulk_pressures_bar={"A": 1.0, "B": 2.0},
+        log10_pO2_bracket=(-3.0, -1.0),
+    )
+
+    if criterion is None:
+        assert result.root_count_evidence == (
+            "sampled; finite scan does not prove global uniqueness"
+        )
+    else:
+        assert criterion in result.root_count_evidence
 
 
 def test_weighted_oxygen_root_weighted_term_underflow() -> None:
