@@ -339,6 +339,15 @@ class ImccGasOxygenBalanceError(ImccRefusal):
 
     code = "imcc_gas_oxygen_balance_failed"
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        diagnostics: Mapping[str, object] | None = None,
+    ) -> None:
+        self.diagnostics = MappingProxyType(dict(diagnostics or {}))
+        super().__init__(message)
+
 
 class ImccGasSaturationError(ImccRefusal):
     """Raised when a fixed-composition saturation root is not unique or bracketed."""
@@ -4335,9 +4344,10 @@ def weighted_oxygen_balance_from_pressure_model(
     Conductances are mol m^-2 s^-1 Pa^-1; bar-to-Pa conversion occurs here
     exactly once. The scan only provides sampled root-count evidence for
     arbitrary callbacks, not a global uniqueness proof. The returned signed
-    root is re-evaluated and refused unless its residual is within the larger
-    of 1e-12 times the absolute weighted-transfer scale and the propagated
-    pressure-subtraction roundoff floor. The result exposes that scale and its
+    root is re-evaluated and refused unless its residual is at most 1e-12
+    times the absolute weighted-transfer scale. If pressure-subtraction
+    roundoff could explain a failed relative closure, the typed refusal
+    includes that diagnostic. The result exposes the transfer scale and its
     forward/backward components. Applied-flux closure uses the same relative
     scale with no absolute floor; zero transfer is reported explicitly and
     never certified as applied closure. ``bulk_plane`` names the plane the
@@ -4488,7 +4498,6 @@ def weighted_oxygen_balance_from_pressure_model(
     if scale == 0.0 and residual != 0.0:
         raise ImccGasOxygenBalanceError("zero weighted transfer has a nonzero residual")
     relative_closes = scale > 0.0 and abs(residual) / scale <= 1e-12
-    pressure_roundoff_floor = 0.0
     if scale > 0.0 and not relative_closes:
         # Premise: near equilibrium, each callback and bulk pressure is a
         # rounded binary64 value; when their ratio is within [1/2, 2],
@@ -4496,25 +4505,58 @@ def weighted_oxygen_balance_from_pressure_model(
         # an ULP of representation error in each pressure. For species i,
         # propagate that budget as |weight_i| * conductance_i * 1e5 Pa/bar *
         # (ulp(p_i)+ulp(bulk_i))/2, then sum it in mol m^-2 s^-1, the units of
-        # weighted flux. Include only channels with nonzero weighted departure,
-        # so an unrelated equilibrium channel cannot supply this floor. Sanity
-        # check: when both callback and bulk operands are 1 and 2 bar, with
+        # weighted flux. Identical pressure subtractions with exactly opposing
+        # weights share and cancel their representation budget. Sanity check:
+        # when both callback and bulk operands are 1 and 2 bar, with
         # conductances 1 and sqrt(2), this is
         # 1e5 * [2*ulp(1) + 2*sqrt(2)*ulp(2)]/2 ~= 8.50e-11 mol m^-2 s^-1.
-        pressure_roundoff_floor = _checked_oxygen_fsum(
-            (
-                0.5 * abs(weights[name]) * conductance[name] * 1e5
-                * (math.ulp(pressures[name]) + math.ulp(bulk[name]))
-                for name, term in zip(names, weighted_terms)
-                if term != 0.0
-            ),
-            "pressure-subtraction roundoff floor",
+        roundoff_groups: dict[tuple[float, float, float], list[float]] = {}
+        for name, term in zip(names, weighted_terms):
+            if term == 0.0:
+                continue
+            key = (pressures[name], bulk[name], conductance[name])
+            roundoff_groups.setdefault(key, []).append(weights[name])
+        roundoff_terms = []
+        for (
+            (pressure, bulk_pressure, channel_conductance), group_weights
+        ) in roundoff_groups.items():
+            group_weight = _checked_oxygen_fsum(
+                group_weights, "pressure-subtraction roundoff weights",
+            )
+            if group_weight == 0.0:
+                continue
+            roundoff_terms.append(
+                0.5 * abs(group_weight) * channel_conductance * 1e5
+                * (math.ulp(pressure) + math.ulp(bulk_pressure))
+            )
+        pressure_roundoff_budget = _checked_oxygen_fsum(
+            roundoff_terms, "pressure-subtraction roundoff budget",
         )
-    absolute_closes = scale > 0.0 and abs(residual) <= pressure_roundoff_floor
-    if scale > 0.0 and not (relative_closes or absolute_closes):
+        relative_residual = abs(residual) / scale
+        if abs(residual) <= pressure_roundoff_budget:
+            reason = (
+                "closure not resolvable at float64 pressure resolution "
+                "near equilibrium"
+            )
+            diagnostics = {
+                "reason": reason,
+                "residual_mol_m2_s": residual,
+                "relative_residual": relative_residual,
+                "relative_tolerance": 1e-12,
+                "absolute_weighted_transfer_scale_mol_m2_s": scale,
+                "pressure_roundoff_budget_mol_m2_s": pressure_roundoff_budget,
+            }
+            raise ImccGasOxygenBalanceError(
+                f"{reason} (residual={residual}, "
+                f"relative_residual={relative_residual}, "
+                f"relative_tolerance=1e-12, "
+                f"pressure_roundoff_budget={pressure_roundoff_budget})",
+                diagnostics=diagnostics,
+            )
         raise ImccGasOxygenBalanceError(
             "returned weighted oxygen-flux root failed signed closure "
-            f"(residual={residual}, scale={scale})"
+            f"(residual={residual}, scale={scale}, "
+            f"relative_residual={relative_residual}, relative_tolerance=1e-12)"
         )
     applied_terms = [
         weights[name] * max(fluxes[name], 0.0) for name in names
@@ -4531,8 +4573,6 @@ def weighted_oxygen_balance_from_pressure_model(
         else "closed" if applied_closes else "not_closed"
     )
     root_count_evidence = "sampled; finite scan does not prove global uniqueness"
-    if absolute_closes and not relative_closes:
-        root_count_evidence += "; signed closure accepted by absolute pressure-roundoff criterion"
     try:
         p_o2 = 10.0**root
     except OverflowError as exc:
@@ -4560,6 +4600,39 @@ def oxygen_balance_from_pressure_model(
     flux term. The supplied model is evaluated directly, so it may bend between
     pressure nodes as long as its oxygen-balance residual has a bracketed root.
     """
+    validated_species: dict[str, OxygenBalanceSpeciesMetadata] = {}
+    for name, data in species.items():
+        try:
+            molar_mass = float(data.molar_mass)
+            oxygen_atoms = float(data.oxygen_atoms)
+            parent_oxygen_demand = float(data.parent_oxygen_demand)
+            pO2_exponent = float(data.pO2_exponent)
+        except (AttributeError, TypeError, ValueError, OverflowError) as exc:
+            raise ImccGasOxygenBalanceError(
+                f"invalid oxygen-balance metadata for species {name!r}"
+            ) from exc
+        if not all(map(math.isfinite, (
+            molar_mass, oxygen_atoms, parent_oxygen_demand, pO2_exponent,
+        ))):
+            raise ImccGasOxygenBalanceError(
+                f"oxygen-balance metadata for species {name!r} must be finite"
+            )
+        if molar_mass <= 0.0:
+            raise ImccGasOxygenBalanceError(
+                f"molar_mass for species {name!r} must be positive"
+            )
+        if oxygen_atoms < 0.0:
+            raise ImccGasOxygenBalanceError(
+                f"oxygen_atoms for species {name!r} must be nonnegative"
+            )
+        if parent_oxygen_demand < 0.0:
+            raise ImccGasOxygenBalanceError(
+                f"parent_oxygen_demand for species {name!r} must be nonnegative"
+            )
+        validated_species[name] = OxygenBalanceSpeciesMetadata(
+            molar_mass, oxygen_atoms, parent_oxygen_demand, pO2_exponent,
+        )
+    species = validated_species
     for name, data in species.items():
         weight = (
             data.oxygen_atoms - data.parent_oxygen_demand
@@ -4616,6 +4689,11 @@ def oxygen_balance_from_pressure_model(
             ),
             "oxygen-balance parent flux",
         )
+        if oxygen_flux < 0.0 or parent_flux < 0.0:
+            raise ImccGasOxygenBalanceError(
+                f"oxygen-balance aggregate flux scales must be nonnegative "
+                f"at log10(pO2/bar)={logp}"
+            )
         if not (math.isfinite(oxygen_flux) and math.isfinite(parent_flux)):
             raise ImccGasOxygenBalanceError(
                 f"oxygen-balance flux is non-finite at log10(pO2/bar)={logp}"
@@ -4673,7 +4751,12 @@ def oxygen_balance_from_pressure_model(
         # that quantum to be at most one tenth of the tolerance. For subnormal
         # scales ulp(scale) = 2^-1074, so scale must be at least
         # 2^-1074/(tolerance*0.1); zero has no relative denominator.
-        if scale == 0.0 or math.ulp(scale) / scale > residual_tolerance * 0.1:
+        if not math.isfinite(scale) or scale <= 0.0:
+            raise ImccGasOxygenBalanceError(
+                "oxygen-balance physical flux scale must be finite and positive; "
+                "relative closure is unresolved"
+            )
+        if math.ulp(scale) / scale > residual_tolerance * 0.1:
             raise ImccGasOxygenBalanceError(
                 "oxygen-balance relative closure is unresolved at the "
                 "requested tolerance"

@@ -890,11 +890,10 @@
 
 ### Changes that can break callers
 
-- Weighted oxygen transport closure now computes its propagated half-ULP
-  pressure-subtraction floor from channels with nonzero weighted departures.
-  The root evidence names acceptance by this absolute criterion. The generic
-  oxygen solver refuses relative closure when the flux-scale ULP is coarser
-  than one tenth of its residual tolerance.
+- Weighted oxygen transport closure uses its original relative criterion and
+  refuses near-equilibrium closures below float64 pressure resolution with an
+  explicit diagnostic. The generic oxygen solver refuses unresolved
+  sub-resolution flux scales and negative or non-finite aggregate scales.
 - `crystal_closure()` rows and CSV output add `fusion_anchor_used_in_fit` to
   identify comparisons that reuse a fitted fusion anchor. The SF04 benchmark
   aggregate now reports 278 evidence residuals with RMSE `0.39421436539170723`

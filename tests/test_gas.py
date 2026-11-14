@@ -5725,6 +5725,60 @@ def test_generic_oxygen_balance_validates_model_pressures() -> None:
         )
 
 
+def test_generic_oxygen_balance_rejects_negative_stoichiometric_metadata() -> None:
+    species = {
+        "A": OxygenBalanceSpeciesMetadata(1.0, -1.0, 0.0, -1.0),
+        "B": OxygenBalanceSpeciesMetadata(1.0, 0.0, -1.0, 0.0),
+    }
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="oxygen_atoms.*nonnegative"):
+        oxygen_balance_from_pressure_model(
+            lambda logp: {
+                "A": 1.5 if logp < -2.123456789 else 0.5,
+                "B": 1.0,
+            },
+            species,
+            bracket=(-3.0, -1.0),
+        )
+
+
+def test_generic_oxygen_balance_rejects_zero_aggregate_flux_scale() -> None:
+    species = {
+        "A": OxygenBalanceSpeciesMetadata(1.0, 1.0, 0.0, 1.0),
+        "B": OxygenBalanceSpeciesMetadata(1.0, 0.0, 1.0, 0.0),
+    }
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        if logp < -2.0:
+            return {"A": 0.0, "B": 1.0}
+        if logp == -2.0:
+            return {"A": 0.0, "B": 0.0}
+        return {"A": 1.0, "B": 0.0}
+
+    with pytest.raises(
+        ImccGasOxygenBalanceError,
+        match="scale must be finite and positive",
+    ):
+        oxygen_balance_from_pressure_model(
+            pressure_model, species, bracket=(-3.0, -1.0),
+        )
+
+
+def test_generic_oxygen_balance_rejects_nonfinite_aggregate_flux_scale() -> None:
+    species = {
+        "A": OxygenBalanceSpeciesMetadata(1.0, 2.0, 0.0, 1.0),
+        "B": OxygenBalanceSpeciesMetadata(1.0, 0.0, 1.0, 0.0),
+    }
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {"A": 0.0 if logp < -2.0 else 1e308, "B": 1.0}
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="oxygen-balance oxygen flux"):
+        oxygen_balance_from_pressure_model(
+            pressure_model, species, bracket=(-3.0, -1.0),
+        )
+
+
 def test_generic_oxygen_balance_refuses_custom_bracket_above_one_bar() -> None:
     metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
     with pytest.raises(ImccGasOxygenBalanceError, match="molecular-flow regime"):
@@ -6514,28 +6568,49 @@ def test_weighted_oxygen_root_does_not_borrow_equilibrium_channel_roundoff() -> 
     def discontinuous(x: float) -> dict[str, float]:
         return {"X": 0.0 if x < 0.123456789 else 2e-30, "S": 1.0}
 
-    with pytest.raises(ImccGasOxygenBalanceError, match="failed signed closure"):
+    with pytest.raises(ImccGasOxygenBalanceError, match="failed signed closure") as error:
         gas_module.weighted_oxygen_balance_from_pressure_model(
             discontinuous, {"X": 1.0, "S": 1.0},
             conductance_mol_m2_s_Pa={"X": 1.0, "S": 1.0},
             bulk_pressures_bar={"X": 1e-30, "S": 1.0},
             log10_pO2_bracket=(-1.0, 1.0),
         )
+    assert "reason" not in error.value.diagnostics
+
+
+def test_weighted_oxygen_root_does_not_borrow_cancelling_channel_roundoff() -> None:
+    u = math.ulp(1.0)
+
+    def discontinuous(x: float) -> dict[str, float]:
+        return {
+            "S": 1.0 + u,
+            "T": 1.0 + u,
+            "X": 0.0 if x < 0.123456789 else 2e-20,
+        }
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="failed signed closure") as error:
+        gas_module.weighted_oxygen_balance_from_pressure_model(
+            discontinuous, {"S": 1.0, "T": -1.0, "X": 1.0},
+            conductance_mol_m2_s_Pa={"S": 1.0, "T": 1.0, "X": 1.0},
+            bulk_pressures_bar={"S": 1.0, "T": 1.0, "X": 1e-20},
+            log10_pO2_bracket=(-1.0, 1.0),
+        )
+    assert "reason" not in error.value.diagnostics
 
 
 @pytest.mark.parametrize(
-    ("epsilon", "criterion"),
+    ("epsilon", "reason"),
     [
         (1e-4, None),
-        (1e-8, "absolute pressure-roundoff criterion"),
-        (1e-14, "absolute pressure-roundoff criterion"),
+        (1e-8, "closure not resolvable at float64 pressure resolution near equilibrium"),
+        (1e-14, "closure not resolvable at float64 pressure resolution near equilibrium"),
     ],
 )
-def test_weighted_oxygen_root_accepts_pressure_roundoff_limited_closure(
+def test_weighted_oxygen_root_refuses_pressure_roundoff_limited_closure(
     epsilon: float,
-    criterion: str | None,
+    reason: str | None,
 ) -> None:
-    result = gas_module.weighted_oxygen_balance_from_pressure_model(
+    solve = lambda: gas_module.weighted_oxygen_balance_from_pressure_model(
         lambda x: {"A": 1.0 + epsilon * (x + 3.0), "B": 2.0 + epsilon},
         {"A": 1.0, "B": -1.0},
         conductance_mol_m2_s_Pa={"A": 1.0, "B": math.sqrt(2.0)},
@@ -6543,12 +6618,24 @@ def test_weighted_oxygen_root_accepts_pressure_roundoff_limited_closure(
         log10_pO2_bracket=(-3.0, -1.0),
     )
 
-    if criterion is None:
+    if reason is None:
+        result = solve()
         assert result.root_count_evidence == (
             "sampled; finite scan does not prove global uniqueness"
         )
     else:
-        assert criterion in result.root_count_evidence
+        with pytest.raises(ImccGasOxygenBalanceError, match=reason) as error:
+            solve()
+        diagnostics = error.value.diagnostics
+        assert diagnostics["reason"] == reason
+        assert diagnostics["relative_residual"] == pytest.approx(
+            abs(diagnostics["residual_mol_m2_s"])
+            / diagnostics["absolute_weighted_transfer_scale_mol_m2_s"],
+        )
+        assert diagnostics["relative_residual"] > diagnostics["relative_tolerance"]
+        assert abs(diagnostics["residual_mol_m2_s"]) <= diagnostics[
+            "pressure_roundoff_budget_mol_m2_s"
+        ]
 
 
 def test_weighted_oxygen_root_weighted_term_underflow() -> None:
