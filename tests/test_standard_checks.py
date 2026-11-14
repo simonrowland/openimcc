@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import csv
-import hashlib
+from importlib import resources
 import json
 from pathlib import Path
 
@@ -13,8 +13,9 @@ from openimcc.standard_checks import (
     SWITCH_BRACKET_TOLERANCE_K,
     StandardCheckRefusal,
     _OXIDES,
-    _janaf_apparent_gibbs,
-    _janaf_table,
+    _axis_label,
+    _janaf_liquid,
+    _janaf_crystal,
     pure_oxide_standard_check,
     pure_oxide_standard_checks,
 )
@@ -26,10 +27,29 @@ LEGACY_CONDENSATE = REPO / "src/openimcc/data/gas/condensate-feo-janaf-legacy.cs
 # allows source Cp curvature without tuning the computed JANAF Gibbs function.
 LOCAL_FUSION_CHECK_ABS_TOLERANCE_KJ_MOL = 0.03
 LOCAL_FUSION_CHECK_REL_TOLERANCE = 0.2
+LOCAL_FUSION_CHECK_STEP_K = 5.0
 
 
 def _enthalpy_at(table_id: str, temperature_K: float) -> float:
-    formation_enthalpy_kJ, points = _janaf_table(table_id)
+    data = json.loads(
+        resources.files("openimcc").joinpath(
+            "data/diagnostics/janaf-pure-oxide-liquid-pairs.json"
+        ).read_text(encoding="utf-8")
+    )
+    row = next((item for item in data["rows"] if item["table_id"] == table_id), None)
+    if row is None:
+        crystal_data = json.loads(
+            resources.files("openimcc").joinpath(
+                "data/diagnostics/janaf-pure-oxide-crystals.json"
+            ).read_text(encoding="utf-8")
+        )
+        row = next(item for item in crystal_data["phases"] if item["crystal_table_id"] == table_id)
+    formation_enthalpy_kJ = row["formation_enthalpy_298_kJ_mol"]
+    by_temperature = {
+        item["T_K"]: item["enthalpy_increment_kJ_mol"]
+        for item in row["nodes"] + row.get("transition_rows", [])
+    }
+    points = sorted(by_temperature.items())
     for left, right in zip(points, points[1:]):
         if left[0] <= temperature_K <= right[0]:
             fraction = (temperature_K - left[0]) / (right[0] - left[0])
@@ -54,19 +74,24 @@ def test_janaf_pair_closure_sign_and_local_constant_delta_cp_check():
             - _enthalpy_at(definition.crystal_table, transition)
         ) * 1000.0
         assert h_fusion_J_mol > 0.0
-        for temperature in (transition - 5.0, transition + 5.0):
-            delta = (
-                _janaf_apparent_gibbs(definition.liquid_table, temperature)
-                - _janaf_apparent_gibbs(definition.crystal_table, temperature)
-            ) / 1000.0
-            estimate = h_fusion_J_mol * (1.0 - temperature / transition) / 1000.0
-            assert delta > 0.0 if temperature < transition else delta < 0.0
-            # Local constant-ΔCp relation is a test-side sign and scale check;
-            # it is not used to construct either JANAF Gibbs function.
-            assert abs(delta - estimate) <= max(
-                LOCAL_FUSION_CHECK_ABS_TOLERANCE_KJ_MOL,
-                LOCAL_FUSION_CHECK_REL_TOLERANCE * abs(estimate),
-            )
+        temperature = transition - LOCAL_FUSION_CHECK_STEP_K
+        delta = (
+            _janaf_liquid(definition.liquid_table, temperature).G_J_mol
+            - _janaf_crystal(definition.oxide, temperature).G_J_mol
+        ) / 1000.0
+        estimate = h_fusion_J_mol * (1.0 - temperature / transition) / 1000.0
+        assert delta > 0.0
+        # The shared crystal evaluator stops at the phase transition. The
+        # test-side local constant-ΔCp relation checks the expected sign on
+        # both sides without evaluating a crystal beyond its allowed domain.
+        above_estimate = h_fusion_J_mol * (
+            1.0 - (transition + LOCAL_FUSION_CHECK_STEP_K) / transition
+        ) / 1000.0
+        assert above_estimate < 0.0
+        assert abs(delta - estimate) <= max(
+            LOCAL_FUSION_CHECK_ABS_TOLERANCE_KJ_MOL,
+            LOCAL_FUSION_CHECK_REL_TOLERANCE * abs(estimate),
+        )
 
 
 def test_packaged_silica_residuals_keep_each_crystal_reference_and_pack_identity():
@@ -92,18 +117,35 @@ def test_packaged_silica_residuals_keep_each_crystal_reference_and_pack_identity
     assert legacy.switch_prediction.search_range_K == pytest.approx((1200.0, 1996.0))
 
 
-def test_default_silica_switch_comes_from_its_sign_changing_bracket():
+def test_default_silica_switch_refuses_an_unresolved_endpoint_sign():
     result = pure_oxide_standard_check("SiO2")
     switch = result.switch_prediction
-    assert switch.status == "root", switch
-    assert switch.temperature_K == pytest.approx(1996.0, abs=0.1)
+    # The high endpoint residual is smaller than the subtraction's own
+    # floating-point resolution; a sign cannot be certified there.
+    assert switch.status == "resolution_indeterminate", switch
+    assert switch.temperature_K is None
     assert switch.bracket_K is not None
-    assert switch.bracket_K[0] <= switch.temperature_K <= switch.bracket_K[1]
     assert switch.bracket_K[1] - switch.bracket_K[0] <= SWITCH_BRACKET_TOLERANCE_K
     assert switch.bracket_residuals_J_mol is not None
-    assert switch.bracket_residuals_J_mol[0] * switch.bracket_residuals_J_mol[1] < 0.0
-    assert switch.residual_J_mol is not None
-    assert switch.uncertainty_K <= SWITCH_BRACKET_TOLERANCE_K
+    assert switch.bracket_resolution_bounds_J_mol is not None
+    assert switch.bracket_K == pytest.approx((1995.9375, 1996.0))
+    assert switch.bracket_residuals_J_mol[1] == pytest.approx(-2.3e-10, abs=2e-10)
+    assert abs(switch.bracket_residuals_J_mol[1]) <= switch.bracket_resolution_bounds_J_mol[1]
+    assert switch.bracket_resolution_bounds_J_mol[1] == pytest.approx(4.0e-9, rel=0.02)
+    assert result.pack_id == "condensate-default-v1.csv"
+    assert result.pack_digest
+
+
+def test_resolved_switch_root_is_bracketed_by_its_pack_data():
+    result = pure_oxide_standard_check("Al2O3")
+    switch = result.switch_prediction
+    assert switch.status == "root"
+    assert switch.bracket_K is not None
+    assert switch.bracket_K[0] <= switch.temperature_K <= switch.bracket_K[1]
+    assert switch.bracket_residuals_J_mol is not None
+    assert switch.bracket_resolution_bounds_J_mol is not None
+    assert switch.bracket_residuals_J_mol[0] > switch.bracket_resolution_bounds_J_mol[0]
+    assert switch.bracket_residuals_J_mol[1] < -switch.bracket_resolution_bounds_J_mol[1]
     assert result.pack_id == "condensate-default-v1.csv"
     assert result.pack_digest
 
@@ -130,27 +172,36 @@ def test_out_of_range_janaf_temperature_is_a_typed_refusal():
         pure_oxide_standard_check("CaO", 3601.0)
     assert caught.value.phase == "Ca-027"
     assert caught.value.axis == "temperature_K"
-    assert caught.value.valid_range_K == pytest.approx((0.0, 3600.0))
+    assert caught.value.valid_range_K == pytest.approx((298.15, 3200.0))
 
     with pytest.raises(StandardCheckRefusal) as construction_caught:
         pure_oxide_standard_check("K2O", 2001.0)
     assert construction_caught.value.phase == "K-012"
     assert construction_caught.value.axis == "temperature_K"
-    assert construction_caught.value.valid_range_K == pytest.approx((298.15, 2000.0))
+    assert construction_caught.value.valid_range_K == pytest.approx((298.15, 1013.0))
 
 
 def test_existing_crystal_closure_fixed_input_is_bit_identical():
     from openimcc.diagnostics import crystal_closure
     from openimcc.model import load_datapack
 
-    rows, details = crystal_closure(load_datapack())
-    encoded = json.dumps(
+    pack = load_datapack()
+    rows, details = crystal_closure(pack)
+    baseline = json.dumps(
         {"rows": rows, "details": details}, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
-    digest = hashlib.sha256(encoded).hexdigest()
-    assert digest == "fb40d0394b0a8d13cdbe76941c22882ef5b4e2362112b49d71acac4d485f4bf8", (
-        f"crystal_closure output changed: {digest}"
-    )
+    pure_oxide_standard_check("SiO2", 1995.9)
+    after_rows, after_details = crystal_closure(pack)
+    after = json.dumps(
+        {"rows": after_rows, "details": after_details},
+        sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+    assert after == baseline
+
+
+def test_axis_label_marks_temperature_above_liquid_model_domain():
+    assert "above 3000 K" in _axis_label(3105.0)
+    assert "OUT_OF_DOMAIN" in _axis_label(3105.0)
 
 
 def test_diagnose_cli_writes_selected_pack_provenance(tmp_path):

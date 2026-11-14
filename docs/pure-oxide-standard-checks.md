@@ -18,14 +18,18 @@ temperature:
 3. **Switch prediction** is the bracketed root of packaged closure over the
    shared in-range temperature window. It is not moved to a JANAF transition.
    If the sampled function has no sign-changing root, the result is
-   `no_switch_in_range`. A root below 1700 K is labelled as liquid-extrapolated
-   on `temperature_K`.
+   `no_switch_in_range`; an endpoint whose residual is within its floating-point
+   resolution bound is `resolution_indeterminate`, with both endpoint
+   residuals and bounds reported. A root below 1700 K is labelled as
+   liquid-extrapolated on `temperature_K`; temperatures above 3000 K are marked
+   out of the liquid-model domain.
 
 The closure uses `species_thermo()` from the selected condensate table. JANAF
 apparent Gibbs energy is reconstructed as
 `Hf(298.15 K) + [H(T) − H(298.15 K)] − T*S(T)`: enthalpy terms are converted
 from kJ/mol to J/mol and entropy is J/(mol K), so Gibbs energy is J/mol.
-Transition rows retained as source-parser ambiguities are used directly.
+Transition rows retained as source-parser ambiguities are included in
+interpolation up to the cap and used directly at the cap.
 Source table ranges are enforced. A requested JANAF temperature outside the
 row range raises `StandardCheckRefusal` with `phase`, `axis`, and the available
 range. No source table, condensate pack, or existing calculation is modified.
@@ -33,8 +37,8 @@ range. No source table, condensate pack, or existing calculation is modified.
 The legacy silica residual is reported to `±0.002 kJ/mol`, because the cited
 `+2.902 kJ/mol` value is rounded to 0.001 kJ/mol and the tolerance allows for
 that rounding plus arithmetic representation. Switch brackets target
-`0.1 K`, independently of the JANAF interpolation tolerance. The root
-solver's internal `SWITCH_SOLVER_XTOL_K` is `1e-8 K`; reported root
+`0.1 K`, independently of the JANAF interpolation tolerance. Root refinement
+uses bisection on endpoints whose residual signs are resolved; reported root
 uncertainty is the larger of the final bracket width and the residual-derived
 temperature error.
 

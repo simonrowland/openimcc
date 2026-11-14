@@ -11,12 +11,17 @@ import json
 import math
 import sys
 from dataclasses import asdict, dataclass
-from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Literal
 
 from openimcc.kernel import ImccRefusal
+from openimcc.janaf_crystals import (
+    JanafCrystalTemperatureError,
+    JanafRowTemperatureError,
+    evaluate_janaf_apparent_gibbs,
+    evaluate_janaf_crystal,
+)
 
 
 JANAF_PAIR_TOLERANCE_KJ_MOL = 0.01
@@ -24,7 +29,6 @@ PACKAGED_SIO2_ROUNDING_TOLERANCE_KJ_MOL = 0.002
 SWITCH_BRACKET_TOLERANCE_K = 0.1
 SWITCH_SOLVER_XTOL_K = 1e-8
 _ROOT_SCAN_STEP_K = 1.0
-_EXACT_ZERO_BRACKET_HALF_WIDTH_K = SWITCH_BRACKET_TOLERANCE_K / 4.0
 _SLOPE_STEP_K = 0.01
 _RESOLUTION_ULPS = 8.0
 _FLOAT_EPSILON = sys.float_info.epsilon
@@ -86,6 +90,7 @@ class SwitchPrediction:
     search_range_K: tuple[float, float] | None
     temperature_axis_label: str
     diagnostic: str | None = None
+    bracket_resolution_bounds_J_mol: tuple[float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -118,109 +123,26 @@ class PureOxideStandardCheck:
     construction_flag: str | None = None
 
 
-def _source_dir() -> Path:
-    """Locate the repository's vendored JANAF records without changing them."""
-    return Path(__file__).resolve().parents[2] / "data-src" / "janaf"
-
-
-@lru_cache(maxsize=32)
-def _janaf_table(table_id: str) -> tuple[float, tuple[tuple[float, float, float], ...]]:
-    path = _source_dir() / f"{table_id}.yaml"
-    if not path.is_file():
+def _janaf_crystal(oxide: str, temperature_K: float):
+    try:
+        return evaluate_janaf_crystal(oxide, temperature_K)
+    except JanafCrystalTemperatureError as exc:
+        definition = _OXIDE_BY_NAME.get(oxide)
+        table_id = definition.crystal_table if definition is not None else exc.phase_id
         raise StandardCheckRefusal(
-            f"{table_id} JANAF source row is unavailable on the source-data axis",
-            phase=table_id,
-            axis="source_data",
-        )
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    table = payload["table"]
-    records: dict[float, tuple[float, float]] = {}
-    for row in table["values"]:
-        temperature = row["temperature"]["value"]
-        enthalpy_increment = row["enthalpy_increment"]["value"]
-        entropy = row["entropy"]["value"]
-        if temperature is None or enthalpy_increment is None or entropy is None:
-            continue
-        records[float(temperature)] = (float(enthalpy_increment), float(entropy))
+            str(exc), phase=table_id, axis="temperature_K",
+            valid_range_K=exc.domain_K,
+        ) from exc
 
-    # The vendored parser retains transition lines that omit later columns as
-    # raw ambiguities. Recover their first five JANAF fields (T, Cp, S, -[G-H]/T,
-    # H-H298) so the transition row itself is used instead of rounding it from
-    # adjacent 100 K rows.
-    for ambiguity in table.get("parse_ambiguities", ()):
-        raw = ambiguity.get("raw_line", "")
-        if "-->" not in raw and "TRANSITION" not in raw:
-            continue
-        fields = raw.split("\t")
-        if len(fields) < 5:
-            continue
-        try:
-            temperature = float(fields[0])
-            entropy = float(fields[2])
-            enthalpy_increment = float(fields[4])
-        except (TypeError, ValueError):
-            continue
-        records[temperature] = (enthalpy_increment, entropy)
 
-    points = tuple(
-        (temperature, values[0], values[1])
-        for temperature, values in sorted(records.items())
-    )
-    reference = next(
-        row for row in table["values"]
-        if float(row["temperature"]["value"]) == 298.15
-    )
-    formation_enthalpy = reference["formation_enthalpy"]["value"]
-    if formation_enthalpy is None or not points:
+def _janaf_liquid(table_id: str, temperature_K: float):
+    try:
+        return evaluate_janaf_apparent_gibbs(table_id, temperature_K)
+    except JanafRowTemperatureError as exc:
         raise StandardCheckRefusal(
-            f"{table_id} has no usable JANAF Gibbs function on the temperature_K axis",
-            phase=table_id,
-            axis="temperature_K",
-        )
-    return float(formation_enthalpy), points
-
-
-def _janaf_apparent_gibbs(table_id: str, temperature_K: float) -> float:
-    formation_enthalpy_kJ, points = _janaf_table(table_id)
-    low, high = points[0][0], points[-1][0]
-    if not low <= temperature_K <= high:
-        raise StandardCheckRefusal(
-            f"{table_id} JANAF row is valid only on temperature_K [{low:g}, {high:g}] K; "
-            f"received {temperature_K:g} K",
-            phase=table_id,
-            valid_range_K=(low, high),
-        )
-    if temperature_K == high:
-        h_increment, entropy = points[-1][1:]
-    else:
-        for left, right in zip(points, points[1:]):
-            if left[0] <= temperature_K <= right[0]:
-                fraction = (temperature_K - left[0]) / (right[0] - left[0])
-                h_increment = left[1] + fraction * (right[1] - left[1])
-                entropy = left[2] + fraction * (right[2] - left[2])
-                break
-        else:
-            raise StandardCheckRefusal(
-                f"{table_id} has no JANAF row at T={temperature_K:g} K on temperature_K",
-                phase=table_id,
-                valid_range_K=(low, high),
-            )
-    # Premise: the packaged condensate and JANAF apparent functions share the
-    # 298.15 K element references. Algebra: Gapp=Hf(298)+[H(T)-H(298)]-T*S(T).
-    # H values are kJ/mol and S is J/(mol K), so convert H to J/mol; the result
-    # is J/mol. Sanity: evaluating paired rows at their source transition makes
-    # their difference zero within the 0.01 kJ/mol table/interpolation band.
-    return (formation_enthalpy_kJ + h_increment) * _J_TO_KJ - temperature_K * entropy
-
-
-def _source_range(table_id: str) -> tuple[float, float]:
-    points = _janaf_table(table_id)[1]
-    return points[0][0], points[-1][0]
-
-
-def _source_digest(table_id: str) -> str:
-    payload = json.loads((_source_dir() / f"{table_id}.yaml").read_text(encoding="utf-8"))
-    return str(payload["extraction"]["source_sha256"])
+            str(exc), phase=exc.table_id, axis="temperature_K",
+            valid_range_K=exc.domain_K,
+        ) from exc
 
 
 def _packaged_crystal_source(
@@ -265,8 +187,8 @@ def _selected_crystal_source(
         thermo = _thermo(oxide, "cr", max(bounds[0], min(definition.transition_K, bounds[1])), gas_pack)
         source_id = f"packaged:{thermo.source_row_id}"
         return row_name, bounds, source_id, True
-    bounds = _source_range(definition.crystal_table)
-    return definition.crystal_table, bounds, definition.crystal_table, False
+    crystal = _janaf_crystal(oxide, definition.transition_K)
+    return definition.oxide, crystal.domain_K, definition.crystal_table, False
 
 
 def _thermo(oxide: str, phase: Literal["l", "cr"], temperature_K: float, gas_pack: Any):
@@ -287,7 +209,7 @@ def _gibbs_pair(
         crystal = _thermo(oxide, "cr", temperature_K, gas_pack)
         crystal_gibbs = crystal.G_J_mol
     else:
-        crystal_gibbs = _janaf_apparent_gibbs(crystal_source_name, temperature_K)
+        crystal_gibbs = _janaf_crystal(oxide, temperature_K).G_J_mol
     # Premise: both standards are apparent Gibbs energies on the same 298.15 K
     # element reference. Algebra: δpack = Gpack,l − Gsource,cr. Both operands
     # are J/mol oxide, so the result remains J/mol oxide; the switch is δpack=0.
@@ -301,6 +223,8 @@ def _axis_label(temperature_K: float | None) -> str:
         return "temperature_K; switch not found in the supported source/pack overlap"
     if temperature_K < 1700.0:
         return "temperature_K; liquid side extrapolated below 1700 K (OUT_OF_DOMAIN)"
+    if temperature_K > 3000.0:
+        return "temperature_K; above 3000 K liquid-model domain (OUT_OF_DOMAIN)"
     return "temperature_K; in the 1700–3000 K liquid-model domain"
 
 
@@ -328,7 +252,7 @@ def _switch_prediction(
             f"{oxide}(l) and {oxide}(cr) have no overlapping temperature_K range",
         )
 
-    def delta(temp: float) -> tuple[float, float, float]:
+    def delta(temp: float) -> tuple[float, float, float, float]:
         try:
             liquid_g, crystal_g = _gibbs_pair(
                 oxide, temp, gas_pack, crystal_source_name, crystal_is_packaged
@@ -339,7 +263,9 @@ def _switch_prediction(
                 phase=f"{oxide}(l)", axis="temperature_K",
                 valid_range_K=(low, high),
             ) from exc
-        return liquid_g - crystal_g, liquid_g, crystal_g
+        residual = liquid_g - crystal_g
+        bound = _RESOLUTION_ULPS * _FLOAT_EPSILON * (abs(liquid_g) + abs(crystal_g))
+        return residual, liquid_g, crystal_g, bound
 
     points = {low, high}
     first_integer = math.ceil(low)
@@ -350,74 +276,109 @@ def _switch_prediction(
             boundary = float(row[key])
             if low <= boundary <= high:
                 points.add(boundary)
-    if not crystal_is_packaged:
-        points.update(
-            temp for temp, _h, _s in _janaf_table(crystal_source_name)[1]
-            if low <= temp <= high
-        )
     ordered = sorted(points)
     sampled = [(temp, *delta(temp)) for temp in ordered]
     brackets: list[tuple[float, float]] = []
-    # Ignore exact sampled zeros while finding opposite-sign endpoints. This
-    # retains a real bracket when a scan point lands exactly on the root.
-    nonzero = [item for item in sampled if item[1] != 0.0]
-    for left, right in zip(nonzero, nonzero[1:]):
-        if left[1] * right[1] < 0.0:
+    def sign(item: tuple[float, float, float, float, float]) -> int:
+        if item[1] > item[4]:
+            return 1
+        if item[1] < -item[4]:
+            return -1
+        return 0
+
+    for left, right in zip(sampled, sampled[1:]):
+        if sign(left) * sign(right) == -1:
             brackets.append((left[0], right[0]))
 
     if not brackets:
         near = min(sampled, key=lambda item: abs(item[1]))
-        local_resolution = _RESOLUTION_ULPS * _FLOAT_EPSILON * (abs(near[2]) + abs(near[3]))
-        if abs(near[1]) <= local_resolution:
-            return SwitchPrediction(
-                "resolution_indeterminate", None, None, None, near[1], None, (low, high),
-                _axis_label(None),
-                "G_pack,l − G_source,cr is within the floating-point resolution "
-                f"({local_resolution:.6g} J/mol) near {near[0]:g} K without a resolved sign change",
+        if sign(near) == 0:
+            near_index = ordered.index(near[0])
+            neighbors = sampled[max(0, near_index - 1): near_index] + sampled[
+                near_index + 1: near_index + 2
+            ]
+            resolved_neighbors = [item for item in neighbors if sign(item) != 0]
+            resolved = (
+                min(resolved_neighbors, key=lambda item: abs(item[0] - near[0]))
+                if resolved_neighbors else near
             )
-        return SwitchPrediction(
-            "no_switch_in_range", None, None, None, None, None, (low, high), _axis_label(None),
-            f"no sign-changing zero in the source/pack overlap [{low:g}, {high:g}] K",
-        )
-
-    from scipy.optimize import brentq
+            unresolved = near
+            while abs(unresolved[0] - resolved[0]) > SWITCH_BRACKET_TOLERANCE_K:
+                mid = (unresolved[0] + resolved[0]) / 2.0
+                mid_eval = delta(mid)
+                midpoint = (mid, *mid_eval)
+                midpoint_sign = sign(midpoint)
+                if midpoint_sign == 0:
+                    unresolved = midpoint
+                elif midpoint_sign == sign(resolved):
+                    resolved = midpoint
+                else:
+                    brackets.append(tuple(sorted((resolved[0], mid))))
+                    break
+            if not brackets:
+                endpoints = sorted((resolved, unresolved), key=lambda item: item[0])
+                return SwitchPrediction(
+                    "resolution_indeterminate", None,
+                    (endpoints[0][0], endpoints[1][0]),
+                    (endpoints[0][1], endpoints[1][1]), unresolved[1], None, (low, high),
+                    _axis_label(None),
+                    f"endpoint residual {unresolved[1]:.9g} J/mol at {unresolved[0]:g} K is within "
+                    f"its floating-point resolution bound {unresolved[4]:.9g} J/mol",
+                    (endpoints[0][4], endpoints[1][4]),
+                )
+        else:
+            return SwitchPrediction(
+                "no_switch_in_range", None, None, None, None, None, (low, high), _axis_label(None),
+                f"no sign-changing zero in the source/pack overlap [{low:g}, {high:g}] K",
+            )
 
     lo, hi = brackets[0]
-    flo = delta(lo)[0]
-    fhi = delta(hi)[0]
-    # Refine the actual sign-changing interval before solving. The bracket
-    # width is a temperature tolerance, not a Gibbs-energy or JANAF tolerance.
+    left_eval, right_eval = delta(lo), delta(hi)
+    flo, fhi = left_eval[0], right_eval[0]
+    if sign((lo, *left_eval)) == 0 or sign((hi, *right_eval)) == 0:
+        unresolved = (lo, *left_eval) if sign((lo, *left_eval)) == 0 else (hi, *right_eval)
+        return SwitchPrediction(
+            "resolution_indeterminate", None, (lo, hi), (flo, fhi), None, None,
+            (low, high), _axis_label(None),
+            f"bracket endpoint at {unresolved[0]:g} K has unresolved residual "
+            f"{unresolved[1]:.9g} J/mol within bound {unresolved[4]:.9g} J/mol",
+            (left_eval[3], right_eval[3]),
+        )
+    # Refine the sign-changing interval using resolved endpoint signs. The
+    # bracket width is a temperature tolerance, not a Gibbs-energy tolerance.
     while hi - lo > SWITCH_BRACKET_TOLERANCE_K:
         mid = lo + (hi - lo) / 2.0
-        fmid = delta(mid)[0]
-        if fmid == 0.0:
-            left_mid = mid - min(_EXACT_ZERO_BRACKET_HALF_WIDTH_K, (mid - lo) / 2.0)
-            right_mid = mid + min(_EXACT_ZERO_BRACKET_HALF_WIDTH_K, (hi - mid) / 2.0)
-            fleft, fright = delta(left_mid)[0], delta(right_mid)[0]
-            if fleft * fright < 0.0:
-                lo, hi = left_mid, right_mid
-                flo, fhi = fleft, fright
+        mid_eval = delta(mid)
+        fmid = mid_eval[0]
+        mid_item = (mid, *mid_eval)
+        if sign(mid_item) == 0:
+            quarter = (lo + mid) / 2.0
+            three_quarter = (mid + hi) / 2.0
+            q_eval, tq_eval = delta(quarter), delta(three_quarter)
+            q_item, tq_item = (quarter, *q_eval), (three_quarter, *tq_eval)
+            if sign(q_item) * sign((lo, *left_eval)) == -1:
+                hi, right_eval, fhi = quarter, q_eval, q_eval[0]
                 continue
-            resolution = _RESOLUTION_ULPS * _FLOAT_EPSILON * (
-                abs(delta(mid)[1]) + abs(delta(mid)[2])
-            )
+            if sign((hi, *right_eval)) * sign(tq_item) == -1:
+                lo, left_eval, flo = three_quarter, tq_eval, tq_eval[0]
+                continue
+            if sign(q_item) * sign(tq_item) == -1:
+                lo, left_eval, flo = quarter, q_eval, q_eval[0]
+                hi, right_eval, fhi = three_quarter, tq_eval, tq_eval[0]
+                continue
             return SwitchPrediction(
-                "resolution_indeterminate", None, None, (fleft, fright), fmid, None, (low, high),
-                _axis_label(None),
-                f"computed zero at {mid:g} K has no neighboring sign change; "
-                f"Gibbs resolution is {resolution:.6g} J/mol",
+                "resolution_indeterminate", None, (lo, hi), (flo, fhi), fmid, None,
+                (low, high), _axis_label(None),
+                f"midpoint residual {fmid:.9g} J/mol is within its resolution bound "
+                f"{mid_eval[3]:.9g} J/mol; resolved probes do not narrow the bracket",
+                (left_eval[3], right_eval[3]),
             )
-        if flo * fmid < 0.0:
-            hi, fhi = mid, fmid
+        if sign((lo, *left_eval)) * sign(mid_item) == -1:
+            hi, right_eval, fhi = mid, mid_eval, fmid
         else:
-            lo, flo = mid, fmid
-    root = float(
-        brentq(
-            lambda temp: delta(temp)[0], lo, hi,
-            xtol=SWITCH_SOLVER_XTOL_K, rtol=4.0 * _FLOAT_EPSILON,
-        )
-    )
-    residual, liquid_g, crystal_g = delta(root)
+            lo, left_eval, flo = mid, mid_eval, fmid
+    root = lo + (hi - lo) / 2.0
+    residual, liquid_g, crystal_g, root_resolution = delta(root)
     left_room, right_room = root - low, high - root
     central_step = min(_SLOPE_STEP_K, left_room, right_room)
     if left_room >= _SLOPE_STEP_K and right_room >= _SLOPE_STEP_K:
@@ -435,7 +396,7 @@ def _switch_prediction(
         slope = abs((delta(root + slope_step)[0] - residual) / slope_step)
     else:
         slope = 0.0
-    resolution = 8.0 * _FLOAT_EPSILON * (abs(liquid_g) + abs(crystal_g))
+    resolution = root_resolution
     residual_uncertainty = (abs(residual) + resolution) / slope if slope > 0.0 else math.inf
     bracket_uncertainty = hi - lo
     uncertainty = max(bracket_uncertainty, residual_uncertainty)
@@ -444,10 +405,11 @@ def _switch_prediction(
             "resolution_indeterminate", None, (lo, hi), (flo, fhi), residual, uncertainty,
             (low, high), _axis_label(None),
             f"root uncertainty {uncertainty:g} K exceeds the {SWITCH_BRACKET_TOLERANCE_K:g} K temperature tolerance",
+            (left_eval[3], right_eval[3]),
         )
     return SwitchPrediction(
         "root", root, (lo, hi), (flo, fhi), residual, uncertainty, (low, high),
-        _axis_label(root),
+        _axis_label(root), None, (left_eval[3], right_eval[3]),
     )
 
 
@@ -491,29 +453,15 @@ def pure_oxide_standard_check(
     if definition.liquid_table is None:
         # K2O has no JANAF liquid partner, but its crystal table still defines
         # the source range for this construction case.
-        _janaf_apparent_gibbs(definition.crystal_table, temp)
+        _janaf_crystal(definition.oxide, temp)
         pair_status: Literal["available", "construction_case"] = "construction_case"
         delta_janaf = None
         janaf_rows = (definition.crystal_table,)
     else:
         pair_status = "available"
-        crystal_table = _janaf_table(definition.crystal_table)
-        liquid_table = _janaf_table(definition.liquid_table)
-        for table_id, table_data in (
-            (definition.crystal_table, crystal_table),
-            (definition.liquid_table, liquid_table),
-        ):
-            row_range = (table_data[1][0][0], table_data[1][-1][0])
-            if not row_range[0] <= temp <= row_range[1]:
-                raise StandardCheckRefusal(
-                    f"{table_id} JANAF row is outside temperature_K [{row_range[0]:g}, {row_range[1]:g}] K at {temp:g} K",
-                    phase=table_id,
-                    valid_range_K=row_range,
-                )
-        delta_janaf = (
-            _janaf_apparent_gibbs(definition.liquid_table, temp)
-            - _janaf_apparent_gibbs(definition.crystal_table, temp)
-        ) / _J_TO_KJ
+        liquid_janaf = _janaf_liquid(definition.liquid_table, temp)
+        crystal_janaf = _janaf_crystal(definition.oxide, temp)
+        delta_janaf = (liquid_janaf.G_J_mol - crystal_janaf.G_J_mol) / _J_TO_KJ
         janaf_rows = (definition.crystal_table, definition.liquid_table)
 
     liquid_source = ""
@@ -531,7 +479,7 @@ def pure_oxide_standard_check(
             crystal_range = (crystal.T_min, crystal.T_max)
             crystal_source_display = source_crystal_id
         else:
-            crystal_g = _janaf_apparent_gibbs(crystal_name, temp)
+            crystal_g = _janaf_crystal(definition.oxide, temp).G_J_mol
             crystal_source_display = source_crystal_id
         packaged_closure = PackagedClosure(
             "available", (liquid.G_J_mol - crystal_g) / _J_TO_KJ,
@@ -576,7 +524,11 @@ def pure_oxide_standard_check(
         authority = f"constructed liquid standard; {authority}"
         least_authoritative = f"constructed liquid standard {liquid_source or 'K2O(l)'}"
 
-    crystal_digest = _source_digest(crystal_name) if not crystal_is_packaged else gas_pack.condensate_table_digest
+    crystal_digest = (
+        str(_janaf_crystal(definition.oxide, min(temp, crystal_range[1])).provenance["source_sha256"])
+        if not crystal_is_packaged
+        else gas_pack.condensate_table_digest
+    )
     return PureOxideStandardCheck(
         oxide=definition.oxide,
         temperature_K=temp,
@@ -621,7 +573,7 @@ def _cmd_diagnose_standard_checks(args: Any) -> int:
         "delta_janaf_kJ_mol", "packaged_closure_delta_kJ_mol",
         "packaged_closure_status", "switch_status", "switch_temperature_K",
         "switch_bracket_K", "switch_residual_J_mol", "switch_uncertainty_K",
-        "switch_bracket_residuals_J_mol",
+        "switch_bracket_residuals_J_mol", "switch_bracket_resolution_bounds_J_mol",
         "switch_search_range_K", "temperature_axis_label", "janaf_rows",
         "pack_id", "pack_digest", "source_crystal_id", "source_crystal_digest",
         "least_authoritative_input", "authority", "construction_flag",
@@ -641,6 +593,7 @@ def _cmd_diagnose_standard_checks(args: Any) -> int:
                 "switch_temperature_K": switch["temperature_K"],
                 "switch_bracket_K": json.dumps(switch["bracket_K"]),
                 "switch_bracket_residuals_J_mol": json.dumps(switch["bracket_residuals_J_mol"]),
+                "switch_bracket_resolution_bounds_J_mol": json.dumps(switch["bracket_resolution_bounds_J_mol"]),
                 "switch_residual_J_mol": switch["residual_J_mol"],
                 "switch_uncertainty_K": switch["uncertainty_K"],
                 "switch_search_range_K": json.dumps(switch["search_range_K"]),

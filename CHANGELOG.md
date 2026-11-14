@@ -24,7 +24,7 @@
 - Added separate JANAF-pair closure, packaged liquid-minus-crystal residual,
   and in-range switch predictions for the supported pure parent oxides. Results
   include source rows, pack digest, range and extrapolation labels, and typed
-  no-switch results. See `docs/pure-oxide-standard-checks.md`.
+  no-switch and unresolved-sign results. See `docs/pure-oxide-standard-checks.md`.
 
 ### Gas oxygen balance
 

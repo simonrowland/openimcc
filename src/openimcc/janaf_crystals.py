@@ -13,12 +13,25 @@ from typing import Any, Mapping
 
 
 _RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
+_LIQUID_RESOURCE = "data/diagnostics/janaf-pure-oxide-liquid-pairs.json"
 _ANCHOR_TEMPERATURE_K = 298.15
 
 
 @dataclass(frozen=True)
 class JanafCrystalGibbs:
     """One crystal's apparent Gibbs value and its thermochemical provenance."""
+
+    G_J_mol: float
+    domain_K: tuple[float, float]
+    provenance: Mapping[str, Any]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "provenance", MappingProxyType(dict(self.provenance)))
+
+
+@dataclass(frozen=True)
+class JanafApparentGibbs:
+    """One JANAF source row's apparent Gibbs value and provenance."""
 
     G_J_mol: float
     domain_K: tuple[float, float]
@@ -41,11 +54,31 @@ class JanafCrystalTemperatureError(ValueError):
         )
 
 
+class JanafRowTemperatureError(ValueError):
+    """Requested temperature lies outside a packaged JANAF source row."""
+
+    def __init__(self, table_id: str, temperature_K: float, domain_K: tuple[float, float]):
+        self.table_id = table_id
+        self.temperature_K = temperature_K
+        self.domain_K = domain_K
+        super().__init__(
+            f"JANAF row {table_id} has no Gibbs value at {temperature_K:g} K; "
+            f"domain is [{domain_K[0]:g}, {domain_K[1]:g}] K"
+        )
+
+
 @lru_cache(maxsize=1)
 def _load_phases() -> tuple[dict[str, Any], str]:
     raw = resources.files("openimcc").joinpath(_RESOURCE).read_bytes()
     data = json.loads(raw.decode("utf-8"))
     return {row["id"]: row for row in data["phases"]}, hashlib.sha256(raw).hexdigest()
+
+
+@lru_cache(maxsize=1)
+def _load_liquid_rows() -> tuple[dict[str, Any], str]:
+    raw = resources.files("openimcc").joinpath(_LIQUID_RESOURCE).read_bytes()
+    data = json.loads(raw.decode("utf-8"))
+    return {row["table_id"]: row for row in data["rows"]}, hashlib.sha256(raw).hexdigest()
 
 
 def _interpolate_nodes(nodes: list[dict[str, Any]], key: str, temperature_K: float) -> float:
@@ -61,6 +94,21 @@ def _interpolate_nodes(nodes: list[dict[str, Any]], key: str, temperature_K: flo
                 (temperature_K - lo_T) / (hi_T - lo_T)
             )
     raise ValueError(f"no source node interval at {temperature_K:g} K")
+
+
+def _apparent_gibbs(
+    row: Mapping[str, Any], nodes: list[dict[str, Any]], temperature: float
+) -> float:
+    h_increment = _interpolate_nodes(
+        nodes, "enthalpy_increment_kJ_mol", temperature
+    )
+    entropy = _interpolate_nodes(nodes, "entropy_J_mol_K", temperature)
+    # G_app(T) = Hf(298.15) + [H(T)-H(298.15)] - T*S(T).
+    # Enthalpy is stored in kJ/mol and entropy in J/(mol K); multiplying the
+    # enthalpy sum by 1000 gives J/mol, matching T*S.
+    return (
+        float(row["formation_enthalpy_298_kJ_mol"]) + h_increment
+    ) * 1000.0 - temperature * entropy
 
 
 def evaluate_janaf_crystal(phase_id: str, temperature_K: float) -> JanafCrystalGibbs:
@@ -87,17 +135,15 @@ def evaluate_janaf_crystal(phase_id: str, temperature_K: float) -> JanafCrystalG
 
     transition = row.get("transition_row_at_cap")
     use_transition = transition is not None and temperature == domain[1]
-    source = [transition] if use_transition else row["nodes"]
-    h_increment = _interpolate_nodes(
-        source, "enthalpy_increment_kJ_mol", temperature
+    # Include the printed transition point as the final interpolation node
+    # below the cap. Otherwise the last ordinary 100 K node is extrapolated
+    # toward the transition, causing a discontinuity immediately below Tm.
+    source = (
+        [transition]
+        if use_transition
+        else [*row["nodes"], *row.get("transition_rows", [])]
     )
-    entropy = _interpolate_nodes(source, "entropy_J_mol_K", temperature)
-    # G_app(T) = Hf(298.15) + [H(T)-H(298.15)] - T*S(T).
-    # Enthalpy is stored in kJ/mol and entropy in J/(mol K); multiplying the
-    # enthalpy sum by 1000 gives J/mol, matching T*S.
-    gibbs = (
-        float(row["formation_enthalpy_298_kJ_mol"]) + h_increment
-    ) * 1000.0 - temperature * entropy
+    gibbs = _apparent_gibbs(row, source, temperature)
     provenance = {
         "table_id": row["crystal_table_id"],
         "source_sha256": row["source_sha256"],
@@ -110,3 +156,42 @@ def evaluate_janaf_crystal(phase_id: str, temperature_K: float) -> JanafCrystalG
         ),
     }
     return JanafCrystalGibbs(gibbs, domain, provenance)
+
+
+def evaluate_janaf_apparent_gibbs(
+    table_id: str, temperature_K: float
+) -> JanafApparentGibbs:
+    """Evaluate a packaged JANAF liquid control row on its apparent-G basis."""
+    rows, resource_digest = _load_liquid_rows()
+    if table_id not in rows:
+        raise KeyError(f"no packaged JANAF liquid control row for {table_id!r}")
+    row = rows[table_id]
+    temperature = float(temperature_K)
+    if not math.isfinite(temperature):
+        raise ValueError("temperature_K must be finite")
+    source_lo, source_hi = map(float, row["source_temperature_K"])
+    domain = (max(_ANCHOR_TEMPERATURE_K, source_lo), source_hi)
+    if not domain[0] <= temperature <= domain[1]:
+        raise JanafRowTemperatureError(table_id, temperature, domain)
+
+    transitions = row["transition_rows"]
+    transition = next(
+        (node for node in reversed(transitions) if float(node["T_K"]) == temperature),
+        None,
+    )
+    source_nodes = [transition] if transition is not None else [
+        *row["nodes"], *transitions
+    ]
+    gibbs = _apparent_gibbs(row, source_nodes, temperature)
+    provenance = {
+        "table_id": table_id,
+        "source_sha256": row["source_sha256"],
+        "resource_sha256": resource_digest,
+        "source_authority": row["source_authority"],
+        "gibbs_basis": "JANAF apparent Gibbs anchored at elemental enthalpies at 298.15 K",
+        "transition_row_used": transition is not None,
+        "transition_source_line_number": (
+            transition["source_line_number"] if transition is not None else None
+        ),
+    }
+    return JanafApparentGibbs(gibbs, domain, provenance)
