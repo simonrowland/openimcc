@@ -5535,7 +5535,7 @@ def _generic_oxygen_balance_relative_residual(
         data.parent_oxygen_demand * pressures[name] / math.sqrt(data.molar_mass)
         for name, data in species.items()
     )
-    return abs(oxygen_flux - parent_flux) / max(oxygen_flux, parent_flux, 1e-300)
+    return abs(oxygen_flux - parent_flux) / max(oxygen_flux, parent_flux)
 
 
 def test_generic_oxygen_balance_solves_sine_on_k_pressure_model() -> None:
@@ -5657,7 +5657,7 @@ def test_generic_oxygen_balance_reports_refinement_cost_for_curved_model() -> No
 @pytest.mark.parametrize(
     ("epsilon", "message"),
     [
-        (1e-314, "physical flux scale is below 1e-300"),
+        (1e-314, "relative closure is unresolved"),
         (1e-10, "relative residual"),
     ],
 )
@@ -5680,6 +5680,32 @@ def test_generic_oxygen_balance_does_not_certify_small_flux_closure(
         oxygen_balance_from_pressure_model(
             pressure_model, species, bracket=(-3.0, -1.0),
         )
+
+
+@pytest.mark.parametrize("epsilon", [1e-305, 1e-310])
+def test_generic_oxygen_balance_accepts_resolved_small_flux_scale(
+    epsilon: float,
+) -> None:
+    species = {
+        "A": OxygenBalanceSpeciesMetadata(1.0, 1.0, 0.0, 1.0),
+        "B": OxygenBalanceSpeciesMetadata(1.0, 0.0, 1.0, 0.0),
+    }
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {"A": epsilon * 10.0 ** (logp + 2.0), "B": epsilon}
+
+    p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+        pressure_model, species, bracket=(-3.0, -1.0),
+    )
+
+    assert p_o2 == pytest.approx(1e-2, rel=1e-12)
+    relative_residual = _generic_oxygen_balance_relative_residual(
+        pressures, species,
+    )
+    assert diagnostics["residual"] == pytest.approx(
+        relative_residual, rel=1e-12, abs=0.0,
+    )
+    assert relative_residual <= diagnostics["root_solver"]["residual_tolerance"]
 
 
 def test_generic_oxygen_balance_validates_model_pressures() -> None:
@@ -6481,6 +6507,19 @@ def test_weighted_oxygen_root_reaches_signed_closure_refusal() -> None:
         gas_module.weighted_oxygen_balance_from_pressure_model(
             discontinuous, {"X": 1.0}, conductance_mol_m2_s_Pa={"X": 1.0},
             bulk_pressures_bar={"X": 1.0}, log10_pO2_bracket=(-1.0, 1.0),
+        )
+
+
+def test_weighted_oxygen_root_does_not_borrow_equilibrium_channel_roundoff() -> None:
+    def discontinuous(x: float) -> dict[str, float]:
+        return {"X": 0.0 if x < 0.123456789 else 2e-30, "S": 1.0}
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="failed signed closure"):
+        gas_module.weighted_oxygen_balance_from_pressure_model(
+            discontinuous, {"X": 1.0, "S": 1.0},
+            conductance_mol_m2_s_Pa={"X": 1.0, "S": 1.0},
+            bulk_pressures_bar={"X": 1e-30, "S": 1.0},
+            log10_pO2_bracket=(-1.0, 1.0),
         )
 
 

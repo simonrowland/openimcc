@@ -4496,14 +4496,17 @@ def weighted_oxygen_balance_from_pressure_model(
         # an ULP of representation error in each pressure. For species i,
         # propagate that budget as |weight_i| * conductance_i * 1e5 Pa/bar *
         # (ulp(p_i)+ulp(bulk_i))/2, then sum it in mol m^-2 s^-1, the units of
-        # weighted flux. Sanity check: the sweep's 1 bar and 2 bar pressures
-        # with conductances 1 and sqrt(2) give
-        # 1e5 * [ulp(1) + sqrt(2)*ulp(2)]/2 ~= 4.25e-11 mol m^-2 s^-1.
+        # weighted flux. Include only channels with nonzero weighted departure,
+        # so an unrelated equilibrium channel cannot supply this floor. Sanity
+        # check: when both callback and bulk operands are 1 and 2 bar, with
+        # conductances 1 and sqrt(2), this is
+        # 1e5 * [2*ulp(1) + 2*sqrt(2)*ulp(2)]/2 ~= 8.50e-11 mol m^-2 s^-1.
         pressure_roundoff_floor = _checked_oxygen_fsum(
             (
                 0.5 * abs(weights[name]) * conductance[name] * 1e5
                 * (math.ulp(pressures[name]) + math.ulp(bulk[name]))
-                for name in names
+                for name, term in zip(names, weighted_terms)
+                if term != 0.0
             ),
             "pressure-subtraction roundoff floor",
         )
@@ -4651,14 +4654,6 @@ def oxygen_balance_from_pressure_model(
         raise ImccGasOxygenBalanceError("oxygen-balance solve did not converge")
 
     residual, pressures, oxygen_flux, parent_flux = at(root)
-    physical_residual_scale = max(oxygen_flux, parent_flux)
-    if physical_residual_scale < 1e-300:
-        raise ImccGasOxygenBalanceError(
-            "oxygen-balance physical flux scale is below 1e-300; "
-            "relative closure is unresolved"
-        )
-    residual_scale = max(oxygen_flux, parent_flux, 1e-300)
-    relative_residual = abs(residual) / residual_scale
     max_exponent = max(
         (abs(data.pO2_exponent) for data in species.values()), default=1.0
     )
@@ -4671,6 +4666,22 @@ def oxygen_balance_from_pressure_model(
         32.0 * math.ulp(1.0),
         2.0 * math.log(10.0) * max(1.0, max_exponent) * solver_logp_tol,
     )
+
+    def require_resolved_relative_scale(scale: float) -> None:
+        # The relative certificate is |F|/scale <= tolerance. One ULP of the
+        # flux scale is a fractional resolution of ulp(scale)/scale; require
+        # that quantum to be at most one tenth of the tolerance. For subnormal
+        # scales ulp(scale) = 2^-1074, so scale must be at least
+        # 2^-1074/(tolerance*0.1); zero has no relative denominator.
+        if scale == 0.0 or math.ulp(scale) / scale > residual_tolerance * 0.1:
+            raise ImccGasOxygenBalanceError(
+                "oxygen-balance relative closure is unresolved at the "
+                "requested tolerance"
+            )
+
+    physical_residual_scale = max(oxygen_flux, parent_flux)
+    require_resolved_relative_scale(physical_residual_scale)
+    relative_residual = abs(residual) / physical_residual_scale
     root_path = "direct"
     refinement_evaluations = 0
     iterations = solver.iterations
@@ -4702,13 +4713,8 @@ def oxygen_balance_from_pressure_model(
         refinement_evaluations = model_evaluations - initial_model_evaluations
         residual, pressures, oxygen_flux, parent_flux = at(root)
         physical_residual_scale = max(oxygen_flux, parent_flux)
-        if physical_residual_scale < 1e-300:
-            raise ImccGasOxygenBalanceError(
-                "oxygen-balance physical flux scale is below 1e-300; "
-                "relative closure is unresolved"
-            )
-        residual_scale = max(oxygen_flux, parent_flux, 1e-300)
-        relative_residual = abs(residual) / residual_scale
+        require_resolved_relative_scale(physical_residual_scale)
+        relative_residual = abs(residual) / physical_residual_scale
         if relative_residual > residual_tolerance:
             raise ImccGasOxygenBalanceError(
                 "oxygen-balance refinement did not meet residual tolerance "

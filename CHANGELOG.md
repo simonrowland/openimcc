@@ -890,11 +890,11 @@
 
 ### Changes that can break callers
 
-- Weighted oxygen transport closure now accepts signed residuals within a
-  propagated half-ULP pressure-subtraction floor when the relative transfer
-  tolerance is below pressure representation error. The root evidence names
-  this absolute criterion. The generic oxygen solver refuses balances whose
-  physical flux scale is below `1e-300` because relative closure is unresolved.
+- Weighted oxygen transport closure now computes its propagated half-ULP
+  pressure-subtraction floor from channels with nonzero weighted departures.
+  The root evidence names acceptance by this absolute criterion. The generic
+  oxygen solver refuses relative closure when the flux-scale ULP is coarser
+  than one tenth of its residual tolerance.
 - `crystal_closure()` rows and CSV output add `fusion_anchor_used_in_fit` to
   identify comparisons that reuse a fitted fusion anchor. The SF04 benchmark
   aggregate now reports 278 evidence residuals with RMSE `0.39421436539170723`
