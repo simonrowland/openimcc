@@ -30,6 +30,12 @@ result = evaluate_sulfur(
 )
 ```
 
+If `total_pressure_bar` is omitted, the calculation uses 1 bar and reports a
+typed pressure-assumption notice with `DEPENDS: total_pressure_bar`, because
+the pressure-calibration check cannot be evaluated. Declaring
+`total_pressure_bar` (including `total_pressure_bar=1.0`) clears that
+dependency; pressure calibration is then checked against the supplied value.
+
 The two log fugacities are absolute base-10 values relative to 1 bar. Supply
 exactly one of `log10_fS2`, `total_s_ppm`, or
 `total_s_mol_per_mol_melt`. Total sulfur is on a sulfur-free oxide-melt mass

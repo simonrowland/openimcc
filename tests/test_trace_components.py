@@ -593,7 +593,9 @@ def test_ga_gas_conversion_identity_and_kems_fit_domain(packaged_gas_pack) -> No
     assert "inside the measured 1550–1740 K KEMS fit" in str(indium_flag)
 
 
-def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() -> None:
+def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration(
+    packaged_gas_pack,
+) -> None:
     assert trace_component_rule("MnO").full_component
     assert trace_component_rule("P2O5").activity_fragment == "P"
     assert trace_component_rule("NiO").activity_fragment == "Ni"
@@ -633,7 +635,7 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() 
     )
     assert p2o5_notice.activities["P2O5"].code == "depends_helper_activity"
     assert "MgO_saturation" in (
-        p2o5_notice.activities["P2O5"].reference or ""
+        p2o5_notice.activities["P2O5"].dependency_axes
     )
 
     co_composition = _weight_composition({"CoO": 0.002})
@@ -661,8 +663,35 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() 
         "S", 0.001, sulfur_moles, 1673.0, fO2_bar=10.0**-8.97
     )
     assert sulfur.code == "out_of_domain_helper_activity"
-    assert "total_pressure_bar" in (sulfur.reference or "")
     assert "capacity-composition-outside-calibration" in (sulfur.reference or "")
+    assert "total_pressure_bar" in sulfur.dependency_axes
+    assert "total_pressure_bar" in str(TraceActivityFlag(sulfur))
+
+    supplied_pressure, _, _ = trace_components._resolve_trace_activity(
+        "S",
+        0.001,
+        {"SiO2": 1.0, "S": 0.001},
+        1673.0,
+        fO2_bar=1.0e-8,
+        total_pressure_bar=1.0,
+    )
+    assert "total_pressure_bar" not in supplied_pressure.dependency_axes
+
+    sulfur_composition = _weight_composition({"S": 0.001})
+    sulfur_melt = evaluate(
+        sulfur_composition, 1673.0, basis_type="wt", allow_extrapolation=True
+    )
+    sulfur_gas = evaluate_gas(
+        _major_activities(sulfur_melt),
+        1673.0,
+        1.0e-8,
+        packaged_gas_pack,
+        gas_species=("S",),
+        composition_wt_pct=sulfur_composition,
+    )
+    sulfur_flag = sulfur_gas.domain_flags["S"]
+    assert isinstance(sulfur_flag, TraceActivityFlag)
+    assert "total_pressure_bar" in sulfur_flag.dependency_axes
 
     cr_composition = _weight_composition({"Cr2O3": 0.001})
     cr_result = evaluate(
@@ -686,9 +715,9 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() 
         item for item in mn_result.labels.notices
         if isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
     )
-    assert mn_flag.code == "out_of_domain_associate_activity"
+    assert mn_flag.code == "depends_associate_activity"
     assert mn_flag.estimates[0].limitations == ()
-    assert "redox flags:" in str(mn_flag)
+    assert "redox flags:" not in str(mn_flag)
     assert not any(
         isinstance(item, TraceComponentsOutsideMeltModelNotice)
         for item in mn_result.labels.notices
@@ -737,10 +766,14 @@ def test_trace_helper_validity_uses_declared_checks_and_keeps_activity_values() 
     )
     assert ni_unknown_oxygen.code == "depends_helper_activity"
     assert ni_unknown_oxygen.activity > 0.0
+    assert ni_unknown_oxygen.violated_axes == ()
+    assert "oxygen_fugacity_relative_to_IW_not_supplied" in (
+        ni_unknown_oxygen.dependency_axes
+    )
     assert "oxygen_fugacity_relative_to_IW_not_supplied" in (
         ni_unknown_oxygen.reference or ""
     )
-    assert "dilute_NiO_loading_limit" in (ni_unknown_oxygen.reference or "")
+    assert "dilute_NiO_loading_limit" not in ni_unknown_oxygen.dependency_axes
     assert ni_unknown_oxygen.limitations
 
     co_unknown_oxygen = trace_components.resolve_trace_activity(
@@ -757,6 +790,10 @@ def test_trace_helper_validity_uses_declared_checks_and_keeps_activity_values() 
         1700.0,
     )
     assert co_unknown_oxygen.code == "depends_helper_activity"
+    assert co_unknown_oxygen.violated_axes == ()
+    assert "oxygen_fugacity_domain_unchecked" in (
+        co_unknown_oxygen.dependency_axes
+    )
     assert "oxygen_fugacity_domain_unchecked" in (
         co_unknown_oxygen.reference or ""
     )
@@ -772,6 +809,143 @@ def test_trace_helper_validity_uses_declared_checks_and_keeps_activity_values() 
     assert co_outside_window.activity > 0.0
     assert "FeO_outside_0_to_12_wt_pct" in (co_outside_window.reference or "")
     assert co_outside_window.limitations
+
+
+@pytest.mark.parametrize("trace_oxide", ("NiO", "CoO"))
+def test_passing_ni_co_helper_inputs_remain_source_grounded(
+    trace_oxide: str,
+) -> None:
+    weights = {
+        "SiO2": 50.0,
+        "MgO": 10.0,
+        "FeO": 6.0,
+        "CaO": 20.0,
+        "Al2O3": 14.0,
+        trace_oxide: 0.001,
+    }
+    composition = {
+        oxide: amount / MOLAR_MASS_G_MOL[oxide]
+        for oxide, amount in weights.items()
+    }
+    x_trace = composition[trace_oxide] / math.fsum(composition.values())
+    fO2_bar = 10.0 ** (_iw_log10_fO2_bar(1700.0) - 1.0)
+
+    estimate = trace_components.resolve_trace_activity(
+        trace_oxide,
+        x_trace,
+        composition,
+        1700.0,
+        fO2_bar=fO2_bar,
+    )
+
+    assert estimate.code == "source_grounded_helper_activity"
+    assert estimate.violated_axes == ()
+    assert estimate.dependency_axes == ()
+    assert estimate.limitations
+
+
+@pytest.mark.parametrize(
+    "trace_oxide,gas_species", (("NiO", "Ni"), ("CoO", "Co"))
+)
+def test_passing_ni_co_gas_channels_add_no_validity_flags(
+    trace_oxide: str,
+    gas_species: str,
+    packaged_gas_pack,
+) -> None:
+    composition = {
+        "SiO2": 50.0,
+        "MgO": 10.0,
+        "FeO": 6.0,
+        "CaO": 20.0,
+        "Al2O3": 14.0,
+        trace_oxide: 0.001,
+    }
+    melt = evaluate(
+        composition, 1700.0, basis_type="wt", allow_extrapolation=True
+    )
+    fO2_bar = 10.0 ** (_iw_log10_fO2_bar(1700.0) - 1.0)
+
+    gas = evaluate_gas(
+        _major_activities(melt),
+        1700.0,
+        fO2_bar,
+        packaged_gas_pack,
+        gas_species=(gas_species,),
+        composition_wt_pct=composition,
+    )
+    flag = gas.domain_flags[gas_species]
+
+    assert isinstance(flag, TraceActivityFlag)
+    assert flag.code == "source_grounded_helper_activity"
+    assert flag.estimates[0].violated_axes == ()
+    assert flag.dependency_axes == ()
+
+
+def test_unmodelled_helper_components_are_dependencies() -> None:
+    composition = {
+        "SiO2": 50.0,
+        "MgO": 10.0,
+        "FeO": 6.0,
+        "CaO": 20.0,
+        "Al2O3": 14.0,
+        "Fe2O3": 0.001,
+        "NiO": 0.001,
+    }
+    x_trace = composition["NiO"] / math.fsum(composition.values())
+
+    estimate = trace_components.resolve_trace_activity(
+        "NiO", x_trace, composition, 1700.0, fO2_bar=1.0e-8
+    )
+
+    assert estimate.code == "depends_helper_activity"
+    assert "unsupported_component_Fe2O3" in estimate.dependency_axes
+    assert "unsupported_component_Fe2O3" not in estimate.violated_axes
+
+
+def test_redox_validity_uses_typed_axes_not_row_flag_text() -> None:
+    composition = {
+        "SiO2": 0.5,
+        "MgO": 0.15,
+        "CaO": 0.2,
+        "Al2O3": 0.15,
+        "Cr2O3": 0.0001,
+    }
+    estimate = trace_components.resolve_trace_activity(
+        "Cr2O3", 0.0001, composition, 1700.0, fO2_bar=1.0e-8
+    )
+
+    assert estimate.code == "depends_associate_activity"
+    assert estimate.violated_axes == ()
+    assert "redox_association" in estimate.dependency_axes
+    assert "redox_chemistry" in estimate.dependency_axes
+    assert "redox_calibration" not in estimate.violated_axes
+    assert "CrO(l)-effective:" in (estimate.reference or "")
+
+
+def test_manganese_redox_messages_are_carried_once() -> None:
+    result = evaluate(
+        _weight_composition({"MnO": 0.002}),
+        1800.0,
+        basis_type="wt",
+        allow_extrapolation=True,
+    )
+    redox_messages = tuple(
+        flag for flag in result.labels.flags if flag.startswith("RED:")
+    )
+    trace_flag = next(
+        item for item in result.labels.notices
+        if isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+    )
+
+    assert redox_messages
+    assert "redox flags:" not in str(trace_flag)
+    assert all(
+        sum(str(item).count(message) for item in (
+            *result.labels.flags,
+            *result.labels.notices,
+        )) == 1
+        for message in redox_messages
+    )
 
 
 @pytest.mark.parametrize("trace_oxide", ("NiO", "CoO"))
@@ -826,7 +1000,8 @@ def test_trace_associate_validity_carries_redox_extrapolations() -> None:
     assert "redox_row_temperature_extrapolation" in (estimate.reference or "")
     assert "FeO(l)" in (estimate.reference or "")
     assert "temperature_K" in estimate.violated_axes
-    assert "redox_calibration" in estimate.violated_axes
+    assert "redox_calibration" not in estimate.violated_axes
+    assert "redox_chemistry" in estimate.dependency_axes
 
 
 def test_sulfur_trace_validity_carries_capacity_calibration_notices() -> None:
@@ -860,7 +1035,7 @@ def test_p2o5_trace_validity_includes_ferric_chemistry_notice() -> None:
         estimate.reference or ""
     )
     assert estimate.limitations
-    assert "MgO_saturation" in (estimate.reference or "")
+    assert "MgO_saturation" in estimate.dependency_axes
 
 
 def test_redox_composition_screen_flags_any_unsupported_cation() -> None:
@@ -899,7 +1074,7 @@ def test_redox_v5_associates_are_first_rung_trace_sources(oxide: str) -> None:
         if isinstance(item, TraceComponentsOutsideMeltModelNotice)
     )
     estimate = notice.activities[oxide]
-    assert estimate.code == "out_of_domain_associate_activity"
+    assert estimate.code == "depends_associate_activity"
     assert math.isfinite(estimate.activity) and estimate.activity > 0.0
 
 
@@ -1306,6 +1481,7 @@ def test_gas_trace_activity_flag_uses_the_same_ladder(packaged_gas_pack) -> None
     )
     assert isinstance(p2o5_gas.domain_flags["P2"], TraceActivityFlag)
     assert p2o5_gas.domain_flags["P2"].code == "depends_helper_activity"
+    assert "MgO_saturation" in p2o5_gas.domain_flags["P2"].dependency_axes
     assert "MgO_saturation" in str(p2o5_gas.domain_flags["P2"])
 
 
@@ -1360,7 +1536,7 @@ def test_trace_level_mgo_p2o5_stays_dependent_through_gas_evaluation(
     estimate = melt_flag.estimates[0]
     assert estimate.code == "depends_helper_activity"
     assert estimate.violated_axes == ()
-    assert "MgO_saturation" in (estimate.reference or "")
+    assert "MgO_saturation" in estimate.dependency_axes
     assert any("MgO-saturated" in item for item in estimate.limitations)
 
     gas = evaluate_gas(
@@ -1374,6 +1550,7 @@ def test_trace_level_mgo_p2o5_stays_dependent_through_gas_evaluation(
     gas_flag = gas.domain_flags["P2"]
     assert isinstance(gas_flag, TraceActivityFlag)
     assert gas_flag.code == "depends_helper_activity"
+    assert "MgO_saturation" in gas_flag.dependency_axes
     assert "MgO_saturation" in str(gas_flag)
     assert any(
         "MgO-saturated" in item

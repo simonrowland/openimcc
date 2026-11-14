@@ -393,6 +393,7 @@ class TraceActivityEstimate:
     parent_liquid_standard_offset: ParentLiquidStandardOffset | None = None
     violated_axes: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
+    dependency_axes: tuple[str, ...] = ()
 
 
 class TraceActivityFlag(str):
@@ -408,6 +409,7 @@ class TraceActivityFlag(str):
     x_source: float | None
     parent_liquid_standard_offset: ParentLiquidStandardOffset | None
     estimates: tuple[TraceActivityEstimate, ...]
+    dependency_axes: tuple[str, ...]
     major_flags: tuple["TraceMajorBiasFlag", ...]
     context: str
     prior_flags: tuple[str, ...]
@@ -444,6 +446,8 @@ class TraceActivityFlag(str):
                 )
             if item.violated_axes:
                 message += "; violated axes: " + "; ".join(item.violated_axes)
+            if item.dependency_axes:
+                message += "; DEPENDS: " + "; ".join(item.dependency_axes)
             reference = item.reference
             if item.limitations:
                 limitation_text = " ".join(item.limitations)
@@ -470,6 +474,7 @@ class TraceActivityFlag(str):
         flag.x_source = first.x_source
         flag.parent_liquid_standard_offset = first.parent_liquid_standard_offset
         flag.estimates = tuple(estimates)
+        flag.dependency_axes = first.dependency_axes
         flag.major_flags = major_flags
         flag.context = context
         flag.prior_flags = prior_flags
@@ -810,6 +815,7 @@ def _resolve_trace_activity(
     T_K: float,
     *,
     fO2_bar: float | None = None,
+    total_pressure_bar: float | None = None,
 ) -> tuple[TraceActivityEstimate, Any | None, Any | None]:
     rule = _TRACE_COMPONENT_RULES[oxide]
     redox_result: Any | None = None
@@ -828,35 +834,8 @@ def _resolve_trace_activity(
                 flag for flag in redox_result.flags
                 if flag != "liquid_only_model"
             )
-            violated_axes: list[str] = []
-            if extrapolated_rows or any(
-                "temperature extrapolation" in flag.lower()
-                or "temperature outside" in flag.lower()
-                for flag in redox_flags
-            ):
-                violated_axes.append("temperature_K")
-            if any(
-                "unsupported major cations=" in flag.lower()
-                or "composition outside demonstrated" in flag.lower()
-                or "optical_basicity_outside" in flag.lower()
-                or "outside the candidate optical-basicity basis" in flag.lower()
-                or "outside berry anchor lambda" in flag.lower()
-                or "exceeds berry anchor content" in flag.lower()
-                for flag in redox_flags
-            ):
-                violated_axes.append("major_cation_composition")
-            if any(
-                not flag.startswith("RED:") and ": " in flag
-                for flag in redox_flags
-            ):
-                violated_axes.append("redox_calibration")
-            if any("unmodelled" in flag.lower() for flag in redox_flags):
-                violated_axes.append("redox_chemistry")
-            if any("redox_poorly_buffered" in flag for flag in redox_flags):
-                violated_axes.append("oxygen_buffering")
-            if any("unassociated liquid parents" in flag for flag in redox_flags):
-                violated_axes.append("redox_association")
-            violated_axes = list(dict.fromkeys(violated_axes))
+            violated_axes = tuple(redox_result.violated_axes)
+            dependency_axes = tuple(redox_result.dependency_axes)
             redox_details = []
             if extrapolated_rows:
                 redox_details.append(
@@ -871,7 +850,7 @@ def _resolve_trace_activity(
                 if violated_axes
                 else (
                     "depends_associate_activity"
-                    if redox_flags else "source_grounded_associate_activity"
+                    if dependency_axes else "source_grounded_associate_activity"
                 )
             )
             return (
@@ -881,14 +860,19 @@ def _resolve_trace_activity(
                     x,
                     code,
                     reference=reference,
-                    violated_axes=tuple(violated_axes),
+                    violated_axes=violated_axes,
+                    dependency_axes=dependency_axes,
                 ),
                 redox_result,
                 redox_state,
             )
     if rule.activity_model == "activity_fragment" and rule.activity_fragment is not None:
         helper_result = _activity_fragment_result(
-            rule.activity_fragment, composition_moles, T_K, fO2_bar=fO2_bar
+            rule.activity_fragment,
+            composition_moles,
+            T_K,
+            fO2_bar=fO2_bar,
+            total_pressure_bar=total_pressure_bar,
         )
         if helper_result is not None:
             (
@@ -904,20 +888,24 @@ def _resolve_trace_activity(
                 "oxygen_fugacity_relative_to_IW_not_supplied",
                 "oxygen_fugacity_domain_unchecked",
             }
-            failed_axes = tuple(
-                axis for axis in violated_axes if axis not in unknown_axes
+            helper_dependencies = tuple(
+                axis
+                for axis in violated_axes
+                if axis in unknown_axes or axis.startswith("unsupported_component_")
             )
-            if dependency_axes:
-                dependency_note = "DEPENDS: " + ", ".join(dependency_axes)
-                reference = "; ".join(
-                    part for part in (reference, dependency_note) if part
-                )
+            failed_axes = tuple(
+                axis for axis in violated_axes if axis not in helper_dependencies
+            )
+            dependency_axes = tuple(dict.fromkeys((
+                *helper_dependencies,
+                *dependency_axes,
+            )))
             code = (
                 "out_of_domain_helper_activity"
                 if failed_axes
                 else (
                     "depends_helper_activity"
-                    if dependency_axes or violated_axes
+                    if dependency_axes
                     else "source_grounded_helper_activity"
                 )
             )
@@ -928,8 +916,9 @@ def _resolve_trace_activity(
                     x,
                     code,
                     reference=reference,
-                    violated_axes=violated_axes,
+                    violated_axes=failed_axes,
                     limitations=limitations,
+                    dependency_axes=dependency_axes,
                 ),
                 None,
                 None,
@@ -978,6 +967,7 @@ def _activity_fragment_result(
     T_K: float,
     *,
     fO2_bar: float | None,
+    total_pressure_bar: float | None,
 ) -> tuple[
     float,
     tuple[str, ...],
@@ -1073,7 +1063,7 @@ def _activity_fragment_result(
             result.activity,
             source_axes,
             limitations,
-            ("dilute_NiO_loading_limit",),
+            (),
             reference,
         )
     if element == "Co":
@@ -1110,7 +1100,7 @@ def _activity_fragment_result(
             result.activity,
             source_axes,
             limitations,
-            ("dilute_CoO_loading_limit", "unparameterized_major_oxide_effects"),
+            (),
             reference,
         )
     if element == "P":
@@ -1161,6 +1151,7 @@ def _activity_fragment_result(
                 sulfur_composition,
                 T_K,
                 log10_fO2=log_fO2,
+                total_pressure_bar=total_pressure_bar,
                 total_s_ppm=(
                     sulfur_moles * MOLAR_MASS_G_MOL["S"] / total_mass * 1.0e6
                 ),

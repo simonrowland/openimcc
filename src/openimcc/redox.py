@@ -235,6 +235,8 @@ class RedoxResult:
     ti_oxygen_capacity_mol: float = 0.0
     composition_redox_iterations: int = 0
     profile: str | None = None
+    violated_axes: tuple[str, ...] = ()
+    dependency_axes: tuple[str, ...] = ()
     receipt: CalculationReceipt | None = field(
         default=None, compare=False, hash=False
     )
@@ -1774,13 +1776,16 @@ def _make_flags(
     capacity_tolerance: float,
     active_redox_rows: Sequence[Mapping[str, Any]],
     element_moles_by_oxidation_state: Mapping[str, Mapping[int, float]],
-) -> tuple[tuple[str, ...], tuple[str, ...]]:
+) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
     flags: list[str] = ["liquid_only_model"]
+    violated_axes: list[str] = []
+    dependency_axes: list[str] = []
     for index in state.active_complex:
         if index >= len(base_datapack.domains):
             continue
         low, high = base_datapack.domains[index]
         if temperature_K < low or temperature_K > high:
+            violated_axes.append("temperature_K")
             flags.append(
                 f"temperature extrapolation for {base_datapack.reactions[index]}"
             )
@@ -1788,6 +1793,7 @@ def _make_flags(
         base_datapack, state, redox_pack
     )
     if unassociated:
+        dependency_axes.append("redox_association")
         flags.append(
             "RED: unassociated liquid parents without published IMCC rows "
             "(last_resort_ideal_parents): "
@@ -1820,6 +1826,7 @@ def _make_flags(
         }
         total_cations = math.fsum(cation_totals.values())
         if optical_basicity_rows and cation_totals.get("Cr", 0.0) > 0.0:
+            dependency_axes.append("redox_composition_model")
             flags.append(
                 "RED: Cr-bearing melt is outside the candidate optical-basicity "
                 "basis (Cr2O3 coefficient is not sourced)"
@@ -1829,6 +1836,7 @@ def _make_flags(
             if element not in supported and amount > 0.0
         ] if total_cations > 0.0 else []
         if outside:
+            violated_axes.append("major_cation_composition")
             has_cr_row = any(_linear_composition_coefficients(row) is not None for row in conditioned_rows)
             label = (
                 "Cr composition outside demonstrated CMAS/basaltic range; "
@@ -1844,6 +1852,7 @@ def _make_flags(
         lambda_value = _berry_optical_basicity(element_moles_by_oxidation_state)
         low_lambda, high_lambda = map(float, term["lambda_range"])
         if not low_lambda <= lambda_value <= high_lambda:
+            violated_axes.append("major_cation_composition")
             flags.append(
                 "RED: optical_basicity_outside_calibrated_range "
                 f"row={row['complex']} lambda={lambda_value:.6g} "
@@ -1857,6 +1866,7 @@ def _make_flags(
             float, ti_rows[0]["composition_term"]["lambda_range"]
         )
         if not low_lambda <= lambda_value <= high_lambda:
+            violated_axes.append("major_cation_composition")
             flags.append(
                 "RED: Ti candidate outside Berry anchor Lambda "
                 f"[{low_lambda:g},{high_lambda:g}]; "
@@ -1879,6 +1889,7 @@ def _make_flags(
                      parent_mass[ti_parent] /
                      total_mass * 100.0) if total_mass else 0.0
             if ti_wt > 1.03:
+                violated_axes.append("major_cation_composition")
                 flags.append(
                     "RED: TiO2 exceeds Berry anchor content (~1.03 wt%); "
                     "Tranell held-out titrations (73 points) under-predict by a median 0.5246 dex "
@@ -1886,6 +1897,7 @@ def _make_flags(
                     "at 7-52 wt% TiO2."
                 )
         if not 1673.0 <= temperature_K <= 1674.0:
+            violated_axes.append("temperature_K")
             flags.append(
                 "RED: Ti candidate temperature outside Berry calibration band "
                 "1673-1674 K; Tranell held-out titrations (73 points) under-predict by "
@@ -1896,14 +1908,21 @@ def _make_flags(
         row_name = str(row["complex"])
         low, high = map(float, row["T_domain_K"])
         if temperature_K < low or temperature_K > high:
+            violated_axes.append("temperature_K")
             extrapolated_redox_rows.append(row_name)
             flags.append(
                 "RED: redox_row_temperature_extrapolation "
                 f"row={row_name} temperature_K={temperature_K:.17g}"
             )
     if capacity <= capacity_tolerance:
+        dependency_axes.append("oxygen_buffering")
         flags.append("redox_poorly_buffered")
-    return tuple(dict.fromkeys(flags)), tuple(extrapolated_redox_rows)
+    return (
+        tuple(dict.fromkeys(flags)),
+        tuple(extrapolated_redox_rows),
+        tuple(dict.fromkeys(violated_axes)),
+        tuple(dict.fromkeys(dependency_axes)),
+    )
 
 
 def _assemble_result(
@@ -2009,7 +2028,7 @@ def _assemble_result(
             )
         if is_active:
             active_redox_rows.append(row)
-    flags, extrapolated_redox_rows = _make_flags(
+    flags, extrapolated_redox_rows, violated_axes, dependency_axes = _make_flags(
         temperature_K,
         base_datapack,
         state,
@@ -2021,6 +2040,11 @@ def _assemble_result(
     )
     if unmodelled_redox_couples:
         flags = (*flags, "RED: unmodelled_redox_couples")
+        dependency_axes = tuple(dict.fromkeys((*dependency_axes, "redox_chemistry")))
+    if last_resort_ideal_parents:
+        dependency_axes = tuple(dict.fromkeys(
+            (*dependency_axes, "redox_association")
+        ))
     active_log_activity = {
         parent_names[index]: float(value)
         for index, value in zip(state.active_parent, state.y)
@@ -2088,6 +2112,8 @@ def _assemble_result(
         flags=flags,
         last_resort_ideal_parents=last_resort_ideal_parents,
         extrapolated_redox_rows=extrapolated_redox_rows,
+        violated_axes=violated_axes,
+        dependency_axes=dependency_axes,
         active_row_band_intersection_K=band_intersection,
         solver_path=state.solver_path,
         fallback_fired=fallback_counter[0] > 0,
@@ -2311,6 +2337,13 @@ def _evaluate_redox_with_packs(
         flags = (*result.flags, *state_flags)
         if not oxygen_redox_elements:
             flags = (*flags, "RED: no_modelled_redox_couple")
+            result = replace(
+                result,
+                dependency_axes=tuple(dict.fromkeys((
+                    *result.dependency_axes,
+                    "redox_chemistry",
+                ))),
+            )
         result = replace(result, flags=flags)
         return result, state
     ln_k_fe = _ln_k_fe(redox_pack, temperature)

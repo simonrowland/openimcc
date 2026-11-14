@@ -370,14 +370,22 @@ def test_an_di_failure_is_included_in_the_default_melt_trace_flag() -> None:
 
 
 @pytest.mark.parametrize(
-    ("trace_oxide", "window_flag"),
+    ("trace_oxide", "window_flag", "oxygen_axis"),
     (
-        ("NiO", "MgO_wt_pct_outside_4_to_30"),
-        ("CoO", "MgO_outside_4_to_30_wt_pct"),
+        (
+            "NiO",
+            "MgO_wt_pct_outside_4_to_30",
+            "oxygen_fugacity_relative_to_IW_not_supplied",
+        ),
+        (
+            "CoO",
+            "MgO_outside_4_to_30_wt_pct",
+            "oxygen_fugacity_domain_unchecked",
+        ),
     ),
 )
 def test_nico_flags_check_declared_weight_window_with_unsupported_oxide(
-    trace_oxide: str, window_flag: str
+    trace_oxide: str, window_flag: str, oxygen_axis: str
 ) -> None:
     composition = {
         "SiO2": 45.99,
@@ -395,7 +403,10 @@ def test_nico_flags_check_declared_weight_window_with_unsupported_oxide(
         if isinstance(item, TraceActivityFlag) and item.oxide == trace_oxide
     )
 
-    assert flag.code == "depends_helper_activity"
+    assert flag.code == "out_of_domain_helper_activity"
+    assert window_flag in flag.estimates[0].violated_axes
+    assert oxygen_axis in flag.dependency_axes
+    assert "unsupported_component_Ga2O3" in flag.dependency_axes
     assert window_flag in str(flag)
     assert "unsupported components omitted from helper value: Ga2O3" in str(flag)
 

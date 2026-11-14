@@ -2941,6 +2941,9 @@ def evaluate(
                 )
                 flags = list(dict.fromkeys((*flags, *redox_result.flags)))
                 redox_pack_participation = redox_result.pack_row_participation
+                # The complete redox result already carries these messages in
+                # labels.flags; keep the trace notice's typed axes only.
+                estimate = replace(estimate, reference=None)
             trace_activity_estimates[oxide] = estimate
             trace_activity_flags.append(TraceActivityFlag(estimate))
 

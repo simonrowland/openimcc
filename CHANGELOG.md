@@ -912,9 +912,14 @@
   calibration axes and limitations into melt labels and gas channel flags.
   P2O5 helper validity depends on the unverified MgO-saturation condition and
   reports out-of-domain when its existing checks identify a failed condition.
-  `ImccGasSaturationResult` now exposes the evaluated gas channels'
-  `provenance_class` map. Callers matching exact flag strings or saturation
-  result fields should account for these additions.
+  Missing redox models and associations, unknown pressure or oxygen checks,
+  and unsupported helper components are reported as dependencies; failed
+  checks retain their named axes, while descriptive limitations affect no
+  validity bit. Passing Ni and Co checks remain source-grounded. Manganese
+  redox messages appear once in melt labels. `ImccGasSaturationResult` now
+  exposes the evaluated gas channels' `provenance_class` map. Callers matching
+  exact flag strings or saturation result fields should account for these
+  additions.
 - Wood & Wade (2013) W, Pb, and Cu review-γ activities now use the source's
   single-cation oxide mole fractions. In Al- or alkali-bearing melts, those
   source activities change from the former formula-unit values by the
@@ -933,12 +938,12 @@
   `evaluate()` has no fO2 input, so these cases carry a `DEPENDS` flag and use
   the 0.01 dex cap; rows beyond that cap keep the existing activity refusal.
   Envelope identifiers now include the `v3` calibration revision.
-- Ni, Co, P2O5 and sulfur helper estimates now use `depends_helper_activity`
-  when declared source checks or applicable sulfur-capacity calibration checks
-  fail or are unknown. Redox-backed trace estimates use
-  `depends_associate_activity` when a required upstream redox row is
-  extrapolated. The estimates remain available with the failed axes or notices
-  in their references.
+- Ni, Co, P2O5 and sulfur helper estimates now report failed declared checks
+  as out-of-domain and unknown checks as `depends_helper_activity`; descriptive
+  limitations affect no validity bit. Redox-backed trace estimates report
+  typed out-of-domain axes and depend on missing redox evidence. Estimates
+  remain available with the failed or unknown axes and limitations carried to
+  their labels.
 - Redox composition flags now include every positive unsupported cation,
   including fractions at or below the former 1% cutoff.
 - Default-path Ga/In converted activities now use the
