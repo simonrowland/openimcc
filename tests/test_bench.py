@@ -24,6 +24,7 @@ from openimcc.json_utils import DuplicateJsonKeyError
 from openimcc.bench import (
     _PACK_OVERLAY_BY_VERSION,
     _PACK_OVERLAY_MODEL_BY_VERSION,
+    _CALLER_STANDARD_STATE_CONVENTIONS,
     _STANDARD_STATE_BY_CONVENTION,
     _binary_subslice,
     _convert_solid_activity_to_liquid,
@@ -619,6 +620,17 @@ def test_unlisted_standard_state_text_is_unspecified(convention: str) -> None:
     ) == "unspecified"
 
 
+@pytest.mark.parametrize(
+    ("convention", "expected"),
+    [("pure-solid", "pure-solid"), ("pure_liquid", "pure-liquid"), ("PURE-LIQUID", "pure-liquid")],
+)
+def test_caller_controlled_conventions_classify(convention: str, expected: str) -> None:
+    assert set(_CALLER_STANDARD_STATE_CONVENTIONS).isdisjoint(_STANDARD_STATE_BY_CONVENTION)
+    assert _standard_state_for_point(
+        {"observable": "activity", "convention": convention}
+    ) == expected
+
+
 def test_bench_reports_the_engine_verbatim(tmp_path: Path) -> None:
     """The runner must not transform what the engine returned.
 
@@ -1199,7 +1211,7 @@ def test_bench_conversion_identity_names_current_gibbs_sources(
                 "measured": activity_solid,
                 "units": "dimensionless",
                 "score": True,
-                "convention": "pure-solid MgO activity at 1 bar",
+                "convention": "pure-solid",
             }
         ],
     )

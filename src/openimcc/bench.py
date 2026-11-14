@@ -205,6 +205,14 @@ _STANDARD_STATE_BY_CONVENTION = {
     (_controlled_text(""), "evaporation_flux"): "unspecified",
 }
 
+# The runner's own controlled conventions, for callers declaring a point's
+# standard state directly. These are API vocabulary, not free text.
+_CALLER_STANDARD_STATE_CONVENTIONS = {
+    (_controlled_text("pure-solid"), "activity"): "pure-solid",
+    (_controlled_text("pure-liquid"), "activity"): "pure-liquid",
+    (_controlled_text(_CONVERTED_LIQUID_STANDARD_STATE), "activity"): "pure-liquid",
+}
+
 _PACK_OVERLAY_BY_VERSION = {
     "1.0.3-d066-ext-v1": True,
     "1.0.9-d066-feo-hess-candidate": False,
@@ -366,7 +374,9 @@ def _standard_state_for_point(point: Mapping[str, Any]) -> str:
         _controlled_text(point.get("convention")),
         str(point.get("observable") or "").strip().casefold(),
     )
-    return _STANDARD_STATE_BY_CONVENTION.get(key, "unspecified")
+    return _STANDARD_STATE_BY_CONVENTION.get(
+        key, _CALLER_STANDARD_STATE_CONVENTIONS.get(key, "unspecified")
+    )
 
 
 def _is_binary_point(point: Mapping[str, Any]) -> bool:
