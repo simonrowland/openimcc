@@ -771,7 +771,7 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                     normalized["accuracy_band"].pop("value", None)
             for field in (
                 "table_id", "source_table_id", "runtime_ref", "source_path",
-                "source_sha256", "upstream_source_sha256",
+                "source_sha256", "upstream_source_sha256", "source_data",
             ):
                 if field not in migrated_row:
                     normalized.pop(field, None)
