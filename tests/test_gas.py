@@ -1315,6 +1315,38 @@ def test_mixed_parent_provenance_uses_every_active_parent_row(
     assert result["AlSiO"] == 7.510722037079142e-24
 
 
+def test_ion_provenance_inherits_neutral_and_charge_balance_authority(
+    gas_pack: ImccGasDatapack,
+    sf04_gas_pack: ImccGasDatapack,
+) -> None:
+    oxide_df = gas_pack.oxide_df.loc[
+        gas_pack.oxide_df.index != "SiO2(l)"
+    ]
+    lam_silica = sf04_gas_pack.oxide_df.loc[
+        sf04_gas_pack.oxide_df.index == "SiO2(l)"
+    ]
+    mixed_pack = replace(
+        gas_pack,
+        oxide_df=pd.concat((oxide_df, lam_silica)),
+    )
+
+    result = evaluate_gas(
+        {"SiO2": 1.0, "Na2O": 1.0},
+        2000.0,
+        1e-5,
+        mixed_pack,
+        gas_species=("Si", "Na"),
+        include_ions=True,
+    )
+
+    assert result.provenance_class["Si"] == "lam1987_transcribed"
+    assert result.provenance_class["Si-"] == "lam1987_transcribed"
+    assert result.provenance_class["Na+"] == "janaf_fitted_ionisation"
+    assert result.provenance_class["e-"] == "lam1987_transcribed"
+    assert result["Si-"] == 7.044300404869719e-19
+    assert result["e-"] == 3.632468653275448e-06
+
+
 def test_provenance_class_follows_the_coefficients_that_set_the_pressure(
     gas_pack: ImccGasDatapack,
     sf04_gas_pack: ImccGasDatapack,
@@ -1420,7 +1452,8 @@ def test_provenance_class_follows_the_coefficients_that_set_the_pressure(
     )
     assert with_ions.provenance_class["Na"] == "janaf_fitted"
     assert with_ions.provenance_class["Na+"] == "external_datapack"
-    assert with_ions.provenance_class["e-"] == "janaf_fitted_ionisation"
+    # Charge closure depends on the modified Na+ ionization row.
+    assert with_ions.provenance_class["e-"] == "external_datapack"
 
 
 def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(

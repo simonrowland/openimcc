@@ -2496,8 +2496,12 @@ def _add_ion_channels(
         return row_cache[row_name]
 
     G_electron, electron_row, electron_flag = gibbs("e-")
-    positive: list[tuple[str, str, float, tuple[str | None, ...]]] = []
-    negative: list[tuple[str, str, float, tuple[str | None, ...]]] = []
+    positive: list[
+        tuple[str, str, float, tuple[str | None, ...], bool]
+    ] = []
+    negative: list[
+        tuple[str, str, float, tuple[str | None, ...], bool]
+    ] = []
     positive_sum = 0.0
     negative_sum = 0.0
 
@@ -2532,7 +2536,6 @@ def _add_ion_channels(
                 ion,
                 equilibrium,
                 (neutral_flag, ion_flag, electron_flag, domain_flags.get(neutral)),
-                str(ion_row.get("Ref", "")),
                 _gas_rows_match_packaged(
                     datapack, (neutral_row, ion_row, electron_row)
                 ),
@@ -2558,7 +2561,6 @@ def _add_ion_channels(
                 ion,
                 equilibrium,
                 (neutral_flag, ion_flag, electron_flag, domain_flags.get(neutral)),
-                str(ion_row.get("Ref", "")),
                 _gas_rows_match_packaged(
                     datapack, (neutral_row, ion_row, electron_row)
                 ),
@@ -2579,37 +2581,44 @@ def _add_ion_channels(
                     if flag and flag not in electron_flags:
                         electron_flags.append(flag)
     domain_flags["e-"] = "; ".join(electron_flags) or None
-    provenance_class["e-"] = _ION_PROVENANCE_CLASS
-    if not _gas_rows_match_packaged(datapack, (electron_row,)):
-        provenance_class["e-"] = _EXTERNAL_DATAPACK_CLASS
 
-    for neutral, ion, equilibrium, flags, source_id, rows_match in positive:
+    def ion_authority(neutral: str, ion: str, rows_match: bool) -> str:
+        authorities = [
+            _GAS_PROVENANCE_AUTHORITY[ion],
+            provenance_class[neutral],
+        ]
+        if not rows_match:
+            authorities.append(_EXTERNAL_DATAPACK_CLASS)
+        return min(authorities, key=_PROVENANCE_AUTHORITY_RANK.__getitem__)
+
+    electron_authorities = [_GAS_PROVENANCE_AUTHORITY["e-"]]
+    if not _gas_rows_match_packaged(datapack, (electron_row,)):
+        electron_authorities.append(_EXTERNAL_DATAPACK_CLASS)
+    for neutral, ion, equilibrium, _flags, rows_match in (
+        *positive,
+        *negative,
+    ):
+        if equilibrium * values[neutral] == 0.0:
+            continue
+        electron_authorities.append(ion_authority(neutral, ion, rows_match))
+    provenance_class["e-"] = min(
+        electron_authorities,
+        key=_PROVENANCE_AUTHORITY_RANK.__getitem__,
+    )
+
+    for neutral, ion, equilibrium, flags, rows_match in positive:
         values[ion] = (
             equilibrium * values[neutral] / electron_pressure
             if electron_pressure > 0.0
             else 0.0
         )
         domain_flags[ion] = "; ".join(flag for flag in flags if flag) or None
-        provenance_class[ion] = (
-            "nasa_glenn_fitted_ionisation"
-            if source_id.startswith("NG-")
-            else _ION_PROVENANCE_CLASS
-        )
-        provenance_class[ion] = _GAS_PROVENANCE_AUTHORITY[ion]
-        if not rows_match:
-            provenance_class[ion] = _EXTERNAL_DATAPACK_CLASS
+        provenance_class[ion] = ion_authority(neutral, ion, rows_match)
 
-    for neutral, ion, equilibrium, flags, source_id, rows_match in negative:
+    for neutral, ion, equilibrium, flags, rows_match in negative:
         values[ion] = equilibrium * values[neutral] * electron_pressure
         domain_flags[ion] = "; ".join(flag for flag in flags if flag) or None
-        provenance_class[ion] = (
-            "nasa_glenn_fitted_ionisation"
-            if source_id.startswith("NG-")
-            else _ION_PROVENANCE_CLASS
-        )
-        provenance_class[ion] = _GAS_PROVENANCE_AUTHORITY[ion]
-        if not rows_match:
-            provenance_class[ion] = _EXTERNAL_DATAPACK_CLASS
+        provenance_class[ion] = ion_authority(neutral, ion, rows_match)
 
 
 def species_thermo(

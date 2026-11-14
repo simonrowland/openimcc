@@ -150,6 +150,51 @@ def test_troilite_checks_only_its_required_sulfur_pressure(
         )
 
 
+def test_oxygen_input_dependencies_follow_synthetic_reaction_terms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reaction = subsolidus._REACTIONS["FeS_troilite"]
+    reaction_id, driver, terms, formula = reaction
+    host = _host("FeS_troilite", formula, "troilite")
+
+    # The real troilite terms have no O2 dependency.
+    monkeypatch.setitem(
+        subsolidus._REACTIONS,
+        "FeS_troilite",
+        (reaction_id, driver, terms, formula),
+    )
+    independent_conflict = _evaluate(
+        host, 800.0, {"S2": 1e-8, "O2": 20_000.0}, oxygen=30_000.0,
+    )
+    independent_missing_oxygen = _evaluate(
+        host, 800.0, {"S2": 1e-8},
+    )
+    assert independent_conflict["status"] == "supported"
+    assert independent_missing_oxygen["status"] == "supported"
+
+    # Adding a synthetic O2 gas term makes both oxygen checks apply.
+    oxygen_terms = (*terms, ("O2", "gas", 0.5))
+    monkeypatch.setitem(
+        subsolidus._REACTIONS,
+        "FeS_troilite",
+        (reaction_id, driver, oxygen_terms, formula),
+    )
+    dependent_conflict = _evaluate(
+        host, 800.0, {"S2": 1e-8, "O2": 20_000.0}, oxygen=30_000.0,
+    )
+    dependent_missing_oxygen = _evaluate(
+        host, 800.0, {"S2": 1e-8},
+    )
+    assert dependent_conflict["status"] == "missing_required_pressure"
+    assert dependent_missing_oxygen["status"] == "missing_required_pressure"
+    assert dependent_conflict["notices"][0]["detail"] == (
+        "oxygen_fugacity_Pa disagrees with the O2 partial pressure."
+    )
+    assert dependent_missing_oxygen["notices"][0]["detail"] == (
+        "Missing required pressure input: O2 fugacity."
+    )
+
+
 def test_higher_oxygen_fugacity_suppresses_sulfate_equilibrium_pressure():
     host = _host("MgSO4", "MgSO4", "crystalline anhydrous magnesium sulfate")
     low = _evaluate(host, 900.0, {"SO2": 100.0}, oxygen=10_000.0)

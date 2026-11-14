@@ -132,15 +132,20 @@ def test_fragment_rows_match_printed_capacity_equations_and_statistics():
 
 
 def test_mutating_loaded_fragment_does_not_poison_later_loads():
+    expected_capacity = _capacity_logs({"SiO2": 1.0}, 1673.0)
     fragment = load_activity_fragment("S")
     fragment["rows"] = []
 
     reloaded = load_activity_fragment("S")
     assert reloaded["rows"]
-    assert _capacity_logs({"SiO2": 1.0}, 1673.0) == (
-        -5.745113568439929,
-        4.5319760908547515,
-    )
+    nested = load_activity_fragment("S")
+    nested["rows"]["sulfide_capacity_eq_7"]["row"]["intercept"] = 0.0
+
+    reloaded_after_nested_mutation = load_activity_fragment("S")
+    assert reloaded_after_nested_mutation["rows"]["sulfide_capacity_eq_7"]["row"][
+        "intercept"
+    ] == 0.225
+    assert _capacity_logs({"SiO2": 1.0}, 1673.0) == expected_capacity
 
 
 def test_capacity_and_total_s_fugacity_follow_printed_equations():

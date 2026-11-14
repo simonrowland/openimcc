@@ -249,6 +249,10 @@ def evaluate_subsolidus_reactions(
             ))
             continue
         reaction_id, driver, terms_raw, formula = _REACTIONS[host_id]
+        requires_oxygen_fugacity = any(
+            species == "O2" and phase == "gas" and nu != 0.0
+            for species, phase, nu in terms_raw
+        )
         expected = data[host_id]
         stoich: tuple[StoichTerm, ...] = tuple({
             "species_id": species, "phase": phase, "nu_mol_per_mol_rxn": nu,
@@ -387,7 +391,7 @@ def evaluate_subsolidus_reactions(
             ))
             continue
 
-        if oxygen_conflict and host_id != "FeS_troilite":
+        if oxygen_conflict and requires_oxygen_fugacity:
             results.append(_base_result(
                 reaction_id, "missing_required_pressure", stoich, driver, sources,
                 (_notice("missing_required_pressure", "unavailable", "oxygen_fugacity_Pa disagrees with the O2 partial pressure."),),
@@ -398,7 +402,7 @@ def evaluate_subsolidus_reactions(
         missing = []
         if driver not in gas_pressures:
             missing.append(driver)
-        if host_id != "FeS_troilite" and gas_o2 is None:
+        if requires_oxygen_fugacity and gas_o2 is None:
             missing.append("O2 fugacity")
         if missing:
             results.append(_base_result(
