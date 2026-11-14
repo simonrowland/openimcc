@@ -784,6 +784,20 @@ def _closure_miss(
     }
 
 
+def _fusion_anchor_used_in_fit(
+    phase: Mapping[str, Any], pack: ImccLoadedDatapack
+) -> bool:
+    fusion = phase.get("independent_fusion")
+    source_ref = (
+        fusion.get("fit_input_source_ref")
+        if isinstance(fusion, Mapping)
+        else None
+    )
+    if not isinstance(source_ref, str):
+        return False
+    return source_ref in pack._row_source_refs.get(str(phase["formula"]), ())
+
+
 def crystal_closure(
     pack: ImccLoadedDatapack,
     condensate_path: str | Path | None = None,
@@ -838,6 +852,7 @@ def crystal_closure(
             "source": phase["source"], "SI_at_melting_point": at_tm["SI"],
             "residual_at_melting_point_kJ_mol": at_tm["residual_kJ_mol"],
             "delta_log10_vapor_product_at_melting_point": at_tm["delta_log10_vapor_product"],
+            "fusion_anchor_used_in_fit": _fusion_anchor_used_in_fit(phase, pack),
             "root_K": root, "in_range_node": in_range,
             "independent_deltaG_fusion_kJ_mol": at_tm.get("independent_deltaG_fusion_kJ_mol"),
             "independent_fusion_method": at_tm.get("independent_fusion_method"),

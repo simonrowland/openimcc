@@ -239,6 +239,27 @@ def test_crystal_closure_units_controls_and_default_regression():
     assert differences == pytest.approx([0.621, -0.675, -0.45], abs=0.01)
 
 
+def test_crystal_closure_labels_pack_cited_fusion_anchors():
+    from openimcc.diagnostics import crystal_closure
+    from openimcc.model import load_datapack
+
+    pack_path = Path(__file__).resolve().parents[1] / (
+        "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
+    )
+    pack = load_datapack(pack_path)
+    rows, _details = crystal_closure(pack)
+    in_sample_phases = {
+        row["phase"] for row in rows if row["fusion_anchor_used_in_fit"]
+    }
+    assert in_sample_phases == {
+        "forsterite",
+        "spinel",
+        "pseudowollastonite",
+        "anorthite",
+        "akermanite",
+    }
+
+
 def test_closure_miss_uses_independent_fusion_target():
     phase = {"independent_fusion": {"enthalpy_kJ_mol": 142.0,
                                     "melting_temperature_K": 2174.0,
@@ -495,6 +516,7 @@ def test_crystal_closure_cli_writes_pack_and_condensate_identities(tmp_path):
         rows = list(csv.DictReader(stream))
     assert len(rows) == 14
     assert "delta_log10_vapor_product_at_melting_point" in rows[0]
+    assert "fusion_anchor_used_in_fit" in rows[0]
     assert "closure_miss_kJ_mol" in rows[0]
     assert "closure_miss_vapor_product" in rows[0]
     forsterite = next(row for row in rows if row["phase"] == "forsterite")

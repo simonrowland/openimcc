@@ -101,22 +101,29 @@ internally consistent Berman (1988) dataset so elemental reference terms
 cancel, followed by crystalline oxide parents → the pack's pure-liquid parent
 standards on the JANAF basis. SI is dimensionless; `ΔG°fus,parents` and the
 closure residual are per mole of crystal formula units. `r = 0` is the
-target at the independent fusion anchor. Below that temperature, a
-stoichiometric liquid is supercooled, so compare `r` with the
-independent mineral fusion Gibbs energy `ΔG_fus,mineral(T) = G_liq − G_cr`.
+target at the sourced fusion anchor. Below that temperature, a stoichiometric
+liquid is supercooled, so compare `r` with the mineral fusion Gibbs energy
+`ΔG_fus,mineral(T) = G_liq − G_cr`.
 For a stoichiometric liquid, `ΣνᵢG°ᵢ + RT ln(10)Σνᵢlog₁₀aᵢ = G_model,liq`; by
 definition `ΔG°fus,parents = ΣνᵢG°ᵢ − G_cr`, so `r = G_model,liq − G_cr`.
-Thus `miss = r − ΔG_fus,mineral(T) = G_model,liq − G_independent,liq`. The
-vapour-product equivalent is `miss_kJ_mol × 1000/(R T ln 10)`; the factor
-1000 converts kJ to J, so this value is dimensionless. The same conversion
-makes `r_kJ_mol × 1000/(R T ln 10)` the vapour-product difference at
-coexistence, where the target is zero.
+Thus `miss = r − ΔG_fus,mineral(T)` is the difference between the model liquid
+and the fusion-derived liquid target. The top-level
+`fusion_anchor_used_in_fit` field is true when the selected pack's matching row
+cites that fusion anchor as a fit input; those comparisons are in-sample and
+are not held-out validation. The vapour-product equivalent is
+`miss_kJ_mol × 1000/(R T ln 10)`; the factor 1000 converts kJ to J, so this
+value is dimensionless. The same conversion makes
+`r_kJ_mol × 1000/(R T ln 10)` the vapour-product difference at coexistence,
+where the target is zero.
 
 The flat CSV fields `closure_miss_kJ_mol` and
 `closure_miss_vapor_product` are evaluated at the phase temperature in
 `melting_point_K`; `independent_deltaG_fusion_kJ_mol` is evaluated at that
-same temperature. At the independent fusion anchor, `ΔG_fus = 0` and
-`miss = r`. If the independent fusion temperature differs from the phase
+same temperature. This field name identifies the sourced fusion term; it does
+not establish that the comparison is held out. `fusion_anchor_used_in_fit`
+records whether the selected pack cites that anchor. At the sourced fusion
+anchor, `ΔG_fus = 0` and
+`miss = r`. If the sourced fusion temperature differs from the phase
 melting point, `ΔG_fus` at the phase melting point need not be zero. For
 example, gehlenite's 1863 K fusion anchor gives `ΔG_fus = 3.70 kJ mol⁻¹` at
 its 1823 K phase melting point. The nested `in_range_node` values instead
@@ -127,7 +134,7 @@ approximation
 `ΔG_fus(T) = ΔH_fus(Tm)(1 − T/Tm)`, flagged in the phase data; the calculation
 does not read or apply a measured `ΔCp`. Diopside's reference is an
 incongruent melting onset and is explicitly flagged. As `T → Tm` for the
-independent fusion anchor, `ΔG_fus → 0`, so `miss` approaches `r`. The residual
+source fusion anchor, `ΔG_fus → 0`, so `miss` approaches `r`. The residual
 still cannot identify whether a mismatch comes from free-oxide activities or
 the liquid-standard Gibbs terms.
 

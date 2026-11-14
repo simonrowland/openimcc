@@ -599,8 +599,12 @@ def test_ga_in_anchors_are_liquid_coefficients_without_a_second_fusion_step() ->
     assert "an-di-target-basis=major-oxides-only-v2" in ga.reference
 
 
-def test_bischof_table8_s1_closure_literals_use_the_component_mole_fraction() -> None:
-    # p scales with gamma (a=(gamma*x)^2, n_gas=2); printed p is three figures (<=0.5%) and gamma four (<=0.2%), so rel=5e-3.
+def test_bischof_table8_s1_closure_reproduces_source_constants() -> None:
+    # Bischof et al. (2023), §3.2, p. 4, Eqs. 22–23 derive gamma from the
+    # measured melt pressures and x, so this pressure ratio reduces to
+    # K_engine/K_source rather than independently checking melt activity.
+    # p scales with gamma (a=(gamma*x)^2, n_gas=2); printed p is three figures
+    # (<=0.5%) and gamma four (<=0.2%), so rel=5e-3.
     candidate_path = (
         Path(__file__).resolve().parents[2]
         / "src/openimcc/data/gas/condensate-ga-in-kems-candidate.csv"

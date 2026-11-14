@@ -75,11 +75,11 @@ For `M2O3(l) = 2M(g) + 3/2O2(g)`, the second equality follows from `ln K° = (G_
 
 This is an activity-side conversion for composition-derived gas evaluation. It does not change pure Ga2O3 or In2O3 condensation: `species_thermo` and those pure-parent calculations continue to use NASA G. The opt-in candidate retains its published KEMS rows and does not receive the ratio in that measured interval.
 
-## Closure against Bischof Table S1
+## Bischof S1 source-reproduction check
 
-The earlier Table 9 activity with analytical ppm gave the prior `p/p(S1)` ratios below. The closure uses Table 8 `x` (Ga 0.0172; In 6.9×10⁻⁵), each S1 row's own γ (Ga 0.0632, 0.0285, 0.0248, 0.0246; In 0.0527, 0.0377, 0.0301, 0.0254), activity `(γ x)^2`, and the opt-in parent. For the same dilute An-Di-like melt at 1550, 1674 and 1740 K, monatomic Ga(g) and In(g) default NASA-parent and opt-in KEMS-parent pressures differ by at most 2.86×10⁻⁶ relative; this is the residual between the candidate's five-coefficient Gibbs fit and the published two-parameter `ln K` form. The `n_gas=1` Ga2O and In2O channels can have about twice that relative residual because pressure scales with the parent activity to the power `1/n_gas`. The earlier and closure columns use different source compositions, so read the latter as the Table 8/S1 closure check:
+The earlier Table 9 activity with analytical ppm gave the prior `p/p(S1)` ratios below. The closure uses Table 8 `x` (Ga 0.0172; In 6.9×10⁻⁵), each S1 row's own γ (Ga 0.0632, 0.0285, 0.0248, 0.0246; In 0.0527, 0.0377, 0.0301, 0.0254), activity `(γ x)^2`, and the opt-in parent. Bischof et al. (2023), §3.2, p. 4, Eqs. 22–23 derive γ from the same measured melt pressures and `x` used in these S1 rows. Substituting that γ into the pressure relation reduces the row-wise pressure ratio to `K_engine/K_source`; this is a source-reproduction check of the standard constants, not independent validation of melt activity. For the same dilute An-Di-like melt at 1550, 1674 and 1740 K, monatomic Ga(g) and In(g) default NASA-parent and opt-in KEMS-parent pressures differ by at most 2.86×10⁻⁶ relative; this is the residual between the candidate's five-coefficient Gibbs fit and the published two-parameter `ln K` form. The `n_gas=1` Ga2O and In2O channels can have about twice that relative residual because pressure scales with the parent activity to the power `1/n_gas`. The earlier and S1 columns use different source compositions, so the latter ratios reproduce the Table 8/S1 source constants:
 
-| T (K) | Ga prior | Ga Table 8 closure | In prior | In Table 8 closure |
+| T (K) | Ga prior | Ga Table 8/S1 ratio | In prior | In Table 8/S1 ratio |
 | ---: | ---: | ---: | ---: | ---: |
 | 1586.4 | 3.29 | 0.9166 | 24.1 | 1.0449 |
 | 1630.8 | 5.57 | 0.9159 | 27.6 | 1.0461 |

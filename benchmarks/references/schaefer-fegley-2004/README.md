@@ -186,8 +186,11 @@ to its FeO-equivalent mass (`2 M(FeO) / M(Fe2O3)`) before passing the complete
 eight-oxide map to `evaluate`; the wt-to-mol conversion itself remains the
 engine's path.
 
-The run produced 314 comparable residuals and 49 explicit “not comparable”
+The run calculated 314 comparable residuals and 49 explicit “not comparable”
 rows: e-, Na+ and K+ have no openimcc gas channel for the relevant points.
+Of the 314 calculated residuals, 36 O2 rows are pin identities because the
+reference O2 pressure is supplied as the engine's fO2 input; the evidence
+aggregate therefore excludes them and contains 278 residuals.
 The single TiO2 row (Allende B1 CAI, 2375 K) became comparable when the
 TiO2(l) parent and the Ti gas channels were added; its residual is
 +0.382 dex. The updated comparable counts by method class are:
@@ -198,8 +201,8 @@ TiO2(l) parent and the Ti gas channels were added; its residual is
 | `digitized_figure` | 350 | 304 |
 | `derived_table7` | 350 | 304 |
 
-The all-comparable residual summary is min −1.241290, median 0.147170, p95
-0.810211, max 1.399972, and RMSE 0.394215 dex.
+The 278-row evidence residual summary is min −1.241294, median 0.147170, p95
+0.810207, max 1.399969, and RMSE 0.39421436539170723 dex.
 
 The residual gate is per species, not one 3.0-dex gate. Each gate is the
 measured maximum absolute residual from this run, rounded upward to 0.001 dex,

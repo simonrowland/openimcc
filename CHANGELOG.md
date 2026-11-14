@@ -890,6 +890,11 @@
 
 ### Changes that can break callers
 
+- `crystal_closure()` rows and CSV output add `fusion_anchor_used_in_fit` to
+  identify comparisons that reuse a fitted fusion anchor. The SF04 benchmark
+  aggregate now reports 278 evidence residuals with RMSE `0.39421436539170723`
+  dex; 36 O2 pin identities are excluded because their reference pressure is
+  the engine input.
 - Added the caller-visible `cao-tio2-activity-bias` notice and its
   `-unscored` identity-scoped form for effectively binary CaO–TiO₂ melts in
   the evidenced 2100–2315 K range. Both are included in the typed validity

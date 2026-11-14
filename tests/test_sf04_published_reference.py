@@ -351,8 +351,16 @@ def test_sf04_engine_residual_report_and_gate() -> None:
                 grouped[("species", species)].append(residual)
                 grouped[("method", method_class)].append(residual)
 
+    o2_pin_rows = [row for row in residuals if row[1] == "O2"]
     values = [row[3] for row in residuals if row[1] != "O2"]
     report = {"all": _summary(values)}
+    assert len(residuals) == 314
+    assert len(o2_pin_rows) == 36
+    assert len(values) == 278
+    assert report["all"]["n"] == 278
+    assert report["all"]["rmse"] == pytest.approx(
+        0.39421436539170723, abs=1e-12
+    )
     report.update({f"{kind}:{name}": _summary(vals) for (kind, name), vals in grouped.items()})
     source_reports = {
         source_name: {

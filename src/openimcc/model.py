@@ -1039,6 +1039,9 @@ class ImccLoadedDatapack:
     _inactive_row_details: tuple[
         tuple[int, str, str, tuple[tuple[str, float], ...]], ...
     ] = field(default=(), repr=False, compare=False)
+    _row_source_refs: Mapping[str, tuple[str, ...]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
 
     @property
     def model_id(self) -> str:
@@ -2031,6 +2034,13 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         inactive_rows=inactive_rows,
         excess_gibbs_terms=excess_gibbs_terms,
         _inactive_row_details=inactive_row_details,
+        _row_source_refs={
+            str(row["complex"]): tuple(
+                ref for ref in (row.get("source_refs") or ())
+                if isinstance(ref, str)
+            )
+            for row in all_rows
+        },
     )
 
 
