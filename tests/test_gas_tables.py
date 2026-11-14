@@ -6415,19 +6415,28 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception(
                 "source",
             )
         ).lower()
-        if "janaf" in source:
+        tokens = set(re.findall(r"[a-z0-9]+", source))
+        if "janaf" in tokens:
             return "JANAF"
-        if "nasa" in source:
+        if "nasa" in tokens:
             return "NASA"
-        if "tsiv" in source or "ivtan" in source:
+        if {"tsiv", "ivtan"} & tokens:
             return "TSIV"
-        if "pankratz" in source or "bulletin" in source or "p672" in source:
+        if {"pankratz", "bulletin", "p672"} & tokens:
             return "Pankratz"
-        if "konings" in source:
+        if "konings" in tokens:
             return "Konings"
-        if any(label in source for label in ("construction", "estimated", "lam1987")):
+        if {"construction", "estimated", "lam1987"} & tokens:
             return "construction"
         return "other"
+
+    nasa_row = {
+        "source_path": "data-src/nasa-glenn/NG-0905.json",
+        "authority": "nasa_glenn_fitted",
+        "table_id": "NG-0905",
+    }
+    assert compilation(nasa_row) == "NASA"
+    assert compilation({**nasa_row, "source": {"note": "nonjanaf"}}) == "NASA"
 
     unbanded_mixed = set()
     import openimcc.gas as gas_module

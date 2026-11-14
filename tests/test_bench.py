@@ -24,6 +24,8 @@ from openimcc.bench import (
     _binary_subslice,
     _convert_solid_activity_to_liquid,
     _evaluate_imcc,
+    _is_research_overlay,
+    _standard_state_for_point,
     load_bench_set,
     load_pack,
     main,
@@ -458,33 +460,88 @@ def test_refused_point_is_counted_and_excluded_from_rmse(tmp_path: Path) -> None
 
 
 def test_unsupported_observable_is_not_coerced(tmp_path: Path) -> None:
+    point = {
+        "population": "inline_unsupported",
+        "material_class": "cmas_slag",
+        "temperature_K": 1800.0,
+        "parent_oxide": "SiO2",
+        "species": "SiO",
+        "observable": "evaporation_flux",
+        "measured": 1.0e-6,
+        "units": "mol_m-2_s-1",
+        "score": True,
+        "convention": "must not be treated as activity or pressure",
+    }
     fixture = _write_fixture(
         tmp_path / "bench.yaml",
         [
             {
+                **point,
                 "id": "flux_not_coerced",
-                "population": "inline_unsupported",
                 "composition_id": "cmas_in_domain",
-                "material_class": "cmas_slag",
-                "temperature_K": 1800.0,
-                "parent_oxide": "SiO2",
-                "species": "SiO",
-                "observable": "evaporation_flux",
-                "measured": 1.0e-6,
-                "units": "mol_m-2_s-1",
-                "score": True,
-                "convention": "must not be treated as activity or pressure",
-            }
+            },
+            {
+                **point,
+                "id": "flux_not_coerced_after_melt_refusal",
+                "composition_id": "ferric_melt_refusal",
+            },
         ],
+        compositions={
+            "cmas_in_domain": {
+                "material_class": "cmas_slag",
+                "composition_wt_pct": dict(_CMAS_WT),
+            },
+            "ferric_melt_refusal": {
+                "material_class": "cmas_slag",
+                "composition_wt_pct": {**_CMAS_WT, "Fe2O3": 1.0},
+            },
+        },
     )
     report = run_bench(fixture, DATAPACK_PATH)
-    assert report.n == 1
+    assert report.n == 2
     assert report.n_ok == 0
-    assert report.points[0].status == "unsupported_observable"
-    assert report.points[0].predicted is None
-    assert report.points[0].residual is None
+    assert [point.status for point in report.points] == [
+        "unsupported_observable",
+        "unsupported_observable",
+    ]
+    assert all(point.predicted is None for point in report.points)
+    assert all(point.residual is None for point in report.points)
+    assert all(
+        point.reason == "unsupported observable 'evaporation_flux'"
+        for point in report.points
+    )
     assert report.rmse is None
-    assert report.status_counts["unsupported_observable"] == 1
+    assert report.status_counts["unsupported_observable"] == 2
+
+
+def test_research_overlay_marker_requires_a_complete_token() -> None:
+    assert not _is_research_overlay({"model_id": "IMCC-SF04-CONTEXT"})
+    assert _is_research_overlay({"model_id": "IMCC-SF04-EXT"})
+    assert _is_research_overlay({"imcc_sf04_datapack_version": "1.0.2-ext-sp-2"})
+
+
+def test_load_pack_does_not_fallback_for_context_model_name(tmp_path: Path) -> None:
+    raw = json.loads(
+        (_REPO_ROOT / "src/openimcc/data/packs/imcc-sf04-ext-v4.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    raw["model_id"] = "IMCC-SF04-CONTEXT"
+    raw["imcc_sf04_datapack_version"] = "IMCC-SF04-CONTEXT-v1"
+    path = tmp_path / "context-pack.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    with pytest.raises(ImccMalformedDatapackError):
+        load_pack(path)
+
+
+def test_converted_liquid_standard_precedes_historical_solid_marker() -> None:
+    assert _standard_state_for_point(
+        {
+            "observable": "activity",
+            "convention": "pure-liquid (converted from pure-solid; Gibbs conversion v2)",
+        }
+    ) == "pure-liquid"
 
 
 def test_bench_reports_the_engine_verbatim(tmp_path: Path) -> None:

@@ -15,7 +15,7 @@ import yaml
 from openimcc.redox_pack import canonical_redox_digest
 from openimcc.model import ImccMalformedDatapackError, _validate_band_schema_rows
 from openimcc.redox_pack import RedoxSchemaError, _validate_band_schema
-from tools.migrate_band_schema import migrate
+from tools.migrate_band_schema import _redox, migrate, migrate_melt_row
 
 ROOT = Path(__file__).resolve().parents[1]
 FIELDS = {"fit_residual", "accuracy_band", "band_basis", "independent_check"}
@@ -54,6 +54,70 @@ def _baseline_band_record() -> dict:
             "reason": "no check was located",
         },
     }
+
+
+def test_redox_migration_uses_positive_marker_tokens(tmp_path: Path) -> None:
+    pack_path = tmp_path / "redox.json"
+    pack = {
+        "units": {},
+        "thermo_species": {
+            "FeO(l)": {
+                "band_kj_mol": 1.0,
+                "T_domain_K": [1000.0, 2000.0],
+                "provenance": {
+                    "tier": "tier3_flagged_estimate",
+                    "selection_rationale": "unmeasured fit residual",
+                },
+            },
+            "Fe(metal)": {},
+            "Fe(l)": {},
+            "Fe(cr)": {},
+            "O2(g)": {},
+            "MnO(l)": {},
+            "MnSiO3(l)": {},
+            "Mn2SiO4(l)": {},
+            "MnAl2O4(l)": {},
+        },
+        "rows": [
+            {
+                "band_kj_mol": 1.0,
+                "band_method": "source uncertainty",
+                "uncertainty_note": "reconstruction disabled",
+                "row": 2,
+                "reaction": "Fe + 1/2 O2 = FeO",
+                "T_domain_K": [1000.0, 2000.0],
+            }
+        ],
+    }
+    pack_path.write_text(json.dumps(pack), encoding="utf-8")
+
+    _redox(tmp_path, pack_path)
+
+    migrated = json.loads(pack_path.read_text(encoding="utf-8"))
+    feo = migrated["thermo_species"]["FeO(l)"]
+    assert feo["accuracy_band"] is None
+    assert feo["fit_residual"]["value"] == 1.0
+    assert feo["band_basis"]["kind"] == "fit_only"
+    assert migrated["rows"][0]["band_basis"]["kind"] == "source_uncertainty"
+
+
+@pytest.mark.parametrize(
+    ("diagnostic_key", "expected"),
+    [
+        ("heldout_residual", "held_out"),
+        ("notheldout_residual", "held_out_or_candidate"),
+        ("withheldout_residual", "held_out_or_candidate"),
+    ],
+)
+def test_melt_migration_requires_heldout_token(
+    diagnostic_key: str,
+    expected: str,
+) -> None:
+    row = {"T_domain_K": [1000.0, 2000.0], diagnostic_key: 1.0}
+
+    migrate_melt_row(row)
+
+    assert row["fit_residual"]["held_out_or_in_sample"] == expected
 
 
 def test_melt_band_validator_f0_baseline_contract() -> None:

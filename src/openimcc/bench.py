@@ -303,10 +303,12 @@ def _reason_line(value: Any) -> str:
 def _standard_state_for_point(point: Mapping[str, Any]) -> str:
     """Normalize the comparison reference named by a point's convention."""
     convention = " ".join(str(point.get("convention") or "").lower().split())
-    if "pure-solid" in convention or "pure solid" in convention:
-        return "pure-solid"
-    if "pure-liquid" in convention or "pure liquid" in convention:
+    if convention == _CONVERTED_LIQUID_STANDARD_STATE.lower():
         return "pure-liquid"
+    if re.search(r"(?<![a-z0-9])pure[- ]liquid(?![a-z0-9])", convention):
+        return "pure-liquid"
+    if re.search(r"(?<![a-z0-9])pure[- ]solid(?![a-z0-9])", convention):
+        return "pure-solid"
     if point.get("observable") == "partial_pressure":
         return "pure-liquid parent"
     if "cmas basis" in convention:
@@ -625,7 +627,10 @@ def _point_is_scored(point: Mapping[str, Any]) -> bool:
 def _is_research_overlay(raw: Mapping[str, Any]) -> bool:
     model = str(raw.get("model_id") or raw.get("model") or "")
     version = str(raw.get("imcc_sf04_datapack_version") or "")
-    return "EXT" in model.upper() or "EXT" in version.upper()
+    return any(
+        "EXT" in re.findall(r"[A-Z0-9]+", value.upper())
+        for value in (model, version)
+    )
 
 
 def _load_research_overlay(raw: Mapping[str, Any]) -> ImccDatapack:
@@ -819,8 +824,6 @@ def _prediction_for_point(
     Activity stays on the parent-formula basis; pressure goes through the
     shared analytical gas layer, which also takes parent-formula activities.
     """
-    if status != "ok":
-        return None, reason, status, None, initial_domain_flag
     observable = str(point["observable"])
     if observable not in _SUPPORTED_OBSERVABLES:
         return (
@@ -830,6 +833,8 @@ def _prediction_for_point(
             None,
             None,
         )
+    if status != "ok":
+        return None, reason, status, None, initial_domain_flag
     parent = str(point["parent_oxide"])
     provenance_class: str | None = None
     domain_flag = initial_domain_flag

@@ -894,7 +894,17 @@
   in `evaluate_gas`: a default call skips that parent's channels, and an
   explicitly requested one refuses with `ImccGasSpeciesNotFoundError`.
 
+### Benchmark and migration classification
+
+- The gas disclosure check classifies source families by whole token so incidental text cannot hide mixed-source pairs.
+- Redox band migration treats unmeasured rationales as fit-only evidence and keeps reconstruction distinct from measured construction.
+- Melt band migration requires a standalone `heldout` diagnostic token before assigning held-out status.
+
 ### Changes that can break callers
+
+- The benchmark research-overlay fallback recognizes `EXT` only as a complete token in the model identifier or version.
+- Benchmark convention parsing recognizes the converted-liquid standard before historical pure-solid markers.
+- Unsupported benchmark observables retain `unsupported_observable` attribution when melt evaluation also refuses.
 
 - Weighted oxygen transport closure uses its original relative criterion and
   refuses near-equilibrium closures below float64 pressure resolution with an

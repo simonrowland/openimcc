@@ -37,6 +37,26 @@ UNQUANTIFIED_BAND_KINDS = {
 }
 
 
+def _tokens(value: Any) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", str(value).lower()))
+
+
+def _contains_token_phrase(value: Any, phrase: str) -> bool:
+    text = str(value).lower()
+    marker = re.escape(phrase.lower())
+    return re.search(rf"(?<![a-z0-9]){marker}(?![a-z0-9])", text) is not None
+
+
+def _has_measured_evidence(value: Any) -> bool:
+    text = str(value)
+    tokens = _tokens(text)
+    return (
+        "measured" in tokens
+        and "unmeasured" not in tokens
+        and not re.search(r"\bnot[\W_]+measured\b", text, re.IGNORECASE)
+    )
+
+
 def independent_check(reason: str) -> dict[str, Any]:
     return {
         "status": "not_found",
@@ -101,7 +121,7 @@ def _redox(root: Path, path: Path | None = None) -> None:
                 isinstance(basis, dict)
                 and basis.get("kind") == "source_uncertainty"
                 and row.get("provenance", {}).get("tier") == "tier3_flagged_estimate"
-                and "measured" in rationale
+                and _has_measured_evidence(rationale)
             ):
                 basis["kind"] = "measured_construction"
                 changed = True
@@ -112,11 +132,19 @@ def _redox(root: Path, path: Path | None = None) -> None:
         rationale = row.get("provenance", {}).get("selection_rationale", "")
         construction = row.get("construction")
         tier = row.get("provenance", {}).get("tier")
-        rationale_lower = str(rationale).lower()
+        rationale_tokens = _tokens(rationale)
+        measured_evidence = _has_measured_evidence(rationale)
         source_band = bool(construction) or tier == "tier4_systematic_estimate" or (
-            (tier == "tier3_flagged_estimate" and any(
-                word in rationale_lower for word in ("uncertainty", "construction", "fusion", "measured")
-            )) or row.get("evaluator") == "linear_combination"
+            (
+                tier == "tier3_flagged_estimate"
+                and (
+                    any(
+                        word in rationale_tokens
+                        for word in ("uncertainty", "construction", "fusion")
+                    )
+                    or measured_evidence
+                )
+            ) or row.get("evaluator") == "linear_combination"
         )
         if source_band:
             explanation = str(legacy_method or rationale or construction)
@@ -126,7 +154,7 @@ def _redox(root: Path, path: Path | None = None) -> None:
             }
             kind = "measured_construction" if (
                 construction and tier == "tier4_systematic_estimate"
-            ) or "measured" in rationale_lower else "source_uncertainty"
+            ) or measured_evidence else "source_uncertainty"
             row["band_basis"] = band_basis(kind, explanation, row.get("provenance", {}).get("source"))
             row["fit_residual"] = None
         else:
@@ -160,8 +188,21 @@ def _redox(root: Path, path: Path | None = None) -> None:
         note = str(row.get("uncertainty_note", ""))
         row_number = row.get("row")
         classification = f"{method} {note}".lower()
-        construction_band = any(word in classification for word in ("construction", "constructed", "leave-one-out", "census"))
-        source_band = not construction_band and any(word in classification for word in ("fusion-enthalpy", "source uncertainty", "tier-2 liquid-cp uncertainty", "propagated fe2o3"))
+        classification_tokens = _tokens(classification)
+        construction_band = bool(
+            {"construction", "constructed", "census"} & classification_tokens
+        ) or bool(
+            _contains_token_phrase(classification, "leave-one-out")
+        )
+        source_band = not construction_band and any(
+            _contains_token_phrase(classification, marker)
+            for marker in (
+                "fusion-enthalpy",
+                "source uncertainty",
+                "tier-2 liquid-cp uncertainty",
+                "propagated fe2o3",
+            )
+        )
         if source_band or construction_band:
             row["accuracy_band"] = {
                 "value": value, "unit": "kJ mol^-1 reaction",
@@ -557,7 +598,11 @@ def migrate_melt_row(row: dict[str, Any]) -> None:
 
     move_residuals(row, top=True)
     diagnostics = {**existing_diagnostics, **diagnostics}
-    split = "held_out" if any("heldout" in key.lower() for key in diagnostics) else "held_out_or_candidate"
+    split = (
+        "held_out"
+        if any("heldout" in _tokens(key) for key in diagnostics)
+        else "held_out_or_candidate"
+    )
     row["fit_residual"] = None if not diagnostics else {
         "value": diagnostics,
         "unit": "source-specific",
