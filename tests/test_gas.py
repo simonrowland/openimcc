@@ -4264,15 +4264,24 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     assert "In+" not in trace_ions
     assert "Sc+" in trace_ions
     nasa_ions = {"Ge+", "BO-", "Cd+", "Ag+", "Ag-", "Sc+"}
-    for species in expected_ions:
-        assert trace_ions[species] > 0.0
-        assert trace_ions.provenance_class[species] == (
+
+    def expected_ion_authority(species: str) -> str:
+        ionization_authority = (
             "nist_partition_fitted_ionisation"
             if species == "Bi+" or species in constructed_trace_ions
             else "nasa_glenn_fitted_ionisation"
             if species in nasa_ions
             else "janaf_fitted_ionisation"
         )
+        neutral_authority = trace_ions.provenance_class[species[:-1]]
+        return min(
+            (ionization_authority, neutral_authority),
+            key=gas_module._PROVENANCE_AUTHORITY_RANK.__getitem__,
+        )
+
+    for species in expected_ions:
+        assert trace_ions[species] > 0.0
+        assert trace_ions.provenance_class[species] == expected_ion_authority(species)
     for species in (
         "Ga", "Ge", "B", "In", "Mo", "MoO3", "(MoO3)5",
         "W", "W3O8", "(WO3)5",
@@ -4305,16 +4314,14 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     assert expected_trace_ions <= set(trace_ions)
     for species in expected_trace_ions - {"Sn+", "Cs2O+", "Cd+", "Bi+"}:
         assert trace_ions[species] > 0.0
-        assert trace_ions.provenance_class[species] == "janaf_fitted_ionisation"
+        assert trace_ions.provenance_class[species] == expected_ion_authority(species)
     for species in ("Sn+", "Cs2O+"):
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == "nasa_glenn_fitted"
     assert trace_ions["Cd+"] > 0.0
-    assert trace_ions.provenance_class["Cd+"] == (
-        "nasa_glenn_fitted_ionisation"
-    )
+    assert trace_ions.provenance_class["Cd+"] == expected_ion_authority("Cd+")
     assert trace_ions["Bi+"] > 0.0
-    assert trace_ions.provenance_class["Bi+"] == "nist_partition_fitted_ionisation"
+    assert trace_ions.provenance_class["Bi+"] == expected_ion_authority("Bi+")
 
 
 def test_default_outputs_are_unchanged_when_trace_rows_are_removed(

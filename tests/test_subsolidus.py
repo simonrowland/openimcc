@@ -150,49 +150,64 @@ def test_troilite_checks_only_its_required_sulfur_pressure(
         )
 
 
-def test_oxygen_input_dependencies_follow_synthetic_reaction_terms(
+def test_oxygen_dependency_is_derived_from_reaction_terms() -> None:
+    reaction = subsolidus._REACTIONS["FeS_troilite"]
+    terms = reaction[2]
+    assert not subsolidus._reaction_requires_oxygen_fugacity(terms)
+    assert subsolidus._reaction_requires_oxygen_fugacity(
+        (*terms, ("O2", "gas", 0.5))
+    )
+
+
+@pytest.mark.parametrize("mutation", ["zero_o2", "rename_o", "rename_fo2"])
+def test_sulfate_gas_term_mutations_refuse_with_typed_result(
+    monkeypatch: pytest.MonkeyPatch, mutation: str,
+) -> None:
+    reaction_id, driver, terms, formula = subsolidus._REACTIONS["CaSO4"]
+    changed_terms = []
+    for species, phase, coefficient in terms:
+        if species == "O2":
+            species = {"rename_o": "O", "rename_fo2": "fO2"}.get(
+                mutation, species
+            )
+            if mutation == "zero_o2":
+                coefficient = 0.0
+        changed_terms.append((species, phase, coefficient))
+    monkeypatch.setitem(
+        subsolidus._REACTIONS,
+        "CaSO4",
+        (reaction_id, driver, tuple(changed_terms), formula),
+    )
+
+    result = _evaluate(
+        _host("CaSO4", "CaSO4", "anhydrite"),
+        800.0,
+        {"SO2": 100.0, "O2": 20_000.0},
+    )
+    assert result["status"] == "unknown_host"
+    assert result["notices"][0]["code"] == "unknown_host"
+    assert result["notices"][0]["detail"] == (
+        "Reaction gas terms do not match the supported host algebra."
+    )
+    assert result["equilibrium_gas_partial_pressures_Pa"] is None
+
+
+def test_reaction_with_unmodeled_oxygen_term_is_refused(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    reaction = subsolidus._REACTIONS["FeS_troilite"]
-    reaction_id, driver, terms, formula = reaction
-    host = _host("FeS_troilite", formula, "troilite")
-
-    # The real troilite terms have no O2 dependency.
+    reaction_id, driver, terms, formula = subsolidus._REACTIONS["FeS_troilite"]
     monkeypatch.setitem(
         subsolidus._REACTIONS,
         "FeS_troilite",
-        (reaction_id, driver, terms, formula),
+        (reaction_id, driver, (*terms, ("O2", "gas", 0.5)), formula),
     )
-    independent_conflict = _evaluate(
-        host, 800.0, {"S2": 1e-8, "O2": 20_000.0}, oxygen=30_000.0,
+    result = _evaluate(
+        _host("FeS_troilite", "FeS", "troilite"),
+        800.0,
+        {"S2": 1e-8, "O2": 20_000.0},
     )
-    independent_missing_oxygen = _evaluate(
-        host, 800.0, {"S2": 1e-8},
-    )
-    assert independent_conflict["status"] == "supported"
-    assert independent_missing_oxygen["status"] == "supported"
-
-    # Adding a synthetic O2 gas term makes both oxygen checks apply.
-    oxygen_terms = (*terms, ("O2", "gas", 0.5))
-    monkeypatch.setitem(
-        subsolidus._REACTIONS,
-        "FeS_troilite",
-        (reaction_id, driver, oxygen_terms, formula),
-    )
-    dependent_conflict = _evaluate(
-        host, 800.0, {"S2": 1e-8, "O2": 20_000.0}, oxygen=30_000.0,
-    )
-    dependent_missing_oxygen = _evaluate(
-        host, 800.0, {"S2": 1e-8},
-    )
-    assert dependent_conflict["status"] == "missing_required_pressure"
-    assert dependent_missing_oxygen["status"] == "missing_required_pressure"
-    assert dependent_conflict["notices"][0]["detail"] == (
-        "oxygen_fugacity_Pa disagrees with the O2 partial pressure."
-    )
-    assert dependent_missing_oxygen["notices"][0]["detail"] == (
-        "Missing required pressure input: O2 fugacity."
-    )
+    assert result["status"] == "unknown_host"
+    assert result["notices"][0]["code"] == "unknown_host"
 
 
 def test_higher_oxygen_fugacity_suppresses_sulfate_equilibrium_pressure():

@@ -901,6 +901,10 @@
 - Unsupported observable points retain `unsupported_observable` attribution and carry a concurrent melt refusal as a secondary notice.
 - Gas provenance for mixed-parent channels now follows the least-authoritative
   active parent row; equilibrium pressures are unchanged.
+- Ion and electron provenance now follows the least-authoritative ionization,
+  neutral-parent, and charge-balance contributors. In the default tables this
+  changes `e-`, `K+`, `K-`, and `KO-` to `estimated_systematic`; these are the
+  only ion labels changed at 1200, 2000, and 3000 K. Pressures are unchanged.
 - Conflicting oxygen inputs now refuse only reactions that depend on oxygen.
   Troilite proceeds with a supplied S₂ pressure and reports missing S₂ when it
   is absent.

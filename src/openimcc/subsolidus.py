@@ -184,6 +184,37 @@ _REACTIONS = {
     ),
 }
 
+_REACTION_ALGEBRA_GAS_TERMS = {
+    "FeS_troilite": (("S2", 0.5),),
+    "CaSO4": (("SO2", 1.0), ("O2", 0.5)),
+    "MgSO4": (("SO2", 1.0), ("O2", 0.5)),
+}
+
+
+def _reaction_requires_oxygen_fugacity(
+    terms_raw: Sequence[tuple[str, str, float]],
+) -> bool:
+    return any(
+        species == "O2" and phase == "gas" and nu != 0.0
+        for species, phase, nu in terms_raw
+    )
+
+
+def _reaction_gas_terms_match_algebra(
+    host_id: str, terms_raw: Sequence[tuple[str, str, float]],
+) -> bool:
+    expected = _REACTION_ALGEBRA_GAS_TERMS[host_id]
+    actual = [
+        (species, nu)
+        for species, phase, nu in terms_raw
+        if phase == "gas"
+    ]
+    if any(not isinstance(species, str) for species, _ in actual):
+        return False
+    return sorted(actual, key=lambda term: term[0]) == sorted(
+        expected, key=lambda term: term[0]
+    )
+
 
 def _activity(value: float | None, name: str) -> float:
     result = 1.0 if value is None else float(value)
@@ -249,15 +280,23 @@ def evaluate_subsolidus_reactions(
             ))
             continue
         reaction_id, driver, terms_raw, formula = _REACTIONS[host_id]
-        requires_oxygen_fugacity = any(
-            species == "O2" and phase == "gas" and nu != 0.0
-            for species, phase, nu in terms_raw
-        )
         expected = data[host_id]
         stoich: tuple[StoichTerm, ...] = tuple({
             "species_id": species, "phase": phase, "nu_mol_per_mol_rxn": nu,
             "activity": None,
         } for species, phase, nu in terms_raw)
+        if not _reaction_gas_terms_match_algebra(host_id, terms_raw):
+            results.append(_base_result(
+                reaction_id, "unknown_host", stoich, driver, (_source(expected),),
+                (_notice(
+                    "unknown_host", "unavailable",
+                    "Reaction gas terms do not match the supported host algebra.",
+                    expected["source_id"],
+                ),),
+                tuple(expected["valid_temperature_K"]),
+            ))
+            continue
+        requires_oxygen_fugacity = _reaction_requires_oxygen_fugacity(terms_raw)
         if host.get("formula") != formula or host.get("phase") != expected["phase"]:
             results.append(_base_result(
                 reaction_id, "unknown_host", stoich, driver, (_source(expected),),
@@ -412,7 +451,7 @@ def evaluate_subsolidus_reactions(
             ))
             continue
 
-        if host_id != "FeS_troilite":
+        if requires_oxygen_fugacity:
             log_pressure_eq -= 0.5 * _log_standard_pressure_ratio(gas_o2)
         try:
             equilibrium_pressure = STANDARD_PRESSURE_PA * math.exp(log_pressure_eq)
@@ -443,15 +482,15 @@ def evaluate_subsolidus_reactions(
             if activity_ratio > 0.0 and math.isfinite(activity_ratio)
             else math.log(activity_product) - math.log(activity_host)
         )
-        if host_id == "FeS_troilite":
-            log_q = activities + 0.5 * _log_standard_pressure_ratio(
-                gas_pressures[driver]
-            )
-        else:
+        if requires_oxygen_fugacity:
             log_q = (
                 activities
                 + _log_standard_pressure_ratio(gas_pressures[driver])
                 + 0.5 * _log_standard_pressure_ratio(gas_o2)
+            )
+        else:
+            log_q = activities + 0.5 * _log_standard_pressure_ratio(
+                gas_pressures[driver]
             )
         delta_g = delta_g0 + R_J_MOL_K * temperature_K * log_q
         extent = remaining if delta_g < 0.0 else 0.0
