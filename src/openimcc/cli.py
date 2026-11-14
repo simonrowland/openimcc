@@ -588,6 +588,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="output directory (default: diagnostics)")
     crystal_closure.set_defaults(func=_cmd_diagnose_crystal_closure)
 
+    from openimcc.standard_checks import _cmd_diagnose_standard_checks
+
+    standard_checks = diagnose_sub.add_parser(
+        "standard-checks", help="report separate pure-oxide standard checks"
+    )
+    standard_checks.add_argument(
+        "--condensate", default=None,
+        help="path to a condensate table CSV (default: packaged table)",
+    )
+    standard_checks.add_argument(
+        "--out", default="diagnostics", help="output directory (default: diagnostics)"
+    )
+    standard_checks.set_defaults(func=_cmd_diagnose_standard_checks)
+
     mixing_enthalpy = diagnose_sub.add_parser(
         "mixing-enthalpy", help="report liquid mixing enthalpy comparisons"
     )

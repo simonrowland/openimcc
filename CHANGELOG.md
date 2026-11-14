@@ -19,6 +19,13 @@
   liquid caps. See
   `docs/declared-assemblage.md`.
 
+### Pure-oxide standard checks
+
+- Added separate JANAF-pair closure, packaged liquid-minus-crystal residual,
+  and in-range switch predictions for the supported pure parent oxides. Results
+  include source rows, pack digest, range and extrapolation labels, and typed
+  no-switch results. See `docs/pure-oxide-standard-checks.md`.
+
 ### Gas oxygen balance
 
 - Added multi-parent oxygen-demand metadata for mixed gas products. The

@@ -53,9 +53,7 @@ rows lie within the same parent-liquid segments as the previously included
 nodes. As a pure-oxide conversion check, packaged SiO2(l) at 1400 K gives
 formation Gibbs −659.823 kJ/mol after subtracting the JANAF Si and O2
 references; the printed JANAF liquid value on p. 1754 is −659.670 kJ/mol, a
-−0.153 kJ/mol fit difference. The packaged SiO2 liquid-minus-crystal Gibbs
-difference is +2.902 kJ/mol at 1995.9 K, just below the JANAF congruent melt
-at 1996 K.
+−0.153 kJ/mol fit difference. The packaged SiO2 liquid-minus-crystal Gibbs difference is +2.902 kJ/mol at 1995.9 K for `condensate-feo-janaf-legacy.csv`; `condensate-default-v1.csv` gives +0.00048 kJ/mol at that temperature, just below the JANAF congruent melt at 1996 K.
 Fayalite, hercynite, ilmenite, and ulvöspinel are labelled solid-solution
 bounds. The packaged melt model supports their FeO/TiO2 parents. Ferrosilite's
 tabulated high-temperature data end at 800 K, and the checked corpus has no
