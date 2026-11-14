@@ -5799,6 +5799,54 @@ def test_oxygen_balance_public_api_is_importable() -> None:
     assert callable(oxygen_balance_species_metadata)
 
 
+def test_oxygen_balance_metadata_supports_multi_parent_products() -> None:
+    mixed = oxygen_balance_species_metadata({
+        "AlSiO": ("Al2O3", "SiO2"),
+        "Si2O2": ["SiO2"],
+    })
+    assert mixed["AlSiO"].parent_oxygen_demand == pytest.approx(3.5)
+    assert mixed["AlSiO"].pO2_exponent == pytest.approx(-1.25)
+    assert mixed["Si2O2"].parent_oxygen_demand == pytest.approx(4.0)
+    assert mixed["Si2O2"].pO2_exponent == pytest.approx(-1.0)
+
+    overridden = oxygen_balance_species_metadata(
+        {"AlSiO": ("Al2O3", "SiO2")},
+        pO2_exponents={"AlSiO": -2.0},
+    )["AlSiO"]
+    assert overridden.parent_oxygen_demand == pytest.approx(3.5)
+    assert overridden.pO2_exponent == pytest.approx(-2.0)
+
+
+def test_oxygen_balance_metadata_single_parent_rule_is_unchanged() -> None:
+    metadata = oxygen_balance_species_metadata({
+        "AlSiO": "Al2O3",
+        "O2": None,
+    })
+    assert metadata["AlSiO"].parent_oxygen_demand == 1.5
+    assert metadata["AlSiO"].pO2_exponent == -0.25
+    assert metadata["O2"].parent_oxygen_demand == 0.0
+    assert metadata["O2"].pO2_exponent == 1.0
+
+
+@pytest.mark.parametrize(
+    ("parents", "message"),
+    [
+        (("Al2O3",), "no listed parent oxide supplies element 'Si'"),
+        (
+            ("Al2O3", "AlO", "SiO2"),
+            "multiple listed parent oxides supply element 'Al'",
+        ),
+        (("Al2O3", "SiO2", "Na2O"), "supplies no element of species 'AlSiO'"),
+    ],
+)
+def test_oxygen_balance_metadata_rejects_invalid_multi_parent_products(
+    parents: tuple[str, ...],
+    message: str,
+) -> None:
+    with pytest.raises(ImccGasOxygenBalanceError, match=message):
+        oxygen_balance_species_metadata({"AlSiO": parents})
+
+
 def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
     import openimcc.gas as gas_module
 
@@ -5822,6 +5870,49 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
             assert metadata[name].parent_oxygen_demand == pytest.approx(
                 0.0, rel=1.0e-13, abs=0.0
             )
+
+
+def test_packaged_multi_element_gas_channels_match_multi_parent_metadata(
+    packaged_gas_pack: ImccGasDatapack,
+) -> None:
+    parents = tuple(dict.fromkeys(
+        parent
+        for species, (parent, _n_gas, _n_o2) in gas_module._GAS_REACTIONS.items()
+        for parent in (
+            parent,
+            gas_module._side_parent(species),
+            "H2" if species in gas_module._HYDROGEN_HALIDE_PARENTS else None,
+        )
+        if parent
+    ))
+    activities = {parent: 1.0 for parent in parents}
+    channels = gas_module.gas_channel_metadata(
+        activities,
+        2000.0,
+        packaged_gas_pack,
+        parent_oxides=parents,
+    )
+    multi_element_species = tuple(
+        species
+        for species, metadata in channels.items()
+        if metadata.available
+        and len(set(gas_module._formula_atoms(species)) - {"O"}) >= 2
+    )
+    assert "AlSiO" in multi_element_species
+
+    helper = oxygen_balance_species_metadata({
+        species: gas_module._oxygen_balance_parent(
+            species, gas_module._GAS_REACTIONS[species][0]
+        )
+        for species in multi_element_species
+    })
+    for species in multi_element_species:
+        assert helper[species].parent_oxygen_demand == pytest.approx(
+            channels[species].parent_oxygen_demand
+        ), species
+        assert helper[species].pO2_exponent == pytest.approx(
+            channels[species].neutral_pO2_exponent
+        ), species
 
 
 def test_side_oxide_reactions_balance_parent_oxygen_metadata() -> None:

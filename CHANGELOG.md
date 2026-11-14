@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Gas oxygen balance
+
+- Added multi-parent oxygen-demand metadata for mixed gas products. The
+  single-parent side-reactant rule is unchanged; mixed products need every
+  parent oxide listed so each element carries its source oxide's oxygen demand.
+
 ### Opt-in candidate
 
 - Added an experimental, binary-only Wu 1993 MQM evaluator for MgO–SiO₂.

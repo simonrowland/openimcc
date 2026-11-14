@@ -901,6 +901,21 @@ def _side_reaction_parent_oxygen_demand(species: str) -> float:
     return float(main_oxygen + side_oxygen)
 
 
+def _oxygen_balance_parent(species: str, parent: str) -> str | tuple[str, ...]:
+    """Return the formula parents supplying the species' non-oxygen atoms."""
+    source_parents = (
+        parent,
+        _side_parent(species),
+        "H2" if species in _HYDROGEN_HALIDE_PARENTS else None,
+    )
+    parents = tuple(dict.fromkeys(key for key in source_parents if key))
+    return (
+        parents
+        if len(parents) > 1 or len(set(_formula_atoms(species)) - {"O"}) > 1
+        else parent
+    )
+
+
 
 
 # The simulator imports this private helper as a cross-repo API; pin its name
@@ -4091,18 +4106,20 @@ def _formula_atoms(formula: str) -> dict[str, int]:
 
 
 def oxygen_balance_species_metadata(
-    species_parent_oxides: Mapping[str, str | None],
+    species_parent_oxides: Mapping[str, str | None | Sequence[str]],
     *,
     pO2_exponents: Mapping[str, float] | None = None,
 ) -> dict[str, OxygenBalanceSpeciesMetadata]:
     """Return formula, parent-demand, and pO2 exponent metadata by species.
 
-    Parent oxygen demand is the parent oxide's O/metal ratio multiplied by
-    the count of parent-element atoms in the gas species. Other elements in
-    mixed products are side reactants and do not carry the oxide's oxygen
-    demand. For M_x O_y from parent M_a O_b, the pO2 exponent is
-    (y - x*b/a) / 2. Parentless oxygen species use y / 2. Supply
-    pO2_exponents to override or define custom tables.
+    A single parent formula retains the side-reactant rule: other elements in
+    mixed products do not carry that parent's oxygen demand. For multiple
+    parents, each non-oxygen element must occur in exactly one listed formula;
+    its atom count is multiplied by that parent's O/metal ratio. For M_x O_y
+    from parent M_a O_b, the pO2 exponent is (y - x*b/a) / 2. Parentless
+    oxygen species use y / 2. Supply pO2_exponents to override or define
+    custom tables. Mixed products whose elements come from melt oxides should
+    list every parent, for example {'AlSiO': ('Al2O3', 'SiO2')}.
     """
     overrides = pO2_exponents or {}
     unknown_overrides = overrides.keys() - species_parent_oxides.keys()
@@ -4116,7 +4133,7 @@ def oxygen_balance_species_metadata(
         atoms = _formula_atoms(species)
         mass = sum(_ATOMIC_MASS_G_MOL[element] * number for element, number in atoms.items())
         oxygen_atoms = atoms.get("O", 0)
-        if parent:
+        if isinstance(parent, str) and parent:
             parent_atoms = _formula_atoms(parent)
             parent_elements = set(parent_atoms) - {"O"}
             parent_metals = sum(parent_atoms[element] for element in parent_elements)
@@ -4130,9 +4147,55 @@ def oxygen_balance_species_metadata(
             )
             parent_oxygen = parent_ratio * parent_element_atoms
             exponent = (oxygen_atoms - parent_oxygen) / 2.0
-        else:
+        elif isinstance(parent, Sequence) and not isinstance(parent, str):
+            # Premise: each listed parent supplies its assigned product
+            # elements congruently. Algebra: demand = Σ n_i(O/metal)_i, then
+            # exponent = (product O - demand)/2; demand is O atoms per product
+            # molecule and the exponent is dimensionless. AlSiO gives 1.5 +
+            # 2 = 3.5 and -1.25; Si2O2 from SiO2 gives demand 4 and -1.
+            species_elements = set(atoms) - {"O"}
+            parent_ratios: dict[str, list[float]] = {}
+            for parent_formula in parent:
+                if not isinstance(parent_formula, str) or not parent_formula:
+                    raise ImccGasOxygenBalanceError(
+                        f"invalid parent oxide for {species!r}: {parent_formula!r}"
+                    )
+                parent_atoms = _formula_atoms(parent_formula)
+                parent_elements = set(parent_atoms) - {"O"}
+                supplied_elements = parent_elements & species_elements
+                if not supplied_elements:
+                    raise ImccGasOxygenBalanceError(
+                        f"parent oxide {parent_formula!r} supplies no element "
+                        f"of species {species!r}"
+                    )
+                parent_metals = sum(
+                    parent_atoms[element] for element in parent_elements
+                )
+                parent_ratio = parent_atoms.get("O", 0) / parent_metals
+                for element in supplied_elements:
+                    parent_ratios.setdefault(element, []).append(parent_ratio)
+            parent_oxygen = 0.0
+            for element in sorted(species_elements):
+                ratios = parent_ratios.get(element, ())
+                if not ratios:
+                    raise ImccGasOxygenBalanceError(
+                        f"no listed parent oxide supplies element {element!r} "
+                        f"of species {species!r}"
+                    )
+                if len(ratios) > 1:
+                    raise ImccGasOxygenBalanceError(
+                        f"multiple listed parent oxides supply element "
+                        f"{element!r} of species {species!r}"
+                    )
+                parent_oxygen += atoms[element] * ratios[0]
+            exponent = (oxygen_atoms - parent_oxygen) / 2.0
+        elif parent is None or parent == "":
             parent_oxygen = 0.0
             exponent = oxygen_atoms / 2.0
+        else:
+            raise ImccGasOxygenBalanceError(
+                f"invalid parent metadata for {species!r}: {parent!r}"
+            )
         if species in overrides:
             try:
                 exponent = float(overrides[species])
@@ -4265,7 +4328,10 @@ def gas_channel_metadata(
                 raise ValueError(
                     f"activity of {side_parent!r} must be finite and >= 0, got {value}"
                 )
-    neutral_parents = {name: reaction[0] for name, reaction in selected_by_name.items()}
+    neutral_parents = {
+        name: _oxygen_balance_parent(name, reaction[0])
+        for name, reaction in selected_by_name.items()
+    }
     base = oxygen_balance_species_metadata(neutral_parents)
     result: dict[str, GasChannelMetadata] = {}
     for name, (parent, n_gas, n_o2) in selected_by_name.items():
@@ -5002,7 +5068,8 @@ def evaluate_gas_oxygen_balance(
         if reaction[0] not in imposed and _side_parent(species) not in imposed
     )
     species_data = oxygen_balance_species_metadata({
-        species: parent for species, (parent, _n_gas, _n_O2) in balance_channels
+        species: _oxygen_balance_parent(species, parent)
+        for species, (parent, _n_gas, _n_O2) in balance_channels
     })
     for species, (parent, n_gas, n_O2) in balance_channels:
         data = species_data[species]
