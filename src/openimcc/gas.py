@@ -4171,6 +4171,11 @@ def oxygen_balance_species_metadata(
                 parent_metals = sum(
                     parent_atoms[element] for element in parent_elements
                 )
+                if parent_metals <= 0:
+                    raise ImccGasOxygenBalanceError(
+                        f"parent oxide {parent_formula!r} has no metal atoms "
+                        "for oxygen balance"
+                    )
                 parent_ratio = parent_atoms.get("O", 0) / parent_metals
                 for element in supplied_elements:
                     parent_ratios.setdefault(element, []).append(parent_ratio)

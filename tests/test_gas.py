@@ -5837,6 +5837,7 @@ def test_oxygen_balance_metadata_single_parent_rule_is_unchanged() -> None:
             "multiple listed parent oxides supply element 'Al'",
         ),
         (("Al2O3", "SiO2", "Na2O"), "supplies no element of species 'AlSiO'"),
+        (("Al0O3", "SiO2"), "has no metal atoms for oxygen balance"),
     ],
 )
 def test_oxygen_balance_metadata_rejects_invalid_multi_parent_products(
