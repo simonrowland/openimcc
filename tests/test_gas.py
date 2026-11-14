@@ -6638,6 +6638,47 @@ def test_weighted_oxygen_root_refuses_pressure_roundoff_limited_closure(
         ]
 
 
+@pytest.mark.parametrize(
+    ("weight", "conductance", "pressure"),
+    [
+        (math.ulp(0.0), 1e300, 1.0),
+        (1.0, 1e305, 1e-20),
+    ],
+)
+def test_weighted_oxygen_roundoff_diagnostic_handles_extreme_scales(
+    weight: float,
+    conductance: float,
+    pressure: float,
+) -> None:
+    def pressure_model(x: float) -> dict[str, float]:
+        return {
+            "A": pressure * (1.0 + 1e-8 * (x + 3.0)),
+            "B": pressure * (2.0 + 1e-8),
+        }
+
+    with pytest.raises(
+        ImccGasOxygenBalanceError,
+        match="closure not resolvable at float64 pressure resolution near equilibrium",
+    ) as error:
+        gas_module.weighted_oxygen_balance_from_pressure_model(
+            pressure_model, {"A": weight, "B": -weight},
+            conductance_mol_m2_s_Pa={
+                "A": conductance, "B": math.sqrt(2.0) * conductance,
+            },
+            bulk_pressures_bar={"A": pressure, "B": 2.0 * pressure},
+            log10_pO2_bracket=(-3.0, -1.0),
+        )
+
+    diagnostics = error.value.diagnostics
+    assert diagnostics["reason"] == (
+        "closure not resolvable at float64 pressure resolution near equilibrium"
+    )
+    assert math.isfinite(diagnostics["pressure_roundoff_budget_mol_m2_s"])
+    assert diagnostics["pressure_roundoff_budget_mol_m2_s"] > abs(
+        diagnostics["residual_mol_m2_s"]
+    )
+
+
 def test_weighted_oxygen_root_weighted_term_underflow() -> None:
     with pytest.raises(ImccGasOxygenBalanceError, match="weighted oxygen-flux term underflow"):
         gas_module.weighted_oxygen_balance_from_pressure_model(

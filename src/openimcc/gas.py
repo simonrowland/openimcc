@@ -4525,10 +4525,30 @@ def weighted_oxygen_balance_from_pressure_model(
             )
             if group_weight == 0.0:
                 continue
-            roundoff_terms.append(
+            pressure_ulp_sum = math.ulp(pressure) + math.ulp(bulk_pressure)
+            budget = (
                 0.5 * abs(group_weight) * channel_conductance * 1e5
-                * (math.ulp(pressure) + math.ulp(bulk_pressure))
+                * pressure_ulp_sum
             )
+            if not math.isfinite(budget) or budget == 0.0:
+                # Preserve the ordinary operation order above when it is
+                # representable. Otherwise combine binary exponents first so
+                # an intermediate overflow or underflow does not change a
+                # finite final pressure-roundoff budget.
+                mantissa = 1.0
+                exponent = 0
+                for factor in (
+                    0.5, abs(group_weight), channel_conductance, 1e5,
+                    pressure_ulp_sum,
+                ):
+                    factor_mantissa, factor_exponent = math.frexp(factor)
+                    mantissa *= factor_mantissa
+                    exponent += factor_exponent
+                try:
+                    budget = math.ldexp(mantissa, exponent)
+                except OverflowError:
+                    budget = math.inf
+            roundoff_terms.append(budget)
         pressure_roundoff_budget = _checked_oxygen_fsum(
             roundoff_terms, "pressure-subtraction roundoff budget",
         )
