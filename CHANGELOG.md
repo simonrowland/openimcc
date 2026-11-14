@@ -8,6 +8,14 @@
   1700–1950 K, with source and phase limitations. See
   `docs/sio-accuracy.md`.
 
+### Declared crystal assemblages
+
+- Added `evaluate_declared_assemblage()` to report oxide chemical potentials
+  and parent-liquid-reference activities constrained by caller-stated crystals,
+  with optional gas pressures or an oxygen-balance calculation. The result
+  reports non-identifiable activities and does not select or certify a stable
+  phase assemblage. See `docs/declared-assemblage.md`.
+
 ### Gas oxygen balance
 
 - Added multi-parent oxygen-demand metadata for mixed gas products. The

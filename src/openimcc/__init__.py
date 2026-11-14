@@ -85,6 +85,12 @@ from openimcc.diagnostics import (
     liquidus_bracket,
     saturation_indices,
 )
+from openimcc.declared_assemblage import (
+    DeclaredAssemblageResult,
+    EquilibriumRefusal,
+    PhaseEquilibriumLabels,
+    evaluate_declared_assemblage,
+)
 from openimcc.trace_melt import Cr3TraceActivity, cr3_trace_activity
 from openimcc.p2o5 import (
     P2O5ActivityNotice,
@@ -338,6 +344,11 @@ __all__ = [
     "saturation_indices",
     "liquidus_bracket",
     "liquid_only_notice",
+    # --- declared crystal assemblages -------------------------------
+    "DeclaredAssemblageResult",
+    "EquilibriumRefusal",
+    "PhaseEquilibriumLabels",
+    "evaluate_declared_assemblage",
     "subsolidus",
     # --- opt-in Fe redox --------------------------------------------------
     "evaluate_redox",
