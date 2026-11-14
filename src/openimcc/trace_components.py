@@ -834,8 +834,65 @@ def _resolve_trace_activity(
                 flag for flag in redox_result.flags
                 if flag != "liquid_only_model"
             )
-            violated_axes = tuple(redox_result.violated_axes)
-            dependency_axes = tuple(redox_result.dependency_axes)
+            trace_match = re.match(r"([A-Z][a-z]?)", oxide)
+            trace_element = trace_match.group(1) if trace_match else None
+            violated_axes = tuple(
+                axis for axis in redox_result.violated_axes
+                if axis != "ZnO_activity_calibration" or oxide == "ZnO"
+            )
+            result_dependencies = set(redox_result.dependency_axes)
+            dependency_axes = [
+                axis for axis in redox_result.dependency_axes
+                if axis not in {
+                    "oxygen_buffering",
+                    "redox_association",
+                    "redox_composition_model",
+                }
+            ]
+            if (
+                "redox_association" in result_dependencies
+                and trace_element in redox_result.last_resort_ideal_parents
+            ):
+                dependency_axes.append("redox_association")
+            if (
+                trace_element == "Cr"
+                and "redox_composition_model" in result_dependencies
+            ):
+                dependency_axes.append("redox_composition_model")
+            unmodelled_trace_states = next(
+                (
+                    record for record in redox_result.unmodelled_redox_couples
+                    if record["element"] == trace_element
+                ),
+                None,
+            )
+            trace_modelled_states = set(
+                unmodelled_trace_states["modelled_states"]
+                if unmodelled_trace_states is not None
+                else redox_result.element_moles_by_oxidation_state.get(
+                    trace_element, {}
+                )
+            )
+            if (
+                "oxygen_buffering" in result_dependencies
+                and redox_result.mode == "closed"
+                and len(trace_modelled_states) > 1
+            ):
+                dependency_axes.append("oxygen_buffering")
+            if (
+                unmodelled_trace_states is not None
+                and any(
+                    state > max(unmodelled_trace_states["modelled_states"])
+                    for state in unmodelled_trace_states["unmodelled_states"]
+                )
+                and redox_result.lambda_ln_f_o2 >= math.log(1.0e-4)
+            ):
+                # The registry's higher trace valences matter only on the
+                # oxidizing side of the redox state's existing 1e-4 marker.
+                # At fO2=1e-8, Cr(VI) is outside the Cr(II)/Cr(III) reaction
+                # that supplies Cr2O3 activity, so its coverage note is text.
+                dependency_axes.append("redox_chemistry")
+            dependency_axes = tuple(dict.fromkeys(dependency_axes))
             redox_details = []
             if extrapolated_rows:
                 redox_details.append(
@@ -1160,10 +1217,27 @@ def _activity_fragment_result(
             return None
         if result.log10_fS2 is None:
             return None
+        capacity_notice_codes = {
+            "capacity-temperature-outside-calibration",
+            "capacity-composition-outside-calibration",
+            "capacity-composition-component-outside-calibration",
+            "capacity-pressure-outside-calibration",
+            "capacity-prediction-above-calibrated-maximum",
+            "pressure-below-calibration",
+        }
+        scss_notice_codes = {
+            "scss-temperature-outside-calibration",
+            "scss-composition-outside-calibration",
+            "scss-pressure-outside-calibration",
+        }
         failed_notices = tuple(
             notice
             for notice in result.notices
-            if "outside-calibration" in notice.code
+            if notice.code in capacity_notice_codes
+            or (
+                result.saturation_state == "saturated"
+                and notice.code in scss_notice_codes
+            )
         )
         pressure_assumed = any(
             notice.code == "pressure-assumed-calibration-depends"

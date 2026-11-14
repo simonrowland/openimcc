@@ -715,7 +715,7 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration(
         item for item in mn_result.labels.notices
         if isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
     )
-    assert mn_flag.code == "depends_associate_activity"
+    assert mn_flag.code == "source_grounded_associate_activity"
     assert mn_flag.estimates[0].limitations == ()
     assert "redox flags:" not in str(mn_flag)
     assert not any(
@@ -917,9 +917,87 @@ def test_redox_validity_uses_typed_axes_not_row_flag_text() -> None:
     assert estimate.code == "depends_associate_activity"
     assert estimate.violated_axes == ()
     assert "redox_association" in estimate.dependency_axes
-    assert "redox_chemistry" in estimate.dependency_axes
+    assert "redox_chemistry" not in estimate.dependency_axes
+    assert "oxygen_buffering" not in estimate.dependency_axes
     assert "redox_calibration" not in estimate.violated_axes
     assert "CrO(l)-effective:" in (estimate.reference or "")
+
+    oxidizing = trace_components.resolve_trace_activity(
+        "Cr2O3", 0.0001, composition, 1700.0, fO2_bar=1.0e-4
+    )
+    assert "redox_chemistry" in oxidizing.dependency_axes
+
+
+def test_fixed_valence_trace_ignores_global_redox_coverage_notes() -> None:
+    composition = {
+        "SiO2": 0.5,
+        "MgO": 0.15,
+        "CaO": 0.2,
+        "Al2O3": 0.15,
+        "Li2O": 0.0001,
+    }
+    estimate = trace_components.resolve_trace_activity(
+        "Li2O", 0.0001, composition, 1700.0, fO2_bar=1.0e-8
+    )
+
+    assert "redox_chemistry" not in estimate.dependency_axes
+    assert "oxygen_buffering" not in estimate.dependency_axes
+
+
+def test_zinc_activity_notice_is_a_failed_calibration_axis(
+    packaged_gas_pack,
+) -> None:
+    composition = _weight_composition({"ZnO": 0.001})
+    melt = evaluate(
+        composition, 1700.0, basis_type="wt", allow_extrapolation=True
+    )
+    notice = next(
+        item for item in melt.labels.notices
+        if isinstance(item, TraceComponentsOutsideMeltModelNotice)
+    )
+    estimate = notice.activities["ZnO"]
+    assert estimate.code == "out_of_domain_associate_activity"
+    assert "ZnO_activity_calibration" in estimate.violated_axes
+
+    gas = evaluate_gas(
+        _major_activities(melt),
+        1700.0,
+        1.0e-8,
+        packaged_gas_pack,
+        gas_species=("ZnO",),
+        composition_wt_pct=composition,
+    )
+    flag = gas.domain_flags["ZnO"]
+    assert isinstance(flag, TraceActivityFlag)
+    assert flag.code == estimate.code
+    assert "ZnO_activity_calibration" in flag.estimates[0].violated_axes
+
+
+def test_sulfur_trace_uses_only_returned_capacity_and_pressure_checks() -> None:
+    sulfur_moles = {
+        oxide: amount / MOLAR_MASS_G_MOL[oxide]
+        for oxide, amount in _MARE_BASALT_WT.items()
+    }
+    total_major_mass = math.fsum(_MARE_BASALT_WT.values())
+    sulfur_moles["S"] = 1.0e-5 * total_major_mass / MOLAR_MASS_G_MOL["S"]
+    x_s = sulfur_moles["S"] / math.fsum(sulfur_moles.values())
+
+    assumed_pressure, _, _ = trace_components._resolve_trace_activity(
+        "S", x_s, sulfur_moles, 1700.0, fO2_bar=1.0e-8
+    )
+    assert assumed_pressure.code == "depends_helper_activity"
+    assert assumed_pressure.violated_axes == ()
+    assert assumed_pressure.dependency_axes == ("total_pressure_bar",)
+    assert "om2002-temperature-outside-calibration" not in (
+        assumed_pressure.reference or ""
+    )
+
+    low_pressure, _, _ = trace_components._resolve_trace_activity(
+        "S", x_s, sulfur_moles, 1673.0, fO2_bar=1.0e-8,
+        total_pressure_bar=0.1,
+    )
+    assert low_pressure.code == "out_of_domain_helper_activity"
+    assert low_pressure.violated_axes == ("total_pressure_bar",)
 
 
 def test_manganese_redox_messages_are_carried_once() -> None:
@@ -1001,7 +1079,8 @@ def test_trace_associate_validity_carries_redox_extrapolations() -> None:
     assert "FeO(l)" in (estimate.reference or "")
     assert "temperature_K" in estimate.violated_axes
     assert "redox_calibration" not in estimate.violated_axes
-    assert "redox_chemistry" in estimate.dependency_axes
+    assert "ZnO_activity_calibration" in estimate.violated_axes
+    assert "redox_chemistry" not in estimate.dependency_axes
 
 
 def test_sulfur_trace_validity_carries_capacity_calibration_notices() -> None:
@@ -1074,8 +1153,17 @@ def test_redox_v5_associates_are_first_rung_trace_sources(oxide: str) -> None:
         if isinstance(item, TraceComponentsOutsideMeltModelNotice)
     )
     estimate = notice.activities[oxide]
-    assert estimate.code == "depends_associate_activity"
+    expected_code = (
+        "out_of_domain_associate_activity"
+        if oxide == "ZnO"
+        else "depends_associate_activity"
+        if oxide == "Yb2O3"
+        else "source_grounded_associate_activity"
+    )
+    assert estimate.code == expected_code
     assert math.isfinite(estimate.activity) and estimate.activity > 0.0
+    if oxide == "ZnO":
+        assert "ZnO_activity_calibration" in estimate.violated_axes
 
 
 @pytest.mark.parametrize("x_mno", [0.005, 0.05])

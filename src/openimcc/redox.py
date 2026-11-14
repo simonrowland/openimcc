@@ -1803,6 +1803,8 @@ def _make_flags(
     # flags; an inactive row (its parent absent) says nothing about this melt.
     for row in active_redox_rows:
         row_name = str(row["complex"])
+        if row_name == "Zn2SiO4(l)":
+            violated_axes.append("ZnO_activity_calibration")
         for flag in row["range_flags"]:
             flags.append(f"{row_name}: {flag}")
     conditioned_rows = [
@@ -2040,7 +2042,6 @@ def _assemble_result(
     )
     if unmodelled_redox_couples:
         flags = (*flags, "RED: unmodelled_redox_couples")
-        dependency_axes = tuple(dict.fromkeys((*dependency_axes, "redox_chemistry")))
     if last_resort_ideal_parents:
         dependency_axes = tuple(dict.fromkeys(
             (*dependency_axes, "redox_association")
@@ -2337,13 +2338,6 @@ def _evaluate_redox_with_packs(
         flags = (*result.flags, *state_flags)
         if not oxygen_redox_elements:
             flags = (*flags, "RED: no_modelled_redox_couple")
-            result = replace(
-                result,
-                dependency_axes=tuple(dict.fromkeys((
-                    *result.dependency_axes,
-                    "redox_chemistry",
-                ))),
-            )
         result = replace(result, flags=flags)
         return result, state
     ln_k_fe = _ln_k_fe(redox_pack, temperature)
