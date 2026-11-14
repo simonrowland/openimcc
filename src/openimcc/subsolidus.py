@@ -387,7 +387,7 @@ def evaluate_subsolidus_reactions(
             ))
             continue
 
-        if oxygen_conflict:
+        if oxygen_conflict and host_id != "FeS_troilite":
             results.append(_base_result(
                 reaction_id, "missing_required_pressure", stoich, driver, sources,
                 (_notice("missing_required_pressure", "unavailable", "oxygen_fugacity_Pa disagrees with the O2 partial pressure."),),

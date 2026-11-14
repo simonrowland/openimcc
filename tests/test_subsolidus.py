@@ -118,6 +118,38 @@ def test_sulfates_require_one_consistent_oxygen_input():
     assert list(accepted["equilibrium_gas_partial_pressures_Pa"]) == ["SO2"]
 
 
+@pytest.mark.parametrize(
+    ("include_s2", "oxygen_conflict"),
+    [(False, False), (False, True), (True, False), (True, True)],
+)
+def test_troilite_checks_only_its_required_sulfur_pressure(
+    include_s2: bool,
+    oxygen_conflict: bool,
+) -> None:
+    pressures = {"O2": 20_000.0}
+    if include_s2:
+        pressures["S2"] = 1e-8
+
+    result = _evaluate(
+        _host("FeS_troilite", "FeS", "troilite"),
+        800.0,
+        pressures,
+        oxygen=30_000.0 if oxygen_conflict else 20_000.0,
+    )
+
+    if include_s2:
+        assert result["status"] == "supported"
+        assert result["equilibrium_gas_partial_pressures_Pa"]["S2"] == pytest.approx(
+            2.8375060515539325e-10
+        )
+    else:
+        assert result["status"] == "missing_required_pressure"
+        assert result["equilibrium_gas_partial_pressures_Pa"] is None
+        assert result["notices"][0]["detail"] == (
+            "Missing required pressure input: S2."
+        )
+
+
 def test_higher_oxygen_fugacity_suppresses_sulfate_equilibrium_pressure():
     host = _host("MgSO4", "MgSO4", "crystalline anhydrous magnesium sulfate")
     low = _evaluate(host, 900.0, {"SO2": 100.0}, oxygen=10_000.0)

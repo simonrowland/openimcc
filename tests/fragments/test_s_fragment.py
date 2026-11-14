@@ -8,6 +8,7 @@ from openimcc import evaluate, evaluate_sulfur, load_datapack
 from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.activity_fragments import load_activity_fragment
 from openimcc.gas import evaluate_gas, load_gas_datapack
+from openimcc.sulfur import _capacity_logs
 
 
 # N-MORB from Smythe et al. (2017), Table 3, p. 800, DOI 10.2138/am-2017-5800CCBY.
@@ -128,6 +129,18 @@ def test_fragment_rows_match_printed_capacity_equations_and_statistics():
     assert fragment["standards"]["S2(g)"]["source_url"].endswith("S-012.html")
     assert "S2(l)" not in json.dumps(fragment["standards"])
     assert fragment["calibration"]["temperature_K"] == [1473.0, 1773.0]
+
+
+def test_mutating_loaded_fragment_does_not_poison_later_loads():
+    fragment = load_activity_fragment("S")
+    fragment["rows"] = []
+
+    reloaded = load_activity_fragment("S")
+    assert reloaded["rows"]
+    assert _capacity_logs({"SiO2": 1.0}, 1673.0) == (
+        -5.745113568439929,
+        4.5319760908547515,
+    )
 
 
 def test_capacity_and_total_s_fugacity_follow_printed_equations():

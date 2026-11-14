@@ -899,7 +899,13 @@
 - Benchmark standard states, gas compilation classes, and migration evidence use exact controlled vocabularies; unlisted values use each classifier's conservative class (`unspecified`, `other`, `none`, `fit_only`, or `held_out_or_candidate`).
 - Malformed-pack research-overlay fallback is limited to the listed datapack version/model pairs; unknown pairs are rejected.
 - Unsupported observable points retain `unsupported_observable` attribution and carry a concurrent melt refusal as a secondary notice.
-
+- Gas provenance for mixed-parent channels now follows the least-authoritative
+  active parent row; equilibrium pressures are unchanged.
+- Conflicting oxygen inputs now refuse only reactions that depend on oxygen.
+  Troilite proceeds with a supplied S₂ pressure and reports missing S₂ when it
+  is absent.
+- `load_activity_fragment()` now returns an independent deep copy, so caller
+  mutations do not alter cached data or later loads.
 - Weighted oxygen transport closure uses its original relative criterion and
   refuses near-equilibrium closures below float64 pressure resolution with an
   explicit diagnostic. The generic oxygen solver refuses unresolved

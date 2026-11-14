@@ -1045,22 +1045,25 @@ def gas_species_provenance(species: str) -> dict[str, str | None]:
 
 
 def _result_provenance_authority(
-    species: str, oxide_row: pd.Series | None
+    species: str, parent_rows: Sequence[pd.Series]
 ) -> str:
-    """Use the active parent row when a loaded pack changes its authority."""
+    """Use every active parent row when a loaded pack changes its authority."""
     provenance = gas_species_provenance(species)
-    if oxide_row is not None:
-        row_authority = _LAM_PARENT_REF_AUTHORITIES.get(str(oxide_row["Ref"]))
-        if row_authority is not None:
-            _, _, _, _, lam_parent_rows = _packaged_pressure_signatures()
-            if (
-                _pressure_row_signature(oxide_row, _OXIDE_PRESSURE_COLUMNS)
-                in lam_parent_rows
-            ):
-                return min(
-                    (str(provenance["gas_authority"]), row_authority),
-                    key=_PROVENANCE_AUTHORITY_RANK.__getitem__,
-                )
+    _, _, _, _, lam_parent_rows = _packaged_pressure_signatures()
+    row_authorities = []
+    for row in parent_rows:
+        row_authority = _LAM_PARENT_REF_AUTHORITIES.get(str(row["Ref"]))
+        if (
+            row_authority is not None
+            and _pressure_row_signature(row, _OXIDE_PRESSURE_COLUMNS)
+            in lam_parent_rows
+        ):
+            row_authorities.append(row_authority)
+    if row_authorities:
+        return min(
+            (str(provenance["gas_authority"]), *row_authorities),
+            key=_PROVENANCE_AUTHORITY_RANK.__getitem__,
+        )
     return str(provenance["authority"])
 
 
@@ -2859,7 +2862,6 @@ def _packaged_pressure_signatures() -> tuple[
 
 def _channel_provenance(
     species: str,
-    oxide_row: pd.Series | None,
     datapack: ImccGasDatapack,
     rows: list[tuple[str, pd.Series]],
 ) -> str:
@@ -2872,7 +2874,10 @@ def _channel_provenance(
     class only when its coefficients match the shipped source row; a gas row
     beside it still has to match.
     """
-    declared = _result_provenance_authority(species, oxide_row)
+    declared = _result_provenance_authority(
+        species,
+        tuple(row for kind, row in rows if kind == "oxide"),
+    )
     gas_digest, oxide_digest, gas_rows, oxide_rows, lam_parent_rows = (
         _packaged_pressure_signatures()
     )
@@ -3569,7 +3574,7 @@ def evaluate_gas(
             result[gas_name] = p_O2
             domain_flags[gas_name] = None
             provenance_class[gas_name] = _result_provenance_authority(
-                gas_name, None
+                gas_name, ()
             )
             continue
 
@@ -3932,7 +3937,7 @@ def evaluate_gas(
         else:
             domain_flags[gas_name] = "; ".join(flags) or None
         provenance_class[gas_name] = _channel_provenance(
-            gas_name, oxide_row, datapack, pressure_rows
+            gas_name, datapack, pressure_rows
         )
 
     if include_ions:

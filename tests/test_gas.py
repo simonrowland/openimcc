@@ -1284,6 +1284,37 @@ def test_gas_result_is_frozen_bar_mapping_and_preserves_numbers(
         result.unit = "Pa"  # type: ignore[misc]
 
 
+def test_mixed_parent_provenance_uses_every_active_parent_row(
+    gas_pack: ImccGasDatapack,
+    sf04_gas_pack: ImccGasDatapack,
+) -> None:
+    oxide_df = gas_pack.oxide_df.loc[
+        gas_pack.oxide_df.index != "SiO2(l)"
+    ]
+    lam_silica = sf04_gas_pack.oxide_df.loc[
+        sf04_gas_pack.oxide_df.index == "SiO2(l)"
+    ]
+    mixed_pack = replace(
+        gas_pack,
+        oxide_df=pd.concat((oxide_df, lam_silica)),
+    )
+
+    result = evaluate_gas(
+        {"Al2O3": 1e-4, "SiO2": 2e-4},
+        2000.0,
+        1e-5,
+        mixed_pack,
+        gas_species=("SiO", "AlSiO"),
+    )
+
+    assert result.provenance_class == {
+        "SiO": "lam1987_transcribed",
+        "AlSiO": "lam1987_transcribed",
+    }
+    assert result["SiO"] == 1.101274246783181e-09
+    assert result["AlSiO"] == 7.510722037079142e-24
+
+
 def test_provenance_class_follows_the_coefficients_that_set_the_pressure(
     gas_pack: ImccGasDatapack,
     sf04_gas_pack: ImccGasDatapack,

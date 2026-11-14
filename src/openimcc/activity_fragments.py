@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from functools import lru_cache
 from importlib.resources import files
 from typing import Any
 
 
 @lru_cache(maxsize=4)
-def load_activity_fragment(element: str) -> dict[str, Any]:
-    """Load fragment data registered by the trace-component activity table."""
+def _cached_activity_fragment(element: str) -> dict[str, Any]:
     from openimcc.trace_components import _activity_fragment_registered
 
     if not _activity_fragment_registered(element):
@@ -22,3 +22,8 @@ def load_activity_fragment(element: str) -> dict[str, Any]:
     if fragment.get("element") != element:
         raise ValueError(f"activity fragment data does not match {element!r}")
     return fragment
+
+
+def load_activity_fragment(element: str) -> dict[str, Any]:
+    """Return an independent copy of cached fragment data."""
+    return deepcopy(_cached_activity_fragment(element))
