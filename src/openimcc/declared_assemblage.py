@@ -165,6 +165,10 @@ def _make_receipt(
             "identifiability": "componentwise_nullspace_projection",
             "phase_residual_tolerance_J_mol": _PHASE_RESIDUAL_TOLERANCE_J_MOL,
             "standard_pressure_bar": _PRESSURE_BAR_STANDARD,
+            "pure_crystal_gibbs_conversion": (
+                "JANAF apparent G = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T); "
+                "kJ/mol enthalpies and J/(mol K) entropy converted to J/mol"
+            ),
         },
     )
 
@@ -191,11 +195,12 @@ def _empty_result(
     non_identifiable_components: tuple[str, ...] = (),
     phase_standard_gibbs_J_mol: Mapping[str, float] | None = None,
     phase_affinities_ln: Mapping[str, float] | None = None,
+    gas_depends: Mapping[str, str] | None = None,
 ) -> DeclaredAssemblageResult:
     labels = PhaseEquilibriumLabels(
         identity={
             "crystal_phases": "openimcc-crystal-phases-v1",
-            "janaf_pure_oxide_crystals": "openimcc-janaf-pure-oxide-crystals-v1",
+            "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v1",
             "gas_table_digest": getattr(gas_pack, "gas_table_digest", "unresolved"),
             "condensate_table_digest": getattr(
                 gas_pack, "condensate_table_digest", "unresolved"
@@ -218,7 +223,7 @@ def _empty_result(
         phase_affinities_ln=phase_affinities_ln or {},
         oxide_chemical_potentials_J_mol={}, oxide_activities={},
         non_identifiable_components=non_identifiable_components,
-        gas=None, gas_depends={}, fO2=fO2,
+        gas=None, gas_depends=gas_depends or {}, fO2=fO2,
         oxygen_balance_pO2_bar=None, oxygen_balance_diagnostics={},
         standard_pressure_bar=_PRESSURE_BAR_STANDARD, labels=labels,
         receipt=receipt, refusal=refusal,
@@ -324,14 +329,15 @@ def evaluate_declared_assemblage(
     pure_by_id = {row["id"]: row for row in pure_data["phases"]}
     crystal_by_id = {row["id"]: row for row in crystal_data["phases"]}
     redox_names = {"fe3o4", "magnetite", "fe2o3", "hematite", "ferric"}
-    if any(
-        any(token in phase.lower().replace(" ", "") for token in redox_names)
-        for phase in declared
-    ):
+    redox_phases = tuple(
+        phase for phase in declared
+        if any(token in phase.lower().replace(" ", "") for token in redox_names)
+    )
+    if redox_phases:
         refusal = EquilibriumRefusal(
             "redox_sensitive_phase",
-            "Fe3+-bearing phases are unsupported in the ferrous declared-assemblage model.",
-            ("redox",),
+            "Fe3+-bearing phases are unsupported: " + ", ".join(redox_phases),
+            tuple(f"crystal.{phase}.redox" for phase in redox_phases),
         )
         return _empty_result(
             phases=declared, temperature_K=temperature, fO2=fO2,
@@ -360,6 +366,14 @@ def evaluate_declared_assemblage(
             pure_digest=pure_digest, gas_pack=gas_pack, validity="DEPENDS",
             evidence_class="external_datapack", flags=(),
             notices=("declared_assemblage_not_minimized",), refusal=refusal,
+            non_identifiable_components=(
+                tuple(sorted(set(requested_oxides))) if requested_oxides else ()
+            ),
+            gas_depends=(
+                {name: "missing_phase_data: " + ", ".join(unknown)
+                 for name in requested_gas}
+                if requested_gas else {}
+            ),
         )
 
     gas_module = __import__("openimcc.gas", fromlist=["gas"])
@@ -385,7 +399,9 @@ def evaluate_declared_assemblage(
             phase_ranges[phase_id] = f"{lo:g}-{hi:g} K"
             phase_authorities.append(_phase_authority(row))
         else:
-            lo, hi = map(float, row["valid_temperature_K"])
+            source_lo, source_hi = map(float, row["source_temperature_K"])
+            lo = max(298.15, source_lo)
+            hi = min(source_hi, float(row["crystal_transition_temperature_K"]))
             if not lo <= temperature <= hi:
                 out_of_domain_axes.append(f"crystal.{phase_id}.temperature_K")
                 continue
@@ -445,14 +461,36 @@ def evaluate_declared_assemblage(
         for phase_index, phase_id in enumerate(declared):
             row = pure_by_id.get(phase_id)
             if row is not None:
-                # JANAF crystal and liquid formation-Gibbs rows share the same
-                # elemental reference. Their difference is ΔG_fus°=G_l°−G_cr°,
-                # so a=exp(−ΔG_fus°/(RT)); below corundum's 2327 K marker the
-                # tabulated ΔG_fus° is positive and a(Al2O3)<1. Gibbs values
-                # and RT are both J/mol, leaving the activity dimensionless.
-                g_crystal = _interpolate_nodes(
-                    row["crystal_gibbs_nodes_kJ_mol"], temperature
-                ) * 1000.0
+                # Premise: JANAF formation ΔfG(T) uses elements at T, but the
+                # runtime apparent standard is anchored to elemental enthalpies
+                # at 298.15 K. Equivalently, using the JANAF compound columns,
+                # G_app(T)=ΔfH(298.15)+[H(T)-H(298.15)]−T*S(T). The first two
+                # terms are kJ/mol and S is J/(mol K), so convert enthalpy to
+                # J/mol before subtracting T*S. This matches the runtime basis;
+                # the separately packaged parent-liquid G remains unchanged.
+                # Sanity checks against it give G_l−G_cr=+0.444 kJ/mol and
+                # a=0.972 for SiO2 at 1900 K, and +21.606 kJ/mol, a=0.236 for
+                # Al2O3 at 1800 K (both below their crystal-liquid transitions).
+                # For a pure oxide, ν=1 gives μ=G_cr and hence
+                # a=exp((G_cr−G_l)/(RT)); G_cr, G_l, and RT are J/mol, so a
+                # is dimensionless. evaluate_gas receives that same activity
+                # on the same liquid standard, making its pressure identical
+                # to the direct crystal-potential route.
+                nodes = row["nodes"]
+                gibbs_nodes = {
+                    str(node["T_K"]): float(node["enthalpy_increment_kJ_mol"])
+                    for node in nodes
+                }
+                entropy_nodes = {
+                    str(node["T_K"]): float(node["entropy_J_mol_K"])
+                    for node in nodes
+                }
+                enthalpy_increment = _interpolate_nodes(gibbs_nodes, temperature)
+                entropy = _interpolate_nodes(entropy_nodes, temperature)
+                g_crystal = (
+                    float(row["formation_enthalpy_298_kJ_mol"])
+                    + enthalpy_increment
+                ) * 1000.0 - temperature * entropy
                 if phase_id == "K2O":
                     active_authorities.append("estimated_systematic")
             else:
@@ -506,6 +544,10 @@ def evaluate_declared_assemblage(
         )
 
     right_hand_side = np.asarray([crystal_gibbs[phase] for phase in declared])
+    # SVD gives the least-squares minimum-norm solution of A μ = G while
+    # retaining an explicit right-nullspace for component identifiability.
+    # Singular values below eps*max(shape)*s_max are numerical zero at float64
+    # precision; this rank threshold is independent of the later component test.
     left_vectors, singular_values, right_vectors = np.linalg.svd(
         matrix, full_matrices=True
     )
@@ -523,6 +565,7 @@ def evaluate_declared_assemblage(
         right_vectors[:rank, :].T @ coefficients
         if rank else np.zeros(len(phase_components), dtype=np.float64)
     )
+    # Residual is predicted phase G minus supplied crystal G, in J/mol formula.
     residual_vector = matrix @ minimum_norm_mu - right_hand_side
     residuals = {
         phase: float(residual)
@@ -553,6 +596,9 @@ def evaluate_declared_assemblage(
 
     identifiable = []
     for column, oxide in enumerate(phase_components):
+        # Adding any vector in null(A) preserves every phase equation. A
+        # component μ_i is unique iff its coordinate projection onto null(A)
+        # vanishes; use the 1e-10 norm threshold to tolerate SVD roundoff.
         null_component = float(np.linalg.norm(nullspace[:, column])) if nullspace.size else 0.0
         if null_component <= 1.0e-10:
             identifiable.append(oxide)
@@ -576,6 +622,8 @@ def evaluate_declared_assemblage(
         for oxide in reported
     }
     affinities = {
+        # Residuals are J/mol formula; dividing by RT (J/mol) gives a
+        # dimensionless log-affinity with the same predicted-minus-supplied sign.
         phase: float(residual_vector[index] / (R_J_MOL_K * temperature))
         for index, phase in enumerate(declared)
     }

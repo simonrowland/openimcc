@@ -14,7 +14,9 @@
   and parent-liquid-reference activities constrained by caller-stated crystals,
   with optional gas pressures or an oxygen-balance calculation. The result
   reports non-identifiable activities and does not select or certify a stable
-  phase assemblage. See `docs/declared-assemblage.md`.
+  phase assemblage. Pure JANAF crystals are converted onto the runtime apparent
+  Gibbs basis and capped at their crystal-liquid transition. See
+  `docs/declared-assemblage.md`.
 
 ### Gas oxygen balance
 

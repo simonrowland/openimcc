@@ -1,6 +1,6 @@
 import json
 import math
-from importlib import resources
+from pathlib import Path
 
 import pytest
 
@@ -14,62 +14,108 @@ def gas_pack():
     return load_gas_datapack()
 
 
-@pytest.fixture(scope="module")
-def pure_crystals():
-    resource = resources.files("openimcc").joinpath(
-        "data/diagnostics/janaf-pure-oxide-crystals.json"
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_JANAF_CRYSTALS = {
+    "SiO2": "O-035", "MgO": "Mg-008", "CaO": "Ca-027",
+    "Al2O3": "Al-096", "FeO": "Fe-018", "Na2O": "Na-012",
+    "TiO2": "O-043", "K2O": "K-012",
+}
+
+
+def _independent_janaf_apparent_gibbs(oxide, temperature_K):
+    """Rebuild G_app from raw JANAF Hf(298), H increment, and entropy columns."""
+    table_id = _JANAF_CRYSTALS[oxide]
+    source = json.loads(
+        (_REPO_ROOT / "data-src" / "janaf" / f"{table_id}.yaml")
+        .read_text(encoding="utf-8")
+    )["table"]
+    rows = sorted(
+        (
+            float(row["temperature"]["value"]),
+            float(row["enthalpy_increment"]["value"]),
+            float(row["entropy"]["value"]),
+        )
+        for row in source["values"]
+        if row["enthalpy_increment"]["value"] is not None
+        and row["entropy"]["value"] is not None
     )
-    return {
-        phase["id"]: phase
-        for phase in json.loads(resource.read_text(encoding="utf-8"))["phases"]
-    }
+    reference = next(
+        row for row in source["values"]
+        if float(row["temperature"]["value"]) == 298.15
+    )
 
+    def interpolate(column):
+        upper = next(i for i, row in enumerate(rows) if row[0] >= temperature_K)
+        if rows[upper][0] == temperature_K:
+            while upper + 1 < len(rows) and rows[upper + 1][0] == temperature_K:
+                upper += 1
+            return rows[upper][column]
+        low, high = rows[upper - 1], rows[upper]
+        return low[column] + (high[column] - low[column]) * (
+            (temperature_K - low[0]) / (high[0] - low[0])
+        )
 
-def _interpolate(nodes, temperature_K):
-    points = sorted((float(t), float(g)) for t, g in nodes.items())
-    for temperature, gibbs in points:
-        if temperature == temperature_K:
-            return gibbs
-    for (lo_t, lo_g), (hi_t, hi_g) in zip(points, points[1:]):
-        if lo_t <= temperature_K <= hi_t:
-            return lo_g + (hi_g - lo_g) * (temperature_K - lo_t) / (hi_t - lo_t)
-    raise AssertionError(f"no source interval at {temperature_K:g} K")
+    h298_kj_mol = float(reference["formation_enthalpy"]["value"])
+    h_increment_kj_mol = interpolate(1)
+    entropy_j_mol_k = interpolate(2)
+    return (h298_kj_mol + h_increment_kj_mol) * 1000.0 - (
+        temperature_K * entropy_j_mol_k
+    )
 
 
 @pytest.mark.parametrize(
     ("oxide", "temperatures_K"),
     [
-        ("SiO2", (1200.0, 1500.0, 1800.0)),
+        ("SiO2", (1200.0, 1500.0, 1800.0, 1900.0)),
         ("MgO", (1000.0, 1800.0, 2500.0, 3000.0)),
         ("CaO", (1200.0, 1800.0, 2500.0, 3000.0)),
-        ("Al2O3", (1000.0, 1500.0, 2000.0, 2300.0)),
+        ("Al2O3", (1000.0, 1500.0, 1800.0, 2000.0, 2300.0)),
         ("FeO", (1000.0, 1200.0, 1500.0, 1600.0)),
         ("Na2O", (1000.0, 1200.0, 1400.0)),
         ("TiO2", (1200.0, 1500.0, 2000.0, 2100.0)),
     ],
 )
 def test_janaf_pure_oxide_crystal_to_liquid_closure(
-    oxide, temperatures_K, pure_crystals, gas_pack
+    oxide, temperatures_K, gas_pack
 ):
-    phase = pure_crystals[oxide]
     for temperature_K in temperatures_K:
         result = evaluate_declared_assemblage(
             (oxide,), temperature_K, gas_pack=gas_pack
         )
-        crystal_gibbs = _interpolate(
-            phase["crystal_gibbs_nodes_kJ_mol"], temperature_K
-        ) * 1000.0
+        crystal_gibbs = _independent_janaf_apparent_gibbs(oxide, temperature_K)
         liquid_gibbs = species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
-        expected_activity = math.exp(
-            (crystal_gibbs - liquid_gibbs) / (R_J_MOL_K * temperature_K)
-        )
         assert result.labels.validity == "IN"
         assert result.oxide_chemical_potentials_J_mol[oxide] == pytest.approx(
-            crystal_gibbs, abs=1e-8
+            crystal_gibbs, abs=1e-7
         )
         assert result.oxide_activities[oxide] == pytest.approx(
-            expected_activity, rel=1e-13
+            math.exp((crystal_gibbs - liquid_gibbs) / (R_J_MOL_K * temperature_K)),
+            rel=1e-12,
         )
+
+
+@pytest.mark.parametrize(
+    ("oxide", "temperature_K", "expected_delta_kJ_mol", "expected_activity"),
+    [
+        ("SiO2", 1900.0, 0.444451, 0.972258),
+        ("Al2O3", 1800.0, 21.605686, 0.236065),
+    ],
+)
+def test_reference_apparent_gibbs_residuals_and_activities(
+    oxide, temperature_K, expected_delta_kJ_mol, expected_activity, gas_pack
+):
+    result = evaluate_declared_assemblage((oxide,), temperature_K, gas_pack=gas_pack)
+    crystal_gibbs = _independent_janaf_apparent_gibbs(oxide, temperature_K)
+    packaged_liquid_gibbs = species_thermo(
+        oxide, "l", temperature_K, gas_pack
+    ).G_J_mol
+    delta_kJ_mol = (packaged_liquid_gibbs - crystal_gibbs) / 1000.0
+
+    assert delta_kJ_mol == pytest.approx(expected_delta_kJ_mol, abs=0.001)
+    assert result.oxide_activities[oxide] == pytest.approx(
+        expected_activity, abs=0.00003
+    )
+    assert "apparent G" in result.receipt.solver["pure_crystal_gibbs_conversion"]
 
 
 @pytest.mark.parametrize(
@@ -77,7 +123,7 @@ def test_janaf_pure_oxide_crystal_to_liquid_closure(
     [
         ("SiO2", 1500.0), ("MgO", 1800.0), ("CaO", 1800.0),
         ("Al2O3", 1800.0), ("FeO", 1500.0), ("Na2O", 1200.0),
-        ("TiO2", 1500.0), ("K2O", 1100.0),
+        ("TiO2", 1500.0), ("K2O", 1005.0),
     ],
 )
 def test_pure_oxide_gas_pressures_equal_evaluate_gas(
@@ -103,6 +149,32 @@ def test_mgo_and_spinel_identify_both_parent_activities(gas_pack):
     assert set(result.oxide_activities) == {"MgO", "Al2O3"}
     assert result.non_identifiable_components == ()
     assert max(abs(value) for value in result.phase_affinities_ln.values()) < 1e-10
+    assert 0.0 < result.oxide_activities["MgO"] <= 1.0
+    assert result.oxide_activities["MgO"] == pytest.approx(0.14, abs=0.03)
+
+
+def test_single_sourced_compound_does_not_identify_parent_activities(gas_pack):
+    result = evaluate_declared_assemblage(
+        ("forsterite",), 1800.0, fO2=1e-8,
+        gas_species=("MgO",), gas_pack=gas_pack,
+    )
+
+    assert result.refusal.code == "activity_not_identifiable"
+    assert result.oxide_activities == {}
+    assert set(result.non_identifiable_components) == {"MgO", "SiO2"}
+    assert "MgO" in result.gas_depends
+
+
+def test_mullite_missing_data_withholds_requested_parent_activities(gas_pack):
+    result = evaluate_declared_assemblage(
+        ("mullite",), 1800.0, fO2=1e-8, gas_species=("SiO2",),
+        parent_oxides=("Al2O3", "SiO2"), gas_pack=gas_pack,
+    )
+
+    assert result.refusal.code == "missing_phase_data"
+    assert set(result.non_identifiable_components) == {"Al2O3", "SiO2"}
+    assert result.oxide_activities == {}
+    assert "SiO2" in result.gas_depends
 
 
 def test_underdetermined_spinel_does_not_guess_gas_activity(gas_pack):
@@ -136,6 +208,8 @@ def test_redox_sensitive_phase_is_refused(phase):
 
     assert result.refusal.code == "redox_sensitive_phase"
     assert result.labels.validity == "DEPENDS"
+    assert f"crystal.{phase}.redox" in result.refusal.axes
+    assert phase in result.refusal.detail
 
 
 def test_phase_temperature_outside_source_range_is_refused():
@@ -147,11 +221,19 @@ def test_phase_temperature_outside_source_range_is_refused():
 
 
 def test_k2o_estimated_reference_controls_result_authority(gas_pack):
-    result = evaluate_declared_assemblage(("K2O",), 1100.0, gas_pack=gas_pack)
+    result = evaluate_declared_assemblage(("K2O",), 1005.0, gas_pack=gas_pack)
 
     assert result.labels.evidence_class == "estimated_systematic"
     assert result.standard_pressure_bar == 1.0
     assert result.receipt.request["standard_pressure_bar"] == 1.0
+
+
+def test_k2o_fusion_input_band_is_not_evaluation_domain():
+    inside_selected_transition = evaluate_declared_assemblage(("K2O",), 1013.0)
+    above_selected_transition = evaluate_declared_assemblage(("K2O",), 1013.01)
+
+    assert inside_selected_transition.refusal is None
+    assert above_selected_transition.refusal.code == "phase_temperature_out_of_range"
 
 
 def test_oxygen_balance_uses_determined_solid_buffer_activities(gas_pack):
