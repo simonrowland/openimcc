@@ -82,3 +82,6 @@ melting point, and the crystal window has no root.
 supported bracketed liquidus, or when there is no supported crossing. It does
 not modify `evaluate()` or its labels; callers can attach the notice to their
 own liquid-only model result.
+
+For observed SiO(g) pressure accuracy on liquid charges, see
+[the SiO(g) accuracy summary](sio-accuracy.md).

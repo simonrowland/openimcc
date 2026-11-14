@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### SiO accuracy
+
+- Added an observed SiO(g) pressure summary for liquid charges at
+  1700–1950 K, with source and phase limitations. See
+  `docs/sio-accuracy.md`.
+
 ### Gas oxygen balance
 
 - Added multi-parent oxygen-demand metadata for mixed gas products. The
