@@ -127,6 +127,50 @@ def test_boulliung_wood_capacity_equations_match_printed_fits():
     assert "cos-h2s-not-in-gas-tables" in notice_codes
 
 
+def test_total_pressure_assumption_is_typed_and_keeps_the_echoed_value():
+    omitted = evaluate_sulfur(
+        _MORB, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0,
+    )
+    explicit_one_bar = evaluate_sulfur(
+        _MORB, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0,
+        total_pressure_bar=1.0,
+    )
+    explicit_1000_bar = evaluate_sulfur(
+        _MORB, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0,
+        total_pressure_bar=1000.0,
+    )
+
+    assert omitted.total_pressure_bar == explicit_one_bar.total_pressure_bar == 1.0
+    for field in (
+        "log10_sulfide_capacity_wt_percent",
+        "log10_sulfate_capacity_wt_percent",
+        "dissolved_total_s_ppm",
+        "scss_smythe_2017_ppm",
+        "scss_oneill_2021_ppm",
+    ):
+        assert getattr(omitted, field) == getattr(explicit_one_bar, field)
+
+    assumed = next(
+        notice for notice in omitted.notices
+        if notice.code == "pressure-assumed-calibration-depends"
+    )
+    assert assumed.axis == "total_pressure_bar"
+    assert assumed.value == 1.0
+    assert "DEPENDS" in assumed.message
+    assert not any(
+        notice.code == "pressure-assumed-calibration-depends"
+        for notice in explicit_one_bar.notices
+    )
+    assert explicit_1000_bar.total_pressure_bar == 1000.0
+    assert "capacity-pressure-outside-calibration" in {
+        notice.code for notice in explicit_1000_bar.notices
+    }
+    assert not any(
+        notice.code == "pressure-assumed-calibration-depends"
+        for notice in explicit_1000_bar.notices
+    )
+
+
 def test_smythe_ideal_scss_equation_and_sulfide_liquid_input():
     T, pressure = 1673.0, 1.0
     _oxygen, cations, _ = _fractions(_MORB)

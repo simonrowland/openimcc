@@ -8022,6 +8022,50 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
         )
 
 
+def test_omitted_source_data_does_not_assign_a_source_liquid_marker(
+    tmp_path: Path,
+) -> None:
+    gas_csv = tmp_path / "gas.csv"
+    gas_csv.write_text("species_name,Ref,T_min,T_max\n", encoding="utf-8")
+    condensate_csv = tmp_path / "condensate.csv"
+    condensate_csv.write_text(
+        "species_name,Ref,T_min,T_max\nX(l),X-001,1200,2000\n",
+        encoding="utf-8",
+    )
+    provenance_path = tmp_path / "provenance.yaml"
+    provenance_path.write_text(
+        yaml.safe_dump({
+            "rows": [{
+                "table": "condensate",
+                "species_name": "X(l)",
+                "runtime_ref": "X-001",
+                "table_id": "X-001",
+                "source_path": "data-src/janaf/X-001.yaml",
+                "method": "fitted",
+                "T_range_K": [1200, 2000],
+            }],
+        }),
+        encoding="utf-8",
+    )
+    markers = {
+        "X(l)": {
+            "table_id": "X-001",
+            "fusion_temperature_K": 1500.0,
+            "glass_join_temperature_K": None,
+        }
+    }
+
+    validity = build_gas_tables.build_source_liquid_validity_rows(
+        gas_csv,
+        condensate_csv,
+        provenance_path=provenance_path,
+        markers=markers,
+    )
+
+    row = validity[f"condensate:{condensate_csv.resolve()}"][0]
+    assert row is None
+
+
 def test_source_validity_columns_match_vendored_tables(tmp_path: Path) -> None:
     gas_copy = tmp_path / "gas-shomate.csv"
     condensate_copy = tmp_path / "condensate.csv"

@@ -408,7 +408,7 @@ def evaluate_sulfur(
     log10_fS2: float | None = None,
     total_s_ppm: float | None = None,
     total_s_mol_per_mol_melt: float | None = None,
-    total_pressure_bar: float = 1.0,
+    total_pressure_bar: float | None = None,
     melt_pack: ImccLoadedDatapack | object | None = None,
     gas_datapack: object | None = None,
     fe3_fraction: float | None = None,
@@ -431,7 +431,8 @@ def evaluate_sulfur(
     approximated as Fe/(Fe+Ni+Cu), and metal-rich liquids are flagged.
     """
     T = float(T_K)
-    pressure = float(total_pressure_bar)
+    pressure_assumed = total_pressure_bar is None
+    pressure = 1.0 if pressure_assumed else float(total_pressure_bar)
     if not math.isfinite(T) or T <= 0.0:
         raise ValueError("temperature must be finite and positive")
     if not math.isfinite(pressure) or pressure <= 0.0:
@@ -455,6 +456,14 @@ def evaluate_sulfur(
     # which oxides the melt pack can represent.
     log_cs2, log_cs6 = _capacity_logs(one_oxygen, T)
     notices: list[SulfurNotice] = []
+    if pressure_assumed:
+        notices.append(_notice(
+            "pressure-assumed-calibration-depends",
+            "total_pressure_bar was not declared; 1 bar is used for the calculation, "
+            "so pressure-calibration validity DEPENDS on total_pressure_bar",
+            model="Boulliung-Wood-2023-capacities-and-Smythe-2017-SCSS",
+            axis="total_pressure_bar", value=pressure, interval=(1.0, 1.0),
+        ))
     _out_of_range(
         notices, code="capacity-temperature-outside-calibration",
         model="Boulliung-Wood-2023-Eq-7-and-Eq-9", axis="temperature_K", value=T,

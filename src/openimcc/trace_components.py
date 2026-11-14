@@ -824,16 +824,56 @@ def _resolve_trace_activity(
                 raise
         else:
             extrapolated_rows = tuple(redox_result.extrapolated_redox_rows)
-            reference = None
-            code = "source_grounded_associate_activity"
+            redox_flags = tuple(
+                flag for flag in redox_result.flags
+                if flag != "liquid_only_model"
+            )
+            violated_axes: list[str] = []
+            if extrapolated_rows or any(
+                "temperature extrapolation" in flag.lower()
+                or "temperature outside" in flag.lower()
+                for flag in redox_flags
+            ):
+                violated_axes.append("temperature_K")
+            if any(
+                "unsupported major cations=" in flag.lower()
+                or "composition outside demonstrated" in flag.lower()
+                or "optical_basicity_outside" in flag.lower()
+                or "outside the candidate optical-basicity basis" in flag.lower()
+                or "outside berry anchor lambda" in flag.lower()
+                or "exceeds berry anchor content" in flag.lower()
+                for flag in redox_flags
+            ):
+                violated_axes.append("major_cation_composition")
+            if any(
+                not flag.startswith("RED:") and ": " in flag
+                for flag in redox_flags
+            ):
+                violated_axes.append("redox_calibration")
+            if any("unmodelled" in flag.lower() for flag in redox_flags):
+                violated_axes.append("redox_chemistry")
+            if any("redox_poorly_buffered" in flag for flag in redox_flags):
+                violated_axes.append("oxygen_buffering")
+            if any("unassociated liquid parents" in flag for flag in redox_flags):
+                violated_axes.append("redox_association")
+            violated_axes = list(dict.fromkeys(violated_axes))
+            redox_details = []
             if extrapolated_rows:
-                code = "depends_associate_activity"
-                reference = (
+                redox_details.append(
                     "required redox rows extrapolated: "
                     + ", ".join(extrapolated_rows)
-                    + "; redox flags: "
-                    + "; ".join(redox_result.flags)
                 )
+            if redox_flags:
+                redox_details.append("redox flags: " + "; ".join(redox_flags))
+            reference = "; ".join(redox_details) or None
+            code = (
+                "out_of_domain_associate_activity"
+                if violated_axes
+                else (
+                    "depends_associate_activity"
+                    if redox_flags else "source_grounded_associate_activity"
+                )
+            )
             return (
                 TraceActivityEstimate(
                     oxide,
@@ -841,6 +881,7 @@ def _resolve_trace_activity(
                     x,
                     code,
                     reference=reference,
+                    violated_axes=tuple(violated_axes),
                 ),
                 redox_result,
                 redox_state,
@@ -850,18 +891,45 @@ def _resolve_trace_activity(
             rule.activity_fragment, composition_moles, T_K, fO2_bar=fO2_bar
         )
         if helper_result is not None:
-            activity, source_is_valid, reference = helper_result
+            (
+                activity,
+                violated_axes,
+                limitations,
+                dependency_axes,
+                reference,
+            ) = helper_result
+            unknown_axes = {
+                "oxygen_fugacity_window_unchecked",
+                "oxygen_fugacity_window_unreported",
+                "oxygen_fugacity_relative_to_IW_not_supplied",
+                "oxygen_fugacity_domain_unchecked",
+            }
+            failed_axes = tuple(
+                axis for axis in violated_axes if axis not in unknown_axes
+            )
+            if dependency_axes:
+                dependency_note = "DEPENDS: " + ", ".join(dependency_axes)
+                reference = "; ".join(
+                    part for part in (reference, dependency_note) if part
+                )
+            code = (
+                "out_of_domain_helper_activity"
+                if failed_axes
+                else (
+                    "depends_helper_activity"
+                    if dependency_axes or violated_axes
+                    else "source_grounded_helper_activity"
+                )
+            )
             return (
                 TraceActivityEstimate(
                     oxide,
                     activity,
                     x,
-                    (
-                        "source_grounded_helper_activity"
-                        if source_is_valid
-                        else "depends_helper_activity"
-                    ),
+                    code,
                     reference=reference,
+                    violated_axes=violated_axes,
+                    limitations=limitations,
                 ),
                 None,
                 None,
@@ -910,7 +978,13 @@ def _activity_fragment_result(
     T_K: float,
     *,
     fO2_bar: float | None,
-) -> tuple[float, bool, str | None] | None:
+) -> tuple[
+    float,
+    tuple[str, ...],
+    tuple[str, ...],
+    tuple[str, ...],
+    str | None,
+] | None:
     invalid_oxygen = False
 
     def relative_oxygen_offset() -> float | None:
@@ -926,7 +1000,7 @@ def _activity_fragment_result(
     def declared_composition_reference(
         supported_components: frozenset[str],
         violated_axes: tuple[str, ...] = (),
-    ) -> tuple[bool, str | None]:
+    ) -> tuple[str | None, tuple[str, ...]]:
         from openimcc.activity_fragments import load_activity_fragment
         from openimcc.review_gamma_activity import (
             _canonicalize_composition_moles,
@@ -952,15 +1026,19 @@ def _activity_fragment_result(
                 "unsupported components omitted from helper value: "
                 + ", ".join(unsupported)
             )
+        unsupported_axes = tuple(
+            f"unsupported_component_{name}" for name in unsupported
+        )
         if source_checks:
             details.append(
                 "declared source checks: " + ", ".join(source_checks)
             )
+        axes = tuple(dict.fromkeys((*source_checks, *unsupported_axes)))
         if not details:
-            return True, None
+            return None, axes
         return (
-            not unsupported and not source_checks,
             "declared composition checks: " + "; ".join(details),
+            axes,
         )
 
     if element == "Ni":
@@ -983,12 +1061,19 @@ def _activity_fragment_result(
                 *violated_axes,
                 "oxygen_fugacity_not_finite_or_positive",
             )
-        source_is_valid, reference = declared_composition_reference(
+        reference, source_axes = declared_composition_reference(
             _SUPPORTED_COMPONENTS, violated_axes
         )
+        limitations = tuple(result.notice.limitations)
+        if invalid_oxygen:
+            source_axes = tuple(dict.fromkeys((
+                *source_axes, "oxygen_fugacity_not_finite_or_positive",
+            )))
         return (
             result.activity,
-            source_is_valid,
+            source_axes,
+            limitations,
+            ("dilute_NiO_loading_limit",),
             reference,
         )
     if element == "Co":
@@ -1013,12 +1098,19 @@ def _activity_fragment_result(
                 *violated_axes,
                 "oxygen_fugacity_not_finite_or_positive",
             )
-        source_is_valid, reference = declared_composition_reference(
+        reference, source_axes = declared_composition_reference(
             _OXIDE_COMPONENTS, violated_axes
         )
+        limitations = tuple(result.notice.limitations)
+        if invalid_oxygen:
+            source_axes = tuple(dict.fromkeys((
+                *source_axes, "oxygen_fugacity_not_finite_or_positive",
+            )))
         return (
             result.activity,
-            source_is_valid,
+            source_axes,
+            limitations,
+            ("dilute_CoO_loading_limit", "unparameterized_major_oxide_effects"),
             reference,
         )
     if element == "P":
@@ -1033,15 +1125,24 @@ def _activity_fragment_result(
             result = evaluate_p2o5_activity(helper_composition, T_K)
         except ValueError:
             return None
-        violated_axes = tuple(result.notice.violated_axes) + tuple(
-            notice.code for notice in result.additional_notices
+        violated_axes = tuple(dict.fromkeys((
+            *result.notice.violated_axes,
+            *(notice.code for notice in result.additional_notices),
+        )))
+        limitations = tuple(result.notice.limitations) + tuple(
+            notice.message for notice in result.additional_notices
         )
         reference = (
             "declared chemistry checks: " + "; ".join(violated_axes)
-            if violated_axes
-            else None
+            if violated_axes else None
         )
-        return result.activity, not violated_axes, reference
+        return (
+            result.activity,
+            violated_axes,
+            limitations,
+            ("MgO_saturation",),
+            reference,
+        )
     if element == "S":
         from openimcc.sulfur import _OXIDES, evaluate_sulfur
 
@@ -1068,23 +1169,32 @@ def _activity_fragment_result(
             return None
         if result.log10_fS2 is None:
             return None
-        calibration_notices = tuple(
+        failed_notices = tuple(
             notice
             for notice in result.notices
-            if notice.code.startswith("capacity-")
-            and "outside-calibration" in notice.code
+            if "outside-calibration" in notice.code
         )
+        pressure_assumed = any(
+            notice.code == "pressure-assumed-calibration-depends"
+            for notice in result.notices
+        )
+        violated_axes = tuple(dict.fromkeys(
+            notice.axis for notice in failed_notices if notice.axis is not None
+        ))
         reference = (
-            "sulfur capacity calibration notices: "
+            "sulfur calibration notices: "
             + "; ".join(
-                f"{notice.code} ({notice.axis})" for notice in calibration_notices
+                f"{notice.code} ({notice.axis})" for notice in failed_notices
             )
-            if calibration_notices
+            if failed_notices
             else None
         )
+        dependency_axes = ("total_pressure_bar",) if pressure_assumed else ()
         return (
             10.0**result.log10_fS2,
-            not calibration_notices,
+            violated_axes,
+            (),
+            dependency_axes,
             reference,
         )
     return None

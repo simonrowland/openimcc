@@ -165,7 +165,7 @@ def _read_source_identity() -> tuple[str | None, bool | None]:
         else:
             revision = head
         if revision is None or re.fullmatch(
-            r"[0-9a-fA-F]{40,64}", revision
+            r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", revision
         ) is None:
             return None, None
     except (OSError, UnicodeError, ValueError):

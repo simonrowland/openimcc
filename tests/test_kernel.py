@@ -283,12 +283,25 @@ def test_trace_parent_root_is_refined_to_relative_inventory_tolerance() -> None:
         + pack.kernel_datapack.nu @ result.complex_x
         - result.D * result.parent_x
     )
-    assert result.convergence.residual_inf == pytest.approx(
-        np.linalg.norm(balance_residual, ord=np.inf), rel=0.25, abs=0.0
+    balance_term_scale = (
+        np.abs(result.parent_x_star)
+        + np.abs(pack.kernel_datapack.nu) @ np.abs(result.complex_x)
+        + np.abs(result.D * result.parent_x)
     )
-    assert result.convergence.residual_l2 == pytest.approx(
-        np.linalg.norm(balance_residual, ord=2), rel=0.25, abs=0.0
+    # Reconstructing a row balance changes summation order; its absolute
+    # roundoff is bounded by a small multiple of eps times the sum of the
+    # magnitudes of the free-parent, complex, and bulk-inventory terms.
+    roundoff_bound = (
+        8.0 * np.finfo(np.float64).eps * float(np.sum(balance_term_scale))
     )
+    assert abs(
+        result.convergence.residual_inf
+        - np.linalg.norm(balance_residual, ord=np.inf)
+    ) <= roundoff_bound
+    assert abs(
+        result.convergence.residual_l2
+        - np.linalg.norm(balance_residual, ord=2)
+    ) <= roundoff_bound
     # The exact inventory error is f_i/(D*X_i). It uses the caller's 1e-12
     # dimensionless solver tolerance; this is about 4.5e3 float64 epsilons,
     # while the unscaled absolute residual cannot certify a trace parent.

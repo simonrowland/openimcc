@@ -311,6 +311,39 @@ def test_source_identity_ignores_an_enclosing_unrelated_checkout(
         assert receipt_module._source_identity() == (None, None)
 
 
+@pytest.mark.parametrize(
+    ("length", "accepted"),
+    ((40, True), (41, False), (63, False), (64, True)),
+)
+def test_source_identity_accepts_only_supported_revision_lengths(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, length: int, accepted: bool
+) -> None:
+    checkout = tmp_path / "checkout"
+    package = checkout / "src/openimcc"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("# package\n")
+    git_dir = checkout / ".git"
+    git_dir.mkdir()
+    revision = "A" * length
+    (git_dir / "HEAD").write_text(revision + "\n")
+
+    monkeypatch.setattr(
+        receipt_module, "__file__", str(package / "receipt.py")
+    )
+    monkeypatch.setattr(
+        receipt_module.subprocess,
+        "run",
+        lambda *args, **kwargs: receipt_module.subprocess.CompletedProcess(
+            args[0], 128, "", ""
+        ),
+    )
+
+    identity = receipt_module._read_source_identity()
+    assert identity == (
+        (revision.lower(), None) if accepted else (None, None)
+    )
+
+
 def test_concurrent_receipts_share_first_source_identity(monkeypatch):
     status_calls = []
     second_status_call = threading.Event()

@@ -8099,7 +8099,7 @@ def build_source_liquid_validity_rows(
                 marker is not None
                 and table_id == marker.get("table_id")
                 and str(record.get("source_path", "")).startswith("data-src/janaf/")
-                and record.get("source_data", True)
+                and record.get("source_data") is True
             ):
                 source_marker = marker
             source_tagged = any(

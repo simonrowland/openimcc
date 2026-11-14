@@ -904,8 +904,14 @@
   the evidenced 2100–2315 K range. Both are included in the typed validity
   notice path; solved activities are unchanged. A two-associate refit was
   tried and not adopted pending independent data.
-- Trace activity estimates now retain review-gamma violated axes and
-  limitations, which appear in melt and gas trace-activity flag text.
+- Omitting `total_pressure_bar` from `evaluate_sulfur()` now identifies the
+  1-bar calculation as assumed and marks pressure-calibration validity as
+  dependent on the undeclared pressure. The echoed pressure value and solved
+  numbers are unchanged; explicit pressure inputs keep their prior behavior.
+- Trace activity estimates now carry review-gamma, redox, and helper
+  calibration axes and limitations into melt labels and gas channel flags.
+  P2O5 helper validity depends on the unverified MgO-saturation condition and
+  reports out-of-domain when its existing checks identify a failed condition.
   `ImccGasSaturationResult` now exposes the evaluated gas channels'
   `provenance_class` map. Callers matching exact flag strings or saturation
   result fields should account for these additions.
