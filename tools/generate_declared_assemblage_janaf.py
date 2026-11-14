@@ -54,6 +54,46 @@ def main() -> None:
             and row["entropy"]["value"] is not None
         ]
         nodes.sort(key=lambda node: node["T_K"])
+        # JANAF's text parser records phase-transition lines as ambiguities
+        # because their formation columns contain labels. Their first five
+        # tab-separated thermodynamic columns remain numeric. Preserve every
+        # such H increment and entropy row; runtime uses the crystal-liquid
+        # row exactly at a capped boundary rather than interpolating over it.
+        transition_rows = []
+        for ambiguity in table.get("parse_ambiguities", []):
+            raw_line = ambiguity.get("raw_line", "")
+            fields = raw_line.split("\t")
+            if len(fields) < 6:
+                continue
+            try:
+                temperature_K, _cp, entropy, _gibbs_function, h_increment = map(
+                    float, fields[:5]
+                )
+            except ValueError:
+                continue
+            label = fields[5].strip()
+            if not ("<-->" in label or "TRANSITION" in label.upper()):
+                continue
+            transition_rows.append(
+                {
+                    "T_K": temperature_K,
+                    "enthalpy_increment_kJ_mol": h_increment,
+                    "entropy_J_mol_K": entropy,
+                    "label": label,
+                    "source_line_number": ambiguity.get("line_number"),
+                    "raw_line": raw_line,
+                }
+            )
+        transition_rows.sort(key=lambda row: (row["T_K"], row["label"]))
+        transition_at_cap = next(
+            (
+                row for row in transition_rows
+                if row["T_K"] == transition_K
+                and "<-->" in row["label"]
+                and "LIQUID" in row["label"].upper()
+            ),
+            None,
+        )
         phases.append(
             {
                 "id": oxide,
@@ -63,9 +103,16 @@ def main() -> None:
                 "source_authority": "janaf_transcribed",
                 "source_sha256": hashlib.sha256(raw).hexdigest(),
                 "formation_enthalpy_298_kJ_mol": float(h298),
-                "source_temperature_K": [nodes[0]["T_K"], nodes[-1]["T_K"]],
+                "source_temperature_K": [
+                    min([node["T_K"] for node in nodes]
+                        + [node["T_K"] for node in transition_rows]),
+                    max([node["T_K"] for node in nodes]
+                        + [node["T_K"] for node in transition_rows]),
+                ],
                 "crystal_transition_temperature_K": transition_K,
                 "nodes": nodes,
+                "transition_rows": transition_rows,
+                "transition_row_at_cap": transition_at_cap,
                 "construction_uncertainty_input_K": (
                     [919.0, 1190.0] if oxide == "K2O" else None
                 ),
@@ -73,13 +120,16 @@ def main() -> None:
         )
 
     result = {
-        "schema": "openimcc-janaf-apparent-crystals-v1",
+        "schema": "openimcc-janaf-apparent-crystals-v2",
         "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
         "transformation": (
             "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) "
             "columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] "
             "- T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. "
-            "Interpolate source enthalpy increment and entropy separately, linearly."
+            "Interpolate source enthalpy increment and entropy separately, linearly. "
+            "Also retain finite enthalpy-increment/entropy columns from identified "
+            "transition lines in parse_ambiguities and use the crystal-liquid row "
+            "at its inclusive cap instead of interpolation."
         ),
         "source_span_rule": (
             "Finite source enthalpy-increment and entropy nodes; evaluation starts "

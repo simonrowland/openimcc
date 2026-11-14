@@ -1,7 +1,7 @@
 {
-  "schema": "openimcc-janaf-apparent-crystals-v1",
+  "schema": "openimcc-janaf-apparent-crystals-v2",
   "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
-  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly.",
+  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly. Also retain finite enthalpy-increment/entropy columns from identified transition lines in parse_ambiguities and use the crystal-liquid row at its inclusive cap instead of interpolation.",
   "source_span_rule": "Finite source enthalpy-increment and entropy nodes; evaluation starts at 298.15 K.",
   "phase_restriction_rule": "A JANAF crystal is valid through its crystal-to-liquid transition temperature, inclusive; never evaluate it above that transition.",
   "construction_uncertainty_rule": "K2O's 919-1190 K range is uncertainty in the selected fusion-temperature input, not an evaluation-temperature domain.",
@@ -171,6 +171,8 @@
           "entropy_J_mol_K": 198.485
         }
       ],
+      "transition_rows": [],
+      "transition_row_at_cap": null,
       "construction_uncertainty_input_K": null
     },
     {
@@ -395,6 +397,24 @@
           "entropy_J_mol_K": 159.979
         }
       ],
+      "transition_rows": [
+        {
+          "T_K": 3105.0,
+          "enthalpy_increment_kJ_mol": 150.284,
+          "entropy_J_mol_K": 144.532,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 36,
+          "raw_line": "3105.000\t59.523\t144.532\t96.131\t150.284\tCRYSTAL <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 3105.0,
+        "enthalpy_increment_kJ_mol": 150.284,
+        "entropy_J_mol_K": 144.532,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 36,
+        "raw_line": "3105.000\t59.523\t144.532\t96.131\t150.284\tCRYSTAL <--> LIQUID"
+      },
       "construction_uncertainty_input_K": null
     },
     {
@@ -599,6 +619,24 @@
           "entropy_J_mol_K": 172.613
         }
       ],
+      "transition_rows": [
+        {
+          "T_K": 3200.0,
+          "enthalpy_increment_kJ_mol": 164.621,
+          "entropy_J_mol_K": 165.048,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 37,
+          "raw_line": "3200.000\t63.434\t165.048\t113.604\t164.621\tCRYSTAL <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 3200.0,
+        "enthalpy_increment_kJ_mol": 164.621,
+        "entropy_J_mol_K": 165.048,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 37,
+        "raw_line": "3200.000\t63.434\t165.048\t113.604\t164.621\tCRYSTAL <--> LIQUID"
+      },
       "construction_uncertainty_input_K": null
     },
     {
@@ -773,6 +811,24 @@
           "entropy_J_mol_K": 327.841
         }
       ],
+      "transition_rows": [
+        {
+          "T_K": 2327.0,
+          "enthalpy_increment_kJ_mol": 254.761,
+          "entropy_J_mol_K": 291.914,
+          "label": "ALPHA <--> LIQUID",
+          "source_line_number": 28,
+          "raw_line": "2327.000\t138.934\t291.914\t182.434\t254.761\tALPHA <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 2327.0,
+        "enthalpy_increment_kJ_mol": 254.761,
+        "entropy_J_mol_K": 291.914,
+        "label": "ALPHA <--> LIQUID",
+        "source_line_number": 28,
+        "raw_line": "2327.000\t138.934\t291.914\t182.434\t254.761\tALPHA <--> LIQUID"
+      },
       "construction_uncertainty_input_K": null
     },
     {
@@ -882,6 +938,24 @@
           "entropy_J_mol_K": 169.975
         }
       ],
+      "transition_rows": [
+        {
+          "T_K": 1650.0,
+          "enthalpy_increment_kJ_mol": 79.081,
+          "entropy_J_mol_K": 157.409,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 21,
+          "raw_line": "1650.000\t64.319\t157.409\t109.481\t79.081\tCRYSTAL <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 1650.0,
+        "enthalpy_increment_kJ_mol": 79.081,
+        "entropy_J_mol_K": 157.409,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 21,
+        "raw_line": "1650.000\t64.319\t157.409\t109.481\t79.081\tCRYSTAL <--> LIQUID"
+      },
       "construction_uncertainty_input_K": null
     },
     {
@@ -1006,6 +1080,56 @@
           "entropy_J_mol_K": 256.026
         }
       ],
+      "transition_rows": [
+        {
+          "T_K": 1023.15,
+          "enthalpy_increment_kJ_mol": 62.219,
+          "entropy_J_mol_K": 177.549,
+          "label": "GAMMA <--> BETA",
+          "source_line_number": 15,
+          "raw_line": "1023.150\t95.264\t177.549\t116.737\t62.219\tGAMMA <--> BETA"
+        },
+        {
+          "T_K": 1023.15,
+          "enthalpy_increment_kJ_mol": 63.977,
+          "entropy_J_mol_K": 179.266,
+          "label": "TRANSITION",
+          "source_line_number": 16,
+          "raw_line": "1023.150\t95.265\t179.266\t116.737\t63.977\tTRANSITION"
+        },
+        {
+          "T_K": 1243.15,
+          "enthalpy_increment_kJ_mol": 85.264,
+          "entropy_J_mol_K": 198.103,
+          "label": "BETA <--> ALPHA",
+          "source_line_number": 19,
+          "raw_line": "1243.150\t98.140\t198.103\t129.516\t85.264\tBETA <--> ALPHA"
+        },
+        {
+          "T_K": 1243.15,
+          "enthalpy_increment_kJ_mol": 97.188,
+          "entropy_J_mol_K": 207.695,
+          "label": "TRANSITION",
+          "source_line_number": 20,
+          "raw_line": "1243.150\t98.142\t207.695\t129.516\t97.188\tTRANSITION"
+        },
+        {
+          "T_K": 1405.2,
+          "enthalpy_increment_kJ_mol": 113.239,
+          "entropy_J_mol_K": 219.829,
+          "label": "ALPHA <--> LIQUID",
+          "source_line_number": 23,
+          "raw_line": "1405.200\t99.913\t219.829\t139.243\t113.239\tALPHA <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 1405.2,
+        "enthalpy_increment_kJ_mol": 113.239,
+        "entropy_J_mol_K": 219.829,
+        "label": "ALPHA <--> LIQUID",
+        "source_line_number": 23,
+        "raw_line": "1405.200\t99.913\t219.829\t139.243\t113.239\tALPHA <--> LIQUID"
+      },
       "construction_uncertainty_input_K": null
     },
     {
@@ -1155,6 +1279,24 @@
           "entropy_J_mol_K": 202.897
         }
       ],
+      "transition_rows": [
+        {
+          "T_K": 2130.0,
+          "enthalpy_increment_kJ_mol": 136.016,
+          "entropy_J_mol_K": 190.133,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 26,
+          "raw_line": "2130.000\t79.228\t190.133\t126.276\t136.016\tCRYSTAL <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 2130.0,
+        "enthalpy_increment_kJ_mol": 136.016,
+        "entropy_J_mol_K": 190.133,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 26,
+        "raw_line": "2130.000\t79.228\t190.133\t126.276\t136.016\tCRYSTAL <--> LIQUID"
+      },
       "construction_uncertainty_input_K": null
     },
     {
@@ -1269,6 +1411,8 @@
           "entropy_J_mol_K": 302.751
         }
       ],
+      "transition_rows": [],
+      "transition_row_at_cap": null,
       "construction_uncertainty_input_K": [
         919.0,
         1190.0

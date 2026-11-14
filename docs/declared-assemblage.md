@@ -38,7 +38,9 @@ same apparent-Gibbs basis used by the runtime liquid standard. The generated
 subset records each source table digest; regenerate it with
 `python tools/generate_declared_assemblage_janaf.py`. The former fusion-node
 copy is not used. In particular, the ambiguous O-038 1700 K fusion datum is
-discarded; pure crystal Gibbs values do not depend on that liquid row.
+discarded; pure crystal Gibbs values do not depend on that liquid row. Printed
+JANAF crystal-liquid transition rows retain their enthalpy-increment and
+entropy columns and are used directly at the inclusive cap.
 
 For each pure JANAF phase, the source span below is the span of finite JANAF
 enthalpy-increment and entropy rows. Evaluation begins at 298.15 K because the

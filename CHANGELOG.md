@@ -15,7 +15,8 @@
   with optional gas pressures or an oxygen-balance calculation. The result
   reports non-identifiable activities and does not select or certify a stable
   phase assemblage. Pure JANAF crystals are converted onto the runtime apparent
-  Gibbs basis and capped at their crystal-liquid transition. See
+  Gibbs basis, using printed transition thermochemistry at inclusive crystal-
+  liquid caps. See
   `docs/declared-assemblage.md`.
 
 ### Gas oxygen balance

@@ -21,6 +21,10 @@ from openimcc.gas_data import (
     _PROVENANCE_AUTHORITY_RANK,
 )
 from openimcc.receipt import CalculationReceipt, build_calculation_receipt
+from openimcc.janaf_crystals import (
+    JanafCrystalTemperatureError,
+    evaluate_janaf_crystal,
+)
 
 if TYPE_CHECKING:
     from openimcc.gas import ImccGasDatapack, ImccGasResult
@@ -93,22 +97,6 @@ def _resource_bytes(relative_path: str) -> bytes:
 def _load_json(relative_path: str) -> tuple[dict[str, Any], str]:
     raw = _resource_bytes(relative_path)
     return json.loads(raw.decode("utf-8")), hashlib.sha256(raw).hexdigest()
-
-
-def _interpolate_nodes(nodes: Mapping[str, float], temperature_K: float) -> float:
-    points = sorted((float(t), float(g)) for t, g in nodes.items())
-    if temperature_K < points[0][0] or temperature_K > points[-1][0]:
-        raise ValueError(
-            f"source Gibbs function has no node at {temperature_K:g} K; "
-            f"range is [{points[0][0]:g}, {points[-1][0]:g}] K"
-        )
-    for t, g in points:
-        if temperature_K == t:
-            return g
-    for (lo_t, lo_g), (hi_t, hi_g) in zip(points, points[1:]):
-        if lo_t <= temperature_K <= hi_t:
-            return lo_g + (hi_g - lo_g) * (temperature_K - lo_t) / (hi_t - lo_t)
-    raise ValueError(f"source Gibbs function has no node at {temperature_K:g} K")
 
 
 def _phase_authority(phase: Mapping[str, Any]) -> str:
@@ -200,7 +188,7 @@ def _empty_result(
     labels = PhaseEquilibriumLabels(
         identity={
             "crystal_phases": "openimcc-crystal-phases-v1",
-            "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v1",
+            "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
             "gas_table_digest": getattr(gas_pack, "gas_table_digest", "unresolved"),
             "condensate_table_digest": getattr(
                 gas_pack, "condensate_table_digest", "unresolved"
@@ -383,6 +371,7 @@ def evaluate_declared_assemblage(
     active_pack = gas_pack if gas_pack is not None else _default_pack
 
     phase_ranges: dict[str, str] = {}
+    pure_crystal_values = {}
     phase_authorities: list[str] = []
     out_of_domain_axes: list[str] = []
     for phase_id in declared:
@@ -399,14 +388,18 @@ def evaluate_declared_assemblage(
             phase_ranges[phase_id] = f"{lo:g}-{hi:g} K"
             phase_authorities.append(_phase_authority(row))
         else:
-            source_lo, source_hi = map(float, row["source_temperature_K"])
-            lo = max(298.15, source_lo)
-            hi = min(source_hi, float(row["crystal_transition_temperature_K"]))
-            if not lo <= temperature <= hi:
+            try:
+                crystal_value = evaluate_janaf_crystal(phase_id, temperature)
+            except JanafCrystalTemperatureError as exc:
+                lo, hi = exc.domain_K
                 out_of_domain_axes.append(f"crystal.{phase_id}.temperature_K")
-                continue
+            else:
+                lo, hi = crystal_value.domain_K
+                pure_crystal_values[phase_id] = crystal_value
+                phase_authorities.append(
+                    str(crystal_value.provenance["source_authority"])
+                )
             phase_ranges[phase_id] = f"{lo:g}-{hi:g} K"
-            phase_authorities.append(str(row["source_authority"]))
 
     if out_of_domain_axes:
         unavailable_components = tuple(sorted({
@@ -461,36 +454,7 @@ def evaluate_declared_assemblage(
         for phase_index, phase_id in enumerate(declared):
             row = pure_by_id.get(phase_id)
             if row is not None:
-                # Premise: JANAF formation ΔfG(T) uses elements at T, but the
-                # runtime apparent standard is anchored to elemental enthalpies
-                # at 298.15 K. Equivalently, using the JANAF compound columns,
-                # G_app(T)=ΔfH(298.15)+[H(T)-H(298.15)]−T*S(T). The first two
-                # terms are kJ/mol and S is J/(mol K), so convert enthalpy to
-                # J/mol before subtracting T*S. This matches the runtime basis;
-                # the separately packaged parent-liquid G remains unchanged.
-                # Sanity checks against it give G_l−G_cr=+0.444 kJ/mol and
-                # a=0.972 for SiO2 at 1900 K, and +21.606 kJ/mol, a=0.236 for
-                # Al2O3 at 1800 K (both below their crystal-liquid transitions).
-                # For a pure oxide, ν=1 gives μ=G_cr and hence
-                # a=exp((G_cr−G_l)/(RT)); G_cr, G_l, and RT are J/mol, so a
-                # is dimensionless. evaluate_gas receives that same activity
-                # on the same liquid standard, making its pressure identical
-                # to the direct crystal-potential route.
-                nodes = row["nodes"]
-                gibbs_nodes = {
-                    str(node["T_K"]): float(node["enthalpy_increment_kJ_mol"])
-                    for node in nodes
-                }
-                entropy_nodes = {
-                    str(node["T_K"]): float(node["entropy_J_mol_K"])
-                    for node in nodes
-                }
-                enthalpy_increment = _interpolate_nodes(gibbs_nodes, temperature)
-                entropy = _interpolate_nodes(entropy_nodes, temperature)
-                g_crystal = (
-                    float(row["formation_enthalpy_298_kJ_mol"])
-                    + enthalpy_increment
-                ) * 1000.0 - temperature * entropy
+                g_crystal = pure_crystal_values[phase_id].G_J_mol
                 if phase_id == "K2O":
                     active_authorities.append("estimated_systematic")
             else:

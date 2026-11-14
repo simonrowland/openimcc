@@ -7,6 +7,7 @@ import pytest
 from openimcc.declared_assemblage import evaluate_declared_assemblage
 from openimcc.gas import evaluate_gas, load_gas_datapack, species_thermo
 from openimcc._constants import R_J_MOL_K
+from openimcc.janaf_crystals import evaluate_janaf_crystal
 
 
 @pytest.fixture(scope="module")
@@ -23,7 +24,7 @@ _JANAF_CRYSTALS = {
 
 
 def _independent_janaf_apparent_gibbs(oxide, temperature_K):
-    """Rebuild G_app from raw JANAF Hf(298), H increment, and entropy columns."""
+    """Rebuild G_app from JANAF's separate Gibbs-energy-function column."""
     table_id = _JANAF_CRYSTALS[oxide]
     source = json.loads(
         (_REPO_ROOT / "data-src" / "janaf" / f"{table_id}.yaml")
@@ -32,12 +33,10 @@ def _independent_janaf_apparent_gibbs(oxide, temperature_K):
     rows = sorted(
         (
             float(row["temperature"]["value"]),
-            float(row["enthalpy_increment"]["value"]),
-            float(row["entropy"]["value"]),
+            float(row["negative_gibbs_enthalpy_function"]["value"]),
         )
         for row in source["values"]
-        if row["enthalpy_increment"]["value"] is not None
-        and row["entropy"]["value"] is not None
+        if row["negative_gibbs_enthalpy_function"]["value"] is not None
     )
     reference = next(
         row for row in source["values"]
@@ -56,10 +55,10 @@ def _independent_janaf_apparent_gibbs(oxide, temperature_K):
         )
 
     h298_kj_mol = float(reference["formation_enthalpy"]["value"])
-    h_increment_kj_mol = interpolate(1)
-    entropy_j_mol_k = interpolate(2)
-    return (h298_kj_mol + h_increment_kj_mol) * 1000.0 - (
-        temperature_K * entropy_j_mol_k
+    negative_gibbs_enthalpy_function_j_mol_k = interpolate(1)
+    return (
+        h298_kj_mol * 1000.0
+        - temperature_K * negative_gibbs_enthalpy_function_j_mol_k
     )
 
 
@@ -86,11 +85,11 @@ def test_janaf_pure_oxide_crystal_to_liquid_closure(
         liquid_gibbs = species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
         assert result.labels.validity == "IN"
         assert result.oxide_chemical_potentials_J_mol[oxide] == pytest.approx(
-            crystal_gibbs, abs=1e-7
+            crystal_gibbs, abs=4.0
         )
         assert result.oxide_activities[oxide] == pytest.approx(
             math.exp((crystal_gibbs - liquid_gibbs) / (R_J_MOL_K * temperature_K)),
-            rel=1e-12,
+            rel=3e-4,
         )
 
 
@@ -116,6 +115,66 @@ def test_reference_apparent_gibbs_residuals_and_activities(
         expected_activity, abs=0.00003
     )
     assert "apparent G" in result.receipt.solver["pure_crystal_gibbs_conversion"]
+
+
+@pytest.mark.parametrize(
+    ("oxide", "temperature_K", "production_minus_independent_J_mol", "activity"),
+    [
+        ("MgO", 1800.0, -0.6, 0.136715),
+        ("MgO", 2500.0, -1.5, 0.494179),
+        ("CaO", 1800.0, -1.6, 0.101337),
+        ("CaO", 2500.0, 0.0, 0.433703),
+        ("FeO", 1200.0, 0.0, 0.123873),
+        ("FeO", 1500.0, 1.0, 0.339179),
+    ],
+)
+def test_runtime_crystal_matches_separate_janaf_gibbs_function(
+    oxide, temperature_K, production_minus_independent_J_mol, activity, gas_pack
+):
+    result = evaluate_declared_assemblage((oxide,), temperature_K, gas_pack=gas_pack)
+    independent = _independent_janaf_apparent_gibbs(oxide, temperature_K)
+
+    assert result.oxide_chemical_potentials_J_mol[oxide] - independent == pytest.approx(
+        production_minus_independent_J_mol, abs=0.05
+    )
+    assert result.oxide_activities[oxide] == pytest.approx(activity, abs=0.00005)
+
+
+@pytest.mark.parametrize(
+    ("oxide", "temperature_K"),
+    [
+        ("MgO", 3105.0), ("CaO", 3200.0), ("Al2O3", 2327.0),
+        ("FeO", 1650.0), ("Na2O", 1405.2), ("TiO2", 2130.0),
+    ],
+)
+def test_crystal_transition_boundary_uses_printed_janaf_row(oxide, temperature_K):
+    table_id = _JANAF_CRYSTALS[oxide]
+    source = json.loads(
+        (_REPO_ROOT / "data-src" / "janaf" / f"{table_id}.yaml")
+        .read_text(encoding="utf-8")
+    )["table"]
+    reference = next(
+        row for row in source["values"]
+        if float(row["temperature"]["value"]) == 298.15
+    )
+    transition = next(
+        item for item in source["parse_ambiguities"]
+        if float(item["raw_line"].split("\t")[0]) == temperature_K
+        and "<-->" in item["raw_line"]
+        and "LIQUID" in item["raw_line"].upper()
+    )
+    fields = transition["raw_line"].split("\t")
+    independent = (
+        float(reference["formation_enthalpy"]["value"]) * 1000.0
+        - temperature_K * float(fields[3])
+    )
+    crystal = evaluate_janaf_crystal(oxide, temperature_K)
+
+    # JANAF's separately printed Gibbs function is rounded independently of
+    # the transition-row H increment and entropy columns used by production.
+    assert crystal.G_J_mol == pytest.approx(independent, abs=2.0)
+    assert crystal.domain_K[1] == temperature_K
+    assert crystal.provenance["transition_row_used"] is True
 
 
 @pytest.mark.parametrize(
