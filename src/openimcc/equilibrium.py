@@ -9,7 +9,8 @@ from __future__ import annotations
 import itertools
 import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, is_dataclass, replace
+from enum import Enum
 from types import MappingProxyType
 from typing import Any, Literal
 
@@ -92,7 +93,7 @@ class PhaseEquilibriumResult:
     solid_mol: Mapping[str, float] | None
     phase_amount_ranges_mol: Mapping[str, tuple[float, float]]
     phase_amounts_unique: bool
-    phase_presence: Mapping[str, Literal["present", "absent", "unresolved"]]
+    phase_presence: Mapping[str, Literal["present", "absent", "unresolved", "infeasible"]]
     saturated_candidates: tuple[str, ...]
     identifiable_activities: Mapping[str, float]
     activity_ranges_ln: Mapping[str, tuple[float, float]]
@@ -111,6 +112,10 @@ class PhaseEquilibriumResult:
     kkt_recheck: Mapping[str, float] = field(default_factory=dict)
     crystal_only_minimum: bool = False
 
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-compatible dictionary, including nested result records."""
+        return _json_compatible(self)
+
     def __post_init__(self) -> None:
         for name in (
             "bulk_parent_mol", "phase_amount_ranges_mol", "phase_presence",
@@ -122,6 +127,29 @@ class PhaseEquilibriumResult:
             value = getattr(self, name)
             if value is not None:
                 object.__setattr__(self, name, MappingProxyType(dict(value)))
+
+
+def _json_compatible(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, np.ndarray):
+        return [_json_compatible(item) for item in value.tolist()]
+    if isinstance(value, np.generic):
+        return _json_compatible(value.item())
+    if isinstance(value, Mapping):
+        return {str(key): _json_compatible(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_json_compatible(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        return [_json_compatible(item) for item in sorted(value, key=str)]
+    if is_dataclass(value) and not isinstance(value, type):
+        return {
+            item.name: _json_compatible(getattr(value, item.name))
+            for item in fields(value)
+        }
+    raise TypeError(f"cannot convert {type(value).__name__} to a JSON value")
 
 
 @dataclass(frozen=True)
@@ -1385,7 +1413,12 @@ def _empty_result(
         solid_mol=None,
         phase_amount_ranges_mol=solid_ranges or {phase: (0.0, 0.0) for phase in phase_ids},
         phase_amounts_unique=False,
-        phase_presence={phase: "unresolved" for phase in phase_ids},
+        phase_presence={
+            state.candidate.phase_id: (
+                "infeasible" if state.reason == "infeasible" else "unresolved"
+            )
+            for state in states
+        },
         saturated_candidates=(),
         identifiable_activities={},
         activity_ranges_ln={},
@@ -1941,7 +1974,7 @@ def _positive_branch(
         )
         state_amounts: dict[str, float] = {}
         state_ranges: dict[str, tuple[float, float]] = {}
-        presence: dict[str, Literal["present", "absent", "unresolved"]] = {}
+        presence: dict[str, Literal["present", "absent", "unresolved", "infeasible"]] = {}
         for index, state in enumerate(states):
             phase = state.candidate.phase_id
             lo, hi = ranges.get(index, (0.0, 0.0))
@@ -1955,6 +1988,11 @@ def _positive_branch(
         missing_set = set(missing)
         for state in candidates_all:
             phase = state.candidate.phase_id
+            if state.reason == "infeasible":
+                state_ranges.setdefault(phase, (0.0, 0.0))
+                state_amounts.setdefault(phase, 0.0)
+                presence.setdefault(phase, "infeasible")
+                continue
             unknown = not state.available or phase in missing_set
             state_ranges.setdefault(
                 phase, (0.0, math.inf) if unknown else (0.0, 0.0)
@@ -2159,7 +2197,7 @@ def _solid_result(
             q_interval = (q_value - err, q_value + err)
 
     solid_ranges: dict[str, tuple[float, float]] = {}
-    phase_presence: dict[str, Literal["present", "absent", "unresolved"]] = {}
+    phase_presence: dict[str, Literal["present", "absent", "unresolved", "infeasible"]] = {}
     amounts: dict[str, float] = {}
     scales = _scaled_phase_amounts(A, b)
     amount_unique = lp.amount_ranges_certified
@@ -2185,6 +2223,11 @@ def _solid_result(
     missing_set = set(missing)
     for state in all_states:
         phase = state.candidate.phase_id
+        if state.reason == "infeasible":
+            solid_ranges[phase] = (0.0, 0.0)
+            amounts[phase] = 0.0
+            phase_presence[phase] = "infeasible"
+            continue
         unknown = not state.available or phase in missing_set
         solid_ranges.setdefault(
             phase, (0.0, math.inf) if unknown else (0.0, 0.0)
@@ -2409,7 +2452,10 @@ def _solid_result(
         phase_amounts_unique=bool(amount_unique and equilibrium_state_certified),
         phase_presence=(
             phase_presence if equilibrium_state_certified else
-            {phase: "unresolved" for phase in phase_presence}
+            {
+                phase: "infeasible" if presence == "infeasible" else "unresolved"
+                for phase, presence in phase_presence.items()
+            }
         ),
         saturated_candidates=(tuple(sorted(saturated)) if equilibrium_state_certified else ()),
         identifiable_activities=activities if equilibrium_state_certified else {},
@@ -2526,6 +2572,19 @@ def equilibrate(
                 ("bulk_parent_mol",),
             ),
         )
+    zero_bulk_parents = set(parent_names) - set(normalized_bulk)
+    infeasible = {
+        state.candidate.phase_id
+        for state in all_states
+        if set(state.candidate.stoichiometry) & zero_bulk_parents
+    }
+    if infeasible:
+        all_states = tuple(
+            replace(state, available=False, reason="infeasible")
+            if state.candidate.phase_id in infeasible else state
+            for state in all_states
+        )
+        unavailable = tuple(phase for phase in unavailable if phase not in infeasible)
     bulk_vector = np.asarray([normalized_bulk[name] for name in parents], dtype=float)
     if (
         not math.isfinite(float(tol)) or float(tol) <= 0.0

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import replace
 from pathlib import Path
 from statistics import median
 from time import process_time
@@ -201,7 +202,7 @@ def test_exact_zero_parent_excludes_only_incompatible_crystals(ideal_pack, gas_p
         candidates=(silica, incompatible), pack=ideal_pack,
     )
     assert result.phase_presence["solid-SiO2"] == "present"
-    assert result.phase_presence["lower-G-CaSiO3"] == "absent"
+    assert result.phase_presence["lower-G-CaSiO3"] == "infeasible"
 
 
 def test_active_set_cycle_refuses_deterministically(monkeypatch, ideal_pack, gas_pack):
@@ -385,7 +386,7 @@ def test_phase_amount_ranges_are_invariant_to_bulk_scale(ideal_pack, gas_pack):
     assert tiny.phase_amount_ranges_mol["CaO-solid"][0] == pytest.approx(0.75e-8, rel=1e-8)
 
 
-def test_default_anorthite_probe_at_1800k_reports_missing_phases():
+def test_default_anorthite_case_excludes_zero_bulk_phases():
     result = equilibrate(
         {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1800.0,
     )
@@ -396,34 +397,79 @@ def test_default_anorthite_probe_at_1800k_reports_missing_phases():
     assert all(amount == pytest.approx(0.0, abs=1.0e-12) for amount in result.solid_mol.values())
     assert result.liquid_mass_fraction == pytest.approx(1.0)
     assert result.kkt_recheck["independent_kkt_passed"] == 1.0
-    assert result.refusal is not None
-    assert result.refusal.code == "missing_phase_data"
+    assert result.refusal is None
+    assert result.labels.validity == "IN"
     missing = result.receipt.solver["missing_candidate_phase_ids"]
-    assert missing
-    print("anorthite-1800 missing candidate phases:", ", ".join(missing))
-    assert set(missing) == {
+    assert missing == ()
+    dropped = {
         "akermanite", "diopside", "fayalite", "FeO", "hercynite",
         "ilmenite", "monticellite",
     }
+    for phase in dropped:
+        assert result.phase_presence[phase] == "infeasible"
+        assert result.phase_amount_ranges_mol[phase] == (0.0, 0.0)
     print(
         "anorthite-1800 returned liquid:", dict(result.liquid_parent_mol),
         "solid amounts:", dict(result.solid_mol),
         "liquid mass fraction:", result.liquid_mass_fraction,
-        "missing candidate phases:", ", ".join(missing),
+        "infeasible phases:", ", ".join(sorted(dropped)),
         "anorthite affinity:", result.phase_affinities_ln["anorthite"],
     )
 
 
+def test_feasible_candidate_without_gibbs_still_depends(monkeypatch):
+    from openimcc import equilibrium as equilibrium_module
+
+    original = equilibrium_module._default_candidate_states
+
+    def missing_feasible_anorthite(temperature, gas_pack=None):
+        states, crystal_digest, pure_digest, resolved_gas, unavailable = original(
+            temperature, gas_pack
+        )
+        altered = tuple(
+            replace(state, available=False, reason="standard_out_of_range")
+            if state.candidate.phase_id == "anorthite" else state
+            for state in states
+        )
+        return (
+            altered, crystal_digest, pure_digest, resolved_gas,
+            tuple(sorted((*unavailable, "anorthite"))),
+        )
+
+    monkeypatch.setattr(
+        "openimcc.equilibrium._default_candidate_states",
+        missing_feasible_anorthite,
+    )
+    result = equilibrate(
+        {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1800.0,
+    )
+    assert result.labels.validity == "DEPENDS"
+    assert result.refusal is not None and result.refusal.code == "missing_phase_data"
+    assert "anorthite" in result.receipt.solver["missing_candidate_phase_ids"]
+    assert result.phase_presence["anorthite"] == "unresolved"
+
+
+def test_result_to_dict_round_trips_through_json(ideal_pack, gas_pack):
+    candidate = _one_parent_candidate("serialization-control", 2000.0, -5.0, gas_pack)
+    result = equilibrate(
+        {"SiO2": 1.0}, 2000.0, candidates=(candidate,), pack=ideal_pack,
+    )
+    encoded = json.dumps(result.to_dict())
+    decoded = json.loads(encoded)
+    assert decoded["temperature_K"] == 2000.0
+    assert decoded["bulk_parent_mol"] == {"SiO2": 1.0}
+    assert decoded["phase_saturation_indices"]
+
+
 def test_absent_by_construction_uses_selected_liquid_standard(ideal_pack):
-    result = equilibrate({"CaO": 1.0}, 1800.0, pack=ideal_pack)
+    result = equilibrate(
+        {"K2O": 1.0, "Na2O": 1.0, "FeO": 1.0}, 1800.0, pack=ideal_pack,
+    )
     coverage = result.labels.coverage
     assert coverage["K2O"] == "absent_by_construction"
     assert coverage["Na2O"] == "absent_by_construction"
     assert coverage["FeO"] == "temperature_out_of_range"
-    assert set(result.receipt.solver["missing_candidate_phase_ids"]) >= {
-        "FeO", "akermanite", "diopside", "fayalite", "hercynite",
-        "ilmenite", "monticellite",
-    }
+    assert "FeO" in result.receipt.solver["missing_candidate_phase_ids"]
     gas_pack = diagnostics._crystal_thermo_context(None)[0]
     pure, _ = _load_json(_PURE_RESOURCE)
     rows = {row["id"]: row for row in pure["phases"]}

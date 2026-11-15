@@ -29,6 +29,8 @@ an unrestricted stability claim.
   OUT_OF_DOMAIN on temperature_K; it makes no liquid stability claim.
 - Exact-zero bulk parents are removed from the solve. No amount or activity
   floors are added.
+- Crystals requiring any exact-zero bulk parent are labelled `infeasible` and
+  cannot affect missing-data validity.
 
 ## Result and certificates
 
@@ -83,4 +85,6 @@ At polymorph crossings or other non-unique extents, amount ranges are exposed
 and the solver does not report an arbitrary split as a measured phase amount.
 
 See the API dataclasses in openimcc.equilibrium for the complete field
-definitions and the typed refusal codes.
+definitions and the typed refusal codes. `PhaseEquilibriumResult.to_dict()`
+exports nested records, arrays, and read-only mappings as JSON-compatible
+values.
