@@ -15,6 +15,10 @@ pure oxide reaction `MO(l) → M(g) + ½ O₂(g)`, the M coefficient is `−1`, 
 the closure `−pM + 2pO₂ = 0` gives `pM = 2pO₂`. Each residual term is in
 oxygen-atom·bar.
 
+This correction affects the 75 halide channels whenever any halogen (Cl2,
+Br2, F2, or I2) is active; oxide-only and zero-halogen compositions are
+bit-identical.
+
 The result includes oxygen pressure, channel and species pressures, total
 saturation pressure, mole fractions, domain flags, and root diagnostics. Set
 `include_ions=True` to use the gas evaluator's charge-neutrality closure at each

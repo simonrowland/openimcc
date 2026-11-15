@@ -7,7 +7,14 @@
 - Corrected saturation weights for gas-parent channels that also consume a
   melt oxide, including halide channels such as NaCl. Their side-oxide oxygen
   demand now contributes to the saturation balance, changing oxygen pressure
-  and vapor pressures for affected mixtures. See
+  and vapor pressures for affected mixtures. For activities SiO2 0.45, MgO
+  0.12, FeO 0.15, CaO 0.11, Al2O3 0.07, Na2O 0.03, K2O 0.01, and Cl2
+  1.51e-9 at 2137 K, pO2 changes from 0.137671 to 1.361265 bar and P_sat
+  from 9.757156 to 6.486159 bar; the metadata oxygen residual changes from
+  -5.193366 to approximately 0 O-atom·bar. At a 7 bar ambient pressure, the
+  saturation temperature changes from 2247.865 to 2096.721 K. This affects
+  the 75 halide channels whenever any halogen (Cl2, Br2, F2, or I2) is active;
+  oxide-only and zero-halogen compositions are bit-identical. See
   `docs/gas-saturation.md`.
 
 ### Redox FeO(l) standard
