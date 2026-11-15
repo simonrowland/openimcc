@@ -11,6 +11,7 @@ from time import process_time
 
 import numpy as np
 import pytest
+from scipy.optimize import brentq as independent_brentq
 
 from openimcc import diagnostics
 from openimcc import gas as gas_module
@@ -27,7 +28,9 @@ from openimcc.equilibrium import (
     _positive_branch,
     _solve_active_equalities,
     equilibrate,
+    equilibrate_sweep,
     evaluate_janaf_crystal,
+    phase_boundary_brackets,
 )
 from openimcc.gas import species_thermo
 from openimcc.kernel import ImccDatapack, label_research_datapack
@@ -80,6 +83,27 @@ def _one_parent_candidate(phase, temperature, delta_rt, gas_pack):
         {"SiO2": 1.0},
         liquid_g + delta_rt * R_J_MOL_K * temperature,
         formula="SiO2",
+    )
+
+
+def _install_synthetic_default_candidates(monkeypatch, candidates, gas_pack):
+    from openimcc import equilibrium as equilibrium_module
+
+    states = tuple(
+        _CandidateState(
+            candidate, candidate.source_authority, candidate.temperature_range_K, True
+        )
+        for candidate in candidates
+    )
+
+    def synthetic_defaults(_temperature, selected_gas_pack=None):
+        return (
+            states, "synthetic-crystal-data", "synthetic-pure-data",
+            gas_pack if selected_gas_pack is None else selected_gas_pack, (),
+        )
+
+    monkeypatch.setattr(
+        equilibrium_module, "_default_candidate_states", synthetic_defaults
     )
 
 
@@ -142,6 +166,35 @@ def test_binary_eutectic_singular_jacobian_is_consistent(ideal_pack, gas_pack):
     assert liquid[0] / liquid.sum() == pytest.approx(0.5, abs=2.0e-6)
 
 
+def test_rank_zero_inconsistent_affinities_get_typed_refusal(monkeypatch, ideal_pack, gas_pack):
+    temperature = 2000.0
+    candidates = (
+        _candidate_from_log_activities(
+            "solid-CaO", {"CaO": 1.0}, {"CaO": math.log(0.5)}, temperature, gas_pack
+        ),
+        _candidate_from_log_activities(
+            "solid-SiO2", {"SiO2": 1.0}, {"SiO2": math.log(0.5)}, temperature, gas_pack
+        ),
+    )
+    states = tuple(_CandidateState(item, item.source_authority, None, True) for item in candidates)
+
+    def inconsistent_residual(active_n, active, full_n, *_args, **_kwargs):
+        return np.asarray([1.0e-4, -1.0e-4]), full_n.copy(), None
+
+    monkeypatch.setattr(
+        "openimcc.equilibrium._active_residual", inconsistent_residual
+    )
+    solved, converged, reason, residuals = _solve_active_equalities(
+        np.asarray([0.25, 0.35]), [0, 1], np.eye(2), np.ones(2), states,
+        ("CaO", "SiO2"), np.zeros(2), temperature, ideal_pack,
+        1.0e-8, 1.0e-10, 1.0e-12, 100,
+    )
+    assert not converged
+    assert reason == "singular_inconsistent_affinity"
+    assert residuals["active_jacobian_rank"] == 0.0
+    assert residuals["rank_inconsistent_affinity_inf_ln"] == pytest.approx(1.0e-4)
+
+
 def test_peritectic_replacement_drops_resolved_parent_phase(ideal_pack, gas_pack):
     temperature = 2000.0
     parents = ("CaO", "SiO2")
@@ -185,9 +238,13 @@ def test_competing_polymorphs_switch_and_share_at_crossing(ideal_pack, gas_pack)
     assert results[2100.0].phase_presence["poly-alpha"] == "absent"
     at_crossing = results[crossing]
     assert at_crossing.refusal is not None
-    assert at_crossing.refusal.code == "incipient_liquid_unresolved"
-    assert at_crossing.saturated_candidates == ()
+    assert at_crossing.refusal.code == "missing_phase_data"
+    assert set(at_crossing.saturated_candidates) == {"poly-alpha", "poly-beta"}
+    assert at_crossing.phase_amount_ranges_mol["poly-alpha"] == pytest.approx((0.0, 1.0))
+    assert at_crossing.phase_amount_ranges_mol["poly-beta"] == pytest.approx((0.0, 1.0))
     assert at_crossing.phase_amounts_unique is False
+    assert at_crossing.liquid_parent_mol is None
+    assert at_crossing.liquid_mass_fraction is None
     assert at_crossing.phase_presence["poly-alpha"] == "unresolved"
     assert at_crossing.phase_presence["poly-beta"] == "unresolved"
 
@@ -287,13 +344,14 @@ def test_single_parent_no_associate_control_has_q_one_at_unit_activity(ideal_pac
     )
     assert result.logQ == pytest.approx(0.0, abs=1.0e-12)
     assert result.logQ_interval[0] <= 0.0 <= result.logQ_interval[1]
-    assert result.refusal.code == "incipient_liquid_unresolved"
+    assert result.refusal.code == "missing_phase_data"
     assert result.solid_mol is None
     assert result.liquid_mass_fraction is None
+    assert result.liquid_parent_mol is None
     assert not result.phase_amounts_unique
     assert result.phase_presence["pure-SiO2"] == "unresolved"
-    assert result.crystal_only_minimum is True
-    assert result.receipt.solver["crystal_only_candidate_amounts_mol"]["pure-SiO2"] == pytest.approx(1.0)
+    assert result.phase_amount_ranges_mol["pure-SiO2"] == pytest.approx((0.0, 1.0))
+    assert result.crystal_only_minimum is False
 
 
 def test_dual_face_logq_analytic_two_parent_minimum(ideal_pack, gas_pack):
@@ -351,6 +409,264 @@ def test_dual_face_logq_respects_variable_crystal_inequalities(ideal_pack, gas_p
     assert interval[0] == pytest.approx(expected, abs=1.0e-8)
     assert certified
     assert diagnostics_map["logQ_stationarity_scaled"] <= 1.0e-8
+
+
+def test_fully_solid_nonunique_extents_have_unique_activities(
+    monkeypatch, ideal_pack, gas_pack
+):
+    temperature = 2000.0
+    activity_logs = {"CaO": math.log(0.25), "SiO2": math.log(0.25)}
+    ca = _candidate_from_log_activities(
+        "solid-CaO", {"CaO": 1.0}, activity_logs, temperature, gas_pack
+    )
+    silica = _candidate_from_log_activities(
+        "solid-SiO2", {"SiO2": 1.0}, activity_logs, temperature, gas_pack
+    )
+    compound = CrystalCandidate(
+        "solid-CaSiO3", {"CaO": 1.0, "SiO2": 1.0},
+        ca.G_crystal_J_mol + silica.G_crystal_J_mol,
+    )
+    _install_synthetic_default_candidates(monkeypatch, (ca, silica, compound), gas_pack)
+
+    result = equilibrate({"CaO": 1.0, "SiO2": 1.0}, temperature, pack=ideal_pack)
+
+    assert result.labels.validity == "IN"
+    assert result.refusal is None
+    assert result.phase_amounts_unique is False
+    assert result.solid_mol is None
+    for phase in ("solid-CaO", "solid-SiO2", "solid-CaSiO3"):
+        assert result.phase_amount_ranges_mol[phase] == pytest.approx((0.0, 1.0))
+    for parent in ("CaO", "SiO2"):
+        assert result.activity_ranges_ln[parent] == pytest.approx(
+            (math.log(0.25), math.log(0.25)), abs=2.0e-9
+        )
+        assert result.identifiable_activities[parent] == pytest.approx(0.25, abs=2.0e-9)
+
+
+def test_fully_solid_unique_extent_can_have_unbounded_activity_ranges(
+    monkeypatch, ideal_pack, gas_pack
+):
+    temperature = 2000.0
+    rt = R_J_MOL_K * temperature
+    liquid_g = math.fsum(
+        species_thermo(parent, "l", temperature, gas_pack).G_J_mol
+        for parent in ("CaO", "SiO2")
+    )
+    compound = CrystalCandidate(
+        "solid-CaSiO3", {"CaO": 1.0, "SiO2": 1.0}, liquid_g - 2.0 * rt
+    )
+    _install_synthetic_default_candidates(monkeypatch, (compound,), gas_pack)
+
+    result = equilibrate({"CaO": 1.0, "SiO2": 1.0}, temperature, pack=ideal_pack)
+
+    assert result.labels.validity == "IN"
+    assert result.phase_amounts_unique is True
+    assert result.phase_amount_ranges_mol["solid-CaSiO3"] == pytest.approx((1.0, 1.0))
+    assert result.solid_mol["solid-CaSiO3"] == pytest.approx(1.0)
+    assert result.identifiable_activities == {}
+    assert result.activity_ranges_ln["CaO"] == (-math.inf, math.inf)
+    assert result.activity_ranges_ln["SiO2"] == (-math.inf, math.inf)
+
+
+def test_eutectic_invariant_reports_lever_ranges_and_brackets(
+    monkeypatch, ideal_pack, gas_pack
+):
+    invariant_K = 2000.0
+    liquid_activity = math.log(0.5)
+    ca = _candidate_from_log_activities(
+        "solid-CaO", {"CaO": 1.0}, {"CaO": liquid_activity}, invariant_K, gas_pack
+    )
+    silica = _candidate_from_log_activities(
+        "solid-SiO2", {"SiO2": 1.0}, {"SiO2": liquid_activity}, invariant_K, gas_pack
+    )
+    _install_synthetic_default_candidates(monkeypatch, (ca, silica), gas_pack)
+
+    invariant = equilibrate(
+        {"CaO": 1.0, "SiO2": 1.0}, invariant_K, pack=ideal_pack,
+    )
+    assert invariant.labels.validity == "IN"
+    assert invariant.refusal is None
+    assert invariant.saturated_candidates == ("solid-CaO", "solid-SiO2")
+    assert invariant.phase_amounts_unique is False
+    assert invariant.solid_mol is None
+    assert invariant.liquid_parent_mol is None
+    assert invariant.liquid_mass_fraction is None
+    for phase in ("solid-CaO", "solid-SiO2"):
+        assert invariant.phase_amount_ranges_mol[phase] == pytest.approx((0.0, 1.0))
+        assert invariant.phase_presence[phase] == "unresolved"
+
+    boundaries = phase_boundary_brackets(
+        {"CaO": 1.0, "SiO2": 1.0}, 1990.0, 2010.0,
+        pack=ideal_pack, scan_points=4,
+    )
+    assert boundaries.solidus_status == "AVAILABLE", boundaries.to_dict()
+    assert boundaries.liquidus_status == "AVAILABLE"
+    for crossing in (*boundaries.solidus, *boundaries.liquidus):
+        assert crossing.root_temperature_K == pytest.approx(invariant_K, abs=0.1)
+        assert crossing.bracket_K[0] <= invariant_K <= crossing.bracket_K[1]
+        assert crossing.bracket_K[1] - crossing.bracket_K[0] <= 0.1
+        assert crossing.lower_endpoint_status == "IN"
+        assert crossing.upper_endpoint_status == "IN"
+
+
+def test_peritectic_solidus_and_liquidus_match_independent_analytics(
+    monkeypatch, ideal_pack, gas_pack
+):
+    invariant_K = 2000.0
+    rt = R_J_MOL_K * invariant_K
+    ca_liquid = species_thermo("CaO", "l", invariant_K, gas_pack).G_J_mol
+    silica_liquid = species_thermo("SiO2", "l", invariant_K, gas_pack).G_J_mol
+    ca = CrystalCandidate(
+        "phase-A", {"CaO": 1.0}, ca_liquid + rt * math.log(0.5)
+    )
+    compound = CrystalCandidate(
+        "phase-AB", {"CaO": 1.0, "SiO2": 1.0},
+        ca_liquid + silica_liquid + rt * math.log(0.25),
+    )
+    _install_synthetic_default_candidates(monkeypatch, (ca, compound), gas_pack)
+    bulk = {"CaO": 1.5, "SiO2": 0.5}
+
+    # At the invariant, the liquid has equal parent proportions and both
+    # crystals are saturated. The compound amount ranges from zero to 0.5 mol.
+    invariant = equilibrate(bulk, invariant_K, pack=ideal_pack)
+    assert invariant.labels.validity == "IN"
+    assert invariant.phase_amount_ranges_mol["phase-A"] == pytest.approx((1.0, 1.0))
+    assert invariant.phase_amount_ranges_mol["phase-AB"] == pytest.approx((0.0, 0.5))
+    assert invariant.phase_amounts_unique is False
+
+    def independent_liquidus_residual(temperature):
+        liquid_g = species_thermo("CaO", "l", temperature, gas_pack).G_J_mol
+        return math.log(0.75) + (liquid_g - ca.G_crystal_J_mol) / (
+            R_J_MOL_K * temperature
+        )
+
+    analytic_liquidus = independent_brentq(
+        independent_liquidus_residual, invariant_K, 3000.0
+    )
+    upper = analytic_liquidus + 10.0
+    boundaries = phase_boundary_brackets(
+        bulk, 1990.0, upper, pack=ideal_pack, scan_points=3,
+    )
+    detail = (
+        boundaries.refusal,
+        boundaries.receipt.solver.get("scan_endpoint_statuses"),
+        boundaries.receipt.solver.get("scan_phase_sets"),
+        boundaries.receipt.solver.get("boundary_refinement_errors"),
+    )
+    assert boundaries.solidus_status == "AVAILABLE", detail
+    assert boundaries.liquidus_status == "AVAILABLE", detail
+    assert boundaries.solidus[0].root_temperature_K == pytest.approx(invariant_K, abs=0.1)
+    assert boundaries.liquidus[0].root_temperature_K == pytest.approx(analytic_liquidus, abs=0.1)
+    assert boundaries.solidus[0].lower_phase_set
+    assert boundaries.liquidus[0].upper_phase_set == ()
+
+
+def test_polymorph_extents_do_not_hide_the_liquidus(
+    monkeypatch, ideal_pack, gas_pack
+):
+    coexistence_K = 2000.0
+    candidate = _candidate_from_log_activities(
+        "poly-alpha", {"CaO": 1.0}, {"CaO": math.log(1.0 / 3.0)},
+        coexistence_K, gas_pack,
+    )
+    polymorph = CrystalCandidate(
+        "poly-beta", {"CaO": 1.0}, candidate.G_crystal_J_mol,
+    )
+    _install_synthetic_default_candidates(
+        monkeypatch, (candidate, polymorph), gas_pack,
+    )
+    bulk = {"CaO": 1.0, "SiO2": 1.0}
+
+    def all_liquid_residual(temperature):
+        activity = math.log(0.5)
+        liquid_g = species_thermo("CaO", "l", temperature, gas_pack).G_J_mol
+        return activity + (liquid_g - candidate.G_crystal_J_mol) / (
+            R_J_MOL_K * temperature
+        )
+
+    analytic_liquidus = independent_brentq(
+        all_liquid_residual, coexistence_K, 3000.0,
+    )
+    boundaries = phase_boundary_brackets(
+        bulk, 1990.0, analytic_liquidus + 5.0,
+        pack=ideal_pack, scan_points=3,
+    )
+    assert boundaries.liquidus_status == "AVAILABLE", boundaries.to_dict()
+    assert boundaries.liquidus[0].root_temperature_K == pytest.approx(
+        analytic_liquidus, abs=0.1
+    )
+    assert boundaries.liquidus[0].upper_phase_set == ()
+
+
+def test_warm_sweep_agrees_in_both_directions_away_from_invariant(
+    monkeypatch, ideal_pack, gas_pack
+):
+    crossing = 2000.0
+    candidate = _one_parent_candidate("solid-SiO2", crossing, 0.0, gas_pack)
+    _install_synthetic_default_candidates(monkeypatch, (candidate,), gas_pack)
+    temperatures = (1800.0, 1900.0, 2100.0, 2200.0)
+    forward = equilibrate_sweep({"SiO2": 1.0}, temperatures, pack=ideal_pack)
+    reverse = equilibrate_sweep(
+        {"SiO2": 1.0}, tuple(reversed(temperatures)), pack=ideal_pack
+    )
+    by_temperature = {result.temperature_K: result for result in reverse}
+    for result in forward:
+        comparison = by_temperature[result.temperature_K]
+        assert result.labels.validity == comparison.labels.validity == "IN"
+        assert result.phase_presence == comparison.phase_presence
+        assert result.phase_amount_ranges_mol == pytest.approx(
+            comparison.phase_amount_ranges_mol
+        )
+        assert result.liquid_mass_fraction == pytest.approx(comparison.liquid_mass_fraction)
+        assert result.kkt_recheck["independent_kkt_passed"] == 1.0
+        assert comparison.kkt_recheck["independent_kkt_passed"] == 1.0
+
+
+def test_default_anorthite_boundary_remains_out_of_domain_below_1700():
+    bulk = {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}
+    low = equilibrate(bulk, 1699.0)
+    assert low.labels.validity == "OUT_OF_DOMAIN"
+    assert low.labels.out_of_domain_axes == ("temperature_K",)
+    assert low.crystal_only_minimum is True
+
+    boundaries = phase_boundary_brackets(
+        bulk, 1690.0, 1800.0, scan_points=5,
+    )
+    assert "temperature_K" in boundaries.labels.out_of_domain_axes
+    assert all(
+        crossing.bracket_K[0] >= 1700.0
+        for crossing in (*boundaries.solidus, *boundaries.liquidus)
+    )
+
+    forsterite = phase_boundary_brackets(
+        {"MgO": 2.0, "SiO2": 1.0}, 1750.0, 1850.0, scan_points=6,
+    )
+    assert forsterite.solidus_status == "AVAILABLE", forsterite.to_dict()
+    assert forsterite.solidus[0].root_temperature_K == pytest.approx(
+        1798.7, abs=0.2
+    )
+    assert forsterite.solidus[0].bracket_K[0] >= 1700.0
+    assert forsterite.liquidus_status == "DEPENDS"
+
+
+def test_cpu_median_per_warm_sweep_point(ideal_pack, gas_pack, monkeypatch):
+    crossing = 2000.0
+    candidate = _one_parent_candidate("solid-SiO2", crossing, 0.0, gas_pack)
+    _install_synthetic_default_candidates(monkeypatch, (candidate,), gas_pack)
+    temperatures = (1850.0, 1900.0, 2100.0)
+    elapsed = []
+    for _ in range(5):
+        started = process_time()
+        results = equilibrate_sweep(
+            {"SiO2": 1.0}, temperatures, pack=ideal_pack,
+        )
+        elapsed.append((process_time() - started) / len(temperatures))
+        assert len(results) == len(temperatures)
+        assert all(result.kkt_recheck.get("independent_kkt_passed") == 1.0 for result in results)
+    print(
+        "CPU median per warm sweep point (n=5 sweeps): "
+        f"{median(elapsed):.6f} s"
+    )
 
 
 def test_default_and_explicit_candidate_scope_labels(ideal_pack):

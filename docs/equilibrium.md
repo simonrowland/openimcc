@@ -53,8 +53,9 @@ over the complete dual optimal face. The sum uses the melt pack's full free
 parent and associate species list. A numerically bounded log(Q) <= 0 at a
 feasible supporting dual certifies that adding an absent liquid cannot lower
 Gibbs energy within the declared model and candidate set. If the reported
-logQ_interval straddles zero, the result is
-incipient_liquid_unresolved; rounded Q == 1 is not a certificate.
+logQ_interval straddles zero, it is not a fully-solid certificate. The solver
+checks the positive-liquid branch; if neither branch resolves coexistence, it
+returns `incipient_liquid_unresolved`. Rounded Q == 1 is not a certificate.
 
 The LP dual inequalities alone are insufficient: above a pure oxide's
 transition, a crystal-only LP can remain feasible while the liquid is more
@@ -83,6 +84,55 @@ fraction remain unresolved until the absent-liquid certificate passes.
 phase_amounts_unique is reported separately from activity identifiability.
 At polymorph crossings or other non-unique extents, amount ranges are exposed
 and the solver does not report an arbitrary split as a measured phase amount.
+On the fully solid branch, each parent chemical potential is bounded
+independently over the dual optimal face. `activity_ranges_ln` reports those
+log-activity bounds after subtracting the selected liquid standard and
+dividing by RT. An activity appears in `identifiable_activities` only when
+both bounds are finite and their width is at most the 2e-9 ln-activity error
+budget. Primal amount ranges use independent endpoint solves; uniqueness is
+tested against the bulk-relative amount tolerance and each phase's bulk scale.
+Activity and amount uniqueness are independent, so either can be unique while
+the other is not.
+
+At rank-deficient invariant points the active affinity Jacobian is decomposed
+with SVD. Newton steps solve only the consistent row space; the nullspace is
+retained for lever-rule amount ranges. The range solve includes a nonnegative
+scale for the liquid at its certified parent proportions, since ideal-melt
+activities do not change when every liquid amount is scaled together. If that
+scale is not unique, `liquid_parent_mol` and `liquid_mass_fraction` are left
+unset. Rank deficiency by itself is accepted; incompatible equalities beyond
+the affinity tolerance return `singular_inconsistent_affinity`.
+
+## Temperature sweeps and boundaries
+
+`equilibrate_sweep()` accepts temperatures in the order supplied and carries
+the previous stable phases, extents, and kernel parent root as initial guesses.
+Every point still runs its own domain checks and independent KKT recheck. A
+seed does not contribute to the certificate.
+
+`phase_boundary_brackets()` scans the requested interval for every change in
+the certified phase set, then refines each eligible solidus or liquidus with
+Brent's method. A solidus is the first heating state with certified positive
+liquid; a liquidus is the first state where every feasible crystal is
+certified absent and all checks pass. An unresolved amount range does not
+establish absence. The result retains every crossing, its final temperature
+bracket, endpoint status and phase sets. A refusal or unresolved point breaks
+the scan; no root is interpolated across it. Liquid-dependent boundaries below
+1700 K or above 3000 K are `OUT_OF_DOMAIN` on `temperature_K`.
+
+    from openimcc.equilibrium import equilibrate_sweep, phase_boundary_brackets
+
+    sweep = equilibrate_sweep(
+        {"CaO": 1.0, "SiO2": 1.0}, [1800.0, 1900.0, 2000.0],
+    )
+    boundaries = phase_boundary_brackets(
+        {"CaO": 1.0, "SiO2": 1.0}, 1750.0, 2200.0,
+    )
+
+The sweep returns one `PhaseEquilibriumResult` per input temperature. Boundary
+results separate `solidus_status` and `liquidus_status` (`AVAILABLE`,
+`NO_CROSSING`, `OUT_OF_DOMAIN`, or `DEPENDS`) and include zero or more refined
+crossings for each boundary type.
 
 See the API dataclasses in openimcc.equilibrium for the complete field
 definitions and the typed refusal codes. `PhaseEquilibriumResult.to_dict()`

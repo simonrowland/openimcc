@@ -50,6 +50,10 @@
   dual-optimal-face liquid-absence certificate. Liquid claims are restricted
   to 1700–3000 K; redox-sensitive phases and active excess-Gibbs packs return
   typed refusals. See docs/equilibrium.md.
+- Added independent dual-potential and primal-amount ranges, invariant
+  lever-rule extents, warm temperature sweeps, and scanned solidus/liquidus
+  brackets with Brent refinement. Non-unique liquid scales remain unresolved,
+  and liquid-dependent crossings stay out of domain below 1700 K.
 
 ### Gas oxygen balance
 

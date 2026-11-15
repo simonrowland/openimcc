@@ -15,7 +15,7 @@ from types import MappingProxyType
 from typing import Any, Literal
 
 import numpy as np
-from scipy.optimize import LinearConstraint, linprog, lsq_linear, minimize
+from scipy.optimize import LinearConstraint, brentq, linprog, lsq_linear, minimize
 from scipy.special import logsumexp
 
 from openimcc import diagnostics
@@ -51,6 +51,7 @@ _LOGQ_COEXISTENCE_TOL = 1.0e-8
 _FD_CORRECTION_TOL_LN = 2.0e-9
 _INNER_ACTIVITY_ERROR_TOL_LN = 2.0e-9
 _INNER_CORRECTION_TOL_LN = 2.0e-9
+_DUAL_FACE_REL_TOL = 1.0e-9
 _FD_STEP_SCALED = 1.0e-4
 _FRACTION_TO_BOUNDARY = 0.995
 _MAX_OUTER_ITERATIONS = 80
@@ -127,6 +128,41 @@ class PhaseEquilibriumResult:
             value = getattr(self, name)
             if value is not None:
                 object.__setattr__(self, name, MappingProxyType(dict(value)))
+
+
+@dataclass(frozen=True)
+class PhaseBoundaryCrossing:
+    """A scanned and refined interval containing one phase boundary."""
+
+    kind: Literal["solidus", "liquidus"]
+    bracket_K: tuple[float, float]
+    root_temperature_K: float
+    root_residual: float
+    lower_endpoint_status: str
+    upper_endpoint_status: str
+    lower_phase_set: tuple[str, ...]
+    upper_phase_set: tuple[str, ...]
+    residuals: tuple[float, float]
+
+    def to_dict(self) -> dict[str, Any]:
+        return _json_compatible(self)
+
+
+@dataclass(frozen=True)
+class PhaseBoundaryResult:
+    """All certified boundary brackets found in the requested temperature scan."""
+
+    pressure_bar: float
+    solidus: tuple[PhaseBoundaryCrossing, ...]
+    liquidus: tuple[PhaseBoundaryCrossing, ...]
+    solidus_status: Literal["AVAILABLE", "NO_CROSSING", "OUT_OF_DOMAIN", "DEPENDS"]
+    liquidus_status: Literal["AVAILABLE", "NO_CROSSING", "OUT_OF_DOMAIN", "DEPENDS"]
+    labels: PhaseEquilibriumLabels
+    receipt: CalculationReceipt
+    refusal: EquilibriumRefusal | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return _json_compatible(self)
 
 
 def _json_compatible(value: Any) -> Any:
@@ -558,6 +594,77 @@ def _lp_solid_minimum(
     )
 
 
+def _dual_potential_ranges(
+    A: np.ndarray,
+    g: np.ndarray,
+    b: np.ndarray,
+    objective: float,
+    temperature_K: float,
+) -> tuple[tuple[tuple[float, float], ...], bool]:
+    """Bound each chemical potential independently on the dual optimal face.
+
+    Dividing μ and g by RT makes the inequalities dimensionless. The face is
+    Aᵀx≤g/(RT), bᵀx=Gmin/(RT), x=μ/(RT); coordinate LPs then give genuine
+    independent extrema instead of an arbitrary LP dual solution. Endpoint
+    feasibility is checked again in the original units before certification.
+    """
+    rt = R_J_MOL_K * temperature_K
+    scaled_g = g / rt
+    scaled_objective = objective / rt
+    equality = b[None, :]
+    equality_rhs = np.asarray([scaled_objective], dtype=float)
+    inequality = A.T
+    result: list[tuple[float, float]] = []
+    certified = True
+
+    for parent_index in range(A.shape[0]):
+        cost = np.zeros(A.shape[0], dtype=float)
+        cost[parent_index] = 1.0
+        endpoints: list[float] = []
+        endpoint_valid = True
+        for sign in (1.0, -1.0):
+            solved = linprog(
+                sign * cost,
+                A_ub=inequality,
+                b_ub=scaled_g,
+                A_eq=equality,
+                b_eq=equality_rhs,
+                bounds=[(None, None)] * A.shape[0],
+                method="highs",
+                options={"dual_feasibility_tolerance": 1.0e-10,
+                         "primal_feasibility_tolerance": 1.0e-10},
+            )
+            if solved.status == 3:
+                endpoints.append(-math.inf if sign > 0.0 else math.inf)
+                continue
+            if not solved.success:
+                endpoint_valid = False
+                break
+            x = np.asarray(solved.x, dtype=float)
+            mu = x * rt
+            slacks = g - A.T @ mu
+            face_error = abs(float(b @ mu) - objective)
+            face_scale = math.fsum(abs(float(value)) for value in b * mu) + abs(objective)
+            face_bound = (
+                _DUAL_FACE_REL_TOL * face_scale
+                + _roundoff_bound([*map(float, b * mu), objective], 8 * (len(b) + 1))
+            )
+            endpoint_valid = endpoint_valid and (
+                np.all(np.isfinite(mu))
+                and np.min(slacks, initial=0.0) >= -_DUAL_SLACK_TOL_RT * rt
+                and face_error <= face_bound
+            )
+            if not endpoint_valid:
+                break
+            endpoints.append(float(mu[parent_index]))
+        if not endpoint_valid or len(endpoints) != 2:
+            result.append((-math.inf, math.inf))
+            certified = False
+        else:
+            result.append((min(endpoints), max(endpoints)))
+    return tuple(result), certified
+
+
 def _minimize_logq_on_dual_face(
     A: np.ndarray,
     g: np.ndarray,
@@ -662,9 +769,11 @@ def _minimize_logq_on_dual_face(
     # The objective interval is the computed value at this supporting point;
     # a point with Q≤1 proves existence, regardless of optimizer display digits.
     interval = (logq - arithmetic_error, logq + arithmetic_error)
+    # logQ is convex and the dual-face constraints are linear, so an
+    # independently feasible point satisfying the KKT residual budgets is a
+    # global minimum even when SLSQP's status flag rejects a degenerate vertex.
     minimum_certified = (
-        result_success
-        and stationarity_scaled <= _DEFAULT_AFFINITY_TOL_LN
+        stationarity_scaled <= _DEFAULT_AFFINITY_TOL_LN
         and complementarity <= _DEFAULT_AFFINITY_TOL_LN
         and dual_violation <= _DUAL_SLACK_TOL_RT
         and face_residual <= face_error
@@ -786,6 +895,7 @@ def _positive_melt(
     pack: Any,
     inner_tol: float,
     max_iter: int,
+    y_init: Sequence[float] | None = None,
 ) -> Any:
     # The outer solver calls this only after the cancellation bound proves
     # every supplied liquid component positive; no floors or clipping occur.
@@ -799,6 +909,7 @@ def _positive_melt(
         allow_out_of_envelope=True,
         tol=inner_tol,
         max_iter=max_iter,
+        y_init=y_init,
     )
 
 
@@ -939,6 +1050,7 @@ def _active_residual(
     inner_tol: float,
     max_iter: int,
     balance_tol: float,
+    y_init: Sequence[float] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, Any] | None:
     trial = full_n.copy()
     if active:
@@ -946,7 +1058,9 @@ def _active_residual(
     liquid, _error = _safe_liquid(A, trial, b, balance_tol)
     if liquid is None:
         return None
-    melt = _positive_melt(liquid, parents, temperature_K, pack, inner_tol, max_iter)
+    melt = _positive_melt(
+        liquid, parents, temperature_K, pack, inner_tol, max_iter, y_init
+    )
     try:
         logs = _melt_logs(melt, parents)
     except ArithmeticError:
@@ -975,6 +1089,7 @@ def _solve_active_equalities(
     balance_tol: float,
     inner_tol: float,
     max_iter: int,
+    y_init: Sequence[float] | None = None,
 ) -> tuple[np.ndarray, bool, str, dict[str, float]]:
     if not active:
         return n, True, "converged", {}
@@ -983,7 +1098,7 @@ def _solve_active_equalities(
     for outer_iteration in range(_MAX_OUTER_ITERATIONS):
         current = _active_residual(
             n[active], active, n, A, b, states, parents, liquid_gibbs,
-            temperature_K, pack, inner_tol, max_iter, balance_tol,
+            temperature_K, pack, inner_tol, max_iter, balance_tol, y_init,
         )
         if current is None:
             return n, False, "liquid_boundary", diagnostics_map
@@ -1000,14 +1115,14 @@ def _solve_active_equalities(
             plus = base.copy(); plus[column] += step
             plus_result = _active_residual(
                 plus, active, n, A, b, states, parents, liquid_gibbs,
-                temperature_K, pack, probe_tol, max_iter, balance_tol,
+                temperature_K, pack, probe_tol, max_iter, balance_tol, y_init,
             )
             minus_result = None
             if base[column] >= step:
                 minus = base.copy(); minus[column] -= step
                 minus_result = _active_residual(
                     minus, active, n, A, b, states, parents, liquid_gibbs,
-                    temperature_K, pack, probe_tol, max_iter, balance_tol,
+                    temperature_K, pack, probe_tol, max_iter, balance_tol, y_init,
                 )
             if plus_result is not None and minus_result is not None:
                 return (plus_result[0] - minus_result[0]) / (2.0 * step)
@@ -1050,8 +1165,16 @@ def _solve_active_equalities(
         nullspace = right[rank:, :]
         diagnostics_map["active_jacobian_rank"] = float(rank)
         diagnostics_map["active_jacobian_nullity"] = float(nullspace.shape[0])
+        row_fit = (
+            left[:, :rank] @ (left[:, :rank].T @ residual)
+            if rank else np.zeros_like(residual)
+        )
+        inconsistent_component = float(np.linalg.norm(residual - row_fit, ord=np.inf))
+        diagnostics_map["rank_inconsistent_affinity_inf_ln"] = inconsistent_component
         if rank == 0:
-            return n, False, "no_active_jacobian", diagnostics_map
+            if norm <= affinity_tol_ln:
+                return n, True, "converged_rank_zero", diagnostics_map
+            return n, False, "singular_inconsistent_affinity", diagnostics_map
         if norm <= affinity_tol_ln:
             relative_rank_cutoff = rank_threshold / largest_singular if largest_singular else 1.0
             half_jacobian = np.zeros_like(jacobian)
@@ -1084,6 +1207,7 @@ def _solve_active_equalities(
                 tighter = _active_residual(
                     n[active], active, n, A, b, states, parents, liquid_gibbs,
                     temperature_K, pack, inner_tol * 0.1, max_iter, balance_tol,
+                    y_init,
                 )
             except (ImccRefusal, ArithmeticError, FloatingPointError):
                 tighter = None
@@ -1151,7 +1275,7 @@ def _solve_active_equalities(
             trial = _active_residual(
                 candidate_n[active], active, candidate_n, A, b, states, parents,
                 liquid_gibbs, temperature_K, pack, inner_tol, max_iter,
-                balance_tol,
+                balance_tol, y_init,
             )
             if trial is not None:
                 next_norm = float(np.linalg.norm(trial[0], ord=np.inf))
@@ -1167,7 +1291,13 @@ def _solve_active_equalities(
             diagnostics_map["linearized_residual_inf"] = float(
                 np.linalg.norm(scaled_jacobian @ step_result.x + residual, ord=np.inf)
             )
-            return n, False, "inconsistent_or_stalled", diagnostics_map
+            reason = (
+                "singular_inconsistent_affinity"
+                if rank < len(active)
+                and inconsistent_component > affinity_tol_ln
+                else "inconsistent_or_stalled"
+            )
+            return n, False, reason, diagnostics_map
     return n, False, "iteration_limit", diagnostics_map
 
 
@@ -1218,43 +1348,63 @@ def _phase_extent_ranges(
     residual_inventory: np.ndarray,
     scales: np.ndarray,
     tol: float,
-) -> tuple[dict[int, tuple[float, float]], bool, bool]:
-    # Active crystal equalities share one μ. Thus every feasible combination
-    # satisfying A_active n=b−l has the same solid Gibbs energy, and LP endpoint
-    # solves give the true amount range without selecting an arbitrary split.
+    *,
+    bulk_vector: np.ndarray | None = None,
+    liquid_vector: np.ndarray | None = None,
+) -> tuple[dict[int, tuple[float, float]], bool, bool, tuple[float, float]]:
+    # At an invariant, scaling the liquid inventory at fixed parent proportions
+    # leaves every activity unchanged: ideal-melt activities depend on normalized
+    # composition, not total moles. Add that liquid-scale direction to the
+    # balance face so LP endpoints recover lever-rule ranges instead of freezing
+    # the arbitrary liquid amount from the Newton iterate.
     result: dict[int, tuple[float, float]] = {}
     certified = True
-    if not indices:
-        return result, True, True
+    if bulk_vector is None or liquid_vector is None:
+        if not indices:
+            return result, True, True, (0.0, 0.0)
+        bulk_vector = residual_inventory.copy()
+        liquid_vector = np.zeros_like(bulk_vector)
+    liquid_total = float(np.sum(liquid_vector))
+    if liquid_total <= 0.0:
+        return {index: (0.0, math.inf) for index in indices}, False, False, (0.0, math.inf)
+    liquid_proportions = liquid_vector / liquid_total
+    bulk_scale = float(np.sum(bulk_vector))
+    if not math.isfinite(bulk_scale) or bulk_scale <= 0.0:
+        return {index: (0.0, math.inf) for index in indices}, False, False, (0.0, math.inf)
     selected_A = A[:, np.asarray(indices, dtype=int)]
-    active_rows = residual_inventory > 0.0
-    if not np.any(active_rows):
-        return {index: (0.0, 0.0) for index in indices}, False, False
-    row_scale = residual_inventory[active_rows]
-    column_scale = scales[np.asarray(indices, dtype=int)]
-    scaled_A = selected_A[active_rows, :] * column_scale[None, :] / row_scale[:, None]
+    phase_scales = scales[np.asarray(indices, dtype=int)]
+    variable_scales = np.concatenate((phase_scales, [bulk_scale]))
+    face_matrix = np.column_stack((selected_A, liquid_proportions))
+    scaled_A = face_matrix * variable_scales[None, :] / bulk_vector[:, None]
+    # HiGHS defaults to a 1e-7 feasibility tolerance, which can accept an
+    # endpoint outside this solver's tighter balance budget near liquidus.
+    # Its supported floor is 1e-10; every returned endpoint is still checked
+    # independently against the caller's balance tolerance in parent moles.
+    lp_tolerance = max(1.0e-10, min(1.0e-4, tol))
+    lp_options = {
+        "primal_feasibility_tolerance": lp_tolerance,
+        "dual_feasibility_tolerance": lp_tolerance,
+    }
     for local, global_index in enumerate(indices):
-        cost = np.zeros(len(indices)); cost[local] = 1.0
+        cost = np.zeros(len(indices) + 1); cost[local] = 1.0
         low = linprog(
-            cost, A_eq=scaled_A, b_eq=np.ones_like(row_scale),
-            bounds=(0.0, None), method="highs",
+            cost, A_eq=scaled_A, b_eq=np.ones_like(bulk_vector),
+            bounds=(0.0, None), method="highs", options=lp_options,
         )
         high = linprog(
-            -cost, A_eq=scaled_A, b_eq=np.ones_like(row_scale),
-            bounds=(0.0, None), method="highs",
+            -cost, A_eq=scaled_A, b_eq=np.ones_like(bulk_vector),
+            bounds=(0.0, None), method="highs", options=lp_options,
         )
         if low.success and high.success:
-            endpoints = (np.asarray(low.x) * column_scale, np.asarray(high.x) * column_scale)
-            amounts = (float(low.x[local]) * column_scale[local], float(high.x[local]) * column_scale[local])
+            endpoints = (np.asarray(low.x) * variable_scales,
+                         np.asarray(high.x) * variable_scales)
+            amounts = (float(low.x[local]) * phase_scales[local],
+                       float(high.x[local]) * phase_scales[local])
             valid = True
             for endpoint in endpoints:
-                inventory = selected_A @ endpoint
-                relative_error = np.abs(inventory - residual_inventory) / np.maximum(
-                    residual_inventory, np.finfo(float).tiny
-                )
-                if np.any((residual_inventory == 0.0) & (inventory != 0.0)):
-                    valid = False
-                if np.max(relative_error[active_rows], initial=0.0) > tol:
+                inventory = face_matrix @ endpoint
+                relative_error = np.abs(inventory - bulk_vector) / bulk_vector
+                if np.max(relative_error, initial=0.0) > tol:
                     valid = False
             lo, hi = amounts
             result[global_index] = (
@@ -1264,11 +1414,33 @@ def _phase_extent_ranges(
         else:
             result[global_index] = (0.0, math.inf)
             certified = False
+    liquid_cost = np.zeros(len(indices) + 1, dtype=float)
+    liquid_cost[-1] = 1.0
+    liquid_low = linprog(
+        liquid_cost, A_eq=scaled_A, b_eq=np.ones_like(bulk_vector),
+        bounds=(0.0, None), method="highs", options=lp_options,
+    )
+    liquid_high = linprog(
+        -liquid_cost, A_eq=scaled_A, b_eq=np.ones_like(bulk_vector),
+        bounds=(0.0, None), method="highs", options=lp_options,
+    )
+    if liquid_low.success and liquid_high.success:
+        liquid_range = (
+            max(0.0, float(liquid_low.x[-1]) * bulk_scale),
+            max(0.0, float(liquid_high.x[-1]) * bulk_scale),
+        )
+        for endpoint in (np.asarray(liquid_low.x) * variable_scales,
+                         np.asarray(liquid_high.x) * variable_scales):
+            relative_error = np.abs(face_matrix @ endpoint - bulk_vector) / bulk_vector
+            certified = certified and np.max(relative_error, initial=0.0) <= tol
+    else:
+        liquid_range = (0.0, math.inf)
+        certified = False
     unique = certified and all(
         high - low <= tol * scales[index] + _roundoff_bound((low, high), 8)
         for index, (low, high) in result.items()
     )
-    return result, unique, certified
+    return result, unique, certified, liquid_range
 
 
 def _make_saturation_rows(
@@ -1336,6 +1508,8 @@ def _result_receipt(
             "inner_activity_error_tolerance_ln": _INNER_ACTIVITY_ERROR_TOL_LN,
             "inner_correction_tolerance_ln": _INNER_CORRECTION_TOL_LN,
             "dual_slack_tolerance_over_RT": _DUAL_SLACK_TOL_RT,
+            "dual_face_relative_tolerance": _DUAL_FACE_REL_TOL,
+            "activity_identifiability_tolerance_ln": _INNER_ACTIVITY_ERROR_TOL_LN,
             "pressure_bar": _PRESSURE_BAR,
             **dict(solver),
         },
@@ -1499,6 +1673,7 @@ def _independent_kkt_recheck(
     absent_tol_ln: float,
     dual_mu: np.ndarray | None = None,
     gas_pack: Any | None = None,
+    y_init: Sequence[float] | None = None,
 ) -> tuple[bool, dict[str, float], Any | None, dict[str, float]]:
     # This verifier deliberately reconstructs balances and affinities from the
     # returned vectors and a fresh melt solve; it consumes none of the outer
@@ -1517,7 +1692,7 @@ def _independent_kkt_recheck(
         if np.any(liquid_vector <= 0.0):
             return False, {"balance_relative_inf": math.inf}, None, affinities
         melt = _positive_melt(
-            liquid_vector, parents, temperature_K, pack, inner_tol, 200
+            liquid_vector, parents, temperature_K, pack, inner_tol, 200, y_init
         )
         activities = np.asarray([melt.activity(name) for name in parents], dtype=float)
         if np.any(activities <= 0.0):
@@ -1704,12 +1879,58 @@ def _positive_branch(
     affinity_tol_ln: float,
     inner_tol: float,
     max_iter: int,
+    warm_start: PhaseEquilibriumResult | None = None,
 ) -> PhaseEquilibriumResult:
     b = np.asarray([bulk[name] for name in parents], dtype=float)
     n = np.zeros(A.shape[1], dtype=float)
     scales = _scaled_phase_amounts(A, b) if A.shape[1] else np.zeros(0)
     phase_ids = [state.candidate.phase_id for state in states]
     phase_index = {phase: i for i, phase in enumerate(phase_ids)}
+    warm_y: np.ndarray | None = None
+    if warm_start is not None and warm_start.labels.validity != "OUT_OF_DOMAIN":
+        previous_melt = warm_start.melt
+        if previous_melt is not None:
+            previous_x = np.asarray(getattr(previous_melt, "parent_x_star", ()), dtype=float)
+            kernel_names = tuple(_kernel_parent_names(pack))
+            if previous_x.size == len(kernel_names):
+                selected_x = np.asarray([previous_x[kernel_names.index(name)] for name in parents])
+                if np.all(np.isfinite(selected_x)) and np.all(selected_x > 0.0):
+                    warm_y = np.log(selected_x)
+        if not warm_start.crystal_only_minimum:
+            candidate_amounts: Mapping[str, float] = warm_start.solid_mol or {}
+            if not candidate_amounts:
+                candidate_amounts = warm_start.receipt.solver.get(
+                    "crystal_only_candidate_amounts_mol", {}
+                )
+            warm_ids = {
+                phase for phase, presence in warm_start.phase_presence.items()
+                if presence == "present"
+            }
+            for phase in warm_start.saturated_candidates:
+                if warm_start.phase_amount_ranges_mol.get(phase, (0.0, 0.0))[1] > 0.0:
+                    warm_ids.add(phase)
+            for phase in sorted(warm_ids):
+                index = phase_index.get(phase)
+                if index is None:
+                    continue
+                amount = float(candidate_amounts.get(phase, 0.0))
+                if amount <= 0.0:
+                    low, high = warm_start.phase_amount_ranges_mol.get(phase, (0.0, 0.0))
+                    amount = (low + high) / 2.0 if math.isfinite(high) else low
+                if math.isfinite(amount) and amount > 0.0:
+                    n[index] = amount
+            consumed = A @ n
+            ratios = [float(b[i] / consumed[i]) for i in range(len(b)) if consumed[i] > 0.0]
+            if np.any(n > 0.0):
+                n *= min(0.9, 0.9 * min(ratios, default=1.0))
+            active = sorted(
+                (index for index, amount in enumerate(n) if amount > 0.0),
+                key=lambda index: phase_ids[index],
+            )
+        else:
+            active = []
+    else:
+        active = []
     history: list[tuple[str, ...]] = []
     history_seen: set[tuple[str, ...]] = set()
     state_history_seen: set[tuple[tuple[str, ...], tuple[float, ...]]] = set()
@@ -1740,7 +1961,6 @@ def _positive_branch(
     # Parent columns requiring an exact-zero bulk component were removed before
     # this function, so every column below is feasible at a sufficiently small
     # positive extent.
-    active: list[int] = []
     for _restart in range(_MAX_ACTIVE_RESTARTS):
         active_key = tuple(sorted(phase_ids[index] for index in active))
         scaled_state = tuple(map(float, np.round(n / scales, decimals=14)))
@@ -1772,7 +1992,8 @@ def _positive_branch(
             )
         try:
             melt = _positive_melt(
-                current_liquid, parents, temperature_K, pack, inner_tol, max_iter
+                current_liquid, parents, temperature_K, pack, inner_tol, max_iter,
+                warm_y,
             )
             logs = _melt_logs(melt, parents)
         except (ImccRefusal, ArithmeticError) as exc:
@@ -1819,6 +2040,22 @@ def _positive_branch(
             tie_breaks.append("drop_resolved_zero:" + ",".join(phase_ids[i] for i in sorted(zero_active)))
             continue
 
+        undersaturated_active = [
+            index for index in active
+            if affinities.get(phase_ids[index], math.inf) < -affinity_tol_ln
+        ]
+        if undersaturated_active:
+            drop = min(
+                undersaturated_active,
+                key=lambda index: (affinities[phase_ids[index]], phase_ids[index]),
+            )
+            n[drop] = 0.0
+            active.remove(drop)
+            if pending_add == drop:
+                pending_add = None
+            tie_breaks.append("drop_undersaturated:" + phase_ids[drop])
+            continue
+
         active_bad = [
             index for index in active
             if abs(affinities.get(phase_ids[index], math.inf)) > affinity_tol_ln
@@ -1830,7 +2067,7 @@ def _positive_branch(
                 solved_n, converged, reason, _solver_residuals = _solve_active_equalities(
                     n.copy(), active.copy(), A, b, states, parents, liquid_gibbs,
                     temperature_K, pack, affinity_tol_ln, balance_tol, inner_tol,
-                    max_iter,
+                    max_iter, warm_y,
                 )
             if _solver_residuals:
                 solver_error_history.append(dict(_solver_residuals))
@@ -1857,6 +2094,8 @@ def _positive_branch(
                     pure_digest=pure_digest, explicit_candidates=explicit_candidates,
                     refusal=EquilibriumRefusal(
                         "active_set_cycle" if cycle_detected else
+                        "singular_inconsistent_affinity"
+                        if reason == "singular_inconsistent_affinity" else
                         "resolution_unresolved" if reason == "error_budget_unresolved" else
                         "active_set_incompatibility",
                         "Active crystal equalities could not be solved within the affinity tolerance.",
@@ -1956,6 +2195,8 @@ def _positive_branch(
                 pure_digest=pure_digest, explicit_candidates=explicit_candidates,
                 refusal=EquilibriumRefusal(
                     "active_set_cycle" if cycle_detected else
+                    "singular_inconsistent_affinity"
+                    if reason == "singular_inconsistent_affinity" else
                     "resolution_unresolved" if trial_error_budget else
                     "active_set_incompatibility",
                     "No deterministic one- or two-phase replacement set passed all crystal inequalities.",
@@ -1997,6 +2238,7 @@ def _positive_branch(
             balance_tol=balance_tol, affinity_tol_ln=affinity_tol_ln,
             absent_tol_ln=affinity_tol_ln,
             gas_pack=gas_pack,
+            y_init=warm_y,
         )
         if not passed:
             return _empty_result(
@@ -2012,8 +2254,14 @@ def _positive_branch(
             )
         recheck["independent_kkt_passed"] = 1.0
         residual_inventory = b - current_liquid
-        ranges, unique, ranges_certified = _phase_extent_ranges(
-            A, n, active, residual_inventory, scales, balance_tol
+        saturated_indices = [
+            index for index, state in enumerate(states)
+            if abs(checked_affinities.get(state.candidate.phase_id, math.inf))
+            <= affinity_tol_ln
+        ]
+        ranges, unique, ranges_certified, liquid_scale_range = _phase_extent_ranges(
+            A, n, saturated_indices, residual_inventory, scales, balance_tol,
+            bulk_vector=b, liquid_vector=current_liquid,
         )
         state_amounts: dict[str, float] = {}
         state_ranges: dict[str, tuple[float, float]] = {}
@@ -2135,6 +2383,7 @@ def _positive_branch(
                 "deterministic_tie_breaks": tie_breaks,
                 "outer_iterations": len(history),
                 "phase_amount_ranges_certified": ranges_certified,
+                "liquid_parent_scale_range_mol": liquid_scale_range,
                 "kkt_recheck": recheck,
             },
             gas_pack=gas_pack,
@@ -2143,8 +2392,20 @@ def _positive_branch(
             temperature_K=temperature_K,
             pressure_bar=_PRESSURE_BAR,
             bulk_parent_mol=bulk,
-            liquid_parent_mol=positive,
-            liquid_mass_fraction=_mass_fraction(positive, bulk),
+            liquid_parent_mol=(
+                positive
+                if liquid_scale_range[1] - liquid_scale_range[0]
+                <= balance_tol * float(np.sum(b))
+                + _roundoff_bound(liquid_scale_range, 8)
+                else None
+            ),
+            liquid_mass_fraction=(
+                _mass_fraction(positive, bulk)
+                if liquid_scale_range[1] - liquid_scale_range[0]
+                <= balance_tol * float(np.sum(b))
+                + _roundoff_bound(liquid_scale_range, 8)
+                else None
+            ),
             solid_mol=state_amounts if unique else None,
             phase_amount_ranges_mol=state_ranges,
             phase_amounts_unique=unique,
@@ -2249,6 +2510,9 @@ def _solid_result(
     amounts: dict[str, float] = {}
     scales = _scaled_phase_amounts(A, b)
     amount_unique = lp.amount_ranges_certified
+    dual_ranges_J, dual_ranges_certified = _dual_potential_ranges(
+        A, g, b, lp.objective_J, temperature_K
+    )
     phase_to_index = {
         state.candidate.phase_id: index for index, state in enumerate(states)
     }
@@ -2307,21 +2571,25 @@ def _solid_result(
 
     activity_ranges: dict[str, tuple[float, float]] = {}
     activities: dict[str, float] = {}
-    present_indices = np.flatnonzero(lp.amounts > balance_tol * scales)
-    if present_indices.size:
-        # Complementary slackness makes every positive-amount crystal equality
-        # tight on the full dual optimal face. If their stoichiometric columns
-        # span the parent space, those equalities pin μ and therefore each a_i;
-        # this avoids computing the dual-face min/max ranges reserved for a
-        # separate boundary analysis. μ and G are J/mol, so division by RT is
-        # dimensionless; a pure one-parent solid gives its standard activity.
-        present_matrix = A[:, present_indices]
-        if np.linalg.matrix_rank(present_matrix) == len(parents):
-            log_activities = (mu_q - liquid_gibbs) / (R_J_MOL_K * temperature_K)
-            for parent, log_activity in zip(parents, log_activities, strict=True):
-                value = float(log_activity)
-                activities[parent] = math.exp(value)
-                activity_ranges[parent] = (value, value)
+    rt = R_J_MOL_K * temperature_K
+    for parent_index, parent in enumerate(parents):
+        low_mu, high_mu = dual_ranges_J[parent_index]
+        low_log = (low_mu - liquid_gibbs[parent_index]) / rt
+        high_log = (high_mu - liquid_gibbs[parent_index]) / rt
+        activity_ranges[parent] = (float(low_log), float(high_log))
+        if (
+            dual_ranges_certified
+            and math.isfinite(low_log)
+            and math.isfinite(high_log)
+            and high_log - low_log <= _INNER_ACTIVITY_ERROR_TOL_LN
+        ):
+            value = low_log + (high_log - low_log) / 2.0
+            try:
+                activity = math.exp(value)
+            except OverflowError:
+                continue
+            if math.isfinite(activity) and activity > 0.0:
+                activities[parent] = activity
 
     affinities: dict[str, float] = {}
     affinity_ranges: dict[str, tuple[float, float]] = {}
@@ -2380,8 +2648,10 @@ def _solid_result(
     ))
     equilibrium_state_certified = (
         not out_of_domain and q_certified and passed and gap <= gap_bound
-        and dual_feasible and lp.amount_ranges_certified
+        and dual_feasible and lp.amount_ranges_certified and dual_ranges_certified
     )
+    if equilibrium_state_certified:
+        recheck["independent_kkt_passed"] = 1.0
     if out_of_domain:
         refusal = EquilibriumRefusal(
             "liquid_absence_not_certified",
@@ -2435,6 +2705,15 @@ def _solid_result(
         )
         validity = "DEPENDS"
         axes = ("phase_amount_ranges",)
+    elif not dual_ranges_certified:
+        refusal = EquilibriumRefusal(
+            "resolution_unresolved",
+            "A dual optimal-face potential range solve did not resolve within numerical precision.",
+            ("activity_ranges_ln",),
+            recheck,
+        )
+        validity = "DEPENDS"
+        axes = ("activity_ranges_ln",)
     elif missing or explicit_candidates:
         refusal = EquilibriumRefusal(
             "missing_phase_data",
@@ -2491,6 +2770,10 @@ def _solid_result(
             "solid_lp_primal_dual_gap_J": gap,
             "solid_lp_primal_dual_gap_bound_J": gap_bound,
             "phase_amount_ranges_certified": lp.amount_ranges_certified,
+            "dual_potential_ranges_J_mol": dict(zip(
+                parents, dual_ranges_J, strict=True,
+            )),
+            "dual_potential_ranges_certified": dual_ranges_certified,
             "kkt_recheck": recheck,
         },
         gas_pack=gas_pack,
@@ -2544,7 +2827,7 @@ def _solid_result(
     )
 
 
-def equilibrate(
+def _equilibrate_one(
     bulk: Mapping[str, float] | Sequence[float],
     T_K: float,
     *,
@@ -2554,6 +2837,7 @@ def equilibrate(
     affinity_tol_ln: float = _DEFAULT_AFFINITY_TOL_LN,
     inner_tol: float = _INNER_BALANCE_TOL,
     max_iter: int = 100,
+    warm_start: PhaseEquilibriumResult | None = None,
 ) -> PhaseEquilibriumResult:
     """Equilibrate oxide-parent moles with supported stoichiometric crystals.
 
@@ -2895,7 +3179,7 @@ def equilibrate(
                 inner_tol=float(inner_tol),
                 optimizer_residuals={**lp_diagnostics, **dict(q_diagnostics)},
             )
-            if q_certified or (minimum_certified and interval_straddles):
+            if q_certified:
                 return solid_diagnostic
 
     result = _positive_branch(
@@ -2919,9 +3203,464 @@ def equilibrate(
         affinity_tol_ln=float(affinity_tol_ln),
         inner_tol=float(inner_tol),
         max_iter=int(max_iter),
+        warm_start=warm_start,
     )
     if result.kkt_recheck.get("independent_kkt_passed") == 1.0:
         return result
     if solid_diagnostic is not None:
         return solid_diagnostic
     return result
+
+
+def equilibrate(
+    bulk: Mapping[str, float] | Sequence[float],
+    T_K: float,
+    *,
+    candidates: Sequence[str | CrystalCandidate] | None = None,
+    pack: Any | None = None,
+    tol: float = _DEFAULT_BALANCE_TOL,
+    affinity_tol_ln: float = _DEFAULT_AFFINITY_TOL_LN,
+    inner_tol: float = _INNER_BALANCE_TOL,
+    max_iter: int = 100,
+) -> PhaseEquilibriumResult:
+    """Equilibrate an oxide bulk at one temperature with fresh solver starts."""
+    return _equilibrate_one(
+        bulk, T_K, candidates=candidates, pack=pack, tol=tol,
+        affinity_tol_ln=affinity_tol_ln, inner_tol=inner_tol,
+        max_iter=max_iter,
+    )
+
+
+def equilibrate_sweep(
+    bulk: Mapping[str, float] | Sequence[float],
+    temperatures_K: Sequence[float],
+    *,
+    candidates: Sequence[str | CrystalCandidate] | None = None,
+    pack: Any | None = None,
+    tol: float = _DEFAULT_BALANCE_TOL,
+    affinity_tol_ln: float = _DEFAULT_AFFINITY_TOL_LN,
+    inner_tol: float = _INNER_BALANCE_TOL,
+    max_iter: int = 100,
+) -> tuple[PhaseEquilibriumResult, ...]:
+    """Solve temperatures in order, seeding each point from the previous result.
+
+    Stable phase IDs and the previous kernel parent root seed the next point.
+    ``equilibrate``'s domain and independent KKT checks still run at every
+    temperature; the seed affects convergence only, never the certificate.
+    """
+    results: list[PhaseEquilibriumResult] = []
+    previous: PhaseEquilibriumResult | None = None
+    for temperature in temperatures_K:
+        current = _equilibrate_one(
+            bulk, temperature, candidates=candidates, pack=pack, tol=tol,
+            affinity_tol_ln=affinity_tol_ln, inner_tol=inner_tol,
+            max_iter=max_iter, warm_start=previous,
+        )
+        results.append(current)
+        previous = current
+    return tuple(results)
+
+
+@dataclass(frozen=True)
+class _BoundaryContext:
+    bulk: Mapping[str, float]
+    parents: tuple[str, ...]
+    states: tuple[_CandidateState, ...]
+    all_states: tuple[_CandidateState, ...]
+    matrix: np.ndarray
+    crystal_gibbs: np.ndarray
+    liquid_gibbs: np.ndarray
+    pack: Any
+    gas_pack: Any
+    missing: tuple[str, ...]
+
+
+def _boundary_context(
+    bulk: Mapping[str, float] | Sequence[float],
+    temperature_K: float,
+    candidates: Sequence[str | CrystalCandidate] | None,
+    pack: Any | None,
+) -> _BoundaryContext:
+    if not _LIQUID_DOMAIN_K[0] <= temperature_K <= _LIQUID_DOMAIN_K[1]:
+        raise ValueError("liquid-dependent boundaries are outside the 1700–3000 K domain")
+    selected_pack = _loaded_pack(pack)
+    if _has_active_excess(selected_pack):
+        raise ValueError("active excess-Gibbs terms are outside the ideal-pack boundary model")
+    kernel = (
+        selected_pack.kernel_datapack
+        if isinstance(selected_pack, ImccLoadedDatapack) else selected_pack
+    )
+    parent_names = tuple(kernel.parent_oxides)
+    normalized_bulk, parents = _parse_bulk(bulk, parent_names)
+    gas_pack, _ = diagnostics._crystal_thermo_context(None)
+    all_states, _crystal_digest, _pure_digest, gas_pack, unavailable, _explicit = (
+        _resolve_candidates(candidates, temperature_K, gas_pack)
+    )
+    zero_bulk = set(parent_names) - set(normalized_bulk)
+    infeasible = {
+        state.candidate.phase_id for state in all_states
+        if set(state.candidate.stoichiometry) & zero_bulk
+    }
+    if infeasible:
+        all_states = tuple(
+            replace(state, available=False, reason="infeasible")
+            if state.candidate.phase_id in infeasible else state
+            for state in all_states
+        )
+        unavailable = tuple(phase for phase in unavailable if phase not in infeasible)
+    redox = [state.candidate.phase_id for state in all_states if _redox_candidate(state.candidate)]
+    if redox:
+        raise ValueError("redox-sensitive crystal phases are unsupported")
+    states, _aliases, _rejected = _polymorph_filter(
+        all_states, temperature_K, _DEFAULT_AFFINITY_TOL_LN
+    )
+    states, matrix, crystal_gibbs, unsupported = _candidate_matrix(
+        states, parents, parent_names, normalized_bulk
+    )
+    liquid_gibbs = _melt_liquid_standards(parents, temperature_K, gas_pack)
+    return _BoundaryContext(
+        normalized_bulk, parents, states, all_states, matrix, crystal_gibbs,
+        liquid_gibbs, selected_pack, gas_pack,
+        tuple(sorted(set(unavailable) | set(unsupported))),
+    )
+
+
+def _solidus_boundary_residual(
+    bulk: Mapping[str, float] | Sequence[float],
+    temperature_K: float,
+    candidates: Sequence[str | CrystalCandidate] | None,
+    pack: Any | None,
+    tol: float,
+    inner_tol: float,
+) -> float:
+    """Return min-face log(Q), whose zero is the solidus certificate boundary."""
+    context = _boundary_context(bulk, temperature_K, candidates, pack)
+    if context.missing:
+        raise ValueError("missing crystal functions prevent a solidus certificate")
+    b = np.asarray([context.bulk[name] for name in context.parents], dtype=float)
+    lp = _lp_solid_minimum(context.matrix, context.crystal_gibbs, b, tol)
+    if lp is None:
+        raise ValueError("no feasible fully-solid candidate face exists")
+    parent_indices = [tuple(_kernel_parent_names(context.pack)).index(name) for name in context.parents]
+    _mu, logq, _interval, _certified, diagnostics_map = _minimize_logq_on_dual_face(
+        context.matrix, context.crystal_gibbs, b, lp.objective_J,
+        lp.chemical_potentials, context.liquid_gibbs, temperature_K,
+        context.pack, parent_indices,
+    )
+    if diagnostics_map.get("logQ_minimum_certified", 0.0) != 1.0:
+        raise ValueError("the dual-face log(Q) minimum is unresolved")
+    return float(logq)
+
+
+def _liquidus_boundary_residual(
+    bulk: Mapping[str, float] | Sequence[float],
+    temperature_K: float,
+    candidates: Sequence[str | CrystalCandidate] | None,
+    pack: Any | None,
+    inner_tol: float,
+    max_iter: int,
+    y_init: Sequence[float] | None = None,
+) -> float:
+    """Return the largest crystal affinity in the hypothetical all-liquid state."""
+    context = _boundary_context(bulk, temperature_K, candidates, pack)
+    if context.missing:
+        raise ValueError("missing crystal functions prevent a liquidus certificate")
+    liquid = np.asarray([context.bulk[name] for name in context.parents], dtype=float)
+    melt = _positive_melt(
+        liquid, context.parents, temperature_K, context.pack,
+        inner_tol, max_iter, y_init,
+    )
+    logs = _melt_logs(melt, context.parents)
+    by_parent = {name: index for index, name in enumerate(context.parents)}
+    affinities = [
+        _phase_affinity_from_melt(
+            state.candidate, by_parent, context.liquid_gibbs, logs, temperature_K
+        )
+        for state in context.all_states
+        if state.available
+        and not (set(state.candidate.stoichiometry) - set(context.parents))
+    ]
+    if not affinities:
+        return -math.inf
+    return float(max(affinities))
+
+
+def _boundary_endpoint_status(result: PhaseEquilibriumResult) -> str:
+    if result.refusal is not None:
+        return f"{result.labels.validity}:{result.refusal.code}"
+    return result.labels.validity
+
+
+def _boundary_is_certified(result: PhaseEquilibriumResult) -> bool:
+    return (
+        result.labels.validity == "IN"
+        and result.refusal is None
+        and result.kkt_recheck.get("independent_kkt_passed") == 1.0
+    )
+
+
+def phase_boundary_brackets(
+    bulk: Mapping[str, float] | Sequence[float],
+    T_low_K: float,
+    T_high_K: float,
+    pack: Any | None = None,
+    *,
+    candidates: Sequence[str | CrystalCandidate] | None = None,
+    scan_points: int = 21,
+    tol: float = _DEFAULT_BALANCE_TOL,
+    affinity_tol_ln: float = _DEFAULT_AFFINITY_TOL_LN,
+    inner_tol: float = _INNER_BALANCE_TOL,
+    max_iter: int = 100,
+) -> PhaseBoundaryResult:
+    """Scan every sampled phase-set change, then refine valid roots with Brent.
+
+    Samples outside 1700–3000 K remain OUT_OF_DOMAIN. A bracket is never
+    bridged across a refused or unresolved equilibrium point, and each Brent
+    evaluation reruns equilibrium/domain checks before using its residual.
+    Multiple heating crossings are retained in temperature order.
+    """
+    low = float(T_low_K)
+    high = float(T_high_K)
+    if (
+        not math.isfinite(low) or not math.isfinite(high) or low >= high
+        or scan_points < 2
+    ):
+        raise ValueError("temperature bounds must be finite and increasing; scan_points must be at least two")
+    temperatures = tuple(map(float, np.linspace(low, high, int(scan_points))))
+    results = equilibrate_sweep(
+        bulk, temperatures, candidates=candidates, pack=pack, tol=tol,
+        affinity_tol_ln=affinity_tol_ln, inner_tol=inner_tol, max_iter=max_iter,
+    )
+    out_of_domain_seen = any(
+        result.labels.validity == "OUT_OF_DOMAIN"
+        and "temperature_K" in result.labels.out_of_domain_axes
+        for result in results
+    )
+    depends_seen = any(
+        result.labels.validity == "DEPENDS" or result.refusal is not None
+        for result in results
+        if result.labels.validity != "OUT_OF_DOMAIN"
+    )
+    residual_cache: dict[tuple[str, float], float] = {}
+    result_cache = {temperature: result for temperature, result in zip(temperatures, results, strict=True)}
+
+    def residual(kind: Literal["solidus", "liquidus"], temperature: float) -> float:
+        key = (kind, float(temperature))
+        if key in residual_cache:
+            return residual_cache[key]
+        state = result_cache.get(float(temperature))
+        if state is None:
+            state = equilibrate(
+                bulk, temperature, candidates=candidates, pack=pack, tol=tol,
+                affinity_tol_ln=affinity_tol_ln, inner_tol=inner_tol,
+                max_iter=max_iter,
+            )
+            result_cache[float(temperature)] = state
+        if state.labels.validity == "OUT_OF_DOMAIN":
+            raise ValueError("temperature_K is outside the liquid-equilibrium domain")
+        if state.refusal is not None and state.refusal.code != "incipient_liquid_unresolved":
+            raise ValueError(
+                f"boundary point at {temperature:g} K refused: {state.refusal.code}"
+            )
+        if state.refusal is None and not _boundary_is_certified(state):
+            raise ValueError("boundary point lacks an independent KKT certificate")
+        if kind == "solidus":
+            value = _solidus_boundary_residual(
+                bulk, temperature, candidates, pack, tol, inner_tol
+            )
+        else:
+            y_init = None
+            if state.melt is not None:
+                x = np.asarray(getattr(state.melt, "parent_x_star", ()), dtype=float)
+                names = tuple(_kernel_parent_names(_loaded_pack(pack)))
+                active_names = tuple(name for name in names if name in state.bulk_parent_mol)
+                if x.size == len(names):
+                    selected_x = np.asarray([x[names.index(name)] for name in active_names])
+                    if np.all(np.isfinite(selected_x)) and np.all(selected_x > 0.0):
+                        y_init = np.log(selected_x)
+            value = _liquidus_boundary_residual(
+                bulk, temperature, candidates, pack, inner_tol, max_iter, y_init
+            )
+        residual_cache[key] = value
+        if (
+            state.refusal is not None
+            and abs(value) > _LOGQ_COEXISTENCE_TOL
+        ):
+            raise ValueError("an unresolved equilibrium point is not the boundary root")
+        return value
+
+    def refine(
+        kind: Literal["solidus", "liquidus"],
+        left: float,
+        right: float,
+        left_state: PhaseEquilibriumResult,
+        right_state: PhaseEquilibriumResult,
+    ) -> PhaseBoundaryCrossing:
+        f_left = residual(kind, left)
+        f_right = residual(kind, right)
+        if not (math.isfinite(f_left) and math.isfinite(f_right)):
+            raise ValueError("boundary residual is not finite at a scan endpoint")
+        if f_left == 0.0:
+            root = left
+        elif f_right == 0.0:
+            root = right
+        elif f_left * f_right > 0.0:
+            raise ValueError("scan phase change does not bracket the thermodynamic root")
+        else:
+            root = float(brentq(
+                lambda value: residual(kind, float(value)),
+                left, right, xtol=1.0e-8, rtol=4.0 * np.finfo(float).eps,
+                maxiter=100,
+            ))
+        root_residual = residual(kind, root)
+        if abs(root_residual) <= 8.0 * np.finfo(float).eps:
+            final_left = final_right = root
+            final_residuals = (root_residual, root_residual)
+        else:
+            radius = min(0.005, (right - left) / 2.0)
+            final_left = final_right = root
+            final_residuals = (root_residual, root_residual)
+            while radius <= 0.05 + np.finfo(float).eps:
+                candidate_left = max(left, root - radius)
+                candidate_right = min(right, root + radius)
+                candidate_f_left = residual(kind, candidate_left)
+                candidate_f_right = residual(kind, candidate_right)
+                if candidate_f_left * candidate_f_right <= 0.0:
+                    final_left, final_right = candidate_left, candidate_right
+                    final_residuals = (candidate_f_left, candidate_f_right)
+                    break
+                radius *= 2.0
+            if final_right - final_left > 0.1 + 1.0e-12:
+                raise ValueError("refined boundary bracket exceeds 0.1 K")
+        lower_phase_set = tuple(sorted(
+            phase for phase, presence in left_state.phase_presence.items()
+            if presence == "present"
+        ))
+        upper_phase_set = tuple(sorted(
+            phase for phase, presence in right_state.phase_presence.items()
+            if presence == "present"
+        ))
+        return PhaseBoundaryCrossing(
+            kind, (float(final_left), float(final_right)), root, root_residual,
+            _boundary_endpoint_status(result_cache[float(final_left)]),
+            _boundary_endpoint_status(result_cache[float(final_right)]),
+            lower_phase_set, upper_phase_set, final_residuals,
+        )
+
+    solidus_crossings: list[PhaseBoundaryCrossing] = []
+    liquidus_crossings: list[PhaseBoundaryCrossing] = []
+    refinement_failed = False
+    refinement_errors: list[str] = []
+    for index in range(len(results) - 1):
+        left_state, right_state = results[index], results[index + 1]
+        if not (_boundary_is_certified(left_state) and _boundary_is_certified(right_state)):
+            continue
+        left_liquid = left_state.liquid_parent_mol is not None
+        right_liquid = right_state.liquid_parent_mol is not None
+        if not left_liquid and right_liquid and not left_state.crystal_only_minimum:
+            try:
+                solidus_crossings.append(refine(
+                    "solidus", temperatures[index], temperatures[index + 1],
+                    left_state, right_state,
+                ))
+            except (ValueError, ArithmeticError, ImccRefusal) as exc:
+                refinement_failed = True
+                refinement_errors.append(
+                    f"solidus:{temperatures[index]:g}-{temperatures[index + 1]:g}:{exc}"
+                )
+        left_may_have_solid = any(
+            value in ("present", "unresolved")
+            for value in left_state.phase_presence.values()
+        )
+        right_crystals_absent = all(
+            value in ("absent", "infeasible")
+            for value in right_state.phase_presence.values()
+        )
+        if left_may_have_solid and right_crystals_absent and right_liquid:
+            try:
+                liquidus_crossings.append(refine(
+                    "liquidus", temperatures[index], temperatures[index + 1],
+                    left_state, right_state,
+                ))
+            except (ValueError, ArithmeticError, ImccRefusal) as exc:
+                refinement_failed = True
+                refinement_errors.append(
+                    f"liquidus:{temperatures[index]:g}-{temperatures[index + 1]:g}:{exc}"
+                )
+
+    solidus_status: Literal["AVAILABLE", "NO_CROSSING", "OUT_OF_DOMAIN", "DEPENDS"] = (
+        "AVAILABLE" if solidus_crossings else
+        "DEPENDS" if depends_seen or refinement_failed else
+        "OUT_OF_DOMAIN" if out_of_domain_seen else "NO_CROSSING"
+    )
+    liquidus_status: Literal["AVAILABLE", "NO_CROSSING", "OUT_OF_DOMAIN", "DEPENDS"] = (
+        "AVAILABLE" if liquidus_crossings else
+        "DEPENDS" if depends_seen or refinement_failed else
+        "OUT_OF_DOMAIN" if out_of_domain_seen else "NO_CROSSING"
+    )
+    base_labels = results[0].labels
+    validity: Literal["IN", "OUT_OF_DOMAIN", "DEPENDS"] = (
+        "DEPENDS" if depends_seen or refinement_failed else
+        "OUT_OF_DOMAIN" if out_of_domain_seen else "IN"
+    )
+    axes = ("temperature_K",) if out_of_domain_seen else ()
+    labels = replace(
+        base_labels,
+        validity=validity,
+        out_of_domain_axes=axes,
+        notices=tuple(dict.fromkeys((
+            *base_labels.notices,
+            "temperature_scan_refined_by_phase_set_changes",
+            *(('liquid_dependent_results_below_1700_K_out_of_domain',) if low < _LIQUID_DOMAIN_K[0] else ()),
+        ))),
+    )
+    refusal = None
+    if depends_seen or refinement_failed:
+        refusal = EquilibriumRefusal(
+            "boundary_refinement_unresolved",
+            "A required scan point or phase-boundary refinement was refused or unresolved.",
+            tuple(axis for axis, present in (
+                ("solidus", solidus_status == "DEPENDS"),
+                ("liquidus", liquidus_status == "DEPENDS"),
+            ) if present),
+            {"refinement_failed": float(refinement_failed)},
+        )
+    elif out_of_domain_seen:
+        refusal = EquilibriumRefusal(
+            "out_of_domain",
+            "Liquid-dependent boundaries outside 1700–3000 K are OUT_OF_DOMAIN on temperature_K.",
+            ("temperature_K",),
+        )
+    first_receipt = results[0].receipt
+    receipt = build_calculation_receipt(
+        request={
+            "bulk_parent_mol": dict(results[0].bulk_parent_mol),
+            "temperature_range_K": (low, high),
+            "pressure_bar": _PRESSURE_BAR,
+        },
+        data_digests=first_receipt.data_digests,
+        solver={
+            "method": "phase_set_scan_with_brent_refinement",
+            "scan_points": int(scan_points),
+            "solidus_brackets_K": tuple(item.bracket_K for item in solidus_crossings),
+            "liquidus_brackets_K": tuple(item.bracket_K for item in liquidus_crossings),
+            "solidus_status": solidus_status,
+            "liquidus_status": liquidus_status,
+            "scan_endpoint_statuses": tuple(
+                _boundary_endpoint_status(result) for result in results
+            ),
+            "scan_phase_sets": tuple(
+                tuple(sorted(
+                    phase for phase, presence in result.phase_presence.items()
+                    if presence == "present"
+                ))
+                for result in results
+            ),
+            "boundary_refinement_errors": tuple(refinement_errors),
+            "pressure_bar": _PRESSURE_BAR,
+        },
+    )
+    return PhaseBoundaryResult(
+        _PRESSURE_BAR, tuple(solidus_crossings), tuple(liquidus_crossings),
+        solidus_status, liquidus_status, labels, receipt, refusal,
+    )
