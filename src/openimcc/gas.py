@@ -901,6 +901,72 @@ def _side_reaction_parent_oxygen_demand(species: str) -> float:
     return float(main_oxygen + side_oxygen)
 
 
+class _ReactionOxygenPolicy(NamedTuple):
+    parent_oxygen_demand: float
+    pO2_exponent: float
+    saturation_oxygen_weight: float
+
+
+def _reaction_oxygen_policy(
+    species: str,
+    reaction: tuple[str, float, float],
+) -> _ReactionOxygenPolicy:
+    """Return shared reaction oxygen policy and its saturation weight.
+
+    Premise: a condensed-parent row balances parent oxygen with product oxygen
+    plus the oxygen returned as O2. Algebra gives demand ``O_product +
+    2*n_O2/n_gas`` and pressure exponent ``-n_O2/n_gas``. Side reactions add
+    oxygen from both parent oxides; gas-phase parents add no melt oxygen and
+    use ``n_O2`` as the exponent. Demand is O atoms per gas molecule; all
+    reaction coefficients and exponents are dimensionless. Sanity: ``MO ->
+    M + 1/2 O2`` gives demand 1 and exponent -1/2; AlSiO gives demand 3.5
+    and exponent -1.25.
+
+    Saturation retains its gas-parent oxygen-weight convention: only product
+    oxygen is counted for gas-phase parents. The weight is returned alongside
+    demand so this precedence lives with the reaction policy.
+    """
+    parent, n_gas, n_o2 = reaction
+    oxygen_atoms = float(_formula_atoms(species).get("O", 0))
+    side = _SIDE_REACTION_OXIDES.get(species)
+    if side is not None:
+        parent_oxygen_demand = _side_reaction_parent_oxygen_demand(species)
+        pO2_exponent = -side[2]
+    elif parent in _GAS_PHASE_PARENT_ROWS:
+        parent_oxygen_demand = 0.0
+        pO2_exponent = n_o2
+    elif species in _HALIDE_REACTIONS or species in _HYDROGEN_HALIDE_PARENTS:
+        parent_oxygen_demand = 0.0
+        pO2_exponent = (
+            -n_o2 / n_gas if parent else oxygen_atoms / 2.0
+        )
+    elif parent:
+        parent_oxygen_demand = oxygen_atoms + 2.0 * n_o2 / n_gas
+        pO2_exponent = -n_o2 / n_gas
+    else:
+        parent_oxygen_demand = 0.0
+        pO2_exponent = oxygen_atoms / 2.0
+
+    if parent in _GAS_PHASE_PARENT_ROWS:
+        saturation_oxygen_weight = oxygen_atoms
+    elif side is not None:
+        saturation_oxygen_weight = (
+            oxygen_atoms
+            - _side_reaction_parent_oxygen_demand(species)
+        )
+    elif species in _HALIDE_REACTIONS or species in _HYDROGEN_HALIDE_PARENTS:
+        saturation_oxygen_weight = 0.0
+    elif parent:
+        saturation_oxygen_weight = -2.0 * n_o2 / n_gas
+    else:
+        saturation_oxygen_weight = oxygen_atoms
+    return _ReactionOxygenPolicy(
+        parent_oxygen_demand,
+        pO2_exponent,
+        saturation_oxygen_weight,
+    )
+
+
 def _oxygen_balance_parent(species: str, parent: str) -> str | tuple[str, ...]:
     """Return the formula parents supplying the species' non-oxygen atoms."""
     source_parents = (
@@ -4353,24 +4419,16 @@ def gas_channel_metadata(
     }
     base = oxygen_balance_species_metadata(neutral_parents)
     result: dict[str, GasChannelMetadata] = {}
-    for name, (parent, n_gas, n_o2) in selected_by_name.items():
+    for name, reaction in selected_by_name.items():
         data = base[name]
-        exponent: float | None = data.pO2_exponent
-        side = _SIDE_REACTION_OXIDES.get(name)
-        if side:
-            data = data._replace(
-                parent_oxygen_demand=_side_reaction_parent_oxygen_demand(name),
-                pO2_exponent=-side[2],
-            )
-            exponent = -side[2]
-        elif parent in _GAS_PHASE_PARENT_ROWS:
-            data = data._replace(parent_oxygen_demand=0.0, pO2_exponent=n_o2)
-            exponent = n_o2
-        elif name in _HALIDE_REACTIONS or name in _HYDROGEN_HALIDE_PARENTS:
-            data = data._replace(parent_oxygen_demand=0.0)
+        policy = _reaction_oxygen_policy(name, reaction)
+        data = data._replace(
+            parent_oxygen_demand=policy.parent_oxygen_demand,
+            pO2_exponent=policy.pO2_exponent,
+        )
         result[name] = GasChannelMetadata(
             name, data.oxygen_atoms, data.parent_oxygen_demand, 0,
-            name not in omitted, exponent,
+            name not in omitted, policy.pO2_exponent,
         )
 
     if include_ions:
@@ -5090,36 +5148,19 @@ def evaluate_gas_oxygen_balance(
         species: _oxygen_balance_parent(species, parent)
         for species, (parent, _n_gas, _n_O2) in balance_channels
     })
-    for species, (parent, n_gas, n_O2) in balance_channels:
+    for species, reaction in balance_channels:
         data = species_data[species]
-        side_reactant = _SIDE_REACTION_OXIDES.get(species)
-        if side_reactant:
-            _oxide, n_oxide, n_O2 = side_reactant
-            # The side reaction can consume oxygen from its main condensed
-            # parent as well as the additional oxide. Count both reactants;
-            # the oxygen coefficient determines the product-side pO2 power.
-            data = data._replace(
-                parent_oxygen_demand=(
-                    _side_reaction_parent_oxygen_demand(species)
-                ),
-                pO2_exponent=-n_O2,
-            )
-            species_data[species] = data
-            exponent = -n_O2
-        elif parent in _GAS_PHASE_PARENT_ROWS:
-            data = data._replace(parent_oxygen_demand=0.0)
-            species_data[species] = data
-            exponent = n_O2
-        else:
-            exponent = (
-                -n_O2 / n_gas
-                if parent
-                else (1.0 if species == "O2" else 0.5)
-            )
-        if not math.isclose(data.pO2_exponent, exponent, abs_tol=1e-12):
+        policy = _reaction_oxygen_policy(species, reaction)
+        if not math.isclose(
+            data.pO2_exponent, policy.pO2_exponent, abs_tol=1e-12
+        ):
             raise ImccGasOxygenBalanceError(
                 f"gas reaction metadata for {species!r} violates oxygen balance"
             )
+        species_data[species] = data._replace(
+            parent_oxygen_demand=policy.parent_oxygen_demand,
+            pO2_exponent=policy.pO2_exponent,
+        )
 
     ion_parents: dict[str, str] = {}
     if include_ions:
@@ -5324,38 +5365,12 @@ def evaluate_gas_saturation(
     # enters, giving pM=pO+2 pO2.
     weights: dict[str, float] = {"O2": 2.0}
     exponents: dict[str, float] = {"O2": 1.0}
-    for species, (parent, n_gas, n_O2) in reactions:
+    for species, reaction in reactions:
         if species == "O2":
             continue
-        if parent in _GAS_PHASE_PARENT_ROWS:
-            # Gas-parent channels (for example sulfur oxidation) borrow no
-            # oxygen from the melt, so their vapor oxygen is all net oxygen.
-            parent_o = float(_formula_atoms(species).get("O", 0))
-        elif species in _SIDE_REACTION_OXIDES:
-            # The complete reaction can draw oxygen from both condensed
-            # parent oxides, then return some as product-side O2.
-            parent_o = (
-                _formula_atoms(species).get("O", 0)
-                - _side_reaction_parent_oxygen_demand(species)
-            )
-        elif species in _HALIDE_REACTIONS or species in _HYDROGEN_HALIDE_PARENTS:
-            parent_o = 0.0
-        elif parent:
-            parent_o = -2.0 * n_O2 / n_gas
-        else:
-            parent_o = float(_formula_atoms(species).get("O", 0))
-        weights[species] = parent_o
-        if species in _SIDE_REACTION_OXIDES:
-            exponent = -_SIDE_REACTION_OXIDES[species][2]
-        elif species in _HYDROGEN_HALIDE_PARENTS:
-            exponent = 0.0
-        elif parent in _GAS_PHASE_PARENT_ROWS:
-            exponent = n_O2
-        elif parent:
-            exponent = -n_O2 / n_gas
-        else:
-            exponent = _formula_atoms(species).get("O", 0) / 2.0
-        exponents[species] = exponent
+        policy = _reaction_oxygen_policy(species, reaction)
+        weights[species] = policy.saturation_oxygen_weight
+        exponents[species] = policy.pO2_exponent
     if include_ions:
         for neutral, ion in (
             *_active_ion_pairs(datapack, _GAS_IONIZATION_PAIRS),
