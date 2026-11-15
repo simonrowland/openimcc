@@ -17,7 +17,7 @@ when that list is empty. Unknown work IDs are never guessed; unresolved
 citations make the affected artifact incomplete.
 
 The vocabulary snapshot records its source commit and checksum. The sorted
-work-ID list used by the focused validation is in
+work-ID list referenced by the manifest is in
 `tests/data/coefficient-ancestry-vocabulary.json`. Regenerate the packaged
 manifest with `python tools/build_coefficient_ancestry.py`; pass `--check` to
 verify byte-identical regeneration.

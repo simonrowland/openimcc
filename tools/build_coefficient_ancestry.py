@@ -69,16 +69,8 @@ class SourceMapper:
             for item in mapping["patterns"]
         ]
         self.vocabulary = vocabulary
-        for work_id in [*self.dois.values(), *self.citation_keys.values()]:
-            self._check_work_id(work_id)
-        for _pattern, work_id in self.patterns:
-            self._check_work_id(work_id)
 
-    def _check_work_id(self, work_id: str) -> None:
-        if work_id not in self.vocabulary:
-            raise ValueError(f"mapped work ID is absent from the vocabulary: {work_id}")
-
-    def resolve(self, citation: str, citation_key: str | None = None) -> list[str]:
+    def _candidates(self, citation: str, citation_key: str | None = None) -> list[str]:
         evidence = " ".join(value for value in (citation_key, citation) if value)
         work_ids: list[str] = []
         for match in DOI_RE.finditer(evidence):
@@ -89,13 +81,33 @@ class SourceMapper:
         for key, work_id in self.citation_keys.items():
             if key in folded:
                 work_ids.append(work_id)
-        candidates = [citation_key, citation]
         for pattern, work_id in self.patterns:
-            if any(value and pattern.search(value.strip()) for value in candidates):
+            if any(
+                value and pattern.search(value.strip())
+                for value in (citation_key, citation)
+            ):
                 work_ids.append(work_id)
         return list(dict.fromkeys(work_ids))
 
-    def unmapped_reason(self, citation: str) -> str:
+    def resolve(self, citation: str, citation_key: str | None = None) -> list[str]:
+        return [
+            work_id
+            for work_id in self._candidates(citation, citation_key)
+            if work_id in self.vocabulary
+        ]
+
+    def outside_vocabulary(
+        self, citation: str, citation_key: str | None = None
+    ) -> list[str]:
+        return [
+            work_id
+            for work_id in self._candidates(citation, citation_key)
+            if work_id not in self.vocabulary
+        ]
+
+    def unmapped_reason(self, citation: str, citation_key: str | None = None) -> str:
+        if self.outside_vocabulary(citation, citation_key):
+            return "not in the public store vocabulary"
         dois = [_normalized_doi(m.group(0)) for m in DOI_RE.finditer(citation)]
         if dois:
             return "No curated mapping resolves this DOI to a work ID in the vocabulary."
@@ -121,11 +133,12 @@ def _add_citation(
         return
     for chunk in chunks:
         work_ids = mapper.resolve(chunk, citation_key)
-        if not work_ids:
+        outside_vocabulary = mapper.outside_vocabulary(chunk, citation_key)
+        if not work_ids or outside_vocabulary:
             item = {
                 "row": row["id"],
                 "citation": chunk,
-                "reason": mapper.unmapped_reason(chunk),
+                "reason": mapper.unmapped_reason(chunk, citation_key),
             }
             if item not in row["unmapped"]:
                 row["unmapped"].append(item)
@@ -456,12 +469,16 @@ def build() -> dict[str, Any]:
             mapper=mapper,
         ),
     ]
+    referenced_work_ids = {
+        work_id for artifact in artifacts for work_id in artifact["work_ids"]
+    }
+    if set(work_ids) != referenced_work_ids:
+        raise ValueError("the recorded vocabulary must contain exactly the referenced work IDs")
     vocabulary_bytes = _canonical_json(work_ids)
     return {
         "schema": "openimcc-coefficient-ancestry.v1",
         "vocabulary_snapshot": {
             "commit": vocabulary["commit"],
-            "directories": vocabulary["directories"],
             "work_id_count": len(work_ids),
             "sha256": _sha256(vocabulary_bytes),
         },

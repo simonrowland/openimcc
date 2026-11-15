@@ -162,11 +162,10 @@ def test_manifest_work_ids_match_the_recorded_vocabulary() -> None:
         snapshot["work_ids"], ensure_ascii=False, separators=(",", ":")
     ).encode("utf-8")
     assert metadata["commit"] == snapshot["commit"]
-    assert metadata["directories"] == snapshot["directories"]
-    assert metadata["work_id_count"] == len(snapshot["work_ids"])
     assert metadata["sha256"] == hashlib.sha256(encoded_ids).hexdigest()
 
     vocabulary = set(snapshot["work_ids"])
+    referenced_ids: set[str] = set()
     for entry in manifest["artifacts"]:
         used_ids = {
             source["work_id"]
@@ -175,6 +174,8 @@ def test_manifest_work_ids_match_the_recorded_vocabulary() -> None:
         }
         assert used_ids <= vocabulary
         assert entry["work_ids"] == sorted(used_ids)
+        referenced_ids.update(used_ids)
+    assert vocabulary == referenced_ids
 
 
 def test_manifest_regeneration_is_byte_identical() -> None:
