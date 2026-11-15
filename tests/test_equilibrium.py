@@ -16,11 +16,15 @@ from openimcc._constants import R_J_MOL_K
 from openimcc.equilibrium import (
     CrystalCandidate,
     _CandidateState,
+    _PURE_RESOURCE,
+    _load_json,
     _active_residual,
     _lp_solid_minimum,
     _minimize_logq_on_dual_face,
+    _positive_branch,
     _solve_active_equalities,
     equilibrate,
+    evaluate_janaf_crystal,
 )
 from openimcc.gas import species_thermo
 from openimcc.kernel import ImccDatapack, label_research_datapack
@@ -224,6 +228,54 @@ def test_active_set_cycle_refuses_deterministically(monkeypatch, ideal_pack, gas
     assert first.active_set_history == second.active_set_history
 
 
+def test_replacement_preserves_injected_resolution_error(monkeypatch, ideal_pack, gas_pack):
+    from openimcc import equilibrium as equilibrium_module
+
+    original = equilibrium_module._active_residual
+
+    def inject_tighter_activity_difference(*args, **kwargs):
+        result = original(*args, **kwargs)
+        probe_tol = args[10]
+        if result is not None and probe_tol < 1.0e-12:
+            residual, trial, melt = result
+            return residual + np.full_like(residual, 1.0e-6), trial, melt
+        return result
+
+    monkeypatch.setattr(
+        "openimcc.equilibrium._active_residual",
+        inject_tighter_activity_difference,
+    )
+    temperature = 2000.0
+    candidate = _candidate_from_log_activities(
+        "injected-phase", {"CaO": 1.0}, {"CaO": math.log(0.25)},
+        temperature, gas_pack,
+    )
+    state = _CandidateState(candidate, candidate.source_authority, None, True)
+    parents = ("CaO", "SiO2")
+    liquid_g = np.asarray([
+        species_thermo(parent, "l", temperature, gas_pack).G_J_mol
+        for parent in parents
+    ])
+    result = _positive_branch(
+        bulk={"CaO": 1.0, "SiO2": 1.0}, parents=parents, states=(state,),
+        A=np.asarray([[1.0], [0.0]]), g=np.asarray([candidate.G_crystal_J_mol]),
+        liquid_gibbs=liquid_g, temperature_K=temperature,
+        pack=ideal_pack, gas_pack=gas_pack, candidates_all=(state,),
+        aliases={}, rejected_polymorphs={}, crystal_digest="synthetic-crystals",
+        pure_digest="synthetic-pure", explicit_candidates=False, missing=(),
+        balance_tol=1.0e-10, affinity_tol_ln=1.0e-8,
+        inner_tol=1.0e-12, max_iter=100,
+    )
+    assert result.refusal is not None
+    assert result.refusal.code == "resolution_unresolved", (
+        result.refusal.residuals, result.active_set_history,
+        result.receipt.solver.get("outer_error_budget_history"),
+    )
+    assert result.refusal.residuals["inner_correction_error_ln"] == pytest.approx(
+        1.0e-6, rel=1.0e-3
+    )
+
+
 def test_single_parent_no_associate_control_has_q_one_at_unit_activity(ideal_pack, gas_pack):
     temperature = 2000.0
     candidate = _one_parent_candidate("pure-SiO2", temperature, 0.0, gas_pack)
@@ -337,28 +389,50 @@ def test_default_anorthite_probe_at_1800k_reports_missing_phases():
     result = equilibrate(
         {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1800.0,
     )
+    assert result.liquid_parent_mol == pytest.approx(
+        {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}
+    )
+    assert result.solid_mol is not None
+    assert all(amount == pytest.approx(0.0, abs=1.0e-12) for amount in result.solid_mol.values())
+    assert result.liquid_mass_fraction == pytest.approx(1.0)
+    assert result.kkt_recheck["independent_kkt_passed"] == 1.0
     assert result.refusal is not None
-    assert result.refusal.code in {"liquid_absence_not_certified", "missing_phase_data"}
+    assert result.refusal.code == "missing_phase_data"
     missing = result.receipt.solver["missing_candidate_phase_ids"]
     assert missing
     print("anorthite-1800 missing candidate phases:", ", ".join(missing))
+    assert set(missing) == {
+        "akermanite", "diopside", "fayalite", "FeO", "hercynite",
+        "ilmenite", "monticellite",
+    }
     print(
-        "anorthite-1800 result:", result.refusal.code,
-        "candidate amounts:", result.receipt.solver["crystal_only_candidate_amounts_mol"],
-        "logQ:", result.receipt.solver["dual_optimal_face_logQ"],
-        "optimizer diagnostics:", {
-            key: result.kkt_recheck.get(key)
-            for key in (
-                "logQ_minimum_certified", "logQ_optimizer_success",
-                "logQ_optimizer_message", "logQ_stationarity_scaled",
-                "logQ_complementarity", "dual_slack_min_J_mol",
-            )
-        },
+        "anorthite-1800 returned liquid:", dict(result.liquid_parent_mol),
+        "solid amounts:", dict(result.solid_mol),
+        "liquid mass fraction:", result.liquid_mass_fraction,
+        "missing candidate phases:", ", ".join(missing),
+        "anorthite affinity:", result.phase_affinities_ln["anorthite"],
     )
-    if not result.receipt.solver["liquid_absence_certified"]:
-        assert result.solid_mol is None
-        assert result.liquid_mass_fraction is None
-        assert result.crystal_only_minimum is True
+
+
+def test_absent_by_construction_uses_selected_liquid_standard(ideal_pack):
+    result = equilibrate({"CaO": 1.0}, 1800.0, pack=ideal_pack)
+    coverage = result.labels.coverage
+    assert coverage["K2O"] == "absent_by_construction"
+    assert coverage["Na2O"] == "absent_by_construction"
+    assert coverage["FeO"] == "temperature_out_of_range"
+    assert set(result.receipt.solver["missing_candidate_phase_ids"]) >= {
+        "FeO", "akermanite", "diopside", "fayalite", "hercynite",
+        "ilmenite", "monticellite",
+    }
+    gas_pack = diagnostics._crystal_thermo_context(None)[0]
+    pure, _ = _load_json(_PURE_RESOURCE)
+    rows = {row["id"]: row for row in pure["phases"]}
+    for phase, expected_kJ in (("K2O", -20.14), ("Na2O", -13.37), ("FeO", 5.85)):
+        oxide = next(iter(rows[phase]["oxide_stoichiometry"]))
+        uncapped = evaluate_janaf_crystal(phase, 1800.0, apply_phase_cap=False)
+        selected_liquid = species_thermo(oxide, "l", 1800.0, gas_pack).G_J_mol
+        delta_kJ = (selected_liquid - uncapped.G_J_mol) / 1000.0
+        assert delta_kJ == pytest.approx(expected_kJ, abs=0.02)
 
 
 def test_fully_solid_branch_certifies_logq_below_zero(ideal_pack, gas_pack):

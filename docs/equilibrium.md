@@ -57,8 +57,21 @@ incipient_liquid_unresolved; rounded Q == 1 is not a certificate.
 The LP dual inequalities alone are insufficient: above a pure oxide's
 transition, a crystal-only LP can remain feasible while the liquid is more
 stable. That is why the optimal-face Q check is mandatory. A failed or
-unresolved certificate returns a typed DEPENDS result rather than claiming a
-fully solid equilibrium.
+unresolved certificate triggers the positive-liquid solve. A passing,
+independently rechecked liquid state is returned; the crystal-only diagnostic
+is retained only when neither branch establishes an equilibrium state.
+
+Pure parent crystals above their stable cap are marked absent by construction
+only if the selected liquid standard and uncapped crystal standard establish
+`Gl−Gcr < 0` at the requested temperature. The phase affinity is
+`(Gl−Gcr)/(RT)+ln(a)`; because feasible ideal-melt activities satisfy
+`ln(a)≤0`, that strict negative reference difference proves negative affinity.
+At 1800 K this gives K2O −20.14 kJ/mol and Na2O −13.37 kJ/mol. It does not
+prove FeO absent: against the selected DG46-MASSON65 liquid standard,
+`Gl−Gcr=+5.85 kJ/mol`, so FeO remains unavailable outside its crystal domain.
+This sign check is specific to the selected standard and temperature; a JANAF
+liquid/crystal pair cannot substitute for it. Multioxide compounds without
+their own Gibbs functions remain unavailable.
 
 When the crystal-only LP is solved but liquid absence is unresolved, its
 candidate amounts and optimal-face ranges appear in the calculation receipt.

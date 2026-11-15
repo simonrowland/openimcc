@@ -171,6 +171,7 @@ def _redox_candidate(candidate: CrystalCandidate) -> bool:
 
 def _default_candidate_states(
     temperature_K: float,
+    gas_pack: Any | None = None,
 ) -> tuple[tuple[_CandidateState, ...], str, str, Any, tuple[str, ...]]:
     from openimcc import gas
 
@@ -178,7 +179,8 @@ def _default_candidate_states(
     crystals, crystal_digest = _load_json(_CRYSTAL_RESOURCE)
     pure_by_id = {row["id"]: row for row in pure["phases"]}
     crystal_by_id = {row["id"]: row for row in crystals["phases"]}
-    gas_pack, _ = diagnostics._crystal_thermo_context(None)
+    if gas_pack is None:
+        gas_pack, _ = diagnostics._crystal_thermo_context(None)
     states: list[_CandidateState] = []
     unavailable: list[str] = []
 
@@ -230,13 +232,33 @@ def _default_candidate_states(
         try:
             crystal = evaluate_janaf_crystal(phase_id, temperature_K, apply_phase_cap=True)
         except JanafCrystalTemperatureError as exc:
-            unavailable.append(phase_id)
             authority = str(row.get("source_authority", "external_datapack"))
+            oxide = next(iter(row["oxide_stoichiometry"]))
+            try:
+                uncapped = evaluate_janaf_crystal(
+                    phase_id, temperature_K, apply_phase_cap=False
+                )
+                liquid_g = gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
+            except (JanafCrystalTemperatureError, gas.ImccGasTemperatureOutsideDomainError, ValueError):
+                unavailable.append(phase_id)
+                absent_by_construction = False
+            else:
+                # For a pure oxide, affinity=(Gl−Gcr)/(RT)+ln(a). Since a≤1,
+                # Gl−Gcr<0 proves affinity<0 for every feasible melt. Compare
+                # against the selected liquid standard (not the JANAF pair);
+                # at 1800 K K2O/Na2O are negative while FeO/DG46-MASSON65 is
+                # positive, a sanity check that FeO remains unproven.
+                absent_by_construction = liquid_g - uncapped.G_J_mol < 0.0
+                if not absent_by_construction:
+                    unavailable.append(phase_id)
             placeholder = CrystalCandidate(
                 phase_id, row["oxide_stoichiometry"], 0.0, phase_id,
                 authority, exc.domain_K, {},
             )
-            states.append(_CandidateState(placeholder, authority, exc.domain_K, False, "temperature_out_of_range"))
+            states.append(_CandidateState(
+                placeholder, authority, exc.domain_K, False,
+                "absent_by_construction" if absent_by_construction else "temperature_out_of_range",
+            ))
             continue
         candidate = CrystalCandidate(
             phase_id, row["oxide_stoichiometry"], crystal.G_J_mol, phase_id,
@@ -250,9 +272,10 @@ def _default_candidate_states(
 def _resolve_candidates(
     candidates: Sequence[str | CrystalCandidate] | None,
     temperature_K: float,
+    gas_pack: Any | None = None,
 ) -> tuple[tuple[_CandidateState, ...], str, str, Any, tuple[str, ...], bool]:
     defaults, crystal_digest, pure_digest, gas_pack, unavailable = (
-        _default_candidate_states(temperature_K)
+        _default_candidate_states(temperature_K, gas_pack)
     )
     if candidates is None:
         return defaults, crystal_digest, pure_digest, gas_pack, unavailable, False
@@ -537,12 +560,21 @@ def _minimize_logq_on_dual_face(
     C = projected[variable_rows]
     d = upper_face[variable_rows]
 
+    cached_point: tuple[float, ...] | None = None
+    cached_value_gradient: tuple[float, np.ndarray] | None = None
+
     def value_gradient(y: np.ndarray) -> tuple[float, np.ndarray]:
-        x = x0 + basis @ y
-        value, gradient_mu = _logq_from_potentials(
-            rt * x, liquid_gibbs, temperature_K, pack, parent_indices
-        )
-        return value, basis.T @ (rt * gradient_mu)
+        nonlocal cached_point, cached_value_gradient
+        point = tuple(map(float, y))
+        if point != cached_point:
+            x = x0 + basis @ y
+            value, gradient_mu = _logq_from_potentials(
+                rt * x, liquid_gibbs, temperature_K, pack, parent_indices
+            )
+            cached_point = point
+            cached_value_gradient = value, basis.T @ (rt * gradient_mu)
+        assert cached_value_gradient is not None
+        return cached_value_gradient
 
     if basis.shape[1] == 0:
         y = np.zeros(0)
@@ -553,8 +585,8 @@ def _minimize_logq_on_dual_face(
             LinearConstraint(C, np.full(C.shape[0], -np.inf), d),
         )
         result = minimize(
-            lambda y: value_gradient(y)[0], y_start,
-            jac=lambda y: value_gradient(y)[1], constraints=constraints,
+            value_gradient, y_start,
+            jac=True, constraints=constraints,
             method="SLSQP", options={"ftol": 1.0e-13, "maxiter": 1000},
         )
         y = np.asarray(result.x, dtype=float)
@@ -677,6 +709,7 @@ def _independent_thermochemical_standards(
     states: Sequence[_CandidateState],
     parents: Sequence[str],
     temperature_K: float,
+    gas_pack: Any | None = None,
 ) -> tuple[np.ndarray, Mapping[str, float]]:
     """Re-resolve packaged functions for the independent KKT verifier.
 
@@ -686,7 +719,8 @@ def _independent_thermochemical_standards(
     """
     from openimcc import gas
 
-    gas_pack, _ = diagnostics._crystal_thermo_context(None)
+    if gas_pack is None:
+        gas_pack, _ = diagnostics._crystal_thermo_context(None)
     liquid = _melt_liquid_standards(parents, temperature_K, gas_pack)
     pure, _ = _load_json(_PURE_RESOURCE)
     crystals, _ = _load_json(_CRYSTAL_RESOURCE)
@@ -738,6 +772,51 @@ def _positive_melt(
         tol=inner_tol,
         max_iter=max_iter,
     )
+
+
+def _inner_activity_uncertainty(
+    liquid: np.ndarray,
+    parents: Sequence[str],
+    temperature_K: float,
+    pack: Any,
+    melt: Any,
+    inner_tol: float,
+    max_iter: int,
+) -> tuple[float, float]:
+    """Propagate inner balance residual and arithmetic error into ln(a).
+
+    The melt balance Jacobian is represented by finite differences of the
+    converged map from log analytical parent moles to log activities. Its
+    infinity norm maps a relative balance perturbation into an activity
+    perturbation; the root residual and floating-point balance arithmetic
+    bound that input perturbation. This is independent of the outer crystal
+    affinity/extent Jacobian.
+    """
+    step = 1.0e-5
+    jacobian = np.zeros((len(parents), len(parents)), dtype=float)
+    nominal_logs = np.asarray([melt.activity(name) for name in parents], dtype=float)
+    for column in range(len(parents)):
+        plus, minus = liquid.copy(), liquid.copy()
+        plus[column] *= math.exp(step)
+        minus[column] *= math.exp(-step)
+        plus_melt = _positive_melt(plus, parents, temperature_K, pack, inner_tol, max_iter)
+        minus_melt = _positive_melt(minus, parents, temperature_K, pack, inner_tol, max_iter)
+        plus_logs = np.asarray([plus_melt.activity(name) for name in parents])
+        minus_logs = np.asarray([minus_melt.activity(name) for name in parents])
+        jacobian[:, column] = (plus_logs - minus_logs) / (2.0 * step)
+    residual = float(getattr(melt.convergence, "residual_inf", math.inf))
+    scale = float(np.min(liquid))
+    if not math.isfinite(residual) or scale <= 0.0:
+        return math.inf, math.inf
+    balance_input_error = residual / scale
+    balance_input_error += _roundoff_bound(
+        [*map(float, liquid), *map(float, melt.parent_mol)], 8 * (len(liquid) + 1)
+    ) / scale
+    jacobian_norm = float(np.linalg.norm(jacobian, ord=np.inf))
+    activity_error = jacobian_norm * balance_input_error
+    # Include arithmetic in the final log-activity evaluation itself.
+    activity_error += _roundoff_bound([*map(float, nominal_logs)], 8 * len(nominal_logs))
+    return activity_error, jacobian_norm
 
 
 def _melt_logs(melt: Any, parents: Sequence[str]) -> np.ndarray:
@@ -937,7 +1016,6 @@ def _solve_active_equalities(
             half_rank = int(np.count_nonzero(half_singular > rank_threshold))
             if half_rank == 0 or half_rank != rank:
                 return n, False, "error_budget_unresolved", diagnostics_map
-            condition = float(half_singular[0] / half_singular[half_rank - 1])
             diagnostics_map["fd_correction_error_ln"] = fd_correction_error
             try:
                 tighter = _active_residual(
@@ -951,8 +1029,14 @@ def _solve_active_equalities(
             tighter_residual, _tighter_trial, tighter_melt = tighter
             normal_logs = _melt_logs(_melt, parents)
             tighter_logs = _melt_logs(tighter_melt, parents)
-            inner_activity_error = float(
-                np.max(np.abs(normal_logs - tighter_logs), initial=0.0) * condition
+            inner_activity_comparison = float(
+                np.max(np.abs(normal_logs - tighter_logs), initial=0.0)
+            )
+            liquid_vector, _liquid_roundoff = _safe_liquid(A, _trial, b, balance_tol)
+            if liquid_vector is None:
+                return n, False, "error_budget_unresolved", diagnostics_map
+            inner_activity_error, inner_balance_jacobian_norm = _inner_activity_uncertainty(
+                liquid_vector, parents, temperature_K, pack, _melt, inner_tol, max_iter
             )
             inner_coordinate_correction = np.linalg.lstsq(
                 scaled_half_jacobian,
@@ -965,13 +1049,17 @@ def _solve_active_equalities(
                 scaled_half_jacobian @ inner_coordinate_correction, ord=np.inf
             ))
             diagnostics_map["inner_activity_error_ln"] = inner_activity_error
+            diagnostics_map["inner_activity_comparison_ln"] = inner_activity_comparison
+            diagnostics_map["inner_balance_jacobian_norm"] = inner_balance_jacobian_norm
             diagnostics_map["inner_correction_error_ln"] = inner_correction_error
             if (
                 not math.isfinite(fd_correction_error)
                 or not math.isfinite(inner_activity_error)
+                or not math.isfinite(inner_activity_comparison)
                 or not math.isfinite(inner_correction_error)
                 or fd_correction_error > _FD_CORRECTION_TOL_LN
                 or inner_activity_error > _INNER_ACTIVITY_ERROR_TOL_LN
+                or inner_activity_comparison > _INNER_ACTIVITY_ERROR_TOL_LN
                 or inner_correction_error > _INNER_CORRECTION_TOL_LN
             ):
                 return n, False, "error_budget_unresolved", diagnostics_map
@@ -1157,6 +1245,7 @@ def _result_receipt(
     pure_digest: str,
     candidates: Sequence[_CandidateState],
     solver: Mapping[str, Any],
+    gas_pack: Any | None = None,
 ) -> CalculationReceipt:
     kernel = pack.kernel_datapack if isinstance(pack, ImccLoadedDatapack) else pack
     return build_calculation_receipt(
@@ -1170,7 +1259,10 @@ def _result_receipt(
             "melt_binding": getattr(pack, "binding_digest", getattr(kernel, "binding_digest", None)),
             "crystal_phases": crystal_digest,
             "janaf_pure_oxide_crystals": pure_digest,
-            "parent_liquid_standards": diagnostics._crystal_thermo_context(None)[0].condensate_table_digest,
+            "parent_liquid_standards": (
+                gas_pack.condensate_table_digest if gas_pack is not None else
+                diagnostics._crystal_thermo_context(None)[0].condensate_table_digest
+            ),
         },
         solver={
             "method": "nested_feasible_active_set_with_solid_lp",
@@ -1330,12 +1422,13 @@ def _independent_kkt_recheck(
     affinity_tol_ln: float,
     absent_tol_ln: float,
     dual_mu: np.ndarray | None = None,
+    gas_pack: Any | None = None,
 ) -> tuple[bool, dict[str, float], Any | None, dict[str, float]]:
     # This verifier deliberately reconstructs balances and affinities from the
     # returned vectors and a fresh melt solve; it consumes none of the outer
     # solver's residuals or Jacobians.
     verified_liquid_gibbs, verified_crystal_gibbs = (
-        _independent_thermochemical_standards(states, parents, temperature_K)
+        _independent_thermochemical_standards(states, parents, temperature_K, gas_pack)
     )
     balance = bulk_vector - A @ solid_vector
     melt = None
@@ -1523,6 +1616,7 @@ def _positive_branch(
     liquid_gibbs: np.ndarray,
     temperature_K: float,
     pack: Any,
+    gas_pack: Any,
     candidates_all: Sequence[_CandidateState],
     aliases: Mapping[str, tuple[str, ...]],
     rejected_polymorphs: Mapping[str, str],
@@ -1716,7 +1810,10 @@ def _positive_branch(
                 ),
             ))
             replacement_found = False
-            trial_error_budget: dict[str, float] = {}
+            trial_error_budget: dict[str, float] = (
+                dict(_solver_residuals)
+                if reason == "error_budget_unresolved" else {}
+            )
             for remove in replacement_sets:
                 trial_active = [i for i in active if i not in remove]
                 if most not in trial_active:
@@ -1823,6 +1920,7 @@ def _positive_branch(
             pack=pack, liquid_gibbs=liquid_gibbs, inner_tol=inner_tol,
             balance_tol=balance_tol, affinity_tol_ln=affinity_tol_ln,
             absent_tol_ln=affinity_tol_ln,
+            gas_pack=gas_pack,
         )
         if not passed:
             return _empty_result(
@@ -1836,6 +1934,7 @@ def _positive_branch(
                 ),
                 solver=history_solver(**recheck),
             )
+        recheck["independent_kkt_passed"] = 1.0
         residual_inventory = b - current_liquid
         ranges, unique, ranges_certified = _phase_extent_ranges(
             A, n, active, residual_inventory, scales, balance_tol
@@ -1952,6 +2051,7 @@ def _positive_branch(
                 "phase_amount_ranges_certified": ranges_certified,
                 "kkt_recheck": recheck,
             },
+            gas_pack=gas_pack,
         )
         return PhaseEquilibriumResult(
             temperature_K=temperature_K,
@@ -2022,6 +2122,7 @@ def _solid_result(
     liquid_gibbs: np.ndarray,
     temperature_K: float,
     pack: Any,
+    gas_pack: Any,
     crystal_digest: str,
     pure_digest: str,
     explicit_candidates: bool,
@@ -2163,6 +2264,7 @@ def _solid_result(
         affinity_tol_ln=affinity_tol_ln,
         absent_tol_ln=affinity_tol_ln,
         dual_mu=None if out_of_domain else mu_q,
+        gas_pack=gas_pack,
     )
     recheck.update({
         "solid_lp_primal_dual_gap_J": gap,
@@ -2291,6 +2393,7 @@ def _solid_result(
             "phase_amount_ranges_certified": lp.amount_ranges_certified,
             "kkt_recheck": recheck,
         },
+        gas_pack=gas_pack,
     )
     return PhaseEquilibriumResult(
         temperature_K=temperature_K,
@@ -2352,15 +2455,17 @@ def equilibrate(
     kernel = selected_pack.kernel_datapack if isinstance(selected_pack, ImccLoadedDatapack) else selected_pack
     temperature = float(T_K)
     candidate_temperature = temperature if math.isfinite(temperature) and temperature > 0.0 else 2000.0
+    from openimcc import diagnostics as diagnostic_module
+    gas_pack, _ = diagnostic_module._crystal_thermo_context(None)
     try:
         all_states, crystal_digest, pure_digest, gas_pack, unavailable, explicit = (
-            _resolve_candidates(candidates, candidate_temperature)
+            _resolve_candidates(candidates, candidate_temperature, gas_pack)
         )
     except Exception as exc:
         # Unknown crystal IDs and malformed candidate input are typed as
         # missing phase data at this API boundary.
         fallback_states, crystal_digest, pure_digest, gas_pack, _unavailable, _explicit = (
-            _resolve_candidates(None, candidate_temperature)
+            _resolve_candidates(None, candidate_temperature, gas_pack)
         )
         empty_bulk: dict[str, float] = {}
         return _empty_result(
@@ -2497,9 +2602,6 @@ def equilibrate(
         )
     missing = tuple(sorted(set(unavailable) | set(unsupported)))
 
-    if gas_pack is None:
-        from openimcc import diagnostics as diagnostic_module
-        gas_pack, _ = diagnostic_module._crystal_thermo_context(None)
     from openimcc import gas as gas_module
     try:
         liquid_gibbs = _melt_liquid_standards(parents, temperature, gas_pack)
@@ -2595,6 +2697,7 @@ def equilibrate(
             liquid_gibbs=liquid_gibbs,
             temperature_K=temperature,
             pack=selected_pack,
+            gas_pack=gas_pack,
             crystal_digest=crystal_digest,
             pure_digest=pure_digest,
             explicit_candidates=explicit,
@@ -2608,6 +2711,7 @@ def equilibrate(
             optimizer_residuals=lp_diagnostics,
         )
 
+    solid_diagnostic: PhaseEquilibriumResult | None = None
     if lp is not None and lp_valid:
         try:
             mu_q, logq, logq_interval, q_certified, q_diagnostics = (
@@ -2640,7 +2744,7 @@ def equilibrate(
             and logq_interval[0] <= 0.0 < logq_interval[1]
         )
         if q_certified or (minimum_certified and interval_straddles) or not minimum_certified:
-            return _solid_result(
+            solid_diagnostic = _solid_result(
                 bulk=normalized_bulk,
                 parents=parents,
                 states=states,
@@ -2656,6 +2760,7 @@ def equilibrate(
                 liquid_gibbs=liquid_gibbs,
                 temperature_K=temperature,
                 pack=selected_pack,
+                gas_pack=gas_pack,
                 crystal_digest=crystal_digest,
                 pure_digest=pure_digest,
                 explicit_candidates=explicit,
@@ -2667,6 +2772,8 @@ def equilibrate(
                 inner_tol=float(inner_tol),
                 optimizer_residuals={**lp_diagnostics, **dict(q_diagnostics)},
             )
+            if q_certified or (minimum_certified and interval_straddles):
+                return solid_diagnostic
 
     result = _positive_branch(
         bulk=normalized_bulk,
@@ -2677,6 +2784,7 @@ def equilibrate(
         liquid_gibbs=liquid_gibbs,
         temperature_K=temperature,
         pack=selected_pack,
+        gas_pack=gas_pack,
         candidates_all=all_states,
         aliases=aliases,
         rejected_polymorphs=rejected_polymorphs,
@@ -2689,4 +2797,8 @@ def equilibrate(
         inner_tol=float(inner_tol),
         max_iter=int(max_iter),
     )
+    if result.kkt_recheck.get("independent_kkt_passed") == 1.0:
+        return result
+    if solid_diagnostic is not None:
+        return solid_diagnostic
     return result
