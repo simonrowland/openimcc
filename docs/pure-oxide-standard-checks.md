@@ -24,6 +24,14 @@ temperature:
    liquid-extrapolated on `temperature_K`; temperatures above 3000 K are marked
    out of the liquid-model domain.
 
+`PureOxideStandardCheck.evaluation_temperature_axis_label` describes the
+requested evaluation temperature, separately from
+`switch_prediction.temperature_axis_label`, which describes the predicted
+switch temperature. Either label includes the metastable/superheated
+crystal-leg qualifier when its own temperature is above the JANAF transition.
+The CLI CSV reports these as `evaluation_temperature_axis_label` and
+`temperature_axis_label`, respectively.
+
 The closure uses `species_thermo()` from the selected condensate table. JANAF
 apparent Gibbs energy is reconstructed as
 `Hf(298.15 K) + [H(T) − H(298.15 K)] − T*S(T)`: enthalpy terms are converted

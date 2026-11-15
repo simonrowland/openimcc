@@ -151,6 +151,17 @@ def test_resolved_switch_root_is_bracketed_by_its_pack_data():
     assert result.pack_digest
 
 
+def test_requested_temperature_above_transition_has_separate_axis_label():
+    result = pure_oxide_standard_check("Al2O3", 2400.0)
+
+    assert result.temperature_K == 2400.0
+    assert result.evaluation_temperature_axis_label.startswith("temperature_K;")
+    assert "metastable/superheated crystal leg above JANAF transition" in (
+        result.evaluation_temperature_axis_label
+    )
+    assert "metastable/superheated" not in result.switch_prediction.temperature_axis_label
+
+
 @pytest.mark.parametrize(
     ("oxide", "condensate_path", "expected_root_K"),
     [
@@ -250,3 +261,4 @@ def test_diagnose_cli_writes_selected_pack_provenance(tmp_path):
     assert silica["pack_id"] == LEGACY_CONDENSATE.name
     assert silica["source_crystal_id"] == "packaged:LAM1987"
     assert silica["switch_status"] == "no_switch_in_range"
+    assert "evaluation_temperature_axis_label" in silica

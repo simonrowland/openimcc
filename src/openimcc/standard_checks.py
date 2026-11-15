@@ -108,6 +108,7 @@ class PackagedClosure:
 class PureOxideStandardCheck:
     oxide: str
     temperature_K: float
+    evaluation_temperature_axis_label: str
     janaf_transition_K: float
     janaf_pair_status: Literal["available", "construction_case"]
     delta_janaf_kJ_mol: float | None
@@ -537,6 +538,7 @@ def pure_oxide_standard_check(
     return PureOxideStandardCheck(
         oxide=definition.oxide,
         temperature_K=temp,
+        evaluation_temperature_axis_label=_axis_label(temp, definition.transition_K),
         janaf_transition_K=definition.transition_K,
         janaf_pair_status=pair_status,
         delta_janaf_kJ_mol=delta_janaf,
@@ -579,7 +581,8 @@ def _cmd_diagnose_standard_checks(args: Any) -> int:
         "packaged_closure_status", "switch_status", "switch_temperature_K",
         "switch_bracket_K", "switch_residual_J_mol", "switch_uncertainty_K",
         "switch_bracket_residuals_J_mol", "switch_bracket_resolution_bounds_J_mol",
-        "switch_search_range_K", "temperature_axis_label", "janaf_rows",
+        "switch_search_range_K", "temperature_axis_label",
+        "evaluation_temperature_axis_label", "janaf_rows",
         "pack_id", "pack_digest", "source_crystal_id", "source_crystal_digest",
         "least_authoritative_input", "authority", "construction_flag",
     )
@@ -603,6 +606,7 @@ def _cmd_diagnose_standard_checks(args: Any) -> int:
                 "switch_uncertainty_K": switch["uncertainty_K"],
                 "switch_search_range_K": json.dumps(switch["search_range_K"]),
                 "temperature_axis_label": switch["temperature_axis_label"],
+                "evaluation_temperature_axis_label": data["evaluation_temperature_axis_label"],
                 "janaf_rows": json.dumps(data["janaf_rows"]),
             })
     print(f"wrote {csv_path}")
