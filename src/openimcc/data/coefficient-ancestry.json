@@ -2,8 +2,8 @@
   "schema": "openimcc-coefficient-ancestry.v1",
   "vocabulary_snapshot": {
     "commit": "856c0cf09b",
-    "work_id_count": 13,
-    "sha256": "f4d4a7b77e4f62a0667c44c7f50982ae67f328f2a0e83edcd7a16b51fe3a70e2"
+    "work_id_count": 14,
+    "sha256": "76c272446a3b4f923399c046f074bb052f4eaf059ef0a4e387a723bf101c2d5f"
   },
   "artifacts": [
     {
@@ -158,6 +158,11 @@
               "work_id": "no27-fegley-cameron-1987-epsl",
               "role": "derived",
               "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "kems-051-allibert-1981",
+              "role": "derived",
+              "citation": "Allibert et al."
             }
           ]
         },
@@ -321,6 +326,11 @@
               "work_id": "no27-fegley-cameron-1987-epsl",
               "role": "derived",
               "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "kems-051-allibert-1981",
+              "role": "derived",
+              "citation": "Allibert et al."
             }
           ]
         },
@@ -519,6 +529,7 @@
       "work_ids": [
         "darken-gurry-1946-iron-oxygen-ii",
         "janaf-4th",
+        "kems-051-allibert-1981",
         "no27-fegley-cameron-1987-epsl",
         "sf04-magma-companion-workbook",
         "shornikov-2017-spinel-thermodynamics"
@@ -569,12 +580,6 @@
         {
           "row": "8:CaAl2O4",
           "citation": "Rein & Chipman",
-          "reason": "No public vocabulary work ID is known for this citation.",
-          "role": "derived"
-        },
-        {
-          "row": "9:CaAl4O7",
-          "citation": "Allibert et al.",
           "reason": "No public vocabulary work ID is known for this citation.",
           "role": "derived"
         },
@@ -857,12 +862,6 @@
         {
           "row": "21:FeAl2O4",
           "citation": "Chan et al.",
-          "reason": "No public vocabulary work ID is known for this citation.",
-          "role": "derived"
-        },
-        {
-          "row": "22:CaAl12O19",
-          "citation": "Allibert et al.",
           "reason": "No public vocabulary work ID is known for this citation.",
           "role": "derived"
         },
@@ -1195,7 +1194,7 @@
       "counts": {
         "rows": 38,
         "mapped_rows": 38,
-        "unmapped_citations": 111,
+        "unmapped_citations": 109,
         "rows_with_unmapped": 35
       }
     },
@@ -4178,12 +4177,24 @@
         {
           "id": "319:MnO(g):1",
           "label": "MnO(g)",
-          "sources": []
+          "sources": [
+            {
+              "work_id": "ivtan-mno-coo-thermo",
+              "role": "fitted",
+              "citation": "TSIV-1436"
+            }
+          ]
         },
         {
           "id": "320:CoO(g):1",
           "label": "CoO(g)",
-          "sources": []
+          "sources": [
+            {
+              "work_id": "ivtan-mno-coo-thermo",
+              "role": "fitted",
+              "citation": "TSIV-1335"
+            }
+          ]
         },
         {
           "id": "321:Mo(g):1",
@@ -5328,12 +5339,24 @@
         {
           "id": "441:MnO(g):2",
           "label": "MnO(g)",
-          "sources": []
+          "sources": [
+            {
+              "work_id": "ivtan-mno-coo-thermo",
+              "role": "fitted",
+              "citation": "TSIV-1436"
+            }
+          ]
         },
         {
           "id": "442:CoO(g):2",
           "label": "CoO(g)",
-          "sources": []
+          "sources": [
+            {
+              "work_id": "ivtan-mno-coo-thermo",
+              "role": "fitted",
+              "citation": "TSIV-1335"
+            }
+          ]
         },
         {
           "id": "443:Re2O7(g):1",
@@ -7704,6 +7727,7 @@
       ],
       "work_ids": [
         "burcat-third-millennium",
+        "ivtan-mno-coo-thermo",
         "janaf-4th",
         "lamoreaux-hildenbrand-hildenbrand-1987",
         "nasa-cea-thermo"
@@ -8400,18 +8424,6 @@
           "role": "fitted"
         },
         {
-          "row": "319:MnO(g):1",
-          "citation": "TSIV-1436",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "fitted"
-        },
-        {
-          "row": "320:CoO(g):1",
-          "citation": "TSIV-1335",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "fitted"
-        },
-        {
           "row": "411:Ru(g):2",
           "citation": "P672-Ru-g",
           "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
@@ -8630,18 +8642,6 @@
         {
           "row": "440:Tl2O(g):2",
           "citation": "P672-Tl2O-g",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "fitted"
-        },
-        {
-          "row": "441:MnO(g):2",
-          "citation": "TSIV-1436",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "fitted"
-        },
-        {
-          "row": "442:CoO(g):2",
-          "citation": "TSIV-1335",
           "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
           "role": "fitted"
         },
@@ -9099,9 +9099,9 @@
       "complete": false,
       "counts": {
         "rows": 685,
-        "mapped_rows": 511,
-        "unmapped_citations": 231,
-        "rows_with_unmapped": 177
+        "mapped_rows": 515,
+        "unmapped_citations": 227,
+        "rows_with_unmapped": 173
       }
     },
     {
@@ -10861,6 +10861,11 @@
               "work_id": "nasa-cea-thermo",
               "role": "fitted",
               "citation": "NG-1352"
+            },
+            {
+              "work_id": "nasa-cea-thermo",
+              "role": "fitted",
+              "citation": "NG-BeO-L-1352"
             }
           ]
         },
@@ -10877,6 +10882,11 @@
               "work_id": "nasa-cea-thermo",
               "role": "fitted",
               "citation": "NG-1352"
+            },
+            {
+              "work_id": "nasa-cea-thermo",
+              "role": "fitted",
+              "citation": "NG-BeO-L-1352"
             }
           ]
         },
@@ -10893,6 +10903,11 @@
               "work_id": "nasa-cea-thermo",
               "role": "fitted",
               "citation": "NG-1352"
+            },
+            {
+              "work_id": "nasa-cea-thermo",
+              "role": "fitted",
+              "citation": "NG-BeO-L-1352"
             }
           ]
         },
@@ -10909,6 +10924,11 @@
               "work_id": "nasa-cea-thermo",
               "role": "fitted",
               "citation": "NG-1352"
+            },
+            {
+              "work_id": "nasa-cea-thermo",
+              "role": "fitted",
+              "citation": "NG-BeO-L-1352"
             }
           ]
         },
@@ -12464,30 +12484,6 @@
           "role": "anchor"
         },
         {
-          "row": "202:BeO(l)",
-          "citation": "NG-BeO-L-1352",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "fitted"
-        },
-        {
-          "row": "203:BeO(l)",
-          "citation": "NG-BeO-L-1352",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "fitted"
-        },
-        {
-          "row": "204:BeO(l)",
-          "citation": "NG-BeO-L-1352",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "fitted"
-        },
-        {
-          "row": "205:BeO(l)",
-          "citation": "NG-BeO-L-1352",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "fitted"
-        },
-        {
           "row": "207:Tl2O(l)",
           "citation": "P672-Tl2O-l-CP-EXT-1000",
           "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
@@ -12774,8 +12770,8 @@
       "counts": {
         "rows": 262,
         "mapped_rows": 140,
-        "unmapped_citations": 226,
-        "rows_with_unmapped": 141
+        "unmapped_citations": 222,
+        "rows_with_unmapped": 137
       }
     },
     {

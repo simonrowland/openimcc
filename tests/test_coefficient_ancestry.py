@@ -179,6 +179,33 @@ def test_manifest_work_ids_match_the_recorded_vocabulary() -> None:
     assert vocabulary == referenced_ids
 
 
+def test_unmapped_citations_do_not_match_a_vocabulary_work_doi() -> None:
+    manifest = _json_resource("data/coefficient-ancestry.json")
+    snapshot = json.loads(
+        (ROOT / "tests" / "data" / "coefficient-ancestry-vocabulary.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    vocabulary_dois = {
+        re.sub(r"^https?://(?:dx\.)?doi\.org/", "", doi.strip().casefold()).rstrip(
+            ".,;:)"
+        )
+        for doi in snapshot["work_dois"].values()
+    }
+    assert vocabulary_dois
+
+    doi_pattern = re.compile(r"10\.[0-9]{4,9}/[^\s<>\]\[{}\"'?#]+", re.I)
+    for artifact in manifest["artifacts"]:
+        for item in artifact["unmapped"]:
+            citation_dois = {
+                match.group(0).casefold().rstrip(".,;:)")
+                for match in doi_pattern.finditer(item["citation"])
+            }
+            assert not (citation_dois & vocabulary_dois), (
+                artifact["identity"], item["row"], item["citation"]
+            )
+
+
 def test_manifest_regeneration_is_byte_identical() -> None:
     result = subprocess.run(
         [sys.executable, "tools/build_coefficient_ancestry.py", "--check"],
