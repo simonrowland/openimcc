@@ -60,6 +60,11 @@ stable. That is why the optimal-face Q check is mandatory. A failed or
 unresolved certificate returns a typed DEPENDS result rather than claiming a
 fully solid equilibrium.
 
+When the crystal-only LP is solved but liquid absence is unresolved, its
+candidate amounts and optimal-face ranges appear in the calculation receipt.
+Equilibrium solid amounts, phase presence, amount uniqueness and liquid mass
+fraction remain unresolved until the absent-liquid certificate passes.
+
 phase_amounts_unique is reported separately from activity identifiability.
 At polymorph crossings or other non-unique extents, amount ranges are exposed
 and the solver does not report an arbitrary split as a measured phase amount.

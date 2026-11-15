@@ -47,6 +47,9 @@ _INNER_BALANCE_TOL = 1.0e-12
 _DEFAULT_AFFINITY_TOL_LN = 1.0e-8
 _DUAL_SLACK_TOL_RT = 1.0e-10
 _LOGQ_COEXISTENCE_TOL = 1.0e-8
+_FD_CORRECTION_TOL_LN = 2.0e-9
+_INNER_ACTIVITY_ERROR_TOL_LN = 2.0e-9
+_INNER_CORRECTION_TOL_LN = 2.0e-9
 _FD_STEP_SCALED = 1.0e-4
 _FRACTION_TO_BOUNDARY = 0.995
 _MAX_OUTER_ITERATIONS = 80
@@ -252,7 +255,7 @@ def _resolve_candidates(
         _default_candidate_states(temperature_K)
     )
     if candidates is None:
-        return defaults, crystal_digest, pure_digest, gas_pack, unavailable, True
+        return defaults, crystal_digest, pure_digest, gas_pack, unavailable, False
     by_id = {state.candidate.phase_id: state for state in defaults}
     selected: list[_CandidateState] = []
     for item in candidates:
@@ -274,7 +277,7 @@ def _resolve_candidates(
         raise ValueError("candidate crystal phase IDs must be unique")
     return (
         tuple(selected), crystal_digest, pure_digest, gas_pack,
-        tuple(state.candidate.phase_id for state in selected if not state.available), False,
+        tuple(state.candidate.phase_id for state in selected if not state.available), True,
     )
 
 
@@ -427,33 +430,78 @@ def _roundoff_bound(values: Sequence[float], operations: int) -> float:
     return (meps / (1.0 - meps)) * math.fsum(abs(float(value)) for value in values)
 
 
-def _lp_solid_minimum(A: np.ndarray, g: np.ndarray, b: np.ndarray) -> _LPState | None:
+def _lp_solid_minimum(
+    A: np.ndarray,
+    g: np.ndarray,
+    b: np.ndarray,
+    balance_tol: float = _DEFAULT_BALANCE_TOL,
+) -> _LPState | None:
     # The primal is min gᵀn subject to An=b,n≥0; its dual is max bᵀμ with
     # Aᵀμ≤g. g and μ are J/mol formula and J/mol parent respectively, so both
     # objectives are J for the supplied molar bulk and slack has units J/mol.
     if A.shape[1] == 0:
         return None
-    solved = linprog(g, A_eq=A, b_eq=b, bounds=(0.0, None), method="highs")
+    # x_j=n_j/s_j keeps every feasible extent O(1); dividing each parent row
+    # by b_i then makes the balance equations independent of bulk scale.
+    scales = _scaled_phase_amounts(A, b)
+    row_scales = b.copy()
+    scaled_A = A * scales[None, :] / row_scales[:, None]
+    scaled_cost = g * scales
+    cost_scale = float(np.max(np.abs(scaled_cost), initial=0.0))
+    if cost_scale > 0.0:
+        scaled_cost = scaled_cost / cost_scale
+    solved = linprog(
+        scaled_cost, A_eq=scaled_A, b_eq=np.ones_like(b),
+        bounds=(0.0, None), method="highs",
+    )
     if not solved.success:
         return None
-    amounts = np.asarray(solved.x, dtype=float)
-    mu = np.asarray(solved.eqlin.marginals, dtype=float)
+    amounts = np.asarray(solved.x, dtype=float) * scales
+    marginals = np.asarray(solved.eqlin.marginals, dtype=float)
+    mu = marginals * cost_scale / row_scales if cost_scale > 0.0 else np.zeros_like(b)
     objective = float(g @ amounts)
     slack = g - A.T @ mu
     amount_ranges: list[tuple[float, float]] = []
     amount_ranges_certified = True
+    # Add normalized gᵀn=Gmin to the scaled balance rows. Each equality row is
+    # normalized by its largest coefficient/RHS so HiGHS sees comparable units.
+    objective_coefficients = scaled_cost.copy()
+    objective_rhs = objective / cost_scale if cost_scale > 0.0 else 0.0
+    objective_row_scale = max(
+        float(np.max(np.abs(objective_coefficients), initial=0.0)),
+        abs(objective_rhs),
+    )
+    if objective_row_scale > 0.0:
+        objective_coefficients = objective_coefficients / objective_row_scale
+        objective_rhs /= objective_row_scale
+    face_A = np.vstack((scaled_A, objective_coefficients))
+    face_b = np.concatenate((np.ones_like(b), [objective_rhs]))
     for j in range(A.shape[1]):
         cost = np.zeros(A.shape[1]); cost[j] = 1.0
-        # Add gᵀn=Gmin so each LP endpoint ranges only over primal minima.
-        eq = np.vstack((A, g)); rhs = np.concatenate((b, [objective]))
-        low = linprog(cost, A_eq=eq, b_eq=rhs, bounds=(0.0, None), method="highs")
-        high = linprog(-cost, A_eq=eq, b_eq=rhs, bounds=(0.0, None), method="highs")
-        if low.success and high.success:
-            amount_ranges.append((float(low.fun), float(-high.fun)))
-        else:
-            # A failed range solve cannot establish phase presence or uniqueness.
+        low = linprog(cost, A_eq=face_A, b_eq=face_b, bounds=(0.0, None), method="highs")
+        high = linprog(-cost, A_eq=face_A, b_eq=face_b, bounds=(0.0, None), method="highs")
+        if not low.success or not high.success:
             amount_ranges.append((0.0, math.inf))
             amount_ranges_certified = False
+            continue
+        endpoints = (np.asarray(low.x) * scales, np.asarray(high.x) * scales)
+        endpoint_moles = (float(low.fun) * scales[j], float(-high.fun) * scales[j])
+        valid = True
+        for endpoint in endpoints:
+            inventory = A @ endpoint
+            rel = np.abs(inventory - b) / b
+            objective_error = abs(float(g @ endpoint) - objective)
+            objective_bound = _roundoff_bound(
+                [*map(float, g * endpoint), objective], 8 * (len(g) + len(b))
+            )
+            if np.max(rel, initial=0.0) > balance_tol or objective_error > objective_bound:
+                valid = False
+        lo, hi = endpoint_moles
+        if not valid or not math.isfinite(lo + hi) or lo < -balance_tol * scales[j]:
+            amount_ranges.append((0.0, math.inf))
+            amount_ranges_certified = False
+        else:
+            amount_ranges.append((max(0.0, lo), max(0.0, hi)))
     return _LPState(
         amounts, mu, objective, slack, tuple(amount_ranges), amount_ranges_certified
     )
@@ -470,43 +518,77 @@ def _minimize_logq_on_dual_face(
     pack: Any,
     parent_indices: Sequence[int],
 ) -> tuple[np.ndarray, float, tuple[float, float], bool, Mapping[str, float]]:
-    # The dual face is Aᵀμ≤g, bᵀμ=Gmin. At its minimizer, KKT stationarity is
-    # ∇logQ+λb+A_activeη=0 with λ free and η≥0 for the crystal inequalities;
-    # the scaled residual is multiplied by RT to report dimensionless logQ.
-    constraints = (
-        LinearConstraint(A.T, np.full(A.shape[1], -np.inf), g),
-        LinearConstraint(b[None, :], [objective], [objective]),
+    # Dimensionless potentials x=μ/(RT) make the objective and inequalities
+    # well-scaled. Eliminate bᵀx=Gmin/(RT) with x=x0+Ny, N spanning b⊥;
+    # this removes the face equality and any redundant fixed inequalities.
+    rt = R_J_MOL_K * temperature_K
+    face_rhs = objective / rt
+    x0 = b * (face_rhs / float(b @ b))
+    _u, _singular, vh = np.linalg.svd(b[None, :], full_matrices=True)
+    basis = vh[1:, :].T
+    x_start = np.asarray(start, dtype=float) / rt
+    y_start = basis.T @ (x_start - x0)
+    projected = A.T @ basis
+    upper_face = (g - A.T @ (rt * x0)) / rt
+    row_norms = np.linalg.norm(projected, axis=1)
+    variable_rows = row_norms > 100.0 * np.finfo(float).eps
+    if np.any((~variable_rows) & (upper_face < -_DUAL_SLACK_TOL_RT)):
+        raise ArithmeticError("dual optimal face has an infeasible fixed inequality")
+    C = projected[variable_rows]
+    d = upper_face[variable_rows]
+
+    def value_gradient(y: np.ndarray) -> tuple[float, np.ndarray]:
+        x = x0 + basis @ y
+        value, gradient_mu = _logq_from_potentials(
+            rt * x, liquid_gibbs, temperature_K, pack, parent_indices
+        )
+        return value, basis.T @ (rt * gradient_mu)
+
+    if basis.shape[1] == 0:
+        y = np.zeros(0)
+        result_success = True
+        optimizer_message = "dual face is a point"
+    else:
+        constraints = () if C.shape[0] == 0 else (
+            LinearConstraint(C, np.full(C.shape[0], -np.inf), d),
+        )
+        result = minimize(
+            lambda y: value_gradient(y)[0], y_start,
+            jac=lambda y: value_gradient(y)[1], constraints=constraints,
+            method="SLSQP", options={"ftol": 1.0e-13, "maxiter": 1000},
+        )
+        y = np.asarray(result.x, dtype=float)
+        result_success = bool(result.success)
+        optimizer_message = str(result.message)
+
+    x = x0 + basis @ y
+    mu = rt * x
+    logq, gradient_mu = _logq_from_potentials(
+        mu, liquid_gibbs, temperature_K, pack, parent_indices
     )
-    result = minimize(
-        lambda mu: _logq_from_potentials(mu, liquid_gibbs, temperature_K, pack, parent_indices)[0],
-        np.asarray(start, dtype=float),
-        jac=lambda mu: _logq_from_potentials(mu, liquid_gibbs, temperature_K, pack, parent_indices)[1],
-        constraints=constraints,
-        method="SLSQP",
-        options={"ftol": 1.0e-13, "maxiter": 1000},
-    )
-    mu = np.asarray(result.x, dtype=float)
-    logq, gradient = _logq_from_potentials(mu, liquid_gibbs, temperature_K, pack, parent_indices)
+    gradient_y = basis.T @ (rt * gradient_mu)
     slack = g - A.T @ mu
     face_residual = abs(float(b @ mu) - objective)
-    active = np.flatnonzero(slack <= 1.0e-9 * R_J_MOL_K * temperature_K)
-    normals = np.column_stack((b, A[:, active]))
-    lower = np.concatenate(([-np.inf], np.zeros(len(active))))
-    upper = np.full(1 + len(active), np.inf)
-    stationarity = lsq_linear(
-        normals, -gradient, bounds=(lower, upper), tol=1.0e-14,
-        lsmr_tol="auto", max_iter=1000,
+    active = np.flatnonzero(slack <= _DUAL_SLACK_TOL_RT * rt)
+    active_normals = basis.T @ A[:, active]
+    if active.size:
+        multipliers = lsq_linear(
+            active_normals, -gradient_y,
+            bounds=(np.zeros(active.size), np.full(active.size, np.inf)),
+            tol=1.0e-14, lsmr_tol="auto", max_iter=1000,
+        ).x
+        stationarity_vector = gradient_y + active_normals @ multipliers
+        complementarity = float(np.max(
+            np.abs(multipliers * slack[active] / rt), initial=0.0
+        ))
+    else:
+        stationarity_vector = gradient_y
+        complementarity = 0.0
+    stationarity_scaled = (
+        float(np.linalg.norm(stationarity_vector, ord=np.inf))
+        if stationarity_vector.size else 0.0
     )
-    stationarity_scaled = float(
-        np.linalg.norm(normals @ stationarity.x + gradient, ord=np.inf)
-        * R_J_MOL_K * temperature_K
-    )
-    # For slack s=g−Aᵀμ≥0 and multiplier η≥0, KKT requires ηs=0. The
-    # multiplier has inverse-energy units, so this product is dimensionless.
-    complementarity = float(np.max(
-        np.abs(stationarity.x[1:] * slack[active]), initial=0.0
-    ))
-    dual_violation = float(np.max(np.maximum(-slack, 0.0), initial=0.0))
+    dual_violation = float(np.max(np.maximum(-slack, 0.0), initial=0.0) / rt)
     face_error = _roundoff_bound([*map(float, b * mu), objective], 8 * (len(b) + 1))
     log_activity = (mu - liquid_gibbs) / (R_J_MOL_K * temperature_K)
     arithmetic_error = _logq_roundoff_bound(
@@ -521,15 +603,16 @@ def _minimize_logq_on_dual_face(
     # a point with Q≤1 proves existence, regardless of optimizer display digits.
     interval = (logq - arithmetic_error, logq + arithmetic_error)
     minimum_certified = (
-        bool(result.success)
+        result_success
         and stationarity_scaled <= _DEFAULT_AFFINITY_TOL_LN
         and complementarity <= _DEFAULT_AFFINITY_TOL_LN
-        and dual_violation <= _DUAL_SLACK_TOL_RT * R_J_MOL_K * temperature_K
+        and dual_violation <= _DUAL_SLACK_TOL_RT
         and face_residual <= face_error
     )
     residuals = {
-        "logQ_optimizer_success": float(bool(result.success)),
+        "logQ_optimizer_success": float(result_success),
         "logQ_minimum_certified": float(minimum_certified),
+        "logQ_optimizer_message": optimizer_message,
         "dual_slack_min_J_mol": float(np.min(slack, initial=0.0)),
         "dual_face_objective_error_J": face_residual,
         "dual_face_roundoff_bound_J": face_error,
@@ -588,6 +671,50 @@ def _phase_affinity_from_melt(
         for name, index in zip(candidate.stoichiometry, indices, strict=True)
     ) - candidate.G_crystal_J_mol
     return float(nu @ log_activities[indices] + fusion / (R_J_MOL_K * temperature_K))
+
+
+def _independent_thermochemical_standards(
+    states: Sequence[_CandidateState],
+    parents: Sequence[str],
+    temperature_K: float,
+) -> tuple[np.ndarray, Mapping[str, float]]:
+    """Re-resolve packaged functions for the independent KKT verifier.
+
+    Synthetic CrystalCandidate values have no package row and retain their
+    caller-supplied G. Packaged JANAF and fusion-node standards are rebuilt
+    from their source rows, independently of the solver's candidate objects.
+    """
+    from openimcc import gas
+
+    gas_pack, _ = diagnostics._crystal_thermo_context(None)
+    liquid = _melt_liquid_standards(parents, temperature_K, gas_pack)
+    pure, _ = _load_json(_PURE_RESOURCE)
+    crystals, _ = _load_json(_CRYSTAL_RESOURCE)
+    pure_ids = {row["id"] for row in pure["phases"]}
+    crystal_rows = {row["id"]: row for row in crystals["phases"]}
+    crystal_gibbs: dict[str, float] = {}
+    for state in states:
+        phase = state.candidate.phase_id
+        if not state.available:
+            continue
+        if phase in pure_ids:
+            crystal_gibbs[phase] = evaluate_janaf_crystal(
+                phase, temperature_K, apply_phase_cap=True
+            ).G_J_mol
+        elif phase in crystal_rows:
+            row = crystal_rows[phase]
+            parent_liquid_g = {
+                oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
+                for oxide in row["oxide_stoichiometry"]
+            }
+            fusion = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
+            crystal_gibbs[phase] = math.fsum(
+                float(nu) * parent_liquid_g[oxide]
+                for oxide, nu in row["oxide_stoichiometry"].items()
+            ) - fusion * 1000.0
+        else:
+            crystal_gibbs[phase] = float(state.candidate.G_crystal_J_mol)
+    return liquid, MappingProxyType(crystal_gibbs)
 
 
 def _positive_melt(
@@ -722,39 +849,43 @@ def _solve_active_equalities(
         norm = float(np.linalg.norm(residual, ord=np.inf))
         diagnostics_map["active_affinity_inf"] = norm
         diagnostics_map["active_iterations"] = float(outer_iteration + 1)
-        if norm <= affinity_tol_ln:
-            return n, True, "converged", diagnostics_map
-
         # Finite differences are scaled in formula moles. At a boundary use a
         # feasible one-sided probe; every probe remains in P={n≥0, An≤b}.
         jacobian = np.zeros((len(active), len(active)), dtype=float)
         base = n[active].copy()
-        for column, phase_index in enumerate(active):
-            step = _FD_STEP_SCALED * max(1.0, abs(base[column] / scales[phase_index])) * scales[phase_index]
+
+        def derivative(column: int, step: float, probe_tol: float) -> np.ndarray | None:
             plus = base.copy(); plus[column] += step
             plus_result = _active_residual(
                 plus, active, n, A, b, states, parents, liquid_gibbs,
-                temperature_K, pack, inner_tol, max_iter, balance_tol,
+                temperature_K, pack, probe_tol, max_iter, balance_tol,
             )
             minus_result = None
             if base[column] >= step:
                 minus = base.copy(); minus[column] -= step
                 minus_result = _active_residual(
                     minus, active, n, A, b, states, parents, liquid_gibbs,
-                    temperature_K, pack, inner_tol, max_iter, balance_tol,
+                    temperature_K, pack, probe_tol, max_iter, balance_tol,
                 )
             if plus_result is not None and minus_result is not None:
-                jacobian[:, column] = (
-                    plus_result[0] - minus_result[0]
-                ) / (2.0 * step)
-            elif plus_result is not None:
-                jacobian[:, column] = (plus_result[0] - residual) / step
-            elif minus_result is not None:
-                jacobian[:, column] = (residual - minus_result[0]) / step
-            else:
-                return n, False, "no_feasible_jacobian", diagnostics_map
+                return (plus_result[0] - minus_result[0]) / (2.0 * step)
+            if plus_result is not None:
+                return (plus_result[0] - residual) / step
+            if minus_result is not None:
+                return (residual - minus_result[0]) / step
+            return None
 
-        scaled_jacobian = jacobian * scales[np.asarray(active)][None, :]
+        for column, phase_index in enumerate(active):
+            step = _FD_STEP_SCALED * max(1.0, abs(base[column] / scales[phase_index])) * scales[phase_index]
+            full_derivative = derivative(column, step, inner_tol)
+            if full_derivative is None:
+                return n, False, "no_feasible_jacobian", diagnostics_map
+            jacobian[:, column] = full_derivative
+
+        # Compare predicted Newton corrections from h and h/2 in scaled solid
+        # coordinates, and compare nominal/tighter inner chemical potentials.
+        scaled_full_jacobian = jacobian * scales[np.asarray(active)][None, :]
+        scaled_jacobian = scaled_full_jacobian
         lower = -n[np.asarray(active)] / scales[np.asarray(active)]
         # SVD separates the solvable residual row space from extent nullspace.
         # Extent columns are divided by formula-mole scales, so relative
@@ -779,6 +910,72 @@ def _solve_active_equalities(
         diagnostics_map["active_jacobian_nullity"] = float(nullspace.shape[0])
         if rank == 0:
             return n, False, "no_active_jacobian", diagnostics_map
+        if norm <= affinity_tol_ln:
+            relative_rank_cutoff = rank_threshold / largest_singular if largest_singular else 1.0
+            half_jacobian = np.zeros_like(jacobian)
+            for column, phase_index in enumerate(active):
+                step = _FD_STEP_SCALED * max(
+                    1.0, abs(base[column] / scales[phase_index])
+                ) * scales[phase_index]
+                half_derivative = derivative(column, step / 2.0, inner_tol)
+                if half_derivative is None:
+                    return n, False, "error_budget_unresolved", diagnostics_map
+                half_jacobian[:, column] = half_derivative
+            scaled_half_jacobian = half_jacobian * scales[np.asarray(active)][None, :]
+            full_correction = np.linalg.lstsq(
+                scaled_full_jacobian, -residual, rcond=relative_rank_cutoff
+            )[0]
+            half_correction = np.linalg.lstsq(
+                scaled_half_jacobian, -residual, rcond=relative_rank_cutoff
+            )[0]
+            fd_correction_error = float(np.linalg.norm(
+                scaled_half_jacobian @ (full_correction - half_correction), ord=np.inf
+            ))
+            _half_left, half_singular, _half_right = np.linalg.svd(
+                scaled_half_jacobian, full_matrices=True
+            )
+            half_rank = int(np.count_nonzero(half_singular > rank_threshold))
+            if half_rank == 0 or half_rank != rank:
+                return n, False, "error_budget_unresolved", diagnostics_map
+            condition = float(half_singular[0] / half_singular[half_rank - 1])
+            diagnostics_map["fd_correction_error_ln"] = fd_correction_error
+            try:
+                tighter = _active_residual(
+                    n[active], active, n, A, b, states, parents, liquid_gibbs,
+                    temperature_K, pack, inner_tol * 0.1, max_iter, balance_tol,
+                )
+            except (ImccRefusal, ArithmeticError, FloatingPointError):
+                tighter = None
+            if tighter is None:
+                return n, False, "error_budget_unresolved", diagnostics_map
+            tighter_residual, _tighter_trial, tighter_melt = tighter
+            normal_logs = _melt_logs(_melt, parents)
+            tighter_logs = _melt_logs(tighter_melt, parents)
+            inner_activity_error = float(
+                np.max(np.abs(normal_logs - tighter_logs), initial=0.0) * condition
+            )
+            inner_coordinate_correction = np.linalg.lstsq(
+                scaled_half_jacobian,
+                -(tighter_residual - residual),
+                rcond=relative_rank_cutoff,
+            )[0]
+            # Map the scaled extent correction back through J to report its
+            # predicted effect on ln affinities, the units used by the 2e-9 budget.
+            inner_correction_error = float(np.linalg.norm(
+                scaled_half_jacobian @ inner_coordinate_correction, ord=np.inf
+            ))
+            diagnostics_map["inner_activity_error_ln"] = inner_activity_error
+            diagnostics_map["inner_correction_error_ln"] = inner_correction_error
+            if (
+                not math.isfinite(fd_correction_error)
+                or not math.isfinite(inner_activity_error)
+                or not math.isfinite(inner_correction_error)
+                or fd_correction_error > _FD_CORRECTION_TOL_LN
+                or inner_activity_error > _INNER_ACTIVITY_ERROR_TOL_LN
+                or inner_correction_error > _INNER_CORRECTION_TOL_LN
+            ):
+                return n, False, "error_budget_unresolved", diagnostics_map
+            return n, True, "converged", diagnostics_map
         step_result = lsq_linear(
             singular[:rank, None] * right[:rank, :],
             -(left[:, :rank].T @ residual),
@@ -879,18 +1076,40 @@ def _phase_extent_ranges(
     if not indices:
         return result, True, True
     selected_A = A[:, np.asarray(indices, dtype=int)]
+    active_rows = residual_inventory > 0.0
+    if not np.any(active_rows):
+        return {index: (0.0, 0.0) for index in indices}, False, False
+    row_scale = residual_inventory[active_rows]
+    column_scale = scales[np.asarray(indices, dtype=int)]
+    scaled_A = selected_A[active_rows, :] * column_scale[None, :] / row_scale[:, None]
     for local, global_index in enumerate(indices):
         cost = np.zeros(len(indices)); cost[local] = 1.0
         low = linprog(
-            cost, A_eq=selected_A, b_eq=residual_inventory,
+            cost, A_eq=scaled_A, b_eq=np.ones_like(row_scale),
             bounds=(0.0, None), method="highs",
         )
         high = linprog(
-            -cost, A_eq=selected_A, b_eq=residual_inventory,
+            -cost, A_eq=scaled_A, b_eq=np.ones_like(row_scale),
             bounds=(0.0, None), method="highs",
         )
         if low.success and high.success:
-            result[global_index] = (float(low.fun), float(-high.fun))
+            endpoints = (np.asarray(low.x) * column_scale, np.asarray(high.x) * column_scale)
+            amounts = (float(low.x[local]) * column_scale[local], float(high.x[local]) * column_scale[local])
+            valid = True
+            for endpoint in endpoints:
+                inventory = selected_A @ endpoint
+                relative_error = np.abs(inventory - residual_inventory) / np.maximum(
+                    residual_inventory, np.finfo(float).tiny
+                )
+                if np.any((residual_inventory == 0.0) & (inventory != 0.0)):
+                    valid = False
+                if np.max(relative_error[active_rows], initial=0.0) > tol:
+                    valid = False
+            lo, hi = amounts
+            result[global_index] = (
+                (max(0.0, lo), max(0.0, hi)) if valid else (0.0, math.inf)
+            )
+            certified = certified and valid
         else:
             result[global_index] = (0.0, math.inf)
             certified = False
@@ -958,6 +1177,9 @@ def _result_receipt(
             "bulk_balance_relative_tolerance": _DEFAULT_BALANCE_TOL,
             "inner_balance_relative_tolerance": _INNER_BALANCE_TOL,
             "outer_affinity_tolerance_ln": _DEFAULT_AFFINITY_TOL_LN,
+            "finite_difference_correction_tolerance_ln": _FD_CORRECTION_TOL_LN,
+            "inner_activity_error_tolerance_ln": _INNER_ACTIVITY_ERROR_TOL_LN,
+            "inner_correction_tolerance_ln": _INNER_CORRECTION_TOL_LN,
             "dual_slack_tolerance_over_RT": _DUAL_SLACK_TOL_RT,
             "pressure_bar": _PRESSURE_BAR,
             **dict(solver),
@@ -1112,6 +1334,9 @@ def _independent_kkt_recheck(
     # This verifier deliberately reconstructs balances and affinities from the
     # returned vectors and a fresh melt solve; it consumes none of the outer
     # solver's residuals or Jacobians.
+    verified_liquid_gibbs, verified_crystal_gibbs = (
+        _independent_thermochemical_standards(states, parents, temperature_K)
+    )
     balance = bulk_vector - A @ solid_vector
     melt = None
     inner_balance_relative = 0.0
@@ -1137,10 +1362,11 @@ def _independent_kkt_recheck(
             if not state.available or set(state.candidate.stoichiometry) - set(parents):
                 continue
             c = state.candidate
+            crystal_g = verified_crystal_gibbs[c.phase_id]
             dg_fus = math.fsum(
-                c.stoichiometry[name] * liquid_gibbs[index[name]]
+                c.stoichiometry[name] * verified_liquid_gibbs[index[name]]
                 for name in c.stoichiometry
-            ) - c.G_crystal_J_mol
+            ) - crystal_g
             affinity = math.fsum(
                 c.stoichiometry[name] * logs[index[name]]
                 for name in c.stoichiometry
@@ -1209,10 +1435,10 @@ def _independent_kkt_recheck(
                 math.fsum(
                     candidate.stoichiometry[name] * dual_mu[parent_index[name]]
                     for name in candidate.stoichiometry
-                ) - candidate.G_crystal_J_mol
+                ) - verified_crystal_gibbs[candidate.phase_id]
             ) / (R_J_MOL_K * temperature_K)
         kernel = pack.kernel_datapack if isinstance(pack, ImccLoadedDatapack) else pack
-        dual_logs = (dual_mu - liquid_gibbs) / (R_J_MOL_K * temperature_K)
+        dual_logs = (dual_mu - verified_liquid_gibbs) / (R_J_MOL_K * temperature_K)
         inner_terms = list(map(float, dual_logs))
         nu_full = np.asarray(kernel.nu, dtype=float)
         active_indices = [tuple(kernel.parent_oxides).index(name) for name in parents]
@@ -1229,7 +1455,7 @@ def _independent_kkt_recheck(
             pack,
             active_indices,
             [*map(float, dual_mu / (R_J_MOL_K * temperature_K)),
-             *map(float, liquid_gibbs / (R_J_MOL_K * temperature_K))],
+             *map(float, verified_liquid_gibbs / (R_J_MOL_K * temperature_K))],
         )
         inner_certificate = inner_logq + q_error <= 0.0
     else:
@@ -1318,6 +1544,7 @@ def _positive_branch(
     history_seen: set[tuple[str, ...]] = set()
     state_history_seen: set[tuple[tuple[str, ...], tuple[float, ...]]] = set()
     residual_sign_history: list[tuple[tuple[str, int], ...]] = []
+    solver_error_history: list[Mapping[str, float]] = []
     cycle_detected = False
     tie_breaks: list[str] = []
     polymorph_tie_breaks = tuple(
@@ -1334,6 +1561,7 @@ def _positive_branch(
         return {
             "active_set_history": tuple(history),
             "active_set_residual_signs": tuple(residual_sign_history),
+            "outer_error_budget_history": tuple(solver_error_history),
             "polymorph_tie_breaks": polymorph_tie_breaks,
             "deterministic_tie_breaks": tuple(tie_breaks),
             **extra,
@@ -1427,13 +1655,15 @@ def _positive_branch(
         ]
         if active_bad:
             if repeated_state:
-                solved_n, converged, reason = n.copy(), False, "repeated_state"
+                solved_n, converged, reason, _solver_residuals = n.copy(), False, "repeated_state", {}
             else:
                 solved_n, converged, reason, _solver_residuals = _solve_active_equalities(
                     n.copy(), active.copy(), A, b, states, parents, liquid_gibbs,
                     temperature_K, pack, affinity_tol_ln, balance_tol, inner_tol,
                     max_iter,
                 )
+            if _solver_residuals:
+                solver_error_history.append(dict(_solver_residuals))
             if converged:
                 n = solved_n
                 pending_add = None
@@ -1456,13 +1686,15 @@ def _positive_branch(
                     states=candidates_all, crystal_digest=crystal_digest,
                     pure_digest=pure_digest, explicit_candidates=explicit_candidates,
                     refusal=EquilibriumRefusal(
-                    "active_set_cycle" if cycle_detected else "active_set_incompatibility",
+                        "active_set_cycle" if cycle_detected else
+                        "resolution_unresolved" if reason == "error_budget_unresolved" else
+                        "active_set_incompatibility",
                         "Active crystal equalities could not be solved within the affinity tolerance.",
                         tuple(f"phase.{phase_ids[i]}" for i in active),
                         {"active_affinity_inf_ln": max(
                             (abs(affinities.get(phase_ids[i], math.inf)) for i in active),
                             default=math.inf,
-                        )},
+                        ), **_solver_residuals},
                     ),
                     solver=history_solver(failure_reason=reason),
                 )
@@ -1484,6 +1716,7 @@ def _positive_branch(
                 ),
             ))
             replacement_found = False
+            trial_error_budget: dict[str, float] = {}
             for remove in replacement_sets:
                 trial_active = [i for i in active if i not in remove]
                 if most not in trial_active:
@@ -1502,6 +1735,8 @@ def _positive_branch(
                 )
                 trial_n, trial_ok, _reason, _diag = trial_result
                 if not trial_ok:
+                    if _reason == "error_budget_unresolved":
+                        trial_error_budget.update(_diag)
                     continue
                 trial_liquid, _err = _safe_liquid(A, trial_n, b, balance_tol)
                 if trial_liquid is None:
@@ -1547,10 +1782,12 @@ def _positive_branch(
                 states=candidates_all, crystal_digest=crystal_digest,
                 pure_digest=pure_digest, explicit_candidates=explicit_candidates,
                 refusal=EquilibriumRefusal(
-                    "active_set_cycle" if cycle_detected else "active_set_incompatibility",
+                    "active_set_cycle" if cycle_detected else
+                    "resolution_unresolved" if trial_error_budget else
+                    "active_set_incompatibility",
                     "No deterministic one- or two-phase replacement set passed all crystal inequalities.",
                     tuple(f"phase.{phase_ids[i]}" for i in active),
-                    {"replacement_trials": float(len(replacement_sets))},
+                    {"replacement_trials": float(len(replacement_sets)), **trial_error_budget},
                 ),
                 solver=history_solver(failure_reason=reason),
             )
@@ -1707,6 +1944,8 @@ def _positive_branch(
             solver={
                 "active_set_history": history,
                 "active_set_residual_signs": residual_sign_history,
+                "outer_error_budget_history": solver_error_history,
+                "missing_candidate_phase_ids": tuple(missing),
                 "polymorph_tie_breaks": polymorph_tie_breaks,
                 "deterministic_tie_breaks": tie_breaks,
                 "outer_iterations": len(history),
@@ -1934,6 +2173,13 @@ def _solid_result(
     })
     if optimizer_residuals:
         recheck.update(optimizer_residuals)
+    dual_feasible = bool(np.all(
+        original_dual_slack >= -_DUAL_SLACK_TOL_RT * R_J_MOL_K * temperature_K
+    ))
+    equilibrium_state_certified = (
+        not out_of_domain and q_certified and passed and gap <= gap_bound
+        and dual_feasible and lp.amount_ranges_certified
+    )
     if out_of_domain:
         refusal = EquilibriumRefusal(
             "liquid_absence_not_certified",
@@ -1969,7 +2215,7 @@ def _solid_result(
     elif (
         not passed
         or gap > gap_bound
-        or np.any(original_dual_slack < -_DUAL_SLACK_TOL_RT * R_J_MOL_K * temperature_K)
+        or not dual_feasible
     ):
         refusal = EquilibriumRefusal(
             "kkt_residual",
@@ -2005,7 +2251,7 @@ def _solid_result(
         all_states,
         missing,
         explicit_candidates,
-        (("crystal_only_minimum",) if out_of_domain else ()),
+        (("crystal_only_minimum",) if not equilibrium_state_certified else ()),
         (),
         validity,
         axes,
@@ -2020,6 +2266,16 @@ def _solid_result(
         candidates=all_states,
         solver={
             "solid_lp_objective_J": lp.objective_J,
+            "crystal_only_candidate_amounts_mol": dict(zip(
+                (state.candidate.phase_id for state in states),
+                map(float, lp.amounts), strict=True,
+            )),
+            "crystal_only_candidate_ranges_mol": dict(zip(
+                (state.candidate.phase_id for state in states),
+                lp.amount_ranges, strict=True,
+            )),
+            "missing_candidate_phase_ids": tuple(missing),
+            "liquid_absence_certified": bool(q_certified),
             "dual_potentials_J_mol": dict(zip(parents, map(float, mu_q), strict=True)),
             "dual_optimal_face_logQ": q_value,
             "logQ_interval": q_interval,
@@ -2041,27 +2297,37 @@ def _solid_result(
         pressure_bar=_PRESSURE_BAR,
         bulk_parent_mol=bulk,
         liquid_parent_mol=None,
-        liquid_mass_fraction=0.0,
-        solid_mol=amounts if amount_unique else None,
-        phase_amount_ranges_mol=solid_ranges,
-        phase_amounts_unique=amount_unique,
-        phase_presence=phase_presence,
-        saturated_candidates=tuple(sorted(saturated)),
-        identifiable_activities=activities,
-        activity_ranges_ln=activity_ranges,
-        phase_affinities_ln=affinities,
-        phase_affinity_ranges_ln=affinity_ranges,
-        phase_saturation_indices=_make_saturation_rows(all_states, affinities, temperature_K),
+        liquid_mass_fraction=0.0 if equilibrium_state_certified else None,
+        solid_mol=amounts if amount_unique and equilibrium_state_certified else None,
+        phase_amount_ranges_mol=(
+            solid_ranges if equilibrium_state_certified else
+            {phase: (0.0, math.inf) for phase in phase_presence}
+        ),
+        phase_amounts_unique=bool(amount_unique and equilibrium_state_certified),
+        phase_presence=(
+            phase_presence if equilibrium_state_certified else
+            {phase: "unresolved" for phase in phase_presence}
+        ),
+        saturated_candidates=(tuple(sorted(saturated)) if equilibrium_state_certified else ()),
+        identifiable_activities=activities if equilibrium_state_certified else {},
+        activity_ranges_ln=activity_ranges if equilibrium_state_certified else {},
+        phase_affinities_ln=affinities if equilibrium_state_certified else {},
+        phase_affinity_ranges_ln=affinity_ranges if equilibrium_state_certified else {},
+        phase_saturation_indices=_make_saturation_rows(
+            all_states, affinities if equilibrium_state_certified else {}, temperature_K
+        ),
         logQ=q_value,
         logQ_interval=q_interval,
         melt=None,
         gas=None,
-        mass_balance_relative_inf=recheck.get("balance_relative_inf"),
+        mass_balance_relative_inf=(
+            recheck.get("balance_relative_inf") if equilibrium_state_certified else None
+        ),
         labels=labels,
         receipt=receipt,
         refusal=refusal,
         kkt_recheck=recheck,
-        crystal_only_minimum=out_of_domain,
+        crystal_only_minimum=not equilibrium_state_certified,
     )
 
 
@@ -2259,7 +2525,7 @@ def equilibrate(
             axes=("temperature_K",),
         )
     b = np.asarray([normalized_bulk[name] for name in parents], dtype=float)
-    lp = _lp_solid_minimum(A, g, b)
+    lp = _lp_solid_minimum(A, g, b, float(tol))
     out_of_domain = not (_LIQUID_DOMAIN_K[0] <= temperature <= _LIQUID_DOMAIN_K[1])
     lp_diagnostics: dict[str, float] = {}
     lp_valid = False

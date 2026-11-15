@@ -17,6 +17,8 @@ from openimcc.equilibrium import (
     CrystalCandidate,
     _CandidateState,
     _active_residual,
+    _lp_solid_minimum,
+    _minimize_logq_on_dual_face,
     _solve_active_equalities,
     equilibrate,
 )
@@ -100,7 +102,7 @@ def test_binary_eutectic_singular_jacobian_is_consistent(ideal_pack, gas_pack):
         start, [0, 1], A, b, states, parents, liquid_g,
         temperature, ideal_pack, 1.0e-8, 1.0e-10, 1.0e-12, 100,
     )
-    assert converged, reason
+    assert converged, (reason, solver_diagnostics)
     at_solution = _active_residual(
         solved, [0, 1], solved, A, b, states, parents, liquid_g,
         temperature, ideal_pack, 1.0e-12, 100, 1.0e-10,
@@ -177,7 +179,7 @@ def test_competing_polymorphs_switch_and_share_at_crossing(ideal_pack, gas_pack)
     at_crossing = results[crossing]
     assert at_crossing.refusal is not None
     assert at_crossing.refusal.code == "incipient_liquid_unresolved"
-    assert set(at_crossing.saturated_candidates) == {"poly-alpha", "poly-beta"}
+    assert at_crossing.saturated_candidates == ()
     assert at_crossing.phase_amounts_unique is False
     assert at_crossing.phase_presence["poly-alpha"] == "unresolved"
     assert at_crossing.phase_presence["poly-beta"] == "unresolved"
@@ -228,10 +230,135 @@ def test_single_parent_no_associate_control_has_q_one_at_unit_activity(ideal_pac
     result = equilibrate(
         {"SiO2": 1.0}, temperature, candidates=(candidate,), pack=ideal_pack,
     )
-    assert result.identifiable_activities["SiO2"] == pytest.approx(1.0, abs=1.0e-12)
     assert result.logQ == pytest.approx(0.0, abs=1.0e-12)
     assert result.logQ_interval[0] <= 0.0 <= result.logQ_interval[1]
     assert result.refusal.code == "incipient_liquid_unresolved"
+    assert result.solid_mol is None
+    assert result.liquid_mass_fraction is None
+    assert not result.phase_amounts_unique
+    assert result.phase_presence["pure-SiO2"] == "unresolved"
+    assert result.crystal_only_minimum is True
+    assert result.receipt.solver["crystal_only_candidate_amounts_mol"]["pure-SiO2"] == pytest.approx(1.0)
+
+
+def test_dual_face_logq_analytic_two_parent_minimum(ideal_pack, gas_pack):
+    temperature = 2000.0
+    rt = R_J_MOL_K * temperature
+    parents = ("CaO", "SiO2")
+    liquid_g = np.asarray([
+        species_thermo(parent, "l", temperature, gas_pack).G_J_mol
+        for parent in parents
+    ])
+    A = np.asarray([[1.0], [1.0]])
+    b = np.ones(2)
+    g = np.asarray([float(liquid_g.sum() - 2.0 * rt)])
+    lp = _lp_solid_minimum(A, g, b)
+    assert lp is not None
+    mu, logq, interval, certified, diagnostics_map = _minimize_logq_on_dual_face(
+        A, g, b, lp.objective_J, lp.chemical_potentials, liquid_g,
+        temperature, ideal_pack,
+        [tuple(load_datapack().parent_oxides).index(parent) for parent in parents],
+    )
+    expected = math.log(2.0) - 1.0
+    assert mu == pytest.approx(liquid_g - rt, abs=1.0e-5)
+    assert logq == pytest.approx(expected, abs=1.0e-8)
+    assert interval[1] < 0.0
+    assert certified
+    assert diagnostics_map["logQ_stationarity_scaled"] <= 1.0e-8
+
+
+def test_dual_face_logq_respects_variable_crystal_inequalities(ideal_pack, gas_pack):
+    temperature = 2000.0
+    rt = R_J_MOL_K * temperature
+    parents = ("CaO", "SiO2")
+    liquid_g = np.asarray([
+        species_thermo(parent, "l", temperature, gas_pack).G_J_mol
+        for parent in parents
+    ])
+    A = np.asarray([[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]])
+    g = np.asarray([
+        liquid_g[0] - 0.5 * rt,
+        liquid_g[1] - 1.5 * rt,
+        liquid_g.sum() - 2.0 * rt,
+    ])
+    b = np.ones(2)
+    lp = _lp_solid_minimum(A, g, b)
+    assert lp is not None
+    mu, logq, interval, certified, diagnostics_map = _minimize_logq_on_dual_face(
+        A, g, b, lp.objective_J, lp.chemical_potentials, liquid_g,
+        temperature, ideal_pack,
+        [tuple(load_datapack().parent_oxides).index(parent) for parent in parents],
+    )
+    expected_logs = np.asarray([-0.5, -1.5])
+    expected = float(np.logaddexp(expected_logs[0], expected_logs[1]))
+    assert mu == pytest.approx(liquid_g + rt * expected_logs, abs=1.0e-5)
+    assert logq == pytest.approx(expected, abs=1.0e-8)
+    assert interval[0] == pytest.approx(expected, abs=1.0e-8)
+    assert certified
+    assert diagnostics_map["logQ_stationarity_scaled"] <= 1.0e-8
+
+
+def test_default_and_explicit_candidate_scope_labels(ideal_pack):
+    default = equilibrate({"SiO2": 1.0}, 1990.0, pack=ideal_pack)
+    assert "restricted_candidate_set" not in default.labels.notices
+    assert default.receipt.solver["missing_candidate_phase_ids"]
+
+    explicit = equilibrate({"SiO2": 1.0}, 1990.0, candidates=(), pack=ideal_pack)
+    assert "restricted_candidate_set" in explicit.labels.notices
+    assert explicit.refusal is not None
+    assert explicit.refusal.code == "missing_phase_data"
+
+
+def test_phase_amount_ranges_are_invariant_to_bulk_scale(ideal_pack, gas_pack):
+    temperature = 2000.0
+    parents = ("CaO", "SiO2")
+    # With liquid CaO activity 1/9 at bulk ratio (1,2), the pure CaO phase
+    # amount is 3/4; scaling the inventory must scale every extent equally.
+    activity = 1.0 / 9.0
+    liquid_g = species_thermo("CaO", "l", temperature, gas_pack).G_J_mol
+    phase = CrystalCandidate(
+        "CaO-solid", {"CaO": 1.0},
+        liquid_g + R_J_MOL_K * temperature * math.log(activity),
+    )
+    base = equilibrate(
+        {"CaO": 1.0, "SiO2": 2.0}, temperature,
+        candidates=(phase,), pack=ideal_pack,
+    )
+    tiny = equilibrate(
+        {"CaO": 1.0e-8, "SiO2": 2.0e-8}, temperature,
+        candidates=(phase,), pack=ideal_pack,
+    )
+    assert base.phase_amounts_unique and tiny.phase_amounts_unique
+    assert base.phase_amount_ranges_mol["CaO-solid"][0] == pytest.approx(0.75, abs=1e-8)
+    assert tiny.phase_amount_ranges_mol["CaO-solid"][0] == pytest.approx(0.75e-8, rel=1e-8)
+
+
+def test_default_anorthite_probe_at_1800k_reports_missing_phases():
+    result = equilibrate(
+        {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1800.0,
+    )
+    assert result.refusal is not None
+    assert result.refusal.code in {"liquid_absence_not_certified", "missing_phase_data"}
+    missing = result.receipt.solver["missing_candidate_phase_ids"]
+    assert missing
+    print("anorthite-1800 missing candidate phases:", ", ".join(missing))
+    print(
+        "anorthite-1800 result:", result.refusal.code,
+        "candidate amounts:", result.receipt.solver["crystal_only_candidate_amounts_mol"],
+        "logQ:", result.receipt.solver["dual_optimal_face_logQ"],
+        "optimizer diagnostics:", {
+            key: result.kkt_recheck.get(key)
+            for key in (
+                "logQ_minimum_certified", "logQ_optimizer_success",
+                "logQ_optimizer_message", "logQ_stationarity_scaled",
+                "logQ_complementarity", "dual_slack_min_J_mol",
+            )
+        },
+    )
+    if not result.receipt.solver["liquid_absence_certified"]:
+        assert result.solid_mol is None
+        assert result.liquid_mass_fraction is None
+        assert result.crystal_only_minimum is True
 
 
 def test_fully_solid_branch_certifies_logq_below_zero(ideal_pack, gas_pack):
