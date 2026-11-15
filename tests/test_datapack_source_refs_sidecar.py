@@ -21,8 +21,8 @@ from test_melt_source_transcriptions import (
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src" / "openimcc" / "data" / "packs"
 SIDECAR_PATH = ROOT / "src" / "openimcc" / "data" / "source-refs-sidecar.json"
-# Re-pinned for the opt-in Ga/In KEMS condensate table.
-MANIFEST_SHA256 = "bde434b17d87249162b0ef7cecefd8e5a4520269ba9d08cb64d2d1cced455224"
+# Re-pinned because the released v6 redox pack was added.
+MANIFEST_SHA256 = "54dd2b2cfefaf13c06bc902f82ffb0cfca9503c0ab8403603719b0af138f4ccf"
 
 
 def _pack_data() -> dict[str, dict[str, Any]]:

@@ -246,6 +246,7 @@ _PACK_OVERLAY_BY_VERSION = {
     "1.6.0": False,
     "1.7.0": False,
     "1.8.0-cr-candidate": False,
+    "1.8.0": False,
 }
 _PACK_OVERLAY_MODEL_BY_VERSION = {
     "1.0.3-d066-ext-v1": "IMCC-SF04-D066",
