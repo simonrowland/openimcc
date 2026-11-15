@@ -152,20 +152,21 @@ only activities in `identifiable_activities`; a gas row that needs an
 unidentified activity appears in `gas_depends` and is not evaluated. The
 returned pressures are a fixed-activity equilibrium vapour potential over the
 stated bulk at `T`. They do not close oxygen or vapour mass balance and make
-no rate, extent, or depletion claim. `labels.validity` combines the phase
-result with gas-row domain and activity dependencies; `labels.evidence_class`
-is the least-authoritative participating equilibrium or gas row.
+no rate, extent, or depletion claim. `labels.validity` and
+`labels.out_of_domain_axes` describe the condensed equilibrium only. Vapour
+status and `vapour.out_of_domain_axes` describe the gas overlay; vapour status
+cannot be better than either the condensed equilibrium or gas rows.
 
 ## Simulator phase-state contract
 
 `PhaseEquilibriumResult.to_dict()` retains its result fields and adds a
 `phase_state_contract` object. Its version is exported as
-`openimcc.equilibrium.phase_state_contract_version` (currently `1`):
+`openimcc.equilibrium.phase_state_contract_version` (currently `2`):
 
 ```text
 phase_state_contract = {
   "name": "openimcc.phase-state",
-  "version": 1,
+  "version": 2,
   "input": {
     "bulk_basis": "parent_oxide_mol",
     "bulk_parent_mol": {oxide: mol, ...},
@@ -194,6 +195,7 @@ phase_state_contract = {
       "partial_pressures_bar": null | {species: pressure, ...},
       "depends": {species: reason, ...},
       "domain_flags": {species: flag, ...},
+      "out_of_domain_axes": [axis, ...],
       "provenance_class": {species: authority, ...},
       "omitted_channels": {species: reason, ...},
       "error": null | string
@@ -212,13 +214,15 @@ change the external engine itself.
 
 Consumers should check both `name` and `version` before reading the contract,
 and should reject an unsupported version rather than guessing field meanings.
-Within version 1, producers may add fields while preserving existing field
+Within a version, producers may add fields while preserving existing field
 names, types, units, meanings, and status values; consumers should ignore
 unknown fields. Removing or renaming a field, changing a field's type or unit,
 changing its meaning or an existing status value, or making a previously
 optional field required needs a version bump. A new version may add fields
-while retaining v1 semantics, but changes to existing semantics require a new
-major contract version so consumers can branch explicitly.
+while retaining prior semantics. Version 2 separates condensed-equilibrium
+labels from vapour validity; consumers of version 1 must not treat gas-row
+validity as part of `labels.validity`. Consumers should branch on the version
+before interpreting fields whose meanings differ.
 
 See the API dataclasses in openimcc.equilibrium for the complete field
 definitions and the typed refusal codes. `PhaseEquilibriumResult.to_dict()`

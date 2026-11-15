@@ -42,7 +42,7 @@ _PURE_RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
 _CRYSTAL_RESOURCE = "data/diagnostics/crystal-phases.json"
 _PRESSURE_BAR = 1.0
 _LIQUID_DOMAIN_K = (1700.0, 3000.0)
-phase_state_contract_version = 1
+phase_state_contract_version = 2
 
 # Each named tolerance applies to a different physical/numerical certificate.
 _DEFAULT_BALANCE_TOL = 1.0e-10
@@ -134,12 +134,18 @@ class PhaseEquilibriumResult:
             vapour_domain_flags = self.gas.domain_flags
             vapour_authority = self.gas.provenance_class
             vapour_omitted = self.gas.omitted_channels
+        vapour_out_of_domain_axes = (
+            ("gas_species.temperature_K",)
+            if self.vapour_error else
+            tuple(
+                f"gas_species.{name}.temperature_K"
+                for name, detail in self.gas.domain_flags.items()
+                if detail is not None
+            ) if self.gas is not None else ()
+        )
         if self.fO2 is None:
             vapour_status = "NOT_REQUESTED"
-        elif self.vapour_error or any(
-            axis.startswith("gas_species.")
-            for axis in self.labels.out_of_domain_axes
-        ):
+        elif vapour_out_of_domain_axes:
             vapour_status = "OUT_OF_DOMAIN"
         elif self.labels.validity == "OUT_OF_DOMAIN":
             vapour_status = "OUT_OF_DOMAIN"
@@ -198,6 +204,7 @@ class PhaseEquilibriumResult:
                     ),
                     "depends": result["gas_depends"],
                     "domain_flags": _json_compatible(vapour_domain_flags),
+                    "out_of_domain_axes": vapour_out_of_domain_axes,
                     "provenance_class": _json_compatible(vapour_authority),
                     "omitted_channels": _json_compatible(vapour_omitted),
                     "error": self.vapour_error,
@@ -3328,7 +3335,6 @@ def _attach_phase_state_vapour(
     gas_depends: dict[str, str] = {}
     vapour_error = None
     gas_pack = None
-    labels = result.labels
     refusal = result.refusal
     solver = dict(result.receipt.solver)
     data_digests = dict(result.receipt.data_digests)
@@ -3358,48 +3364,12 @@ def _attach_phase_state_vapour(
         solver["vapour_channels_depends"] = dict(gas_depends)
         if vapour_error is not None:
             gas_axes = ("gas_species.temperature_K",)
-            validity: Literal["IN", "OUT_OF_DOMAIN", "DEPENDS"] = "OUT_OF_DOMAIN"
-            flags = (*labels.flags, "gas_species_out_of_range")
         else:
             gas_axes = tuple(
                 f"gas_species.{name}.temperature_K"
                 for name, detail in gas_result.domain_flags.items()
                 if detail is not None
             )
-            validity = (
-                "OUT_OF_DOMAIN" if gas_axes or labels.validity == "OUT_OF_DOMAIN" else
-                "DEPENDS" if gas_depends or labels.validity == "DEPENDS" else
-                "IN"
-            )
-            flags = labels.flags
-        if gas_depends:
-            flags = (*flags, "gas_channel_depends_on_nonidentifiable_activity")
-        notices = (
-            *labels.notices,
-            "fixed_activity_equilibrium_vapour_potential_over_stated_bulk",
-            "vapour_does_not_claim_oxygen_closure_mass_balance_rate_extent_or_depletion",
-        )
-        if gas_depends:
-            notices = (*notices, "some_vapour_channels_need_nonidentifiable_activities")
-        identity = dict(labels.identity)
-        identity.update({
-            "gas_table_digest": gas_pack.gas_table_digest,
-            "condensate_table_digest": gas_pack.condensate_table_digest,
-        })
-        authorities = [labels.evidence_class]
-        if gas_result is not None:
-            authorities.extend(gas_result.provenance_class.values())
-        labels = replace(
-            labels,
-            identity=identity,
-            validity=validity,
-            out_of_domain_axes=tuple(dict.fromkeys((
-                *labels.out_of_domain_axes, *gas_axes,
-            ))),
-            evidence_class=_least_authority(authorities),
-            flags=tuple(dict.fromkeys(flags)),
-            notices=tuple(dict.fromkeys(notices)),
-        )
         if refusal is None and vapour_error is not None:
             refusal = EquilibriumRefusal(
                 "gas_temperature_out_of_range",
@@ -3424,7 +3394,6 @@ def _attach_phase_state_vapour(
         fO2=None if fO2 is None else float(fO2),
         gas_depends=gas_depends,
         vapour_error=vapour_error,
-        labels=labels,
         refusal=refusal,
         receipt=receipt,
     )

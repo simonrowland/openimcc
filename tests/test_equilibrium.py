@@ -957,7 +957,8 @@ def test_crystal_vapour_withholds_nonidentifiable_channels(
     assert "CaO" in result.gas_depends
     assert "activity_not_identifiable" in result.gas_depends["CaO"]
     assert "CaO" not in result.gas
-    assert result.labels.validity == "DEPENDS"
+    assert result.labels.validity == "IN"
+    assert result.to_dict()["phase_state_contract"]["output"]["vapour"]["status"] == "DEPENDS"
 
 
 def test_vapour_status_inherits_condensed_equilibrium_dependency():
@@ -971,6 +972,24 @@ def test_vapour_status_inherits_condensed_equilibrium_dependency():
     assert result.to_dict()["phase_state_contract"]["output"]["vapour"]["status"] == "DEPENDS"
 
 
+def test_vapour_domain_does_not_change_condensed_equilibrium_labels():
+    bulk = {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}
+    condensed = equilibrate(bulk, 1800.0)
+    with_vapour = equilibrate(bulk, 1800.0, fO2=1.0e-8)
+    vapour = with_vapour.to_dict()["phase_state_contract"]["output"]["vapour"]
+
+    assert condensed.labels.validity == "IN"
+    assert condensed.labels.out_of_domain_axes == ()
+    assert with_vapour.labels == condensed.labels
+    assert with_vapour.labels.validity == "IN"
+    assert with_vapour.labels.out_of_domain_axes == ()
+    assert vapour["status"] == "OUT_OF_DOMAIN"
+    assert set(vapour["out_of_domain_axes"]) == {
+        f"gas_species.{species}.temperature_K"
+        for species in ("AlO", "AlO2", "Al2O", "Al2O2", "Al", "Al2", "AlSiO")
+    }
+
+
 def test_phase_state_contract_schema_round_trips_through_json(ideal_pack):
     result = equilibrate(
         {"MgO": 1.0, "SiO2": 1.0}, 2000.0,
@@ -981,7 +1000,7 @@ def test_phase_state_contract_schema_round_trips_through_json(ideal_pack):
     output = contract["output"]
 
     assert contract["name"] == "openimcc.phase-state"
-    assert contract["version"] == phase_state_contract_version == 1
+    assert contract["version"] == phase_state_contract_version == 2
     assert contract["input"]["bulk_basis"] == "parent_oxide_mol"
     assert contract["input"]["bulk_parent_mol"] == {"MgO": 1.0, "SiO2": 1.0}
     assert contract["input"]["candidates"] == []
