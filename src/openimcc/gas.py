@@ -922,9 +922,13 @@ def _reaction_oxygen_policy(
     M + 1/2 O2`` gives demand 1 and exponent -1/2; AlSiO gives demand 3.5
     and exponent -1.25.
 
-    Saturation retains its gas-parent oxygen-weight convention: only product
-    oxygen is counted for gas-phase parents. The weight is returned alongside
-    demand so this precedence lives with the reaction policy.
+    Saturation retains its gas-parent-over-side-oxide precedence as a
+    PRESERVED LEGACY DISCREPANCY with the documented saturation equation in
+    ``docs/gas-saturation.md``: NaCl gets weight 0 although its reaction
+    consumes 1/2 Na2O and channel metadata reports demand 0.5. Keep this
+    discrepancy to stay bit-identical; resolving it requires a separate
+    behavior change. The saturation weight is returned alongside demand so
+    this precedence lives with the reaction policy.
     """
     parent, n_gas, n_o2 = reaction
     oxygen_atoms = float(_formula_atoms(species).get("O", 0))
@@ -942,7 +946,7 @@ def _reaction_oxygen_policy(
         )
     elif parent:
         parent_oxygen_demand = oxygen_atoms + 2.0 * n_o2 / n_gas
-        pO2_exponent = -n_o2 / n_gas
+        pO2_exponent = 0.0 if n_o2 == 0.0 else -n_o2 / n_gas
     else:
         parent_oxygen_demand = 0.0
         pO2_exponent = oxygen_atoms / 2.0
