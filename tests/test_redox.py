@@ -14,7 +14,6 @@ import openimcc.redox as redox_module
 
 from openimcc import (
     ImccComponentOutsideDomainError,
-    ImccLiquidStandardMismatchError,
     ImccRefusal,
     ImccTOutsideDatapackDomainError,
     PackStandardNotice,
@@ -1319,7 +1318,7 @@ def test_evaluate_redox_pack_standard_notices_and_strict_refusal() -> None:
     v1_pack = load_datapack(
         ROOT / "src/openimcc/data/packs/imcc-sf04-d066-v1.json"
     )
-    with pytest.raises(ImccLiquidStandardMismatchError, match="FeO") as refused:
+    with pytest.raises(RedoxInputError, match=r"FeO\(l\) basis") as refused:
         evaluate_redox(
             _fe_only_inventory(),
             2200.0,
@@ -1327,11 +1326,8 @@ def test_evaluate_redox_pack_standard_notices_and_strict_refusal() -> None:
             melt_pack=v1_pack,
             strict_pack_standards=True,
         )
-    assert {record.oxide for record in refused.value.mismatches} == {
-        "FeO",
-        "SiO2",
-        "Na2O",
-    }
+    assert "Fe-019" in str(refused.value)
+    assert "DG46-MASSON65" in str(refused.value)
 
     result = evaluate_redox(
         _fe_only_inventory(),
@@ -1382,7 +1378,7 @@ def test_default_redox_manifest_is_checked_via_evaluate_redox(
         evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
 
     content = json.loads(default_source.read_text(encoding="utf-8"))
-    content["thermo_species"]["FeO(l)"]["row"]["dG_A"] += 1.0
+    content["thermo_species"]["FeO(l)"]["row"]["dG_A"] += 1.0e-6
     content["canonical_content_digest"] = canonical_redox_digest(content)
     external_path = tmp_path / "external-redox.json"
     external_path.write_text(json.dumps(content), encoding="utf-8")

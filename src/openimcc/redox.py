@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import csv
 from collections.abc import Mapping, Sequence
 from dataclasses import InitVar, dataclass, field, replace
 from fractions import Fraction
+from functools import lru_cache
+from importlib import resources
 import math
 from numbers import Real
 from pathlib import Path
@@ -28,6 +31,8 @@ from openimcc.model import (
     ImccTOutsideDatapackDomainError,
     ImccUnprovenDatapackError,
     DEFAULT_MELT_PACK_NAME,
+    _FEO_LIQUID_CANDIDATE_ABSENT,
+    _NO_FEO_LIQUID_CANDIDATE,
     PackRowParticipation,
     _pack_row_participation,
     load_datapack,
@@ -37,6 +42,7 @@ from openimcc.redox_pack import (
     RedoxPack,
     load_redox_pack,
     ln_k_prime,
+    species_gibbs_j_mol,
 )
 from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import CalculationReceipt, build_calculation_receipt
@@ -57,6 +63,9 @@ _DEFAULT_DATAPACK_PATH = (
 _DEFAULT_REDOX_PACK_PATH = (
     Path(__file__).parent / "data" / "packs" / "openimcc-redox-v6.json"
 )
+_DG46_FEO_DELTA_G = "27778.965828 - 10.961554232*T"
+_FEO_BASIS_CHECK_TEMPERATURES_K = (1200.0, 1600.0, 2200.0)
+_FEO_BASIS_TOLERANCE_J_MOL = 1.0
 _BERRY_OPTICAL_BASICITY = {
     # Berry et al. (2024, GCA 366, Table 1 and supplementary text) give the
     # seven listed coefficients; Duffy (1989), Table 1, p. 36 prints K2O
@@ -195,6 +204,8 @@ class RedoxResult:
     ``extrapolated_redox_rows`` lists active redox rows evaluated outside their
     evidence intervals. ``active_row_band_intersection_K`` is the intersection
     of the active base and redox row evidence intervals.
+    ``feo_liquid_basis`` identifies the verified FeO(l) standard shared by the
+    selected melt and redox packs.
     """
 
     temperature_K: float
@@ -242,6 +253,7 @@ class RedoxResult:
     )
     pack_row_participation: tuple[PackRowParticipation, ...] = ()
     _pack_standard_notices: InitVar[tuple[PackStandardNotice, ...]] = ()
+    feo_liquid_basis: Mapping[str, str] | None = None
 
     def __post_init__(
         self, _pack_standard_notices: tuple[PackStandardNotice, ...]
@@ -1596,6 +1608,138 @@ def _ln_k_fe(redox_pack: RedoxPack, temperature_K: float) -> float:
         ) from exc
 
 
+@lru_cache(maxsize=1)
+def _feo_liquid_reference_rows() -> Mapping[str, Mapping[str, float | str]]:
+    """Load the two packaged FeO(l) Gibbs references used by basis checks."""
+    rows: dict[str, Mapping[str, float | str]] = {}
+    for basis_id, filename in (
+        ("DG46-MASSON65", "condensate-default-v1.csv"),
+        ("Fe-019", "condensate-feo-janaf-legacy.csv"),
+    ):
+        source = resources.files("openimcc.data.gas").joinpath(filename)
+        with source.open("r", encoding="utf-8", newline="") as handle:
+            for record in csv.DictReader(handle):
+                if record.get("species_name") == "FeO(l)":
+                    rows[basis_id] = {
+                        "species_name": "FeO(l)",
+                        **{
+                            key: float(record[key])
+                            for key in (
+                                "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"
+                            )
+                        },
+                    }
+                    break
+    if set(rows) != {"DG46-MASSON65", "Fe-019"}:
+        raise RedoxInputError(
+            "packaged FeO(l) reference data is incomplete; cannot resolve redox basis"
+        )
+    return MappingProxyType(rows)
+
+
+def _melt_feo_liquid_basis(
+    melt_pack: ImccLoadedDatapack, artifact: str
+) -> Mapping[str, str]:
+    candidate = melt_pack._feo_liquid_candidate
+    if candidate is _FEO_LIQUID_CANDIDATE_ABSENT:
+        return MappingProxyType({
+            "id": "Fe-019",
+            "delta_g_j_mol": "0",
+            "relative_to": "JANAF Fe-019",
+        })
+    if candidate is _NO_FEO_LIQUID_CANDIDATE:
+        raise RedoxInputError(
+            f"melt pack {artifact} has an unknown FeO(l) basis; "
+            "its source declaration was not retained"
+        )
+    delta_g = (
+        candidate.get("delta_g_j_mol")
+        if isinstance(candidate, Mapping)
+        else None
+    )
+    if (
+        not isinstance(delta_g, str)
+        or "".join(delta_g.split()) != "".join(_DG46_FEO_DELTA_G.split())
+    ):
+        raise RedoxInputError(
+            f"melt pack {artifact} has an unknown FeO(l) basis; "
+            "its feo_liquid_candidate delta_g_j_mol is missing or unrecognized"
+        )
+    return MappingProxyType({
+        "id": "DG46-MASSON65",
+        "delta_g_j_mol": delta_g,
+        "relative_to": "JANAF Fe-019",
+    })
+
+
+def _redox_feo_liquid_basis(
+    redox_pack: RedoxPack, artifact: str
+) -> Mapping[str, str]:
+    feo_rows = [
+        row for row in redox_pack.rows
+        if row.get("role") == "parent_reference" and row.get("complex") == "FeO(l)"
+    ]
+    if len(feo_rows) != 1:
+        raise RedoxInputError(
+            f"redox pack {artifact} has an unknown FeO(l) basis: "
+            "it must contain exactly one FeO(l) parent_reference row"
+        )
+    from openimcc.gas import _lamor_gibbs
+
+    try:
+        reference_rows = _feo_liquid_reference_rows()
+        matching: list[str] = []
+        for basis_id, reference_row in reference_rows.items():
+            agrees = True
+            for temperature in _FEO_BASIS_CHECK_TEMPERATURES_K:
+                redox_gibbs = species_gibbs_j_mol(
+                    redox_pack, "FeO(l)", temperature, allow_extrapolation=True
+                )
+                reference_gibbs = _lamor_gibbs(temperature, reference_row)
+                # Both functions return J/mol. Compare at three points; 1 J/mol
+                # is above evaluation roundoff and far below the standard-state
+                # separation (over 1 kJ/mol throughout this check interval).
+                if abs(redox_gibbs - reference_gibbs) > _FEO_BASIS_TOLERANCE_J_MOL:
+                    agrees = False
+                    break
+            if agrees:
+                matching.append(basis_id)
+    except (OSError, TypeError, ValueError, KeyError, ArithmeticError) as exc:
+        raise RedoxInputError(
+            f"redox pack {artifact} has an unknown FeO(l) basis; "
+            f"its standard Gibbs energy could not be checked: {type(exc).__name__}"
+        ) from exc
+    if len(matching) != 1:
+        raise RedoxInputError(
+            f"redox pack {artifact} has an unknown FeO(l) basis; its FeO(l) "
+            "Gibbs values do not uniquely match the packaged DG46-MASSON65 "
+            "or JANAF Fe-019 references"
+        )
+    basis_id = matching[0]
+    return MappingProxyType({
+        "id": basis_id,
+        "delta_g_j_mol": _DG46_FEO_DELTA_G if basis_id == "DG46-MASSON65" else "0",
+        "relative_to": "JANAF Fe-019",
+    })
+
+
+def _resolve_feo_liquid_basis(
+    melt_pack: ImccLoadedDatapack,
+    melt_artifact: str,
+    redox_pack: RedoxPack,
+    redox_artifact: str,
+) -> Mapping[str, str]:
+    melt_basis = _melt_feo_liquid_basis(melt_pack, melt_artifact)
+    redox_basis = _redox_feo_liquid_basis(redox_pack, redox_artifact)
+    if melt_basis["id"] != redox_basis["id"]:
+        raise RedoxInputError(
+            f"melt pack {melt_artifact} uses FeO(l) basis {melt_basis['id']}, "
+            f"but redox pack {redox_artifact} uses FeO(l) basis "
+            f"{redox_basis['id']}"
+        )
+    return redox_basis
+
+
 def _saturation_state(
     parent_moles: np.ndarray,
     temperature_K: float,
@@ -1942,6 +2086,7 @@ def _assemble_result(
     oxygen_parent_counts: np.ndarray,
     tolerance: float,
     fallback_counter: list[int],
+    feo_liquid_basis: Mapping[str, str],
     pack_standard_notices: tuple[PackStandardNotice, ...] = (),
 ) -> RedoxResult:
     parent_values, species_values, oxygen_mol = _state_species(
@@ -2102,6 +2247,7 @@ def _assemble_result(
         unmodelled_redox_couples=unmodelled_redox_couples,
         redox_pack_digest=redox_pack.canonical_digest,
         melt_pack_binding_digest=getattr(base_datapack, "binding_digest", None),
+        feo_liquid_basis=feo_liquid_basis,
         oxygen_inventory_mol=oxygen_inventory,
         oxygen_mol=float(oxygen_mol),
         oxygen_residual_mol=None if residual is None else float(residual),
@@ -2241,6 +2387,26 @@ def _evaluate_redox_with_packs(
             raise _unreadable_pack(
                 Path(redox_pack_path), exc, description="redox datapack"
             ) from exc
+    melt_artifact = (
+        Path(melt_pack_path).name
+        if melt_pack_path is not None
+        else loaded.version
+        if melt_pack is not None
+        else _DEFAULT_DATAPACK_PATH.name
+    )
+    profile_redox_path = getattr(standards_profile, "redox_pack_path", None)
+    redox_artifact = (
+        Path(redox_pack_path).name
+        if redox_pack_path is not None
+        else Path(profile_redox_path).name
+        if profile_redox_path is not None
+        else redox_pack.version
+        if loaded_redox_pack is not None
+        else _DEFAULT_REDOX_PACK_PATH.name
+    )
+    feo_liquid_basis = _resolve_feo_liquid_basis(
+        loaded, melt_artifact, redox_pack, redox_artifact
+    )
     standard_records = _cached_check_pack_standards(
         loaded,
         standards_profile,
@@ -2329,6 +2495,7 @@ def _evaluate_redox_with_packs(
             tolerance=tolerance,
             fallback_counter=fallback_counter,
             pack_standard_notices=standard_notices,
+            feo_liquid_basis=feo_liquid_basis,
         )
         state_flags = _unmodelled_redox_state_flags(
             result.unmodelled_redox_couples,
@@ -2524,6 +2691,7 @@ def _evaluate_redox_with_packs(
                         tolerance=tolerance,
                         fallback_counter=fallback_counter,
                         pack_standard_notices=standard_notices,
+                        feo_liquid_basis=feo_liquid_basis,
                     )
                     return result, state
                 raise RedoxEndpointError(
@@ -2547,6 +2715,7 @@ def _evaluate_redox_with_packs(
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
                 pack_standard_notices=standard_notices,
+                feo_liquid_basis=feo_liquid_basis,
             )
             return result, buffered_state
         if buffered:
@@ -2620,6 +2789,7 @@ def _evaluate_redox_with_packs(
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
                 pack_standard_notices=standard_notices,
+                feo_liquid_basis=feo_liquid_basis,
             )
             return result, buffered_state
         if lambda_value < lambda_sat - near_lambda_tolerance:
@@ -2645,6 +2815,7 @@ def _evaluate_redox_with_packs(
             tolerance=tolerance,
             fallback_counter=fallback_counter,
             pack_standard_notices=standard_notices,
+            feo_liquid_basis=feo_liquid_basis,
         )
         return result, state
 
@@ -2761,6 +2932,7 @@ def _evaluate_redox_with_packs(
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
                 pack_standard_notices=standard_notices,
+                feo_liquid_basis=feo_liquid_basis,
             )
             return result, oxidised_state
 
@@ -2881,6 +3053,7 @@ def _evaluate_redox_with_packs(
                         tolerance=tolerance,
                         fallback_counter=fallback_counter,
                         pack_standard_notices=standard_notices,
+                        feo_liquid_basis=feo_liquid_basis,
                     )
                     return result, state
                 response = _response(state, base_datapack, redox_pack)
@@ -3007,6 +3180,7 @@ def _evaluate_redox_with_packs(
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
                 pack_standard_notices=standard_notices,
+                feo_liquid_basis=feo_liquid_basis,
             )
             return result, state
         if residual > 0.0:

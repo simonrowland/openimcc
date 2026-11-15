@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Redox FeO(l) standard
+
+- `evaluate_redox()` now refuses melt/redox pack pairs whose FeO(l) standard
+  states differ. `RedoxResult.feo_liquid_basis` reports the verified standard.
+
 ### SiO accuracy
 
 - Added an observed SiO(g) pressure summary for liquid charges at

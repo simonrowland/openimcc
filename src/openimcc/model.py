@@ -82,6 +82,8 @@ from openimcc.trace_components import (
 
 
 DEFAULT_MELT_PACK_NAME = "imcc-sf04-d066-v4.json"
+_NO_FEO_LIQUID_CANDIDATE = object()
+_FEO_LIQUID_CANDIDATE_ABSENT = object()
 
 _EXPECTED_PARENT_OXIDES = (
     "SiO2",
@@ -1041,6 +1043,9 @@ class ImccLoadedDatapack:
     ] = field(default=(), repr=False, compare=False)
     _row_source_refs: Mapping[str, tuple[str, ...]] = field(
         default_factory=dict, repr=False, compare=False
+    )
+    _feo_liquid_candidate: Any = field(
+        default=_NO_FEO_LIQUID_CANDIDATE, repr=False, compare=False
     )
 
     @property
@@ -2041,6 +2046,11 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             )
             for row in all_rows
         },
+        _feo_liquid_candidate=(
+            MappingProxyType(dict(data["feo_liquid_candidate"]))
+            if isinstance(data.get("feo_liquid_candidate"), dict)
+            else data.get("feo_liquid_candidate", _FEO_LIQUID_CANDIDATE_ABSENT)
+        ),
     )
 
 
