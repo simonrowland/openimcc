@@ -17,6 +17,8 @@ from typing import Any, Literal
 
 from openimcc.kernel import ImccRefusal
 from openimcc.janaf_crystals import (
+    _JANAF_OXIDE_PAIRS,
+    _JanafOxidePair,
     JanafCrystalTemperatureError,
     JanafRowTemperatureError,
     evaluate_janaf_apparent_gibbs,
@@ -35,27 +37,11 @@ _FLOAT_EPSILON = sys.float_info.epsilon
 _J_TO_KJ = 1000.0
 
 
-@dataclass(frozen=True)
-class _OxideDefinition:
-    oxide: str
-    crystal_table: str
-    liquid_table: str | None
-    transition_K: float
-    construction: str | None = None
-
-
-_OXIDES = (
-    _OxideDefinition("CaO", "Ca-027", "Ca-028", 3200.0),
-    _OxideDefinition("Al2O3", "Al-096", "Al-100", 2327.0),
-    _OxideDefinition("MgO", "Mg-008", "Mg-009", 3105.0),
-    _OxideDefinition("FeO", "Fe-018", "Fe-019", 1650.0),
-    _OxideDefinition("Na2O", "Na-012", "Na-013", 1405.2),
-    _OxideDefinition("SiO2", "O-035", "O-038", 1996.0),
-    _OxideDefinition("TiO2", "O-043", "O-044", 2130.0),
-    _OxideDefinition(
-        "K2O", "K-012", None, 1013.0,
-        "constructed liquid standard; selected Tfus=1013 K, source band 919–1190 K",
-    ),
+_OXIDES = tuple(
+    _JANAF_OXIDE_PAIRS[oxide]
+    for oxide in (
+        "CaO", "Al2O3", "MgO", "FeO", "Na2O", "SiO2", "TiO2", "K2O"
+    )
 )
 _OXIDE_BY_NAME = MappingProxyType({row.oxide: row for row in _OXIDES})
 
@@ -172,7 +158,7 @@ def _interval_rows(gas_pack: Any, oxide: str, phase: Literal["l", "cr"]) -> tupl
 
 def _selected_crystal_source(
     oxide: str,
-    definition: _OxideDefinition,
+    definition: _JanafOxidePair,
     gas_pack: Any,
     crystal_source: Literal["auto", "janaf", "packaged"],
 ) -> tuple[str, tuple[float, float], str | None, bool]:

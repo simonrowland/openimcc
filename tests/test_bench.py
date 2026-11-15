@@ -29,6 +29,7 @@ from openimcc.bench import (
     _binary_subslice,
     _convert_solid_activity_to_liquid,
     _evaluate_imcc,
+    _janaf_apparent_gibbs_j_mol,
     _is_research_overlay,
     _standard_state_for_point,
     load_bench_set,
@@ -39,9 +40,35 @@ from openimcc.bench import (
     _solid_to_liquid_log10_shift,
     _controlled_text,
 )
+from openimcc.janaf_crystals import _JANAF_OXIDE_PAIRS, evaluate_janaf_crystal
 
 DATAPACK_PATH = Path("src/openimcc/data/packs/imcc-sf04-v1.0.2.json")
 _REPO_ROOT = Path(__file__).resolve().parents[1]
+_JANAF_GIBBS_TEMPERATURES = (298.15, 450.0, 1234.5, 1550.0, 1999.5)
+_JANAF_GIBBS_BASELINE_HEX = {
+    "CaO": (
+        "-0x1.3baa3d0cb295fp+19",
+        "-0x1.3f28500000001p+19",
+        "-0x1.6070b9cbc169cp+19",
+        "-0x1.72446c0000000p+19",
+        "-0x1.8eb1e082d3848p+19",
+    ),
+    "MgO": (
+        "-0x1.297e8c7fcb924p+19",
+        "-0x1.2c14a73333332p+19",
+        "-0x1.47ab3fb8df7a6p+19",
+        "-0x1.56fd940000000p+19",
+        "-0x1.6fb535341f212p+19",
+    ),
+    "Al2O3": (
+        "-0x1.9cd02be147ae1p+20",
+        "-0x1.9f58b93333333p+20",
+        "-0x1.bd248665a1cacp+20",
+        "-0x1.ce448f3333333p+20",
+        "-0x1.ea394b977079ep+20",
+    ),
+}
+_JANAF_GIBBS_OXIDES = ("CaO", "MgO", "Al2O3")
 
 
 def _independent_csv_row(
@@ -1189,6 +1216,20 @@ def test_solid_to_liquid_conversion_matches_independent_table_calculation() -> N
         assert _convert_solid_activity_to_liquid(
             activity_solid, oxide, temperature_K
         ) == pytest.approx(expected, rel=1.0e-10)
+
+
+def test_bench_and_crystal_janaf_gibbs_keep_base_float_values() -> None:
+    for oxide in _JANAF_GIBBS_OXIDES:
+        table_id = _JANAF_OXIDE_PAIRS[oxide].crystal_table
+        for temperature_K, expected_hex in zip(
+            _JANAF_GIBBS_TEMPERATURES, _JANAF_GIBBS_BASELINE_HEX[oxide]
+        ):
+            bench_gibbs = _janaf_apparent_gibbs_j_mol(table_id, temperature_K)
+            crystal_gibbs = evaluate_janaf_crystal(
+                oxide, temperature_K, apply_phase_cap=False
+            ).G_J_mol
+            expected = float.fromhex(expected_hex)
+            assert bench_gibbs == crystal_gibbs == expected
 
 
 def test_bench_conversion_identity_names_current_gibbs_sources(

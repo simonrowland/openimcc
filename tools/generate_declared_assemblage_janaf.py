@@ -5,10 +5,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from openimcc.janaf_crystals import _JANAF_OXIDE_PAIRS  # noqa: E402
+
+
 SOURCE = ROOT / "data-src" / "janaf"
 TARGET = (
     ROOT / "src" / "openimcc" / "data" / "diagnostics"
@@ -18,28 +24,6 @@ LIQUID_TARGET = (
     ROOT / "src" / "openimcc" / "data" / "diagnostics"
     / "janaf-pure-oxide-liquid-pairs.json"
 )
-
-# The cap is the JANAF crystal-to-liquid transition temperature (K), inclusive.
-PHASES = {
-    "SiO2": ("O-035", 1996.0),
-    "MgO": ("Mg-008", 3105.0),
-    "CaO": ("Ca-027", 3200.0),
-    "Al2O3": ("Al-096", 2327.0),
-    "FeO": ("Fe-018", 1650.0),
-    "Na2O": ("Na-012", 1405.2),
-    "TiO2": ("O-043", 2130.0),
-    "K2O": ("K-012", 1013.0),
-}
-LIQUID_TABLES = {
-    "SiO2": "O-038",
-    "MgO": "Mg-009",
-    "CaO": "Ca-028",
-    "Al2O3": "Al-100",
-    "FeO": "Fe-019",
-    "Na2O": "Na-013",
-    "TiO2": "O-044",
-}
-
 
 def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
     values = table["values"]
@@ -88,20 +72,39 @@ def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
     return nodes, transition_rows
 
 
+def _prepare_source_table(table_id: str) -> dict:
+    raw = (SOURCE / f"{table_id}.yaml").read_bytes()
+    table = json.loads(raw.decode("utf-8"))["table"]
+    reference = next(
+        row for row in table["values"]
+        if float(row["temperature"]["value"]) == 298.15
+    )
+    h298 = reference["formation_enthalpy"]["value"]
+    if h298 is None:
+        raise ValueError(f"{table_id} has no 298.15 K formation enthalpy")
+    nodes, transition_rows = _source_rows(table)
+    source_temperatures = [node["T_K"] for node in nodes] + [
+        row["T_K"] for row in transition_rows
+    ]
+    return {
+        "formation_enthalpy_298_kJ_mol": float(h298),
+        "nodes": nodes,
+        "transition_rows": transition_rows,
+        "source_sha256": hashlib.sha256(raw).hexdigest(),
+        "source_temperature_K": [
+            min(source_temperatures), max(source_temperatures)
+        ],
+    }
+
+
 def main() -> None:
     phases = []
-    for oxide, (table_id, transition_K) in PHASES.items():
-        raw = (SOURCE / f"{table_id}.yaml").read_bytes()
-        table = json.loads(raw.decode("utf-8"))["table"]
-        values = table["values"]
-        reference = next(
-            row for row in values
-            if float(row["temperature"]["value"]) == 298.15
-        )
-        h298 = reference["formation_enthalpy"]["value"]
-        if h298 is None:
-            raise ValueError(f"{table_id} has no 298.15 K formation enthalpy")
-        nodes, transition_rows = _source_rows(table)
+    for oxide, definition in _JANAF_OXIDE_PAIRS.items():
+        table_id = definition.crystal_table
+        transition_K = definition.transition_K
+        prepared = _prepare_source_table(table_id)
+        nodes = prepared["nodes"]
+        transition_rows = prepared["transition_rows"]
         transition_at_cap = next(
             (
                 row for row in transition_rows
@@ -118,24 +121,25 @@ def main() -> None:
                 "oxide_stoichiometry": {oxide: 1.0},
                 "crystal_table_id": table_id,
                 "source_authority": "janaf_transcribed",
-                "source_sha256": hashlib.sha256(raw).hexdigest(),
-                "formation_enthalpy_298_kJ_mol": float(h298),
-                "source_temperature_K": [
-                    min([node["T_K"] for node in nodes]
-                        + [node["T_K"] for node in transition_rows]),
-                    max([node["T_K"] for node in nodes]
-                        + [node["T_K"] for node in transition_rows]),
+                "source_sha256": prepared["source_sha256"],
+                "formation_enthalpy_298_kJ_mol": prepared[
+                    "formation_enthalpy_298_kJ_mol"
                 ],
+                "source_temperature_K": prepared["source_temperature_K"],
                 "crystal_transition_temperature_K": transition_K,
                 "nodes": nodes,
                 "transition_rows": transition_rows,
                 "transition_row_at_cap": transition_at_cap,
                 "construction_uncertainty_input_K": (
-                    [919.0, 1190.0] if oxide == "K2O" else None
+                    list(definition.construction_uncertainty_input_K)
+                    if definition.construction_uncertainty_input_K is not None
+                    else None
                 ),
             }
         )
 
+    k2o_uncertainty = _JANAF_OXIDE_PAIRS["K2O"].construction_uncertainty_input_K
+    assert k2o_uncertainty is not None
     result = {
         "schema": "openimcc-janaf-apparent-crystals-v2",
         "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
@@ -157,7 +161,8 @@ def main() -> None:
             "temperature, inclusive; never evaluate it above that transition."
         ),
         "construction_uncertainty_rule": (
-            "K2O's 919-1190 K range is uncertainty in the selected fusion-temperature "
+            f"K2O's {k2o_uncertainty[0]:g}-{k2o_uncertainty[1]:g} K range is "
+            "uncertainty in the selected fusion-temperature "
             "input, not an evaluation-temperature domain."
         ),
         "excluded_fusion_data": {
@@ -175,32 +180,23 @@ def main() -> None:
     TARGET.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
     liquid_rows = []
-    for oxide, table_id in LIQUID_TABLES.items():
-        raw = (SOURCE / f"{table_id}.yaml").read_bytes()
-        table = json.loads(raw.decode("utf-8"))["table"]
-        reference = next(
-            row for row in table["values"]
-            if float(row["temperature"]["value"]) == 298.15
-        )
-        h298 = reference["formation_enthalpy"]["value"]
-        if h298 is None:
-            raise ValueError(f"{table_id} has no 298.15 K formation enthalpy")
-        nodes, transition_rows = _source_rows(table)
-        source_temperatures = [node["T_K"] for node in nodes] + [
-            row["T_K"] for row in transition_rows
-        ]
+    for oxide, definition in _JANAF_OXIDE_PAIRS.items():
+        table_id = definition.liquid_table
+        if table_id is None:
+            continue
+        prepared = _prepare_source_table(table_id)
         liquid_rows.append(
             {
                 "oxide": oxide,
                 "table_id": table_id,
                 "source_authority": "janaf_transcribed",
-                "source_sha256": hashlib.sha256(raw).hexdigest(),
-                "formation_enthalpy_298_kJ_mol": float(h298),
-                "source_temperature_K": [
-                    min(source_temperatures), max(source_temperatures)
+                "source_sha256": prepared["source_sha256"],
+                "formation_enthalpy_298_kJ_mol": prepared[
+                    "formation_enthalpy_298_kJ_mol"
                 ],
-                "nodes": nodes,
-                "transition_rows": transition_rows,
+                "source_temperature_K": prepared["source_temperature_K"],
+                "nodes": prepared["nodes"],
+                "transition_rows": prepared["transition_rows"],
             }
         )
     liquid_result = {

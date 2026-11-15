@@ -9,12 +9,47 @@ from dataclasses import dataclass
 from functools import lru_cache
 from importlib import resources
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping, Sequence
 
 
 _RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
 _LIQUID_RESOURCE = "data/diagnostics/janaf-pure-oxide-liquid-pairs.json"
 _ANCHOR_TEMPERATURE_K = 298.15
+
+
+@dataclass(frozen=True)
+class _JanafOxidePair:
+    oxide: str
+    crystal_table: str
+    liquid_table: str | None
+    transition_K: float
+    construction: str | None = None
+    construction_uncertainty_input_K: tuple[float, float] | None = None
+
+
+_JANAF_OXIDE_PAIRS = MappingProxyType(
+    {
+        pair.oxide: pair
+        for pair in (
+            _JanafOxidePair("SiO2", "O-035", "O-038", 1996.0),
+            _JanafOxidePair("MgO", "Mg-008", "Mg-009", 3105.0),
+            _JanafOxidePair("CaO", "Ca-027", "Ca-028", 3200.0),
+            _JanafOxidePair("Al2O3", "Al-096", "Al-100", 2327.0),
+            _JanafOxidePair("FeO", "Fe-018", "Fe-019", 1650.0),
+            _JanafOxidePair("Na2O", "Na-012", "Na-013", 1405.2),
+            _JanafOxidePair("TiO2", "O-043", "O-044", 2130.0),
+            _JanafOxidePair(
+                "K2O",
+                "K-012",
+                None,
+                1013.0,
+                "constructed liquid standard; selected Tfus=1013 K, "
+                "source band 919–1190 K",
+                (919.0, 1190.0),
+            ),
+        )
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -81,34 +116,60 @@ def _load_liquid_rows() -> tuple[dict[str, Any], str]:
     return {row["table_id"]: row for row in data["rows"]}, hashlib.sha256(raw).hexdigest()
 
 
-def _interpolate_nodes(nodes: list[dict[str, Any]], key: str, temperature_K: float) -> float:
-    # Collapse equal-temperature source rows in their stable input order; a
-    # printed final row wins at the exact node, matching the data order.
-    values = {float(node["T_K"]): float(node[key]) for node in nodes}
-    points = sorted(values.items())
-    if temperature_K in values:
-        return values[temperature_K]
-    for (lo_T, lo_value), (hi_T, hi_value) in zip(points, points[1:]):
-        if lo_T < temperature_K < hi_T:
-            return lo_value + (hi_value - lo_value) * (
-                (temperature_K - lo_T) / (hi_T - lo_T)
-            )
-    raise ValueError(f"no source node interval at {temperature_K:g} K")
-
-
 def _apparent_gibbs(
-    row: Mapping[str, Any], nodes: list[dict[str, Any]], temperature: float
+    formation_enthalpy_298_kj_mol: float,
+    nodes: Sequence[tuple[float, float, float]],
+    temperature: float,
+    *,
+    interpolation: Literal["nodes", "numpy"] = "nodes",
 ) -> float:
-    h_increment = _interpolate_nodes(
-        nodes, "enthalpy_increment_kJ_mol", temperature
-    )
-    entropy = _interpolate_nodes(nodes, "entropy_J_mol_K", temperature)
+    # Keep each caller's established interpolation arithmetic for exact floats.
+    def interpolate(column: int) -> float:
+        if interpolation == "numpy":
+            import numpy as np
+
+            return float(
+                np.interp(
+                    temperature,
+                    [node[0] for node in nodes],
+                    [node[column] for node in nodes],
+                )
+            )
+        # Collapse equal-temperature source rows in their stable input order; a
+        # printed final row wins at the exact node, matching the data order.
+        values = {float(node[0]): float(node[column]) for node in nodes}
+        points = sorted(values.items())
+        if temperature in values:
+            return values[temperature]
+        for (lo_T, lo_value), (hi_T, hi_value) in zip(points, points[1:]):
+            if lo_T < temperature < hi_T:
+                return lo_value + (hi_value - lo_value) * (
+                    (temperature - lo_T) / (hi_T - lo_T)
+                )
+        raise ValueError(f"no source node interval at {temperature:g} K")
+
+    h_increment = interpolate(1)
+    entropy = interpolate(2)
     # G_app(T) = Hf(298.15) + [H(T)-H(298.15)] - T*S(T).
     # Enthalpy is stored in kJ/mol and entropy in J/(mol K); multiplying the
     # enthalpy sum by 1000 gives J/mol, matching T*S.
     return (
-        float(row["formation_enthalpy_298_kJ_mol"]) + h_increment
-    ) * 1000.0 - temperature * entropy
+        (formation_enthalpy_298_kj_mol + h_increment) * 1000.0
+        - temperature * entropy
+    )
+
+
+def _node_values(
+    nodes: Sequence[Mapping[str, Any]],
+) -> list[tuple[float, float, float]]:
+    return [
+        (
+            float(node["T_K"]),
+            float(node["enthalpy_increment_kJ_mol"]),
+            float(node["entropy_J_mol_K"]),
+        )
+        for node in nodes
+    ]
 
 
 def evaluate_janaf_crystal(
@@ -152,7 +213,11 @@ def evaluate_janaf_crystal(
         if use_transition
         else [*row["nodes"], *row.get("transition_rows", [])]
     )
-    gibbs = _apparent_gibbs(row, source, temperature)
+    gibbs = _apparent_gibbs(
+        float(row["formation_enthalpy_298_kJ_mol"]),
+        _node_values(source),
+        temperature,
+    )
     provenance = {
         "table_id": row["crystal_table_id"],
         "source_sha256": row["source_sha256"],
@@ -191,7 +256,11 @@ def evaluate_janaf_apparent_gibbs(
     source_nodes = [transition] if transition is not None else [
         *row["nodes"], *transitions
     ]
-    gibbs = _apparent_gibbs(row, source_nodes, temperature)
+    gibbs = _apparent_gibbs(
+        float(row["formation_enthalpy_298_kJ_mol"]),
+        _node_values(source_nodes),
+        temperature,
+    )
     provenance = {
         "table_id": table_id,
         "source_sha256": row["source_sha256"],

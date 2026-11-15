@@ -63,6 +63,7 @@ from openimcc import (
 )
 from openimcc.model import DEFAULT_MELT_PACK_NAME
 from openimcc.json_utils import reject_duplicate_json_keys
+from openimcc.janaf_crystals import _JANAF_OXIDE_PAIRS, _apparent_gibbs
 
 _YAML_BASE_LOADER = yaml.SafeLoader
 
@@ -253,9 +254,8 @@ _PACK_OVERLAY_MODEL_BY_VERSION = {
     "1.0.2-ext-sp-2": "IMCC-SF04-EXT",
 }
 _SOLID_STANDARD_JANAF_CRYSTAL_TABLES = {
-    "CaO": "Ca-027",
-    "MgO": "Mg-008",
-    "Al2O3": "Al-096",
+    oxide: _JANAF_OXIDE_PAIRS[oxide].crystal_table
+    for oxide in ("CaO", "MgO", "Al2O3")
 }
 _SOLID_STANDARD_CONDENSATE_CSV = (
     "data/gas/condensate-sio2-janaf-cr-candidate.csv"
@@ -503,19 +503,13 @@ def _janaf_apparent_gibbs_j_mol(table_id: str, temperature_K: float) -> float:
         raise ValueError(
             f"{table_id} has no Gibbs value at {temperature_K:g} K"
         )
-    # JANAF apparent G° uses the same 298.15 K elemental references as the
-    # packaged condensate rows: Hf(298) + [H(T)-H(298)] - T*S(T). The enthalpy
-    # cells are kJ/mol, entropy is J/(mol K), and the returned G is J/mol.
-    temperatures = [node[0] for node in nodes]
-    enthalpy_increment_kj_mol = float(
-        np.interp(temperature_K, temperatures, [node[1] for node in nodes])
-    )
-    entropy_j_mol_k = float(
-        np.interp(temperature_K, temperatures, [node[2] for node in nodes])
-    )
-    return (
-        (formation_enthalpy_298_kj_mol + enthalpy_increment_kj_mol) * 1000.0
-        - temperature_K * entropy_j_mol_k
+    # Keep the benchmark's historical NumPy interpolation order so its floats
+    # remain unchanged while the Gibbs kernel has one owner.
+    return _apparent_gibbs(
+        formation_enthalpy_298_kj_mol,
+        nodes,
+        temperature_K,
+        interpolation="numpy",
     )
 
 
@@ -532,8 +526,8 @@ def _solid_to_liquid_log10_shift(
     G_liq = G_cr and the shift is zero; the closed SiO2 pair reaches that
     sanity check at 1996 K using JANAF O-035 high-cristobalite with default
     SiO2(l). The other liquid G values come from the packaged CaO(l), MgO(l),
-    and Al2O3(l) rows; their JANAF crystal rows are Ca-027, Mg-008, and Al-096.
-    Ca-028 and Mg-009 are not used as liquid functions below their glass joins.
+    and Al2O3(l) rows; each JANAF crystal leg uses the common oxide-pair
+    definition. CaO(l) and MgO(l) controls are not used below their glass joins.
     """
     from openimcc.gas import R_J_MOL_K
 
