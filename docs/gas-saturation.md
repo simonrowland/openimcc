@@ -6,6 +6,15 @@ pressure-weighted stoichiometric balance
 
 `Σᵣ (nO_gas,ᵣ − dO_parent,ᵣ) pᵣ = 0`.
 
+Here `dO_parent` counts oxygen atoms supplied by every consumed melt-oxide
+parent per gas molecule; a gas-phase parent supplies no melt oxygen. The free
+O₂ channel contributes two oxygen atoms per molecule. This includes side
+oxides in gas-parent reactions: NaCl production consumes ½ Na₂O, so its
+saturation coefficient is `0 − ½ = −½` oxygen atoms per NaCl molecule. For a
+pure oxide reaction `MO(l) → M(g) + ½ O₂(g)`, the M coefficient is `−1`, and
+the closure `−pM + 2pO₂ = 0` gives `pM = 2pO₂`. Each residual term is in
+oxygen-atom·bar.
+
 The result includes oxygen pressure, channel and species pressures, total
 saturation pressure, mole fractions, domain flags, and root diagnostics. Set
 `include_ions=True` to use the gas evaluator's charge-neutrality closure at each

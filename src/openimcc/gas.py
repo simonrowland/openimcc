@@ -922,13 +922,16 @@ def _reaction_oxygen_policy(
     M + 1/2 O2`` gives demand 1 and exponent -1/2; AlSiO gives demand 3.5
     and exponent -1.25.
 
-    Saturation retains its gas-parent-over-side-oxide precedence as a
-    PRESERVED LEGACY DISCREPANCY with the documented saturation equation in
-    ``docs/gas-saturation.md``: NaCl gets weight 0 although its reaction
-    consumes 1/2 Na2O and channel metadata reports demand 0.5. Keep this
-    discrepancy to stay bit-identical; resolving it requires a separate
-    behavior change. The saturation weight is returned alongside demand so
-    this precedence lives with the reaction policy.
+    Saturation closes the oxygen inventory exchanged with all melt oxide
+    parents. A channel's coefficient is oxygen atoms in its gas product minus
+    oxygen atoms supplied by those parents per gas molecule; free O2 contributes
+    two atoms. Multiplying by pressure in bar gives oxygen-atom·bar. For pure
+    MO(l) -> M(g) + 1/2 O2(g), the metal weight is 0 - 1 = -1, so
+    -pM + 2pO2 = 0 gives pM = 2pO2. For
+    1/2 Na2O(l) + 1/2 Cl2(g) -> NaCl(g) + 1/4 O2(g), NaCl's weight is
+    0 - 1/2 = -1/2. Thus a gas-phase parent does not erase oxygen consumed
+    from a side oxide. Coefficients are oxygen atoms per gas molecule and the
+    residual has units of oxygen-atom·bar.
     """
     parent, n_gas, n_o2 = reaction
     oxygen_atoms = float(_formula_atoms(species).get("O", 0))
@@ -951,13 +954,13 @@ def _reaction_oxygen_policy(
         parent_oxygen_demand = 0.0
         pO2_exponent = oxygen_atoms / 2.0
 
-    if parent in _GAS_PHASE_PARENT_ROWS:
-        saturation_oxygen_weight = oxygen_atoms
-    elif side is not None:
+    if side is not None:
         saturation_oxygen_weight = (
             oxygen_atoms
             - _side_reaction_parent_oxygen_demand(species)
         )
+    elif parent in _GAS_PHASE_PARENT_ROWS:
+        saturation_oxygen_weight = oxygen_atoms
     elif species in _HALIDE_REACTIONS or species in _HYDROGEN_HALIDE_PARENTS:
         saturation_oxygen_weight = 0.0
     elif parent:

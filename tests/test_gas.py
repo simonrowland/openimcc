@@ -7210,6 +7210,39 @@ def test_fixed_composition_saturation_pure_cao_stoichiometry_and_neutral_match(
     assert sat.diagnostics["root_uniqueness"] == "proved"
 
 
+def test_saturation_halide_weight_matches_side_oxide_oxygen_metadata(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {
+        "SiO2": 0.45, "MgO": 0.12, "FeO": 0.15, "CaO": 0.11,
+        "Al2O3": 0.07, "Na2O": 0.03, "K2O": 0.01, "Cl2": 1.51e-9,
+    }
+    parents = tuple(activities)
+    temperature = 2137.0
+    metadata = gas_module.gas_channel_metadata(
+        activities, temperature, gas_pack, parent_oxides=parents,
+    )
+    saturation = evaluate_gas_saturation(
+        activities, temperature, gas_pack, parent_oxides=parents,
+        allow_extrapolation=True,
+    )
+
+    assert metadata["NaCl"].parent_oxygen_demand == pytest.approx(0.5)
+    assert gas_module._reaction_oxygen_policy(
+        "NaCl", gas_module._GAS_REACTIONS["NaCl"],
+    ).saturation_oxygen_weight == pytest.approx(-0.5)
+    assert saturation.species_pressures_bar["NaCl"] > 0.0
+    metadata_residual = math.fsum(
+        (metadata[name].oxygen_atoms - metadata[name].parent_oxygen_demand)
+        * pressure
+        for name, pressure in saturation.species_pressures_bar.items()
+        if name in metadata
+    )
+    assert metadata_residual == pytest.approx(
+        saturation.diagnostics["oxygen_residual"], abs=1e-12,
+    )
+
+
 def test_saturation_preserves_liquid_reference_status_and_notices(
     gas_pack: ImccGasDatapack,
 ) -> None:

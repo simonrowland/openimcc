@@ -97,8 +97,10 @@ def test_reaction_oxygen_outputs_match_pre_refactor_bits(packaged_gas_pack) -> N
         assert metadata["HCl"].neutral_pO2_exponent == 0.0
         for species, expected in (
             ("AlSiO", (3.5, -1.25, -2.5)),
-            ("NaCl", (0.5, -0.25, 0.0)),
-            ("BaCl", (1.0, -0.5, 0.0)),
+            ("NaCl", (0.5, -0.25, -0.5)),
+            ("(NaCl)2", (1.0, -0.5, -1.0)),
+            ("BaCl", (1.0, -0.5, -1.0)),
+            ("BaCl2", (1.0, -0.5, -1.0)),
             ("HCl", (0.0, 0.0, 0.0)),
         ):
             policy = gas_module._reaction_oxygen_policy(

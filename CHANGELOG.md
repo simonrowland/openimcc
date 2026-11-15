@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Gas saturation oxygen closure
+
+- Corrected saturation weights for gas-parent channels that also consume a
+  melt oxide, including halide channels such as NaCl. Their side-oxide oxygen
+  demand now contributes to the saturation balance, changing oxygen pressure
+  and vapor pressures for affected mixtures. See
+  `docs/gas-saturation.md`.
+
 ### Redox FeO(l) standard
 
 - `evaluate_redox()` now refuses melt/redox pack pairs whose FeO(l) standard
