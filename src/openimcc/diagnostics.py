@@ -551,10 +551,14 @@ def _crystal_thermo_context(condensate: str | Path | None):
         default_condensate_database_path, default_gas_database_path,
         load_gas_datapack,
     )
-    oxide_path = Path(condensate) if condensate else default_condensate_database_path()
+    gas_path = default_gas_database_path()
+    default_oxide_path = default_condensate_database_path()
+    if not condensate:
+        default_pack = load_gas_datapack(gas_path, default_oxide_path)
+        return default_pack, default_pack
     return (
-        load_gas_datapack(default_gas_database_path(), oxide_path),
-        load_gas_datapack(default_gas_database_path(), default_condensate_database_path()),
+        load_gas_datapack(gas_path, Path(condensate)),
+        load_gas_datapack(gas_path, default_oxide_path),
     )
 
 

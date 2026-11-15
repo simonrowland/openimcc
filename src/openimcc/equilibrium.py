@@ -815,31 +815,66 @@ def _inner_activity_uncertainty(
 
     The melt balance Jacobian is represented by finite differences of the
     converged map from log analytical parent moles to log activities. Its
-    infinity norm maps a relative balance perturbation into an activity
-    perturbation; the root residual and floating-point balance arithmetic
-    bound that input perturbation. This is independent of the outer crystal
-    affinity/extent Jacobian.
+    infinity norm maps a normalized balance perturbation into an activity
+    perturbation. This is independent of the outer crystal affinity/extent
+    Jacobian.
     """
     step = 1.0e-5
     jacobian = np.zeros((len(parents), len(parents)), dtype=float)
-    nominal_logs = np.asarray([melt.activity(name) for name in parents], dtype=float)
-    for column in range(len(parents)):
-        plus, minus = liquid.copy(), liquid.copy()
-        plus[column] *= math.exp(step)
-        minus[column] *= math.exp(-step)
-        plus_melt = _positive_melt(plus, parents, temperature_K, pack, inner_tol, max_iter)
-        minus_melt = _positive_melt(minus, parents, temperature_K, pack, inner_tol, max_iter)
-        plus_logs = np.asarray([plus_melt.activity(name) for name in parents])
-        minus_logs = np.asarray([minus_melt.activity(name) for name in parents])
-        jacobian[:, column] = (plus_logs - minus_logs) / (2.0 * step)
-    residual = float(getattr(melt.convergence, "residual_inf", math.inf))
-    scale = float(np.min(liquid))
-    if not math.isfinite(residual) or scale <= 0.0:
+    try:
+        nominal_logs = _melt_logs(melt, parents)
+        for column in range(len(parents)):
+            plus, minus = liquid.copy(), liquid.copy()
+            plus[column] *= math.exp(step)
+            minus[column] *= math.exp(-step)
+            plus_melt = _positive_melt(
+                plus, parents, temperature_K, pack, inner_tol, max_iter
+            )
+            minus_melt = _positive_melt(
+                minus, parents, temperature_K, pack, inner_tol, max_iter
+            )
+            plus_logs = _melt_logs(plus_melt, parents)
+            minus_logs = _melt_logs(minus_melt, parents)
+            jacobian[:, column] = (plus_logs - minus_logs) / (2.0 * step)
+    except (ImccRefusal, ArithmeticError, FloatingPointError, ValueError, OverflowError):
         return math.inf, math.inf
-    balance_input_error = residual / scale
-    balance_input_error += _roundoff_bound(
-        [*map(float, liquid), *map(float, melt.parent_mol)], 8 * (len(liquid) + 1)
-    ) / scale
+    residual = float(getattr(melt.convergence, "residual_inf", math.inf))
+    total = math.fsum(map(float, liquid))
+    fractions = (
+        np.asarray(liquid, dtype=float) / total
+        if total > 0.0 else np.zeros_like(liquid)
+    )
+    minimum_fraction = float(np.min(fractions))
+    D = float(getattr(melt, "D", math.nan))
+    if (
+        not math.isfinite(residual)
+        or not math.isfinite(total)
+        or total <= 0.0
+        or minimum_fraction <= 0.0
+        or not math.isfinite(D)
+        or D <= 0.0
+        or np.any(~np.isfinite(jacobian))
+    ):
+        return math.inf, math.inf
+
+    # Premise: the kernel's normalized parent-balance residual is
+    # f_i = a_i + Σ_j ν_ij g_j − D x_i, where x_i=n_i/Σn and D is
+    # dimensionless. Algebra: an input shift δx=f/D would cancel f; because
+    # normalized inputs must sum to one, project it to the simplex tangent as
+    # δx_i=(f_i−x_i Σf)/D. In log-mole coordinates q_i=δx_i/x_i, so
+    # ||q||∞ ≤ ||f||∞/D · (1/min(x)+number_of_parents). Every term is
+    # dimensionless. For x=(1e−6,1−1e−6), D=1, and f=(1e−10,−1e−10),
+    # this allows a 1e−4 trace-component log-activity shift; multiplying all
+    # input moles by one factor leaves x, D, and the bound unchanged.
+    # Normalize the arithmetic bound in moles before adding it to f.
+    balance_roundoff = _roundoff_bound(
+        [*map(float, liquid), *map(float, melt.parent_mol)],
+        8 * (len(liquid) + 1),
+    ) / total
+    balance_input_error = (
+        (residual + balance_roundoff) / D
+        * (1.0 / minimum_fraction + len(parents))
+    )
     jacobian_norm = float(np.linalg.norm(jacobian, ord=np.inf))
     activity_error = jacobian_norm * balance_input_error
     # Include arithmetic in the final log-activity evaluation itself.
@@ -1404,6 +1439,10 @@ def _empty_result(
         candidates=states, solver=solver or {},
     )
     phase_ids = tuple(state.candidate.phase_id for state in states)
+    result_ranges = dict(solid_ranges or {})
+    for state in states:
+        if state.reason == "absent_by_construction":
+            result_ranges[state.candidate.phase_id] = (0.0, 0.0)
     return PhaseEquilibriumResult(
         temperature_K=temperature_K,
         pressure_bar=_PRESSURE_BAR,
@@ -1411,11 +1450,15 @@ def _empty_result(
         liquid_parent_mol=None,
         liquid_mass_fraction=None,
         solid_mol=None,
-        phase_amount_ranges_mol=solid_ranges or {phase: (0.0, 0.0) for phase in phase_ids},
+        phase_amount_ranges_mol=(
+            result_ranges or {phase: (0.0, 0.0) for phase in phase_ids}
+        ),
         phase_amounts_unique=False,
         phase_presence={
             state.candidate.phase_id: (
-                "infeasible" if state.reason == "infeasible" else "unresolved"
+                "infeasible" if state.reason == "infeasible" else
+                "absent" if state.reason == "absent_by_construction" else
+                "unresolved"
             )
             for state in states
         },
@@ -1988,6 +2031,11 @@ def _positive_branch(
         missing_set = set(missing)
         for state in candidates_all:
             phase = state.candidate.phase_id
+            if state.reason == "absent_by_construction":
+                state_ranges[phase] = (0.0, 0.0)
+                state_amounts[phase] = 0.0
+                presence[phase] = "absent"
+                continue
             if state.reason == "infeasible":
                 state_ranges.setdefault(phase, (0.0, 0.0))
                 state_amounts.setdefault(phase, 0.0)
@@ -2221,8 +2269,17 @@ def _solid_result(
         solid_ranges[phase] = (0.0, 0.0)
         phase_presence[phase] = "absent"
     missing_set = set(missing)
+    proven_absent = {
+        state.candidate.phase_id for state in all_states
+        if state.reason == "absent_by_construction"
+    }
     for state in all_states:
         phase = state.candidate.phase_id
+        if state.reason == "absent_by_construction":
+            solid_ranges[phase] = (0.0, 0.0)
+            amounts[phase] = 0.0
+            phase_presence[phase] = "absent"
+            continue
         if state.reason == "infeasible":
             solid_ranges[phase] = (0.0, 0.0)
             amounts[phase] = 0.0
@@ -2447,13 +2504,20 @@ def _solid_result(
         solid_mol=amounts if amount_unique and equilibrium_state_certified else None,
         phase_amount_ranges_mol=(
             solid_ranges if equilibrium_state_certified else
-            {phase: (0.0, math.inf) for phase in phase_presence}
+            {
+                phase: (0.0, 0.0) if phase in proven_absent else (0.0, math.inf)
+                for phase in phase_presence
+            }
         ),
         phase_amounts_unique=bool(amount_unique and equilibrium_state_certified),
         phase_presence=(
             phase_presence if equilibrium_state_certified else
             {
-                phase: "infeasible" if presence == "infeasible" else "unresolved"
+                phase: (
+                    "infeasible" if presence == "infeasible" else
+                    "absent" if phase in proven_absent else
+                    "unresolved"
+                )
                 for phase, presence in phase_presence.items()
             }
         ),

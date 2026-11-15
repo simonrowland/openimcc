@@ -13,12 +13,14 @@ import numpy as np
 import pytest
 
 from openimcc import diagnostics
+from openimcc import gas as gas_module
 from openimcc._constants import R_J_MOL_K
 from openimcc.equilibrium import (
     CrystalCandidate,
     _CandidateState,
     _PURE_RESOURCE,
     _load_json,
+    _inner_activity_uncertainty,
     _active_residual,
     _lp_solid_minimum,
     _minimize_logq_on_dual_face,
@@ -479,6 +481,130 @@ def test_absent_by_construction_uses_selected_liquid_standard(ideal_pack):
         selected_liquid = species_thermo(oxide, "l", 1800.0, gas_pack).G_J_mol
         delta_kJ = (selected_liquid - uncapped.G_J_mol) / 1000.0
         assert delta_kJ == pytest.approx(expected_kJ, abs=0.02)
+
+
+def test_absent_by_construction_is_absent_in_liquid_result():
+    result = equilibrate({"K2O": 1.0, "Na2O": 1.0}, 1800.0)
+
+    assert result.labels.validity == "IN"
+    assert result.refusal is None
+    assert result.liquid_parent_mol == {"K2O": 1.0, "Na2O": 1.0}
+    for phase in ("K2O", "Na2O"):
+        assert result.phase_presence[phase] == "absent"
+        assert result.phase_amount_ranges_mol[phase] == (0.0, 0.0)
+
+
+def test_absent_by_construction_is_absent_in_solid_result(
+    monkeypatch, gas_pack,
+):
+    temperature = 1800.0
+    available = tuple(
+        _CandidateState(
+            _candidate_from_log_activities(
+                f"synthetic-{phase}-solid",
+                {phase: 1.0},
+                {phase: math.log(0.25)},
+                temperature,
+                gas_pack,
+            ),
+            "external_datapack",
+            None,
+            True,
+        )
+        for phase in ("K2O", "Na2O")
+    )
+    proven_absent = tuple(
+        _CandidateState(
+            CrystalCandidate(phase, {phase: 1.0}, 0.0),
+            "external_datapack",
+            None,
+            False,
+            "absent_by_construction",
+        )
+        for phase in ("K2O", "Na2O")
+    )
+    states = (*available, *proven_absent)
+    monkeypatch.setattr(
+        "openimcc.equilibrium._resolve_candidates",
+        lambda *_args, **_kwargs: (
+            states, "control-crystals", "control-pure", gas_pack, (), False,
+        ),
+    )
+
+    result = equilibrate({"K2O": 1.0, "Na2O": 1.0}, temperature)
+
+    assert result.labels.validity == "IN", result.refusal
+    assert result.liquid_parent_mol is None
+    for phase in ("K2O", "Na2O"):
+        assert result.phase_presence[phase] == "absent"
+        assert result.phase_amount_ranges_mol[phase] == (0.0, 0.0)
+
+
+def test_inner_activity_uncertainty_covers_trace_residual_and_scale(ideal_pack):
+    parents = ("SiO2", "MgO")
+    liquid = np.asarray((1.0e-6, 1.0))
+    temperature = 1800.0
+
+    def evaluate_liquid(values):
+        return evaluate(
+            dict(zip(parents, map(float, values), strict=True)),
+            temperature,
+            ideal_pack,
+            basis_type="mol",
+            allow_out_of_envelope=True,
+        )
+
+    melt = evaluate_liquid(liquid)
+    residual_melt = replace(
+        melt,
+        convergence=replace(melt.convergence, residual_inf=1.0e-10),
+    )
+    bound, _jacobian_norm = _inner_activity_uncertainty(
+        liquid, parents, temperature, ideal_pack, residual_melt, 1.0e-12, 100,
+    )
+
+    normalized = liquid / math.fsum(map(float, liquid))
+    perturbation = 1.0e-10
+    shifted = evaluate_liquid(
+        (normalized[0] + perturbation, normalized[1] - perturbation)
+    )
+    measured = abs(
+        math.log(shifted.activity("SiO2")) - math.log(melt.activity("SiO2"))
+    )
+    analytic = math.log((normalized[0] + perturbation) / normalized[0])
+    assert measured == pytest.approx(analytic, rel=1.0e-7)
+    assert measured == pytest.approx(9.99951e-5, rel=2.0e-5)
+    assert bound >= measured
+
+    scale = 1.0e6
+    scaled_liquid = liquid * scale
+    scaled_melt = evaluate_liquid(scaled_liquid)
+    scaled_residual_melt = replace(
+        scaled_melt,
+        convergence=replace(scaled_melt.convergence, residual_inf=1.0e-10),
+    )
+    scaled_bound, _ = _inner_activity_uncertainty(
+        scaled_liquid, parents, temperature, ideal_pack,
+        scaled_residual_melt, 1.0e-12, 100,
+    )
+    assert scaled_bound == pytest.approx(bound, rel=2.0e-6)
+
+
+def test_default_crystal_thermo_context_loads_gas_pack_once(monkeypatch):
+    calls = []
+    loaded = object()
+
+    def instrumented_load(*args, **kwargs):
+        calls.append((args, kwargs))
+        return loaded
+
+    monkeypatch.setattr(gas_module, "load_gas_datapack", instrumented_load)
+
+    first, second = diagnostics._crystal_thermo_context(None)
+
+    assert len(calls) == 1
+    assert first is loaded
+    assert second is loaded
 
 
 def test_fully_solid_branch_certifies_logq_below_zero(ideal_pack, gas_pack):
