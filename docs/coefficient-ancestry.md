@@ -11,6 +11,12 @@ source-store work ID, citation text, and provenance role (`derived`, `fitted`,
 `selected`, `anchor`, or `diagnostic`). The artifact-level `work_ids` field is
 the union across its rows.
 
+Roles follow explicit evidence: a source named by a fit is `fitted`, a source
+named in a selection decision is `selected`, construction inputs are
+`derived` or `anchor` as recorded, and validation-only datasets are
+`diagnostic`. A selection-rationale field by itself does not make every source
+selected, and held-out data are never counted as fit evidence.
+
 Every citation without a curated mapping to the recorded work-ID vocabulary
 appears in `unmapped` with its row and reason. An artifact is `complete` only
 when that list is empty. Unknown work IDs are never guessed; unresolved

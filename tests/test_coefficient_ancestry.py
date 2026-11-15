@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import re
 from importlib import resources
 from pathlib import Path
 import subprocess
@@ -188,3 +189,120 @@ def test_manifest_regeneration_is_byte_identical() -> None:
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "byte-identical" in result.stdout
+
+
+def test_provenance_citations_survive_mapping_and_role_assignment() -> None:
+    entries = coefficient_ancestry()
+    melt = _artifact(entries, "IMCC-SF04-D066@1.0.6-d066-v4")
+    redox = _artifact(entries, "1.8.0")
+
+    def citations(artifact: dict, row_id: str) -> list[tuple[str, str]]:
+        row = next(item for item in artifact["rows"] if item["id"] == row_id)
+        mapped = [(item["citation"], item["role"]) for item in row["sources"]]
+        unmapped = [
+            (item["citation"], "unmapped")
+            for item in artifact["unmapped"]
+            if item["row"] == row_id
+        ]
+        return mapped + unmapped
+
+    melt_citations = citations(melt, "4:MgTiO3")
+    assert any("JANAF" in citation and role == "derived" for citation, role in melt_citations)
+    assert any(
+        source["work_id"] == "janaf-4th"
+        for source in next(row for row in melt["rows"] if row["id"] == "4:MgTiO3")["sources"]
+    )
+
+    condensate = _artifact(entries, "condensate-default-v1")
+    ti_row = next(row for row in condensate["rows"] if row["id"] == "11:TiO2(l)")
+    assert any(source["role"] == "fitted" for source in ti_row["sources"])
+
+    reaction_two = citations(redox, "reaction:2")
+    assert any("Lange and Navrotsky (1992)" in citation for citation, _ in reaction_two)
+
+    reaction_seven = next(row for row in redox["rows"] if row["id"] == "reaction:7")
+    mapped_anchors = [
+        source for source in reaction_seven["sources"]
+        if source.get("provenance_role", "").startswith("direct Cr K-edge XANES")
+    ]
+    assert any(
+        source["work_id"] == "berry-oneill-2004-chromium-xanes"
+        and source["role"] == "anchor"
+        for source in mapped_anchors
+    )
+    assert any(
+        source["work_id"] == "berry-2006-chromium-composition"
+        and source["role"] == "anchor"
+        for source in mapped_anchors
+    )
+    assert any(
+        source["work_id"] == "gca-366-210-berry-2024"
+        for row in _artifact(entries, "liquid-standards-v2")["rows"]
+        for source in row["sources"]
+    )
+    held_out = [
+        item for item in redox["unmapped"]
+        if item["row"] == "reaction:7"
+        and item.get("provenance_role") == "independent chemical redox titration"
+    ]
+    assert held_out and all(
+        item["role"] == "diagnostic" for item in held_out
+    )
+
+
+def test_sampled_provenance_citation_tokens_are_all_recorded() -> None:
+    entries = coefficient_ancestry()
+    melt = _artifact(entries, "IMCC-SF04-D066@1.0.6-d066-v4")
+    redox = _artifact(entries, "1.8.0")
+    melt_data = _json_resource("data/packs/imcc-sf04-d066-v4.json")
+    redox_data = _json_resource("data/packs/openimcc-redox-v6.json")
+
+    def tokens(text: str) -> set[str]:
+        found = {
+            match.group(0).casefold()
+            for match in re.finditer(r"10\.[0-9]{4,9}/[^\s<>\]\[{}\"']+", text, re.I)
+        }
+        found.update(
+            match.group(0).casefold()
+            for match in re.finditer(r"\b[A-Z][A-Za-z’'-]+(?:,\s*[A-Z][A-Za-z’'-]+)*(?:\s+(?:&|and)\s+[A-Z][A-Za-z’'-]+|\s+et\s+al\.)?\s*\((?:19|20)[0-9]{2}[a-z]?\)", text)
+        )
+        found.update(
+            match.group(0).casefold()
+            for match in re.finditer(r"\b(?:[A-Z][a-z]?-[0-9]{3})\b", text)
+        )
+        return found
+
+    samples = [
+        (
+            melt,
+            "4:MgTiO3",
+            melt_data["rows"][3].get("derivation", ""),
+        ),
+        (
+            redox,
+            "reaction:2",
+            " ".join(str(value) for value in redox_data["rows"][1]["provenance"].values()),
+        ),
+        (
+            redox,
+            "reaction:7",
+            " ".join(
+                str(value)
+                for category in ("anchors", "held_out_independent")
+                for dataset in redox_data["dataset_provenance"][category]
+                for value in dataset.values()
+            ),
+        ),
+    ]
+    for artifact, row_id, provenance_text in samples:
+        expected = tokens(provenance_text)
+        row = next(row for row in artifact["rows"] if row["id"] == row_id)
+        recorded_text = " ".join(
+            [source["citation"] for source in row["sources"]]
+            + [
+                item["citation"]
+                for item in artifact["unmapped"]
+                if item["row"] == row_id
+            ]
+        ).casefold()
+        assert all(token.rstrip(".,;)") in recorded_text for token in expected)

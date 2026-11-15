@@ -20,6 +20,10 @@ MAPPINGS = ROOT / "tools" / "coefficient-ancestry-sources.json"
 VOCABULARY = ROOT / "tests" / "data" / "coefficient-ancestry-vocabulary.json"
 ROLES = {"derived", "fitted", "selected", "anchor", "diagnostic"}
 DOI_RE = re.compile(r"10\.[0-9]{4,9}/[^\s<>\]\[{}\"']+", re.IGNORECASE)
+JANAF_TABLE_RE = re.compile(r"(?<![A-Za-z0-9])(?:[A-Z][a-z]?-[0-9]{3})(?![A-Za-z0-9])")
+CITATION_RE = re.compile(
+    r"\b(?:[A-Z][A-Za-z’'-]+(?:,\s*[A-Z][A-Za-z’'-]+)*(?:\s+(?:&|and)\s+[A-Z][A-Za-z’'-]+)?|[A-Z][A-Za-z’'-]+\s+et\s+al\.)\s*\((?:19|20)[0-9]{2}[a-z]?\)",
+)
 
 
 def _json(path: Path) -> Any:
@@ -43,15 +47,28 @@ def _normalized_doi(value: str) -> str:
 
 
 def _segments(value: str) -> list[str]:
-    return [
-        segment.strip()
-        for segment in value.split(";")
-        if segment.strip()
-        and not segment.strip().lower().startswith(("src/", "tests/"))
-        and not segment.strip().casefold().startswith(
-            ("thermo_species.", "parent_standard_candidates.", "rows.")
+    segments: list[str] = []
+    for clause in value.split(";"):
+        clause = re.sub(
+            r"([A-Z][A-Za-z’'-]+),\s*([A-Z][A-Za-z’'-]+)\s+(?:&|and)\s+([A-Z][A-Za-z’'-]+)(\s+\((?:19|20)[0-9]{2}[a-z]?\))",
+            lambda match: match.group(0).replace(",", "\u241f", 1),
+            clause,
         )
-    ]
+        pieces = re.split(
+            r",\s+and\s+(?=[A-Z])|,(?=\s*[A-Z][^,;]{0,100}\(?(?:19|20)[0-9]{2})|,(?=\s*[A-Z][A-Za-z’'-]+\s+(?:and|&)\s+[A-Z])",
+            clause,
+        )
+        for piece in pieces:
+            segment = piece.replace("\u241f", ",").strip(" ,")
+            if (
+                segment
+                and not segment.lower().startswith(("src/", "tests/"))
+                and not segment.casefold().startswith(
+                    ("thermo_species.", "parent_standard_candidates.", "rows.")
+                )
+            ):
+                segments.append(segment)
+    return segments
 
 
 class SourceMapper:
@@ -114,6 +131,57 @@ class SourceMapper:
         return "No curated citation-key mapping resolves to a work ID in the vocabulary."
 
 
+def _citation_atoms(citation: str) -> list[str]:
+    """Keep each DOI and JANAF table citation independently auditable."""
+    atoms = [_normalized_doi(match.group(0)) for match in DOI_RE.finditer(citation)]
+    atoms.extend(match.group(0) for match in JANAF_TABLE_RE.finditer(citation))
+    return list(dict.fromkeys(atoms))
+
+
+def _role_from_evidence(text: str, default: str = "derived") -> str:
+    folded = text.casefold()
+    if re.search(r"\bfit(?:ted|ting)?\b", folded):
+        return "fitted"
+    if re.search(r"\bselect(?:ed|s|ion)?\b", folded):
+        return "selected"
+    if re.search(r"\banchor(?:ed|s)?\b", folded):
+        return "anchor"
+    return default
+
+
+def _redox_source_role(
+    citation: str, provenance: dict[str, Any], default: str
+) -> str:
+    rationale = str(provenance.get("selection_rationale", "")).casefold()
+    dated_reference = re.match(r"(.+?\((?:19|20)[0-9]{2}\))", citation)
+    reference = dated_reference.group(1) if dated_reference else citation.split(",", 1)[0]
+    normalized_citation = re.sub(r"[^a-z0-9]+", " ", reference.casefold()).strip()
+    normalized_rationale = re.sub(r"[^a-z0-9]+", " ", rationale)
+    if "select" in rationale and normalized_citation and normalized_citation in normalized_rationale:
+        return "selected"
+    return default
+
+
+def _text_values(value: Any):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for child in value.values():
+            yield from _text_values(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _text_values(child)
+
+
+def _add_citation_tokens(
+    row: dict[str, Any], text: str, role: str, mapper: SourceMapper
+) -> None:
+    citations = _citation_atoms(text)
+    citations.extend(match.group(0) for match in CITATION_RE.finditer(text))
+    for citation in dict.fromkeys(citations):
+        _add_citation(row, citation, role, mapper)
+
+
 def _row(row_id: str, label: str) -> dict[str, Any]:
     return {"id": row_id, "label": label, "sources": [], "unmapped": []}
 
@@ -125,6 +193,7 @@ def _add_citation(
     mapper: SourceMapper,
     *,
     citation_key: str | None = None,
+    provenance_role: str | None = None,
 ) -> None:
     if role not in ROLES:
         raise ValueError(f"invalid ancestry role: {role}")
@@ -132,21 +201,50 @@ def _add_citation(
     if not chunks:
         return
     for chunk in chunks:
-        work_ids = mapper.resolve(chunk, citation_key)
-        outside_vocabulary = mapper.outside_vocabulary(chunk, citation_key)
-        if not work_ids or outside_vocabulary:
+        atoms = _citation_atoms(chunk)
+        work_ids = [] if atoms else mapper.resolve(chunk, citation_key)
+        if work_ids:
+            for work_id in work_ids:
+                item = {"work_id": work_id, "role": role, "citation": chunk}
+                if provenance_role:
+                    item["provenance_role"] = provenance_role
+                if item not in row["sources"]:
+                    row["sources"].append(item)
+
+        for atom in atoms:
+            atom_ids = mapper.resolve(atom)
+            for work_id in atom_ids:
+                item = {"work_id": work_id, "role": role, "citation": atom}
+                if provenance_role:
+                    item["provenance_role"] = provenance_role
+                if item not in row["sources"]:
+                    row["sources"].append(item)
+
+        unresolved_atoms = [atom for atom in atoms if not mapper.resolve(atom)]
+        if unresolved_atoms:
+            for atom in unresolved_atoms:
+                item = {
+                    "row": row["id"],
+                    "citation": atom,
+                    "reason": mapper.unmapped_reason(atom),
+                    "role": role,
+                }
+                if provenance_role:
+                    item["provenance_role"] = provenance_role
+                if item not in row["unmapped"]:
+                    row["unmapped"].append(item)
+
+        if not work_ids and not atoms:
             item = {
                 "row": row["id"],
                 "citation": chunk,
                 "reason": mapper.unmapped_reason(chunk, citation_key),
+                "role": role,
             }
+            if provenance_role:
+                item["provenance_role"] = provenance_role
             if item not in row["unmapped"]:
                 row["unmapped"].append(item)
-            continue
-        for work_id in work_ids:
-            item = {"work_id": work_id, "role": role, "citation": chunk}
-            if item not in row["sources"]:
-                row["sources"].append(item)
 
 
 def _missing_provenance(row: dict[str, Any]) -> None:
@@ -212,10 +310,29 @@ def _melt_artifact(mapper: SourceMapper, runtime_digest: str) -> dict[str, Any]:
             if doi:
                 citation = f"{citation}. DOI {doi}"
             surname = citation.split(",", 1)[0].split()[0].casefold().rstrip(".,")
-            role = "selected" if "select" in derivation and surname in derivation else "derived"
+            role = (
+                "selected" if "select" in derivation and surname in derivation
+                else "fitted" if "fit" in derivation and surname in derivation
+                else "derived"
+            )
             _add_citation(
                 record, citation, role, mapper, citation_key=source_key
             )
+
+        derivation_text = source_row.get("derivation", "")
+        for derivation in _segments(derivation_text):
+            _add_citation(
+                record,
+                derivation,
+                _role_from_evidence(derivation),
+                mapper,
+            )
+        _add_citation_tokens(
+            record,
+            derivation_text,
+            _role_from_evidence(derivation_text),
+            mapper,
+        )
 
         refit = source_row.get("standard_state_refit")
         if isinstance(refit, dict):
@@ -260,8 +377,8 @@ def _table_artifact(
             ref = source_row.get("Ref", "").strip()
             construction = source_row.get("construction_method", "none").strip()
             row_role = "anchor" if ref.startswith("LFS[") else role
-            if construction not in ("", "none") and row_role != "anchor":
-                row_role = "derived"
+            if row_role != "anchor" and construction not in ("", "none"):
+                row_role = _role_from_evidence(construction)
             _add_citation(
                 record,
                 ref,
@@ -297,14 +414,66 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper) -> list[dict[str,
     for row_id, label, source_row in source_rows:
         record = _row(row_id, label)
         provenance = source_row.get("provenance", {})
-        source_role = "selected" if provenance.get("selection_rationale") else "derived"
+        role_evidence = " ".join(
+            str(source_row.get(key, ""))
+            for key in ("method", "phase_or_construction")
+        )
+        source_role = "derived"
         source = provenance.get("source")
+        source_roles: dict[str, str] = {}
         if isinstance(source, str):
             for chunk in _segments(source):
-                _add_citation(record, chunk, source_role, mapper)
+                evidenced_role = _role_from_evidence(chunk, source_role)
+                if "fit" in role_evidence.casefold() and chunk.casefold() in role_evidence.casefold():
+                    evidenced_role = "fitted"
+                evidenced_role = _redox_source_role(chunk, provenance, evidenced_role)
+                for work_id in mapper.resolve(chunk):
+                    source_roles[work_id] = evidenced_role
+                _add_citation(
+                    record,
+                    chunk,
+                    evidenced_role,
+                    mapper,
+                )
+            for citation in CITATION_RE.finditer(source):
+                _add_citation(
+                    record,
+                    citation.group(0),
+                    _redox_source_role(citation.group(0), provenance, source_role),
+                    mapper,
+                )
         source_url = provenance.get("source_url")
         if isinstance(source_url, str) and source_url:
-            _add_citation(record, source_url, source_role, mapper)
+            url_roles = {
+                source_roles[work_id]
+                for work_id in mapper.resolve(source_url)
+                if work_id in source_roles
+            }
+            _add_citation(
+                record,
+                source_url,
+                next(iter(url_roles)) if len(url_roles) == 1 else source_role,
+                mapper,
+            )
+
+        for key, value in provenance.items():
+            if key not in {"source", "source_url"}:
+                for text in _text_values(value):
+                    token_role = _redox_source_role(text, provenance, source_role)
+                    citations = _citation_atoms(text)
+                    citations.extend(match.group(0) for match in CITATION_RE.finditer(text))
+                    for citation in dict.fromkeys(citations):
+                        _add_citation(
+                            record,
+                            citation,
+                            _redox_source_role(citation, provenance, token_role),
+                            mapper,
+                        )
+
+        for key in ("method", "phase_or_construction", "fit_residual", "band_basis"):
+            text = source_row.get(key)
+            if isinstance(text, str):
+                _add_citation_tokens(record, text, _role_from_evidence(text), mapper)
 
         construction = source_row.get("construction", {})
         if isinstance(construction, dict):
@@ -321,6 +490,29 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper) -> list[dict[str,
             primary_source = check.get("primary_source")
             if isinstance(primary_source, str) and primary_source.strip():
                 _add_citation(record, primary_source, "diagnostic", mapper)
+            for key, value in check.items():
+                if key != "primary_source":
+                    for text in _text_values(value):
+                        _add_citation_tokens(record, text, "diagnostic", mapper)
+
+        if row_id == "reaction:7":
+            for category, role in (("anchors", "anchor"), ("held_out_independent", "diagnostic")):
+                for dataset in content.get("dataset_provenance", {}).get(category, []):
+                    citation = dataset.get("citation", "")
+                    provenance_role = dataset.get("role", "")
+                    dataset_role = (
+                        _role_from_evidence(provenance_role, role)
+                        if category == "anchors"
+                        else "diagnostic"
+                    )
+                    source_url = dataset.get("source_url", "")
+                    _add_citation(
+                        record,
+                        f"{citation}; {source_url}" if source_url else citation,
+                        dataset_role,
+                        mapper,
+                        provenance_role=provenance_role,
+                    )
         _missing_provenance(record)
         rows.append(record)
     return rows
