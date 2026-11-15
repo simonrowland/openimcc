@@ -54,6 +54,12 @@
   lever-rule extents, warm temperature sweeps, and scanned solidus/liquidus
   brackets with Brent refinement. Non-unique liquid scales remain unresolved,
   and liquid-dependent crossings stay out of domain below 1700 K.
+- `equilibrate()` can attach fixed-activity vapour pressures at caller-stated
+  `fO2`, forwarding only identifiable activities. `to_dict()` now includes
+  phase-state contract version 1, with phase ranges, liquid-fraction
+  certification, refusal and receipt fields, and a vapour block. The vapour
+  output makes no oxygen closure, mass-balance, rate, extent, or depletion
+  claim. See docs/equilibrium.md.
 
 ### Gas oxygen balance
 

@@ -134,6 +134,82 @@ results separate `solidus_status` and `liquidus_status` (`AVAILABLE`,
 `NO_CROSSING`, `OUT_OF_DOMAIN`, or `DEPENDS`) and include zero or more refined
 crossings for each boundary type.
 
+## Fixed-activity vapour
+
+Pass `fO2` to `equilibrate()` to attach `evaluate_gas()` over the result's
+identifiable parent activities:
+
+```python
+result = equilibrate(
+    {"MgO": 1.0, "SiO2": 1.0}, 2000.0, fO2=1.0e-8,
+)
+pressures_bar = result.gas
+```
+
+`fO2` is the caller-stated oxygen fugacity ratio `pO2 / 1 bar`. The attachment
+uses the same channel filtering as `evaluate_declared_assemblage()`. It passes
+only activities in `identifiable_activities`; a gas row that needs an
+unidentified activity appears in `gas_depends` and is not evaluated. The
+returned pressures are a fixed-activity equilibrium vapour potential over the
+stated bulk at `T`. They do not close oxygen or vapour mass balance and make
+no rate, extent, or depletion claim. `labels.validity` combines the phase
+result with gas-row domain and activity dependencies; `labels.evidence_class`
+is the least-authoritative participating equilibrium or gas row.
+
+## Simulator phase-state contract
+
+`PhaseEquilibriumResult.to_dict()` retains its result fields and adds a
+`phase_state_contract` object. Its version is exported as
+`openimcc.equilibrium.phase_state_contract_version` (currently `1`):
+
+```text
+phase_state_contract = {
+  "name": "openimcc.phase-state",
+  "version": 1,
+  "input": {
+    "bulk_basis": "parent_oxide_mol",
+    "bulk_parent_mol": {oxide: mol, ...},
+    "temperature_K": number,
+    "pressure_bar": 1.0,
+    "candidates": null | [phase_id, ...],
+    "fO2": null | pO2_over_1_bar
+  },
+  "output": {
+    "phase_presence": {phase_id: status, ...},
+    "phase_amount_ranges_mol": {phase_id: [minimum, maximum], ...},
+    "phase_amounts_unique": boolean,
+    "liquid_mass_fraction": {
+      "value": null | number,
+      "certification_status": "CERTIFIED" | "UNRESOLVED"
+    },
+    "identifiable_activities": {oxide: activity, ...},
+    "labels": PhaseEquilibriumLabels,
+    "refusal": null | EquilibriumRefusal,
+    "receipt": CalculationReceipt,
+    "vapour": {
+      "status": "NOT_REQUESTED" | "AVAILABLE" | "DEPENDS" | "OUT_OF_DOMAIN",
+      "interpretation": string,
+      "fO2": null | number,
+      "unit": "bar",
+      "partial_pressures_bar": null | {species: pressure, ...},
+      "depends": {species: reason, ...},
+      "domain_flags": {species: flag, ...},
+      "provenance_class": {species: authority, ...},
+      "omitted_channels": {species: reason, ...},
+      "error": null | string
+    }
+  }
+}
+```
+
+The input `candidates` is `null` for the default candidate set. A certified
+liquid mass fraction is resolved within the returned equilibrium certificate;
+candidate coverage limits remain visible in `labels` and `refusal`. Gas
+channels that depend on an unidentified activity are listed in `vapour.depends`
+and have no pressure value. An external simulator can adopt this dictionary
+interface and decide how to consume a multiphase state; this package cannot
+change the external engine itself.
+
 See the API dataclasses in openimcc.equilibrium for the complete field
 definitions and the typed refusal codes. `PhaseEquilibriumResult.to_dict()`
 exports nested records, arrays, and read-only mappings as JSON-compatible

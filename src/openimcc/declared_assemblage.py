@@ -266,6 +266,43 @@ def _gas_dependencies(
     return (tuple(eligible) if requested_species is not None else None), depends
 
 
+def _evaluate_gas_attachment(
+    activities: Mapping[str, float],
+    temperature_K: float,
+    fO2: float,
+    gas_pack: Any,
+    *,
+    dependency_components: Sequence[str],
+    parent_oxides: Sequence[str],
+    gas_species: tuple[str, ...] | None = None,
+    include_ions: bool = False,
+    allow_extrapolation: bool = False,
+) -> tuple[Any | None, dict[str, str]]:
+    """Evaluate only gas channels supported by the supplied activities."""
+    gas_module = __import__("openimcc.gas", fromlist=["gas"])
+    explicit_species, depends = _gas_dependencies(
+        gas_module,
+        set(dependency_components),
+        activities,
+        gas_species,
+        include_ions,
+        gas_pack,
+    )
+    if gas_species is not None and not explicit_species:
+        return None, depends
+    result = gas_module.evaluate_gas(
+        activities,
+        temperature_K,
+        fO2,
+        gas_pack,
+        parent_oxides=tuple(parent_oxides),
+        allow_extrapolation=allow_extrapolation,
+        gas_species=explicit_species,
+        include_ions=include_ions,
+    )
+    return result, depends
+
+
 def evaluate_declared_assemblage(
     phases: Sequence[str],
     T_K: float,
@@ -634,35 +671,31 @@ def evaluate_declared_assemblage(
                     refusal=refusal, axes=axes,
                 )
     elif fO2 is not None:
-        explicit_species, gas_depends = _gas_dependencies(
-            gas_module, set(phase_components), available_activities,
-            requested_gas, include_ions, active_pack,
-        )
-        if requested_gas is None or explicit_species:
-            try:
-                gas_result = gas_module.evaluate_gas(
-                    activities, temperature, float(fO2), active_pack,
-                    parent_oxides=gas_parent_oxides,
-                    allow_extrapolation=allow_extrapolation,
-                    gas_species=explicit_species,
-                    include_ions=include_ions,
-                )
-            except gas_module.ImccGasTemperatureOutsideDomainError as exc:
-                axes = ("gas_species.temperature_K",)
-                refusal = EquilibriumRefusal("missing_phase_data", str(exc), axes)
-                return _empty_result(
-                    phases=declared, temperature_K=temperature, fO2=fO2,
-                    gas_species=requested_gas, parent_oxides=requested_oxides,
-                    include_ions=include_ions, oxygen_balance=oxygen_balance,
-                    allow_extrapolation=allow_extrapolation,
-                    crystal_digest=crystal_digest, pure_digest=pure_digest,
-                    gas_pack=active_pack, validity="OUT_OF_DOMAIN",
-                    evidence_class=_least_authority(
-                        (*phase_authorities, *active_authorities)
-                    ), flags=("gas_species_out_of_range",),
-                    notices=("declared_assemblage_not_minimized",),
-                    refusal=refusal, axes=axes,
-                )
+        try:
+            gas_result, gas_depends = _evaluate_gas_attachment(
+                available_activities, temperature, float(fO2), active_pack,
+                dependency_components=phase_components,
+                parent_oxides=gas_parent_oxides,
+                gas_species=requested_gas,
+                include_ions=include_ions,
+                allow_extrapolation=allow_extrapolation,
+            )
+        except gas_module.ImccGasTemperatureOutsideDomainError as exc:
+            axes = ("gas_species.temperature_K",)
+            refusal = EquilibriumRefusal("missing_phase_data", str(exc), axes)
+            return _empty_result(
+                phases=declared, temperature_K=temperature, fO2=fO2,
+                gas_species=requested_gas, parent_oxides=requested_oxides,
+                include_ions=include_ions, oxygen_balance=oxygen_balance,
+                allow_extrapolation=allow_extrapolation,
+                crystal_digest=crystal_digest, pure_digest=pure_digest,
+                gas_pack=active_pack, validity="OUT_OF_DOMAIN",
+                evidence_class=_least_authority(
+                    (*phase_authorities, *active_authorities)
+                ), flags=("gas_species_out_of_range",),
+                notices=("declared_assemblage_not_minimized",),
+                refusal=refusal, axes=axes,
+            )
 
     flags = ["fixed_pressure_1_bar", "gas_is_post_processing"]
     notices = [

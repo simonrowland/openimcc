@@ -31,6 +31,7 @@ from openimcc.equilibrium import (
     equilibrate,
     equilibrate_sweep,
     evaluate_janaf_crystal,
+    phase_state_contract_version,
     phase_boundary_brackets,
 )
 from openimcc.gas import species_thermo
@@ -914,6 +915,88 @@ def test_result_to_dict_round_trips_through_json(ideal_pack, gas_pack):
     assert decoded["temperature_K"] == 2000.0
     assert decoded["bulk_parent_mol"] == {"SiO2": 1.0}
     assert decoded["phase_saturation_indices"]
+
+
+def test_fully_liquid_vapour_matches_direct_gas_evaluation(ideal_pack, gas_pack):
+    fO2 = 1.0e-8
+    result = equilibrate(
+        {"MgO": 1.0, "SiO2": 1.0}, 2000.0,
+        candidates=(), pack=ideal_pack, fO2=fO2,
+    )
+    expected = gas_module.evaluate_gas(
+        result.identifiable_activities, result.temperature_K, fO2, gas_pack,
+        parent_oxides=tuple(result.identifiable_activities),
+    )
+
+    assert result.liquid_mass_fraction == pytest.approx(1.0)
+    assert dict(result.gas) == dict(expected)
+
+
+def test_crystal_vapour_withholds_nonidentifiable_channels(
+    monkeypatch, ideal_pack, gas_pack
+):
+    temperature = 2000.0
+    stoichiometry = {"CaO": 1.0, "SiO2": 1.0}
+    liquid_gibbs = math.fsum(
+        species_thermo(parent, "l", temperature, gas_pack).G_J_mol
+        for parent in stoichiometry
+    )
+    # A 2 RT lower crystal Gibbs energy creates a certified crystal-only state.
+    crystal_gibbs = liquid_gibbs - 2.0 * R_J_MOL_K * temperature
+    candidate = CrystalCandidate(
+        "solid-CaSiO3", stoichiometry, crystal_gibbs,
+    )
+    _install_synthetic_default_candidates(monkeypatch, (candidate,), gas_pack)
+    result = equilibrate(
+        {"CaO": 1.0, "SiO2": 1.0}, temperature,
+        pack=ideal_pack, fO2=1.0e-8,
+    )
+
+    assert result.phase_presence["solid-CaSiO3"] == "present"
+    assert result.identifiable_activities == {}
+    assert "CaO" in result.gas_depends
+    assert "activity_not_identifiable" in result.gas_depends["CaO"]
+    assert "CaO" not in result.gas
+    assert result.labels.validity == "DEPENDS"
+
+
+def test_phase_state_contract_schema_round_trips_through_json(ideal_pack):
+    result = equilibrate(
+        {"MgO": 1.0, "SiO2": 1.0}, 2000.0,
+        candidates=(), pack=ideal_pack, fO2=1.0e-8,
+    )
+    decoded = json.loads(json.dumps(result.to_dict()))
+    contract = decoded["phase_state_contract"]
+    output = contract["output"]
+
+    assert contract["name"] == "openimcc.phase-state"
+    assert contract["version"] == phase_state_contract_version == 1
+    assert contract["input"]["bulk_basis"] == "parent_oxide_mol"
+    assert contract["input"]["bulk_parent_mol"] == {"MgO": 1.0, "SiO2": 1.0}
+    assert contract["input"]["candidates"] == []
+    assert contract["input"]["fO2"] == 1.0e-8
+    assert set(output) == {
+        "phase_presence", "phase_amount_ranges_mol", "phase_amounts_unique",
+        "liquid_mass_fraction", "identifiable_activities", "labels",
+        "refusal", "receipt", "vapour",
+    }
+    assert output["liquid_mass_fraction"]["certification_status"] == "CERTIFIED"
+    assert output["vapour"]["status"] in {"AVAILABLE", "DEPENDS", "OUT_OF_DOMAIN"}
+    assert output["vapour"]["fO2"] == 1.0e-8
+    assert output["vapour"]["unit"] == "bar"
+
+
+def test_phase_state_contract_preserves_equilibrium_refusal(ideal_pack):
+    candidate = CrystalCandidate("magnetite", {"FeO": 3.0}, 0.0)
+    result = equilibrate(
+        {"FeO": 1.0}, 1800.0, candidates=(candidate,), pack=ideal_pack,
+        fO2=1.0e-8,
+    )
+    contract = result.to_dict()["phase_state_contract"]
+
+    assert result.refusal is not None
+    assert result.refusal.code == "unsupported_redox_phase"
+    assert contract["output"]["refusal"]["code"] == "unsupported_redox_phase"
 
 
 def test_absent_by_construction_uses_selected_liquid_standard(ideal_pack):

@@ -23,6 +23,7 @@ from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
 from openimcc.declared_assemblage import (
     EquilibriumRefusal,
     PhaseEquilibriumLabels,
+    _evaluate_gas_attachment,
     _least_authority,
     _load_json,
     _phase_authority,
@@ -41,6 +42,7 @@ _PURE_RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
 _CRYSTAL_RESOURCE = "data/diagnostics/crystal-phases.json"
 _PRESSURE_BAR = 1.0
 _LIQUID_DOMAIN_K = (1700.0, 3000.0)
+phase_state_contract_version = 1
 
 # Each named tolerance applies to a different physical/numerical certificate.
 _DEFAULT_BALANCE_TOL = 1.0e-10
@@ -112,16 +114,102 @@ class PhaseEquilibriumResult:
     active_set_history: tuple[tuple[str, ...], ...] = ()
     kkt_recheck: Mapping[str, float] = field(default_factory=dict)
     crystal_only_minimum: bool = False
+    fO2: float | None = None
+    gas_depends: Mapping[str, str] = field(default_factory=dict)
+    vapour_error: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a JSON-compatible dictionary, including nested result records."""
-        return _json_compatible(self)
+        """Return the result plus the versioned simulator phase-state contract."""
+        result = _json_compatible(self)
+        if self.gas is None:
+            vapour = None
+            vapour_domain_flags: Mapping[str, Any] = {}
+            vapour_authority: Mapping[str, Any] = {}
+            vapour_omitted: Mapping[str, Any] = {}
+        else:
+            vapour = {
+                "partial_pressures_bar": dict(self.gas),
+                "unit": self.gas.unit,
+            }
+            vapour_domain_flags = self.gas.domain_flags
+            vapour_authority = self.gas.provenance_class
+            vapour_omitted = self.gas.omitted_channels
+        if self.fO2 is None:
+            vapour_status = "NOT_REQUESTED"
+        elif self.vapour_error or any(
+            axis.startswith("gas_species.")
+            for axis in self.labels.out_of_domain_axes
+        ):
+            vapour_status = "OUT_OF_DOMAIN"
+        elif self.gas_depends:
+            vapour_status = "DEPENDS"
+        else:
+            vapour_status = "AVAILABLE"
+        liquid_fraction_certified = (
+            self.liquid_mass_fraction is not None
+            and not self.crystal_only_minimum
+            and self.kkt_recheck.get("independent_kkt_passed") == 1.0
+        )
+        request = self.receipt.request
+        contract_candidates = request.get("candidates")
+        if (
+            contract_candidates is None
+            and "restricted_candidate_set" in self.labels.flags
+        ):
+            contract_candidates = request.get("candidate_phase_ids")
+        result["phase_state_contract"] = {
+            "name": "openimcc.phase-state",
+            "version": phase_state_contract_version,
+            "input": {
+                "bulk_basis": "parent_oxide_mol",
+                "bulk_parent_mol": result["bulk_parent_mol"],
+                "temperature_K": self.temperature_K,
+                "pressure_bar": self.pressure_bar,
+                "candidates": _json_compatible(contract_candidates),
+                "fO2": self.fO2,
+            },
+            "output": {
+                "phase_presence": result["phase_presence"],
+                "phase_amount_ranges_mol": result["phase_amount_ranges_mol"],
+                "phase_amounts_unique": self.phase_amounts_unique,
+                "liquid_mass_fraction": {
+                    "value": self.liquid_mass_fraction,
+                    "certification_status": (
+                        "CERTIFIED" if liquid_fraction_certified else "UNRESOLVED"
+                    ),
+                },
+                "identifiable_activities": result["identifiable_activities"],
+                "labels": result["labels"],
+                "refusal": result["refusal"],
+                "receipt": result["receipt"],
+                "vapour": {
+                    "status": vapour_status,
+                    "interpretation": (
+                        "Fixed-activity equilibrium vapour potential over the stated "
+                        "bulk at T; no oxygen closure, vapour mass balance, rate, "
+                        "extent, or depletion is implied."
+                    ),
+                    "fO2": self.fO2,
+                    "unit": "bar",
+                    "partial_pressures_bar": (
+                        vapour["partial_pressures_bar"] if vapour is not None else None
+                    ),
+                    "depends": result["gas_depends"],
+                    "domain_flags": _json_compatible(vapour_domain_flags),
+                    "provenance_class": _json_compatible(vapour_authority),
+                    "omitted_channels": _json_compatible(vapour_omitted),
+                    "error": self.vapour_error,
+                },
+            },
+        }
+        return result
 
     def __post_init__(self) -> None:
         for name in (
             "bulk_parent_mol", "phase_amount_ranges_mol", "phase_presence",
             "identifiable_activities", "activity_ranges_ln",
             "phase_affinities_ln", "phase_affinity_ranges_ln", "kkt_recheck",
+            "gas_depends",
         ):
             object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
         for name in ("liquid_parent_mol", "solid_mol"):
@@ -3219,23 +3307,151 @@ def _equilibrate_one(
     return result
 
 
+def _attach_phase_state_vapour(
+    result: PhaseEquilibriumResult,
+    *,
+    candidates: Sequence[str | CrystalCandidate] | None,
+    fO2: float | None,
+) -> PhaseEquilibriumResult:
+    candidate_ids = (
+        None if candidates is None else tuple(
+            candidate.phase_id if isinstance(candidate, CrystalCandidate)
+            else str(candidate)
+            for candidate in candidates
+        )
+    )
+    request = dict(result.receipt.request)
+    request.update({"candidates": candidate_ids, "fO2": fO2})
+    gas_result = None
+    gas_depends: dict[str, str] = {}
+    vapour_error = None
+    gas_pack = None
+    labels = result.labels
+    refusal = result.refusal
+    solver = dict(result.receipt.solver)
+    data_digests = dict(result.receipt.data_digests)
+
+    if fO2 is not None:
+        from openimcc import gas as gas_module
+
+        gas_pack, _reference_pack = diagnostics._crystal_thermo_context(None)
+        request["fO2"] = float(fO2)
+        try:
+            gas_result, gas_depends = _evaluate_gas_attachment(
+                result.identifiable_activities,
+                result.temperature_K,
+                float(fO2),
+                gas_pack,
+                dependency_components=tuple(result.bulk_parent_mol),
+                parent_oxides=tuple(result.identifiable_activities),
+            )
+        except gas_module.ImccGasTemperatureOutsideDomainError as exc:
+            vapour_error = str(exc)
+
+        data_digests.update({
+            "gas": gas_pack.gas_table_digest,
+            "condensate": gas_pack.condensate_table_digest,
+        })
+        solver["vapour_attachment"] = "fixed_activity_equilibrium_potential"
+        solver["vapour_channels_depends"] = dict(gas_depends)
+        if vapour_error is not None:
+            gas_axes = ("gas_species.temperature_K",)
+            validity: Literal["IN", "OUT_OF_DOMAIN", "DEPENDS"] = "OUT_OF_DOMAIN"
+            flags = (*labels.flags, "gas_species_out_of_range")
+        else:
+            gas_axes = tuple(
+                f"gas_species.{name}.temperature_K"
+                for name, detail in gas_result.domain_flags.items()
+                if detail is not None
+            )
+            validity = (
+                "OUT_OF_DOMAIN" if gas_axes or labels.validity == "OUT_OF_DOMAIN" else
+                "DEPENDS" if gas_depends or labels.validity == "DEPENDS" else
+                "IN"
+            )
+            flags = labels.flags
+        if gas_depends:
+            flags = (*flags, "gas_channel_depends_on_nonidentifiable_activity")
+        notices = (
+            *labels.notices,
+            "fixed_activity_equilibrium_vapour_potential_over_stated_bulk",
+            "vapour_does_not_claim_oxygen_closure_mass_balance_rate_extent_or_depletion",
+        )
+        if gas_depends:
+            notices = (*notices, "some_vapour_channels_need_nonidentifiable_activities")
+        identity = dict(labels.identity)
+        identity.update({
+            "gas_table_digest": gas_pack.gas_table_digest,
+            "condensate_table_digest": gas_pack.condensate_table_digest,
+        })
+        authorities = [labels.evidence_class]
+        if gas_result is not None:
+            authorities.extend(gas_result.provenance_class.values())
+        labels = replace(
+            labels,
+            identity=identity,
+            validity=validity,
+            out_of_domain_axes=tuple(dict.fromkeys((
+                *labels.out_of_domain_axes, *gas_axes,
+            ))),
+            evidence_class=_least_authority(authorities),
+            flags=tuple(dict.fromkeys(flags)),
+            notices=tuple(dict.fromkeys(notices)),
+        )
+        if refusal is None and vapour_error is not None:
+            refusal = EquilibriumRefusal(
+                "gas_temperature_out_of_range",
+                vapour_error,
+                gas_axes,
+            )
+        elif refusal is None and gas_depends:
+            refusal = EquilibriumRefusal(
+                "gas_activity_not_identifiable",
+                "Some vapour channels need parent activities not identified by the phase state.",
+                tuple(f"gas_species.{name}" for name in gas_depends),
+            )
+
+    receipt = build_calculation_receipt(
+        request=request,
+        data_digests=data_digests,
+        solver=solver,
+    )
+    return replace(
+        result,
+        gas=gas_result,
+        fO2=None if fO2 is None else float(fO2),
+        gas_depends=gas_depends,
+        vapour_error=vapour_error,
+        labels=labels,
+        refusal=refusal,
+        receipt=receipt,
+    )
+
+
 def equilibrate(
     bulk: Mapping[str, float] | Sequence[float],
     T_K: float,
     *,
     candidates: Sequence[str | CrystalCandidate] | None = None,
     pack: Any | None = None,
+    fO2: float | None = None,
     tol: float = _DEFAULT_BALANCE_TOL,
     affinity_tol_ln: float = _DEFAULT_AFFINITY_TOL_LN,
     inner_tol: float = _INNER_BALANCE_TOL,
     max_iter: int = 100,
 ) -> PhaseEquilibriumResult:
-    """Equilibrate an oxide bulk at one temperature with fresh solver starts."""
-    return _equilibrate_one(
+    """Equilibrate a parent-oxide bulk, with optional fixed-fO2 vapour output.
+
+    Vapour is a fixed-activity equilibrium potential over the stated bulk at T;
+    it does not close oxygen or vapour mass balance, or imply rate, extent, or
+    depletion.
+    """
+    result = _equilibrate_one(
         bulk, T_K, candidates=candidates, pack=pack, tol=tol,
         affinity_tol_ln=affinity_tol_ln, inner_tol=inner_tol,
         max_iter=max_iter,
     )
+    return _attach_phase_state_vapour(result, candidates=candidates, fO2=fO2)
 
 
 def equilibrate_sweep(
