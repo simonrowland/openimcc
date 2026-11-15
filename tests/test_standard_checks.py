@@ -146,8 +146,38 @@ def test_resolved_switch_root_is_bracketed_by_its_pack_data():
     assert switch.bracket_resolution_bounds_J_mol is not None
     assert switch.bracket_residuals_J_mol[0] > switch.bracket_resolution_bounds_J_mol[0]
     assert switch.bracket_residuals_J_mol[1] < -switch.bracket_resolution_bounds_J_mol[1]
+    assert switch.temperature_K == pytest.approx(2326.97, abs=0.1)
     assert result.pack_id == "condensate-default-v1.csv"
     assert result.pack_digest
+
+
+@pytest.mark.parametrize(
+    ("oxide", "condensate_path", "expected_root_K"),
+    [
+        ("TiO2", None, 2130.064914),
+        ("TiO2", LEGACY_CONDENSATE, 2130.064914),
+        ("FeO", LEGACY_CONDENSATE, 1650.244128),
+        ("Na2O", LEGACY_CONDENSATE, 1405.209948),
+    ],
+)
+def test_switch_roots_above_janaf_transition_use_metastable_crystal_leg(
+    oxide, condensate_path, expected_root_K
+):
+    result = pure_oxide_standard_check(oxide, condensate_path=condensate_path)
+    switch = result.switch_prediction
+
+    assert switch.status == "root", switch
+    assert switch.temperature_K == pytest.approx(expected_root_K, abs=0.1)
+    assert "metastable/superheated crystal leg above JANAF transition" in (
+        switch.temperature_axis_label
+    )
+
+
+def test_default_sodium_switch_root_is_preserved():
+    result = pure_oxide_standard_check("Na2O")
+
+    assert result.switch_prediction.status == "root"
+    assert result.switch_prediction.temperature_K == pytest.approx(1405.17, abs=0.1)
 
 
 def test_k2o_is_a_flagged_construction_and_below_1700_root_is_labelled():
@@ -172,13 +202,13 @@ def test_out_of_range_janaf_temperature_is_a_typed_refusal():
         pure_oxide_standard_check("CaO", 3601.0)
     assert caught.value.phase == "Ca-027"
     assert caught.value.axis == "temperature_K"
-    assert caught.value.valid_range_K == pytest.approx((298.15, 3200.0))
+    assert caught.value.valid_range_K == pytest.approx((298.15, 3600.0))
 
     with pytest.raises(StandardCheckRefusal) as construction_caught:
         pure_oxide_standard_check("K2O", 2001.0)
     assert construction_caught.value.phase == "K-012"
     assert construction_caught.value.axis == "temperature_K"
-    assert construction_caught.value.valid_range_K == pytest.approx((298.15, 1013.0))
+    assert construction_caught.value.valid_range_K == pytest.approx((298.15, 2000.0))
 
 
 def test_existing_crystal_closure_fixed_input_is_bit_identical():

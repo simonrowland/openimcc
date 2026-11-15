@@ -295,6 +295,14 @@ def test_k2o_fusion_input_band_is_not_evaluation_domain():
     assert above_selected_transition.refusal.code == "phase_temperature_out_of_range"
 
 
+def test_declared_assemblage_refuses_temperature_above_janaf_phase_cap():
+    result = evaluate_declared_assemblage(("TiO2",), 2130.001)
+
+    assert result.labels.validity == "OUT_OF_DOMAIN"
+    assert result.refusal.code == "phase_temperature_out_of_range"
+    assert result.labels.out_of_domain_axes == ("crystal.TiO2.temperature_K",)
+
+
 def test_oxygen_balance_uses_determined_solid_buffer_activities(gas_pack):
     result = evaluate_declared_assemblage(
         ("MgO",), 1800.0, gas_pack=gas_pack, oxygen_balance=True,

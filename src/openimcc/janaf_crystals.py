@@ -111,12 +111,16 @@ def _apparent_gibbs(
     ) * 1000.0 - temperature * entropy
 
 
-def evaluate_janaf_crystal(phase_id: str, temperature_K: float) -> JanafCrystalGibbs:
+def evaluate_janaf_crystal(
+    phase_id: str, temperature_K: float, *, apply_phase_cap: bool = True
+) -> JanafCrystalGibbs:
     """Return apparent crystal G (J/mol), its valid domain, and provenance.
 
     The packaged source subset is generated from vendored JANAF tables. At a
     crystal-liquid cap, use the printed transition-row enthalpy and entropy
-    rather than an interpolation through adjacent bulk-table nodes.
+    rather than an interpolation through adjacent bulk-table nodes. The stable
+    phase cap applies by default; set ``apply_phase_cap=False`` to evaluate the
+    reconstructed crystal function across its full tabulated temperature span.
     """
     rows, resource_digest = _load_phases()
     if phase_id not in rows:
@@ -126,15 +130,20 @@ def evaluate_janaf_crystal(phase_id: str, temperature_K: float) -> JanafCrystalG
     if not math.isfinite(temperature):
         raise ValueError("temperature_K must be finite")
     source_lo, source_hi = map(float, row["source_temperature_K"])
-    domain = (
+    tabulated_domain = (
         max(_ANCHOR_TEMPERATURE_K, source_lo),
-        min(source_hi, float(row["crystal_transition_temperature_K"])),
+        source_hi,
     )
+    phase_domain = (
+        tabulated_domain[0],
+        min(tabulated_domain[1], float(row["crystal_transition_temperature_K"])),
+    )
+    domain = phase_domain if apply_phase_cap else tabulated_domain
     if not domain[0] <= temperature <= domain[1]:
         raise JanafCrystalTemperatureError(phase_id, temperature, domain)
 
     transition = row.get("transition_row_at_cap")
-    use_transition = transition is not None and temperature == domain[1]
+    use_transition = transition is not None and temperature == float(transition["T_K"])
     # Include the printed transition point as the final interpolation node
     # below the cap. Otherwise the last ordinary 100 K node is extrapolated
     # toward the transition, causing a discontinuity immediately below Tm.

@@ -125,7 +125,7 @@ class PureOxideStandardCheck:
 
 def _janaf_crystal(oxide: str, temperature_K: float):
     try:
-        return evaluate_janaf_crystal(oxide, temperature_K)
+        return evaluate_janaf_crystal(oxide, temperature_K, apply_phase_cap=False)
     except JanafCrystalTemperatureError as exc:
         definition = _OXIDE_BY_NAME.get(oxide)
         table_id = definition.crystal_table if definition is not None else exc.phase_id
@@ -218,14 +218,18 @@ def _gibbs_pair(
     return liquid.G_J_mol, crystal_gibbs
 
 
-def _axis_label(temperature_K: float | None) -> str:
+def _axis_label(temperature_K: float | None, transition_K: float | None = None) -> str:
     if temperature_K is None:
         return "temperature_K; switch not found in the supported source/pack overlap"
     if temperature_K < 1700.0:
-        return "temperature_K; liquid side extrapolated below 1700 K (OUT_OF_DOMAIN)"
-    if temperature_K > 3000.0:
-        return "temperature_K; above 3000 K liquid-model domain (OUT_OF_DOMAIN)"
-    return "temperature_K; in the 1700–3000 K liquid-model domain"
+        label = "temperature_K; liquid side extrapolated below 1700 K (OUT_OF_DOMAIN)"
+    elif temperature_K > 3000.0:
+        label = "temperature_K; above 3000 K liquid-model domain (OUT_OF_DOMAIN)"
+    else:
+        label = "temperature_K; in the 1700–3000 K liquid-model domain"
+    if transition_K is not None and temperature_K > transition_K:
+        label += "; metastable/superheated crystal leg above JANAF transition"
+    return label
 
 
 def _switch_prediction(
@@ -237,6 +241,7 @@ def _switch_prediction(
 ) -> SwitchPrediction:
     from openimcc.gas import ImccGasTemperatureOutsideDomainError
 
+    transition_K = _OXIDE_BY_NAME[oxide].transition_K
     liquid_rows = _interval_rows(gas_pack, oxide, "l")
     liquid_ranges = tuple((float(row["T_min"]), float(row["T_max"])) for row in liquid_rows)
     if not liquid_ranges:
@@ -409,7 +414,7 @@ def _switch_prediction(
         )
     return SwitchPrediction(
         "root", root, (lo, hi), (flo, fhi), residual, uncertainty, (low, high),
-        _axis_label(root), None, (left_eval[3], right_eval[3]),
+        _axis_label(root, transition_K), None, (left_eval[3], right_eval[3]),
     )
 
 
