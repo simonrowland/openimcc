@@ -1000,7 +1000,7 @@ def test_phase_state_contract_schema_round_trips_through_json(ideal_pack):
     output = contract["output"]
 
     assert contract["name"] == "openimcc.phase-state"
-    assert contract["version"] == phase_state_contract_version == 2
+    assert contract["version"] == phase_state_contract_version == 1
     assert contract["input"]["bulk_basis"] == "parent_oxide_mol"
     assert contract["input"]["bulk_parent_mol"] == {"MgO": 1.0, "SiO2": 1.0}
     assert contract["input"]["candidates"] == []

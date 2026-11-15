@@ -42,7 +42,7 @@ _PURE_RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
 _CRYSTAL_RESOURCE = "data/diagnostics/crystal-phases.json"
 _PRESSURE_BAR = 1.0
 _LIQUID_DOMAIN_K = (1700.0, 3000.0)
-phase_state_contract_version = 2
+phase_state_contract_version = 1
 
 # Each named tolerance applies to a different physical/numerical certificate.
 _DEFAULT_BALANCE_TOL = 1.0e-10

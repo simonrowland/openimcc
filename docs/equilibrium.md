@@ -161,12 +161,12 @@ cannot be better than either the condensed equilibrium or gas rows.
 
 `PhaseEquilibriumResult.to_dict()` retains its result fields and adds a
 `phase_state_contract` object. Its version is exported as
-`openimcc.equilibrium.phase_state_contract_version` (currently `2`):
+`openimcc.equilibrium.phase_state_contract_version` (currently `1`):
 
 ```text
 phase_state_contract = {
   "name": "openimcc.phase-state",
-  "version": 2,
+  "version": 1,
   "input": {
     "bulk_basis": "parent_oxide_mol",
     "bulk_parent_mol": {oxide: mol, ...},
@@ -219,10 +219,10 @@ names, types, units, meanings, and status values; consumers should ignore
 unknown fields. Removing or renaming a field, changing a field's type or unit,
 changing its meaning or an existing status value, or making a previously
 optional field required needs a version bump. A new version may add fields
-while retaining prior semantics. Version 2 separates condensed-equilibrium
-labels from vapour validity; consumers of version 1 must not treat gas-row
-validity as part of `labels.validity`. Consumers should branch on the version
-before interpreting fields whose meanings differ.
+while retaining prior semantics. In version 1, `labels.validity` describes the
+condensed equilibrium only; vapour validity and its out-of-domain axes are
+reported on the vapour block. Consumers should branch on the version before
+interpreting fields whose meanings differ.
 
 See the API dataclasses in openimcc.equilibrium for the complete field
 definitions and the typed refusal codes. `PhaseEquilibriumResult.to_dict()`
