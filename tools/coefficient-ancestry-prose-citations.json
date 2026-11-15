@@ -78,7 +78,7 @@
             "role": "anchor"
           },
           {
-            "citation": "Richet et al. DTA value, 53.50 ± 5.50 kJ/mol",
+            "citation": "independent Richet et al. DTA value is 53.50 ± 5.50 kJ/mol",
             "work_id": null,
             "role": "anchor"
           }
@@ -133,12 +133,12 @@
       "11:CaSiO3": {
         "citations": [
           {
-            "citation": "Richet & Bottinga drop calorimetry",
+            "citation": "drop calorimetry 900-1850 K (Richet & Bottinga)",
             "work_id": null,
             "role": "derived"
           },
           {
-            "citation": "Stout & Piwinskii cross-checks",
+            "citation": "cross-checks 1700-2600 K (Stout & Piwinskii)",
             "work_id": null,
             "role": "derived"
           }
@@ -445,11 +445,6 @@
             "citation": "Stebbins et al.",
             "work_id": null,
             "role": "derived"
-          },
-          {
-            "citation": "Schairer & Bowen",
-            "work_id": null,
-            "role": "derived"
           }
         ]
       },
@@ -466,11 +461,6 @@
         "citations": [
           {
             "citation": "Robie et al.",
-            "work_id": null,
-            "role": "derived"
-          },
-          {
-            "citation": "Kelley",
             "work_id": null,
             "role": "derived"
           },
@@ -566,7 +556,13 @@
         "none": "The cited literature used in the prose is already recorded in this row's structured source fields."
       },
       "thermo_species:Fe2O3(l)": {
-        "none": "The cited literature used in the prose is already recorded in this row's structured source fields."
+        "citations": [
+          {
+            "citation": "Lange and Navrotsky (1992)",
+            "work_id": null,
+            "role": "derived"
+          }
+        ]
       },
       "thermo_species:Mn(l)": {
         "none": "The cited literature used in the prose is already recorded in this row's structured source fields."
@@ -580,13 +576,8 @@
       "thermo_species:MnAl2O4(l)": {
         "citations": [
           {
-            "citation": "Shornikov (2017), Table 2",
+            "citation": "Shornikov (2017)",
             "work_id": "shornikov-2017-spinel-thermodynamics",
-            "role": "diagnostic"
-          },
-          {
-            "citation": "JANAF Al-090",
-            "work_id": "janaf-4th",
             "role": "diagnostic"
           }
         ]
@@ -617,6 +608,18 @@
       },
       "thermo_species:Yb2Si2O7(l)": {
         "none": "The cited literature used in the prose is already recorded in this row's structured source fields."
+      },
+      "thermo_species:Li2SiO3(l)": {
+        "none": "Its nested construction field repeats the NIST-JANAF source already recorded in structured provenance."
+      },
+      "thermo_species:Zn2SiO4(l)": {
+        "citations": [
+          {
+            "citation": "Richet et al. (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x",
+            "work_id": null,
+            "role": "derived"
+          }
+        ]
       }
     },
     "condensate": {}

@@ -328,18 +328,35 @@ def test_prose_citation_decisions_cover_detected_rows() -> None:
         (f"thermo_species:{name}", row)
         for name, row in redox_data["thermo_species"].items()
     ]
+    def nested_text(value: object) -> str:
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            return " ".join(nested_text(child) for child in value.values())
+        if isinstance(value, list):
+            return " ".join(nested_text(child) for child in value)
+        return ""
+
     redox_flagged = set()
+    base_redox_flagged = set()
     for row_id, row in redox_rows:
         provenance = row.get("provenance", {})
-        prose = " ".join(
+        base_prose = " ".join(
             str(provenance.get(key, ""))
             for key in ("selection_rationale",)
         ) + " " + " ".join(
             str(row.get(key, ""))
             for key in ("derivation", "phase_or_construction", "method")
         )
+        if appears_to_cite(base_prose):
+            base_redox_flagged.add(row_id)
+        prose = base_prose + " " + nested_text(row.get("construction", {}))
         if appears_to_cite(prose):
             redox_flagged.add(row_id)
+    new_construction_flags = redox_flagged - base_redox_flagged
+    assert new_construction_flags == {
+        "thermo_species:Li2SiO3(l)", "thermo_species:Zn2SiO4(l)"
+    }
     assert redox_flagged <= set(redox_decisions)
     assert all(
         bool(redox_decisions[row_id].get("citations"))
@@ -360,7 +377,7 @@ def test_prose_citation_decisions_cover_detected_rows() -> None:
 
     spinel = decisions["3:MgAl2O4"]["citations"]
     assert any(
-        item["citation"] == "Richet et al. DTA value, 53.50 ± 5.50 kJ/mol"
+        item["citation"] == "independent Richet et al. DTA value is 53.50 ± 5.50 kJ/mol"
         and item["work_id"] is None
         for item in spinel
     )
@@ -368,7 +385,7 @@ def test_prose_citation_decisions_cover_detected_rows() -> None:
     spinel_row = next(row for row in melt["rows"] if row["id"] == "3:MgAl2O4")
     assert any(
         item["row"] == "3:MgAl2O4"
-        and item["citation"] == "Richet et al. DTA value, 53.50 ± 5.50 kJ/mol"
+        and item["citation"] == "independent Richet et al. DTA value is 53.50 ± 5.50 kJ/mol"
         for item in melt["unmapped"]
     )
     assert any(source["work_id"] == "janaf-4th" for source in spinel_row["sources"])
@@ -377,3 +394,8 @@ def test_prose_citation_decisions_cover_detected_rows() -> None:
     for species in ("Si(l)", "Cr(l)", "Ni(l)", "Co(l)"):
         row = next(row for row in redox["rows"] if row["id"] == f"thermo_species:{species}")
         assert row["sources"] and all(source["role"] == "fitted" for source in row["sources"])
+    hematite_unmapped = [item["citation"] for item in redox["unmapped"] if item["row"] == "thermo_species:Fe2O3(l)"]
+    assert any("Lange and Navrotsky (1992)" in citation for citation in hematite_unmapped)
+    assert any("10.1007/bf00310746" in citation.casefold() for citation in hematite_unmapped)
+    reaction_seven_unmapped = [item["citation"] for item in redox["unmapped"] if item["row"] == "reaction:7"]
+    assert not any("dataset anchors and independent checks" in citation for citation in reaction_seven_unmapped)

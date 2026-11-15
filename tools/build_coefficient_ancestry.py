@@ -203,6 +203,33 @@ def _drop_resolved_unmapped(rows: list[dict[str, Any]], mapper: SourceMapper) ->
                 continue
             retained.append(item)
         row["unmapped"] = retained
+
+
+def _structured_citation_fields(value: Any):
+    if isinstance(value, list):
+        for child in value:
+            yield from _structured_citation_fields(child)
+    elif isinstance(value, dict):
+        for key, child in value.items():
+            if isinstance(child, str) and any(
+                token in key.casefold()
+                for token in ("source", "citation", "anchor", "doi", "url")
+            ):
+                yield key, child
+            elif isinstance(child, (dict, list)):
+                yield from _structured_citation_fields(child)
+
+
+def _add_structured_citation(
+    row: dict[str, Any], citation: str, role: str, mapper: SourceMapper
+) -> None:
+    candidates = set(mapper.resolve(citation))
+    resolved = {source["work_id"] for source in row["sources"]}
+    if candidates and candidates <= resolved:
+        return
+    _add_citation(row, citation, role, mapper)
+
+
 def _row(row_id: str, label: str) -> dict[str, Any]:
     return {"id": row_id, "label": label, "sources": [], "unmapped": []}
 
@@ -435,6 +462,10 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper, sidecar: dict[str
         source_roles: dict[str, str] = {}
         if isinstance(source, str):
             for chunk in _segments(source):
+                if chunk.casefold().strip(" .") == (
+                    "dataset anchors and independent checks are listed separately in dataset_provenance"
+                ):
+                    continue
                 evidenced_role = _role_from_evidence(chunk, source_role)
                 evidenced_role = _redox_source_role(chunk, provenance, evidenced_role)
                 for work_id in mapper.resolve(chunk):
@@ -459,15 +490,15 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper, sidecar: dict[str
                 mapper,
             )
 
+        for key, value in _structured_citation_fields(provenance):
+            if key not in {"source", "source_url"}:
+                _add_structured_citation(record, value, source_role, mapper)
+
         construction = source_row.get("construction", {})
         if isinstance(construction, dict):
-            for key, value in construction.items():
-                if not isinstance(value, str) or not any(
-                    token in key.casefold() for token in ("source", "citation", "anchor")
-                ):
-                    continue
+            for key, value in _structured_citation_fields(construction):
                 role = "anchor" if "anchor" in key.casefold() else "derived"
-                _add_citation(record, value, role, mapper)
+                _add_structured_citation(record, value, role, mapper)
 
         check = source_row.get("independent_check", {})
         if isinstance(check, dict):
