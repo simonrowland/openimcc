@@ -17,6 +17,12 @@ named in a selection decision is `selected`, construction inputs are
 `diagnostic`. A selection-rationale field by itself does not make every source
 selected, and held-out data are never counted as fit evidence.
 
+The generator reads structured citation fields directly. Citations that appear
+only in derivation or construction prose are curated by row in
+`tools/coefficient-ancestry-prose-citations.json`; rows without an additional
+prose citation carry a short `none` decision. This keeps prose parsing out of
+regeneration and makes each added citation reviewable.
+
 Every citation without a curated mapping to the recorded work-ID vocabulary
 appears in `unmapped` with its row and reason. An artifact is `complete` only
 when that list is empty. Unknown work IDs are never guessed; unresolved

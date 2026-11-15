@@ -250,59 +250,130 @@ def test_provenance_citations_survive_mapping_and_role_assignment() -> None:
     )
 
 
-def test_sampled_provenance_citation_tokens_are_all_recorded() -> None:
-    entries = coefficient_ancestry()
-    melt = _artifact(entries, "IMCC-SF04-D066@1.0.6-d066-v4")
-    redox = _artifact(entries, "1.8.0")
+def test_prose_citation_decisions_cover_detected_rows() -> None:
     melt_data = _json_resource("data/packs/imcc-sf04-d066-v4.json")
+    sidecar = json.loads(
+        (ROOT / "tools" / "coefficient-ancestry-prose-citations.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    decisions = sidecar["artifacts"]["melt"]
+    assert melt_data["rows"][3]["source_refs"] == ["FC87"]
+    known_authors = (
+        "kelley", "robie", "hemingway", "pankratz", "stebbins", "chan",
+        "allibert", "rein", "chipman", "blander", "pelton", "stout",
+        "piwinski", "proks", "richet", "bottinga", "janaf", "shornikov",
+        "glushko", "beyer", "schairer", "bowen", "bell", "roseboom",
+        "berry", "masson", "darken", "gurry", "lange", "navrotsky",
+        "chen", "sugawara", "akaogi", "king", "barin", "jeon", "zaitseva",
+        "ye", "brisi", "abbattista", "liang", "costa", "jacobson", "toropov",
+        "bondar", "nasiri", "chase", "navarro", "ilatovskaya", "fabrichnaya",
+    )
+
+    def appears_to_cite(text: str) -> bool:
+        folded = text.casefold()
+        return bool(
+            re.search(r"\b(?:19|20)\d{2}[a-z]?\b", text)
+            or re.search(r"\bet\s+al\.", text, re.I)
+            or any(
+                re.search(
+                    rf"(?<![a-z0-9_]){re.escape(author)}(?![a-z0-9_])",
+                    folded,
+                )
+                for author in known_authors
+            )
+            or re.search(r"\bdata\s+from\s+[A-Z][A-Z0-9-]+", text)
+        )
+
+    flagged = {
+        f"{row['row']}:{row['complex']}"
+        for row in melt_data["rows"]
+        if appears_to_cite(row.get("derivation", ""))
+    }
+    assert "4:MgTiO3" in flagged
+    row_four = melt_data["rows"][3]
+    structured_citations = " ".join(
+        melt_data["sources"][key]["citation"]
+        for key in row_four["source_refs"]
+    )
+    # The fc26f9d inputs only expose FC87 here; the prose-only JANAF cite needs the sidecar.
+    assert "JANAF" not in structured_citations
+    assert any(
+        item["citation"] == "JANAF" and item["work_id"] == "janaf-4th"
+        for item in decisions["4:MgTiO3"]["citations"]
+    )
+    assert flagged <= set(decisions)
+    assert all(
+        bool(decision.get("citations")) != bool(decision.get("none"))
+        for decision in (decisions[row_id] for row_id in flagged)
+    )
+    prose_citations = {
+        item["citation"]
+        for decision in decisions.values()
+        for item in decision.get("citations", [])
+    }
+    assert {
+        "Kelley", "Robie et al.", "Hemingway et al.", "Pankratz & Kelley",
+        "Stebbins et al.", "Chan et al.", "Allibert et al.", "Rein & Chipman",
+        "Blander & Pelton", "Proks et al.",
+    } <= prose_citations
+    assert any("Stout & Piwinskii" in citation for citation in prose_citations)
+
     redox_data = _json_resource("data/packs/openimcc-redox-v6.json")
-
-    def tokens(text: str) -> set[str]:
-        found = {
-            match.group(0).casefold()
-            for match in re.finditer(r"10\.[0-9]{4,9}/[^\s<>\]\[{}\"']+", text, re.I)
-        }
-        found.update(
-            match.group(0).casefold()
-            for match in re.finditer(r"\b[A-Z][A-Za-z’'-]+(?:,\s*[A-Z][A-Za-z’'-]+)*(?:\s+(?:&|and)\s+[A-Z][A-Za-z’'-]+|\s+et\s+al\.)?\s*\((?:19|20)[0-9]{2}[a-z]?\)", text)
-        )
-        found.update(
-            match.group(0).casefold()
-            for match in re.finditer(r"\b(?:[A-Z][a-z]?-[0-9]{3})\b", text)
-        )
-        return found
-
-    samples = [
-        (
-            melt,
-            "4:MgTiO3",
-            melt_data["rows"][3].get("derivation", ""),
-        ),
-        (
-            redox,
-            "reaction:2",
-            " ".join(str(value) for value in redox_data["rows"][1]["provenance"].values()),
-        ),
-        (
-            redox,
-            "reaction:7",
-            " ".join(
-                str(value)
-                for category in ("anchors", "held_out_independent")
-                for dataset in redox_data["dataset_provenance"][category]
-                for value in dataset.values()
-            ),
-        ),
+    redox_decisions = sidecar["artifacts"]["redox"]
+    redox_rows = [
+        (f"reaction:{index}", row)
+        for index, row in enumerate(redox_data["rows"], start=1)
+    ] + [
+        (f"thermo_species:{name}", row)
+        for name, row in redox_data["thermo_species"].items()
     ]
-    for artifact, row_id, provenance_text in samples:
-        expected = tokens(provenance_text)
-        row = next(row for row in artifact["rows"] if row["id"] == row_id)
-        recorded_text = " ".join(
-            [source["citation"] for source in row["sources"]]
-            + [
-                item["citation"]
-                for item in artifact["unmapped"]
-                if item["row"] == row_id
-            ]
-        ).casefold()
-        assert all(token.rstrip(".,;)") in recorded_text for token in expected)
+    redox_flagged = set()
+    for row_id, row in redox_rows:
+        provenance = row.get("provenance", {})
+        prose = " ".join(
+            str(provenance.get(key, ""))
+            for key in ("selection_rationale",)
+        ) + " " + " ".join(
+            str(row.get(key, ""))
+            for key in ("derivation", "phase_or_construction", "method")
+        )
+        if appears_to_cite(prose):
+            redox_flagged.add(row_id)
+    assert redox_flagged <= set(redox_decisions)
+    assert all(
+        bool(redox_decisions[row_id].get("citations"))
+        != bool(redox_decisions[row_id].get("none"))
+        for row_id in redox_flagged
+    )
+
+    condensate_decisions = sidecar["artifacts"]["condensate"]
+    with (ROOT / "src/openimcc/data/gas/condensate-default-v1.csv").open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        condensate_flagged = {
+            f"{index}:{row['species_name']}"
+            for index, row in enumerate(csv.DictReader(handle), start=1)
+            if appears_to_cite(row.get("construction_method", ""))
+        }
+    assert condensate_flagged <= set(condensate_decisions)
+
+    spinel = decisions["3:MgAl2O4"]["citations"]
+    assert any(
+        item["citation"] == "Richet et al. DTA value, 53.50 ± 5.50 kJ/mol"
+        and item["work_id"] is None
+        for item in spinel
+    )
+    melt = _artifact(coefficient_ancestry(), "IMCC-SF04-D066@1.0.6-d066-v4")
+    spinel_row = next(row for row in melt["rows"] if row["id"] == "3:MgAl2O4")
+    assert any(
+        item["row"] == "3:MgAl2O4"
+        and item["citation"] == "Richet et al. DTA value, 53.50 ± 5.50 kJ/mol"
+        for item in melt["unmapped"]
+    )
+    assert any(source["work_id"] == "janaf-4th" for source in spinel_row["sources"])
+
+    redox = _artifact(coefficient_ancestry(), "1.8.0")
+    for species in ("Si(l)", "Cr(l)", "Ni(l)", "Co(l)"):
+        row = next(row for row in redox["rows"] if row["id"] == f"thermo_species:{species}")
+        assert row["sources"] and all(source["role"] == "fitted" for source in row["sources"])

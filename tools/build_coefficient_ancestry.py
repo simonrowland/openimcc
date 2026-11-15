@@ -21,9 +21,7 @@ VOCABULARY = ROOT / "tests" / "data" / "coefficient-ancestry-vocabulary.json"
 ROLES = {"derived", "fitted", "selected", "anchor", "diagnostic"}
 DOI_RE = re.compile(r"10\.[0-9]{4,9}/[^\s<>\]\[{}\"']+", re.IGNORECASE)
 JANAF_TABLE_RE = re.compile(r"(?<![A-Za-z0-9])(?:[A-Z][a-z]?-[0-9]{3})(?![A-Za-z0-9])")
-CITATION_RE = re.compile(
-    r"\b(?:[A-Z][A-Za-z’'-]+(?:,\s*[A-Z][A-Za-z’'-]+)*(?:\s+(?:&|and)\s+[A-Z][A-Za-z’'-]+)?|[A-Z][A-Za-z’'-]+\s+et\s+al\.)\s*\((?:19|20)[0-9]{2}[a-z]?\)",
-)
+PROSE_CITATIONS = ROOT / "tools" / "coefficient-ancestry-prose-citations.json"
 
 
 def _json(path: Path) -> Any:
@@ -140,11 +138,11 @@ def _citation_atoms(citation: str) -> list[str]:
 
 def _role_from_evidence(text: str, default: str = "derived") -> str:
     folded = text.casefold()
-    if re.search(r"\bfit(?:ted|ting)?\b", folded):
+    if re.search(r"(?<![a-z])fit(?:ted|ting)?(?![a-z])", folded):
         return "fitted"
-    if re.search(r"\bselect(?:ed|s|ion)?\b", folded):
+    if re.search(r"(?<![a-z])select(?:ed|s|ion)?(?![a-z])", folded):
         return "selected"
-    if re.search(r"\banchor(?:ed|s)?\b", folded):
+    if re.search(r"(?<![a-z])anchor(?:ed|s)?(?![a-z])", folded):
         return "anchor"
     return default
 
@@ -173,15 +171,38 @@ def _text_values(value: Any):
             yield from _text_values(child)
 
 
-def _add_citation_tokens(
-    row: dict[str, Any], text: str, role: str, mapper: SourceMapper
+def _merge_prose_citations(
+    record: dict[str, Any], sidecar: dict[str, Any], artifact: str, row_id: str
 ) -> None:
-    citations = _citation_atoms(text)
-    citations.extend(match.group(0) for match in CITATION_RE.finditer(text))
-    for citation in dict.fromkeys(citations):
-        _add_citation(row, citation, role, mapper)
+    decision = sidecar.get("artifacts", {}).get(artifact, {}).get(row_id)
+    if decision is None:
+        return
+    for citation in decision.get("citations", []):
+        record["sources"].append(
+            {
+                "work_id": citation["work_id"],
+                "role": citation["role"],
+                "citation": citation["citation"],
+            }
+        ) if citation.get("work_id") else record["unmapped"].append(
+            {
+                "row": row_id,
+                "citation": citation["citation"],
+                "reason": citation.get("reason", "No public vocabulary work ID is known for this citation."),
+                "role": citation["role"],
+            }
+        )
 
 
+def _drop_resolved_unmapped(rows: list[dict[str, Any]], mapper: SourceMapper) -> None:
+    for row in rows:
+        resolved = {source["work_id"] for source in row["sources"]}
+        retained = []
+        for item in row["unmapped"]:
+            if resolved.intersection(mapper.resolve(item["citation"])):
+                continue
+            retained.append(item)
+        row["unmapped"] = retained
 def _row(row_id: str, label: str) -> dict[str, Any]:
     return {"id": row_id, "label": label, "sources": [], "unmapped": []}
 
@@ -212,8 +233,7 @@ def _add_citation(
                     row["sources"].append(item)
 
         for atom in atoms:
-            atom_ids = mapper.resolve(atom)
-            for work_id in atom_ids:
+            for work_id in mapper.resolve(atom):
                 item = {"work_id": work_id, "role": role, "citation": atom}
                 if provenance_role:
                     item["provenance_role"] = provenance_role
@@ -221,18 +241,17 @@ def _add_citation(
                     row["sources"].append(item)
 
         unresolved_atoms = [atom for atom in atoms if not mapper.resolve(atom)]
-        if unresolved_atoms:
-            for atom in unresolved_atoms:
-                item = {
-                    "row": row["id"],
-                    "citation": atom,
-                    "reason": mapper.unmapped_reason(atom),
-                    "role": role,
-                }
-                if provenance_role:
-                    item["provenance_role"] = provenance_role
-                if item not in row["unmapped"]:
-                    row["unmapped"].append(item)
+        for atom in unresolved_atoms:
+            item = {
+                "row": row["id"],
+                "citation": atom,
+                "reason": mapper.unmapped_reason(atom),
+                "role": role,
+            }
+            if provenance_role:
+                item["provenance_role"] = provenance_role
+            if item not in row["unmapped"]:
+                row["unmapped"].append(item)
 
         if not work_ids and not atoms:
             item = {
@@ -266,7 +285,9 @@ def _finish_artifact(
     raw: bytes,
     rows: list[dict[str, Any]],
     runtime_digest: str,
+    mapper: SourceMapper,
 ) -> dict[str, Any]:
+    _drop_resolved_unmapped(rows, mapper)
     work_ids = sorted(
         {source["work_id"] for row in rows for source in row["sources"]}
     )
@@ -293,7 +314,7 @@ def _finish_artifact(
     }
 
 
-def _melt_artifact(mapper: SourceMapper, runtime_digest: str) -> dict[str, Any]:
+def _melt_artifact(mapper: SourceMapper, runtime_digest: str, sidecar: dict[str, Any]) -> dict[str, Any]:
     path = DATA / "packs" / "imcc-sf04-d066-v4.json"
     raw = path.read_bytes()
     pack = json.loads(raw)
@@ -319,20 +340,7 @@ def _melt_artifact(mapper: SourceMapper, runtime_digest: str) -> dict[str, Any]:
                 record, citation, role, mapper, citation_key=source_key
             )
 
-        derivation_text = source_row.get("derivation", "")
-        for derivation in _segments(derivation_text):
-            _add_citation(
-                record,
-                derivation,
-                _role_from_evidence(derivation),
-                mapper,
-            )
-        _add_citation_tokens(
-            record,
-            derivation_text,
-            _role_from_evidence(derivation_text),
-            mapper,
-        )
+        _merge_prose_citations(record, sidecar, "melt", row_id)
 
         refit = source_row.get("standard_state_refit")
         if isinstance(refit, dict):
@@ -354,6 +362,7 @@ def _melt_artifact(mapper: SourceMapper, runtime_digest: str) -> dict[str, Any]:
         raw=raw,
         rows=rows,
         runtime_digest=runtime_digest,
+        mapper=mapper,
     )
 
 
@@ -364,6 +373,7 @@ def _table_artifact(
     role: str,
     mapper: SourceMapper,
     runtime_digest: str,
+    sidecar: dict[str, Any],
 ) -> dict[str, Any]:
     path = DATA / relative_file
     raw = path.read_bytes()
@@ -390,6 +400,8 @@ def _table_artifact(
                 value = source_row.get(key, "").strip()
                 if value and value.casefold() != "none" and value != ref:
                     _add_citation(record, value, row_role, mapper)
+            if identity == "condensate-default-v1":
+                _merge_prose_citations(record, sidecar, "condensate", row_id)
             _missing_provenance(record)
             rows.append(record)
     return _finish_artifact(
@@ -398,10 +410,11 @@ def _table_artifact(
         raw=raw,
         rows=rows,
         runtime_digest=runtime_digest,
+        mapper=mapper,
     )
 
 
-def _redox_rows(content: dict[str, Any], mapper: SourceMapper) -> list[dict[str, Any]]:
+def _redox_rows(content: dict[str, Any], mapper: SourceMapper, sidecar: dict[str, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     source_rows = [
         (f"reaction:{index}", item["reaction"], item)
@@ -414,18 +427,15 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper) -> list[dict[str,
     for row_id, label, source_row in source_rows:
         record = _row(row_id, label)
         provenance = source_row.get("provenance", {})
-        role_evidence = " ".join(
-            str(source_row.get(key, ""))
-            for key in ("method", "phase_or_construction")
-        )
+        role_evidence = " ".join(_text_values(source_row))
         source_role = "derived"
+        if re.search(r"\bfitted\s+(?:with|using|to)\b", role_evidence, re.I):
+            source_role = "fitted"
         source = provenance.get("source")
         source_roles: dict[str, str] = {}
         if isinstance(source, str):
             for chunk in _segments(source):
                 evidenced_role = _role_from_evidence(chunk, source_role)
-                if "fit" in role_evidence.casefold() and chunk.casefold() in role_evidence.casefold():
-                    evidenced_role = "fitted"
                 evidenced_role = _redox_source_role(chunk, provenance, evidenced_role)
                 for work_id in mapper.resolve(chunk):
                     source_roles[work_id] = evidenced_role
@@ -433,13 +443,6 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper) -> list[dict[str,
                     record,
                     chunk,
                     evidenced_role,
-                    mapper,
-                )
-            for citation in CITATION_RE.finditer(source):
-                _add_citation(
-                    record,
-                    citation.group(0),
-                    _redox_source_role(citation.group(0), provenance, source_role),
                     mapper,
                 )
         source_url = provenance.get("source_url")
@@ -456,25 +459,6 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper) -> list[dict[str,
                 mapper,
             )
 
-        for key, value in provenance.items():
-            if key not in {"source", "source_url"}:
-                for text in _text_values(value):
-                    token_role = _redox_source_role(text, provenance, source_role)
-                    citations = _citation_atoms(text)
-                    citations.extend(match.group(0) for match in CITATION_RE.finditer(text))
-                    for citation in dict.fromkeys(citations):
-                        _add_citation(
-                            record,
-                            citation,
-                            _redox_source_role(citation, provenance, token_role),
-                            mapper,
-                        )
-
-        for key in ("method", "phase_or_construction", "fit_residual", "band_basis"):
-            text = source_row.get(key)
-            if isinstance(text, str):
-                _add_citation_tokens(record, text, _role_from_evidence(text), mapper)
-
         construction = source_row.get("construction", {})
         if isinstance(construction, dict):
             for key, value in construction.items():
@@ -490,10 +474,6 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper) -> list[dict[str,
             primary_source = check.get("primary_source")
             if isinstance(primary_source, str) and primary_source.strip():
                 _add_citation(record, primary_source, "diagnostic", mapper)
-            for key, value in check.items():
-                if key != "primary_source":
-                    for text in _text_values(value):
-                        _add_citation_tokens(record, text, "diagnostic", mapper)
 
         if row_id == "reaction:7":
             for category, role in (("anchors", "anchor"), ("held_out_independent", "diagnostic")):
@@ -513,12 +493,13 @@ def _redox_rows(content: dict[str, Any], mapper: SourceMapper) -> list[dict[str,
                         mapper,
                         provenance_role=provenance_role,
                     )
+        _merge_prose_citations(record, sidecar, "redox", row_id)
         _missing_provenance(record)
         rows.append(record)
     return rows
 
 
-def _redox_artifact(mapper: SourceMapper, runtime_digest: str) -> dict[str, Any]:
+def _redox_artifact(mapper: SourceMapper, runtime_digest: str, sidecar: dict[str, Any]) -> dict[str, Any]:
     path = DATA / "packs" / "openimcc-redox-v6.json"
     raw = path.read_bytes()
     content = json.loads(raw)
@@ -526,8 +507,9 @@ def _redox_artifact(mapper: SourceMapper, runtime_digest: str) -> dict[str, Any]
         identity=content["version"],
         file="data/packs/" + path.name,
         raw=raw,
-        rows=_redox_rows(content, mapper),
+        rows=_redox_rows(content, mapper, sidecar),
         runtime_digest=runtime_digest,
+        mapper=mapper,
     )
 
 
@@ -586,6 +568,7 @@ def _standards_artifact(mapper: SourceMapper) -> dict[str, Any]:
         raw=raw,
         rows=rows,
         runtime_digest=_sha256(raw),
+        mapper=mapper,
     )
 
 
@@ -615,29 +598,41 @@ def _janaf_artifact(
         raw=raw,
         rows=rows,
         runtime_digest=_sha256(raw),
+        mapper=mapper,
     )
 
 
 def build() -> dict[str, Any]:
     mapping = _json(MAPPINGS)
     vocabulary = _json(VOCABULARY)
+    sidecar = _json(PROSE_CITATIONS)
     work_ids = vocabulary["work_ids"]
     if work_ids != sorted(set(work_ids)):
         raise ValueError("the recorded work-ID vocabulary must be sorted and unique")
     mapper = SourceMapper(mapping, set(work_ids))
+    sidecar_work_ids = {
+        item["work_id"]
+        for rows in sidecar.get("artifacts", {}).values()
+        for decision in rows.values()
+        for item in decision.get("citations", [])
+        if item.get("work_id")
+    }
+    if not sidecar_work_ids <= set(work_ids):
+        raise ValueError("the prose-citation sidecar references work IDs outside the vocabulary")
 
     sys.path.insert(0, str(ROOT / "src"))
     from openimcc.profiles import load_profile
 
     profile = load_profile("openimcc")
     artifacts = [
-        _melt_artifact(mapper, profile.melt_pack.binding_digest or ""),
+        _melt_artifact(mapper, profile.melt_pack.binding_digest or "", sidecar),
         _table_artifact(
             relative_file="gas/gas-shomate-default-v1.csv",
             identity="gas-shomate-default-v1",
             role="fitted",
             mapper=mapper,
             runtime_digest=profile.gas_datapack.gas_table_digest,
+            sidecar=sidecar,
         ),
         _table_artifact(
             relative_file="gas/condensate-default-v1.csv",
@@ -645,8 +640,9 @@ def build() -> dict[str, Any]:
             role="fitted",
             mapper=mapper,
             runtime_digest=profile.gas_datapack.condensate_table_digest,
+            sidecar=sidecar,
         ),
-        _redox_artifact(mapper, profile.redox_pack.canonical_digest),
+        _redox_artifact(mapper, profile.redox_pack.canonical_digest, sidecar),
         _standards_artifact(mapper),
         _janaf_artifact(
             relative_file="diagnostics/janaf-pure-oxide-crystals.json",
