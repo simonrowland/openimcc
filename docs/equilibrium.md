@@ -210,6 +210,16 @@ and have no pressure value. An external simulator can adopt this dictionary
 interface and decide how to consume a multiphase state; this package cannot
 change the external engine itself.
 
+Consumers should check both `name` and `version` before reading the contract,
+and should reject an unsupported version rather than guessing field meanings.
+Within version 1, producers may add fields while preserving existing field
+names, types, units, meanings, and status values; consumers should ignore
+unknown fields. Removing or renaming a field, changing a field's type or unit,
+changing its meaning or an existing status value, or making a previously
+optional field required needs a version bump. A new version may add fields
+while retaining v1 semantics, but changes to existing semantics require a new
+major contract version so consumers can branch explicitly.
+
 See the API dataclasses in openimcc.equilibrium for the complete field
 definitions and the typed refusal codes. `PhaseEquilibriumResult.to_dict()`
 exports nested records, arrays, and read-only mappings as JSON-compatible

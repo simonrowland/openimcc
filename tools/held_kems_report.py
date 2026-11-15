@@ -123,10 +123,7 @@ def _solid_source(row: dict[str, Any], source_id: str, temperature_K: float) -> 
 
 
 def _row_label(row: dict[str, Any]) -> str:
-    observation_id = str(row.get("observation_id", "unknown"))
-    source_id = str(row.get("source_id", "unknown"))
-    suffix = observation_id.split("::")[-1].split(":T=", 1)[0]
-    return f"{source_id}::{suffix}"
+    return str(row.get("observation_id", "unknown"))
 
 
 def _observed_bar(row: dict[str, Any]) -> str:

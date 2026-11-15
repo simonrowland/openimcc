@@ -141,7 +141,9 @@ class PhaseEquilibriumResult:
             for axis in self.labels.out_of_domain_axes
         ):
             vapour_status = "OUT_OF_DOMAIN"
-        elif self.gas_depends:
+        elif self.labels.validity == "OUT_OF_DOMAIN":
+            vapour_status = "OUT_OF_DOMAIN"
+        elif self.gas_depends or self.labels.validity == "DEPENDS":
             vapour_status = "DEPENDS"
         else:
             vapour_status = "AVAILABLE"

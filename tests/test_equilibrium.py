@@ -960,6 +960,17 @@ def test_crystal_vapour_withholds_nonidentifiable_channels(
     assert result.labels.validity == "DEPENDS"
 
 
+def test_vapour_status_inherits_condensed_equilibrium_dependency():
+    result = equilibrate(
+        {"CaO": 3.0, "SiO2": 1.0}, 1900.0, fO2=1.0e-8,
+    )
+
+    assert result.labels.validity == "DEPENDS"
+    assert result.refusal is not None
+    assert result.refusal.code == "missing_phase_data"
+    assert result.to_dict()["phase_state_contract"]["output"]["vapour"]["status"] == "DEPENDS"
+
+
 def test_phase_state_contract_schema_round_trips_through_json(ideal_pack):
     result = equilibrate(
         {"MgO": 1.0, "SiO2": 1.0}, 2000.0,
