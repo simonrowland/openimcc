@@ -215,6 +215,11 @@ the liquid melt-activity standard state.
 
 ### Major-oxide parent basis (done)
 
+The default D066 v4 pack has 38 complex rows. `KCaAlSi2O7` is packaged but
+inactive because it is outside the liquid domain, leaving 37 active complexes
+plus the eight parent oxides: 45 active melt species (46 listed including the
+inactive row).
+
 The gas reaction table stores stoichiometry only; `evaluate_gas` calculates
 each reaction Gibbs energy and pressure from the active gas and parent rows.
 Oxygen balance is computed from those pressures and reaction stoichiometry.

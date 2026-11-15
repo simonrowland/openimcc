@@ -9,6 +9,10 @@ pyroxene, plagioclase, spinel, and melilite end members are labelled
 `solid_solution_bound=True`; their indices are end-member bounds, not a
 non-ideal solid-solution model.
 
+The SI calculation evaluates the melt with extrapolation enabled. Its adopted
+association envelope is 1700–3000 K, so every SI below 1700 K uses an
+extrapolated melt model even when the crystal function remains in range.
+
 Both result types expose `notices`, empty when all supplied parents are
 supported. If a parent is unsupported, the calculation proceeds with the
 supported parents and adds a `CrystalNotice` with code
@@ -63,18 +67,19 @@ index requires an iron-redox balance and must not be treated as a direct FeO
 stoichiometric phase.
 
 Using the default core pack, the cleaned-melt brackets over 1323–2100 K give the
-lunar low-Ti feed `AVAILABLE`, controlled by anorthite at 1358.941608 K; the
-Mars feed `AVAILABLE`, controlled by forsterite at 1428.852560 K; and CI
-controlled by forsterite at 1948.2335139 K. Unsupported parents, including P2O5
-in the lunar and Mars feeds, are reported in the dropped-parent notice.
+lunar low-Ti feed `AVAILABLE`, controlled by anorthite at 1358.941608 K
+(extrapolated melt model); the Mars feed `AVAILABLE`, controlled by forsterite
+at 1428.852560 K (extrapolated melt model); and CI controlled by forsterite at
+1948.2335139 K. Unsupported parents, including P2O5 in the lunar and Mars feeds,
+are reported in the dropped-parent notice.
 
-At 1500 K, SI values on the lunar feed are −3.124 for ilmenite, −4.007 for
-ulvöspinel, and −2.625 for perovskite; on the Mars feed they are −2.977, −3.591,
-and −2.555, respectively.
+At 1500 K, using the extrapolated melt model, SI values on the lunar feed are
+−3.124 for ilmenite, −4.007 for ulvöspinel, and −2.625 for perovskite; on the
+Mars feed they are −2.977, −3.591, and −2.555, respectively.
 
-Pure anorthite brackets pseudowollastonite at 1406.329664 K. Pure forsterite has
-no supported crossing through 2100 K; its SI is +0.100 at the measured 2163 K
-melting point, and the crystal window has no root.
+Pure anorthite brackets pseudowollastonite at 1406.329664 K (extrapolated melt
+model). Pure forsterite has no supported crossing through 2100 K; its SI is
++0.100 at the measured 2163 K melting point, and the crystal window has no root.
 
 `liquid_only_notice(T_K, bracket)` returns a typed `LiquidOnlyNotice` below a
 supported bracketed liquidus, or when there is no supported crossing. It does

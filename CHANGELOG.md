@@ -8,6 +8,11 @@
   1700–1950 K, with source and phase limitations. See
   `docs/sio-accuracy.md`.
 
+### Documentation
+
+- Clarified liquidus extrapolation, default-pack species counts, and scored
+  notice identities.
+
 ### Declared crystal assemblages
 
 - Added `evaluate_declared_assemblage()` to report oxide chemical potentials

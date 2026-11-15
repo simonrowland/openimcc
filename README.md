@@ -26,12 +26,16 @@ complexes (CaSiO3, MgSiO3, NaAlO2, …) and what is left unbound sets the
 activity.
 
 ```
-46 melt species = 8 unbound parent oxides + 38 complexes
+45 active melt species = 8 unbound parent oxides + 37 active complexes
 x_j = K_j(T) · Π_i (x_i*)^ν_ij
 log10 K_j = A_j + B_j / T          (T in K)
 ```
 
 Parent oxides: `SiO2 MgO FeO CaO Al2O3 TiO2 Na2O K2O`.
+
+The default D066 v4 pack lists 46 species across 38 complex rows. Its
+`KCaAlSi2O7` row is inactive because it is outside the liquid domain, leaving
+45 active species in the solve.
 
 Given a composition and T, `openimcc` solves for the free-oxide fractions `x*`,
 and returns per-parent **activity** and **activity coefficient γ**, the full
