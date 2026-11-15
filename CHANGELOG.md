@@ -13,6 +13,13 @@
 - Clarified liquidus extrapolation, default-pack species counts, and scored
   notice identities.
 
+### Coefficient ancestry
+
+- Added a packaged ancestry manifest and `coefficient_ancestry()` lookup for
+  the default thermochemical data. Rows retain source work IDs and provenance
+  roles; unresolved citations are listed explicitly and make the artifact
+  incomplete. See `docs/coefficient-ancestry.md`.
+
 ### Declared crystal assemblages
 
 - Added `evaluate_declared_assemblage()` to report oxide chemical potentials

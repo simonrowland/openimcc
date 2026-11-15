@@ -1,0 +1,40 @@
+{
+  "dois": {
+    "10.1016/0012-821x(87)90196-8": "no27-fegley-cameron-1987-epsl",
+    "10.1016/j.icarus.2003.08.023": "sf04-magma-companion-workbook",
+    "10.1021/ja01209a030": "darken-gurry-1946-iron-oxygen-ii",
+    "10.1063/1.555799": "lamoreaux-hildenbrand-hildenbrand-1987",
+    "10.1134/s0036024417020303": "shornikov-2017-spinel-thermodynamics",
+    "10.18434/t42s31": "janaf-4th",
+    "10.2138/am-2004-11-1202": "sugawara-akaogi-2004-liquid-calorimetry"
+  },
+  "citation_keys": {
+    "darken & gurry (1946)": "darken-gurry-1946-iron-oxygen-ii",
+    "ivtan table 1435 mno": "ivtan-mno-coo-thermo",
+    "mno-ivtan-1435": "ivtan-mno-coo-thermo",
+    "nist-janaf": "janaf-4th",
+    "sugawara and akaogi (2004)": "sugawara-akaogi-2004-liquid-calorimetry"
+  },
+  "patterns": [
+    {
+      "pattern": "(?<![A-Za-z0-9])[A-Z][a-z]?-[0-9]{3}(?![A-Za-z0-9])",
+      "work_id": "janaf-4th",
+      "note": "NIST-JANAF table identifiers in the packaged coefficient tables."
+    },
+    {
+      "pattern": "^NG-[0-9]{4,5}(?:-SC-CP)?$",
+      "work_id": "nasa-cea-thermo",
+      "note": "NASA Glenn table identifiers retained by the packaged gas table."
+    },
+    {
+      "pattern": "^(?:BU|BURCAT)-",
+      "work_id": "burcat-third-millennium",
+      "note": "Burcat table identifiers retained by the packaged gas table."
+    },
+    {
+      "pattern": "^https?://www\\.chem\\.msu\\.ru/rus/tsiv/Mn/print-MnO_c\\.html$",
+      "work_id": "ivtan-mno-coo-thermo",
+      "note": "IVTAN manganese oxide table URL."
+    }
+  ]
+}

@@ -50,6 +50,7 @@ from openimcc.model import (
     list_excess_gibbs_interactions,
     load_datapack,
 )
+from openimcc.coefficient_ancestry import coefficient_ancestry
 from openimcc.kernel import (
     ImccDataframeUnavailableError,
     ImccSpeciesNotFoundError,
@@ -294,6 +295,7 @@ def __dir__() -> list[str]:
 
 __all__ = [
     "__version__",
+    "coefficient_ancestry",
     # --- solve ------------------------------------------------------------
     "load_datapack",
     "load_profile",
