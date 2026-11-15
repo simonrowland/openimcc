@@ -55,7 +55,7 @@ _DEFAULT_DATAPACK_PATH = (
     Path(__file__).parent / "data" / "packs" / DEFAULT_MELT_PACK_NAME
 )
 _DEFAULT_REDOX_PACK_PATH = (
-    Path(__file__).parent / "data" / "packs" / "openimcc-redox-v5.json"
+    Path(__file__).parent / "data" / "packs" / "openimcc-redox-v6.json"
 )
 _BERRY_OPTICAL_BASICITY = {
     # Berry et al. (2024, GCA 366, Table 1 and supplementary text) give the

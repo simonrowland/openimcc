@@ -21,7 +21,7 @@ TI = PACK_DIR / "openimcc-redox-ti-candidate-v4.json"
 CR = PACK_DIR / "openimcc-redox-cr-candidate-v4.json"
 CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v4.json"
 LEGACY_DEFAULT = PACK_DIR / "openimcc-redox-v4.json"
-CURRENT_DEFAULT = PACK_DIR / "openimcc-redox-v5.json"
+CURRENT_DEFAULT = PACK_DIR / "openimcc-redox-v6.json"
 
 
 _MW = {
@@ -541,7 +541,7 @@ def test_new_candidate_packs_select_explicitly_and_current_default_is_versioned(
     )
     assert combined.titanous_ti_mol > 0.0
     assert combined.chromous_cr_mol > 0.0
-    assert load_redox_pack().version == "1.8.0-cr-candidate"
+    assert load_redox_pack().version == "1.8.0"
     default_bytes = hashlib.sha256(CURRENT_DEFAULT.read_bytes()).hexdigest()
     for temperature, feed in [
         (1800.0, {"Fe": 1.0, "O": 1.25}),

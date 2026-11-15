@@ -251,7 +251,7 @@ def test_redox_candidate_docs_follow_manifest_roles() -> None:
     assert {entry["datapack_version"] for entry in candidates} == _CANDIDATE_VERSIONS
     assert len(current) == 2
     assert [entry["file"] for entry in defaults] == [
-        "openimcc-redox-v5.json"
+        "openimcc-redox-v6.json"
     ]
     assert all(entry["family"] for entry in candidates)
     assert all(entry["file"] in redox_basis for entry in current)
@@ -339,6 +339,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         "openimcc-redox-v3.json",
         "openimcc-redox-v4.json",
         "openimcc-redox-v5.json",
+        "openimcc-redox-v6.json",
     }
 
 
@@ -517,6 +518,7 @@ def test_every_shipped_pack_loads() -> None:
         "openimcc-redox-v3.json",
         "openimcc-redox-v4.json",
         "openimcc-redox-v5.json",
+        "openimcc-redox-v6.json",
     ]
     for name in names:
         if name.startswith("openimcc-redox-"):

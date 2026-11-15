@@ -15,7 +15,7 @@ the immutable pack bytes:
 
 | Role | Meaning | Example |
 |---|---|---|
-| `default` | Pack loaded when no pack or profile argument is given. | `imcc-sf04-d066-v4.json`; `openimcc-redox-v5.json` |
+| `default` | Pack loaded when no pack or profile argument is given. | `imcc-sf04-d066-v4.json`; `openimcc-redox-v6.json` |
 | `opt-in` | Current candidate generation available by explicit selection. | Current candidate packs are listed in the manifest by family. |
 | `historical` | Superseded generation whose `superseded_by` names its successor. | Earlier D066 and redox versions. |
 | `reproduction` | Pack retained to reproduce a published record or specific experiment. | `imcc-sf04-d066-v1-kcaalsi2o7.json`; `imcc-sf04-v1.0.2.json` |
@@ -438,9 +438,9 @@ ext-v1 and ext-v3 fail the frozen canonical hash, while ext-v2 fails the fixed
 parent-basis check because it includes CoO. Git history retains them as
 research records. The current default melt pack is
 `imcc-sf04-d066-v4.json`; D066 v1–v5 remain loadable by version or path. The
-redox default is `openimcc-redox-v5.json`; the Cr-only candidate v4, redox v4,
-and redox v1–v3 remain loadable historical packs. The complete shipped pack
-list is recorded in
+redox default is `openimcc-redox-v6.json`. Redox v1–v5 and the earlier
+candidate packs remain loadable as historical packs. The complete shipped
+pack list is recorded in
 `src/openimcc/data/packs/MANIFEST.json`.
 
 The nested screen and gas-inventory fields are descriptive only; the loader
@@ -788,11 +788,13 @@ predicting whether the current loader accepts a pack.
 
 ## Redox thermochemistry component
 
-`openimcc-redox-v5.json` (`1.8.0-cr-candidate`) is the default, separate,
-versioned thermochemistry component. It retains the Cr correction and adds
-Sr, Li, Zn, and Yb associate rows. The previous Cr-only default,
+`openimcc-redox-v6.json` (`1.8.0`) is the default, separate, versioned
+thermochemistry component. It retains the Cr correction and adds Sr, Li, Zn,
+and Yb associate rows. The previous byte-immutable identity,
+`openimcc-redox-v5.json` (`1.8.0-cr-candidate`), remains loadable for
+reproduction. The older Cr-only default,
 `openimcc-redox-cr-candidate-v4.json` (`1.7.0-cr-candidate`), redox v4
-(`1.7.0`), and redox v1–v3 remain available as frozen historical versions.
+(`1.7.0`), and redox v1–v3 also remain available as historical versions.
 The legacy `load_datapack()` path does not load it and the legacy eight-parent
 pack identity remains unchanged. `openimcc.redox_pack.load_redox_pack()` reads
 this schema and validates the N-parent registry, row balances, reference-state

@@ -1287,11 +1287,11 @@ The keyword-only `redox_pack_path` argument selects a validated redox
 component. Relative paths resolve against the process working directory;
 omitting the argument uses the packaged default.
 
-The packaged redox v5 default includes the Cr2+/Cr3+ row and the Sr, Li, Zn,
+The packaged redox v6 default includes the Cr2+/Cr3+ row and the Sr, Li, Zn,
 and Yb associate rows. The Cr evidence domain is documented in
 [`docs/redox-basis.md`](docs/redox-basis.md); pack roles and digests are in
 `src/openimcc/data/packs/MANIFEST.json`. Leaving `redox_pack_path` unset loads
-`openimcc-redox-v5.json`.
+`openimcc-redox-v6.json`.
 
 ## The empirical bench
 
@@ -1549,7 +1549,7 @@ MgTiO3, Mg2TiO4 and MgSiO3 (0.27 kJ/mol). On the liquid branch at
 The current default melt pack is `imcc-sf04-d066-v4.json`. D066 v5 remains
 loadable by version or path and adds five Hess-cycle association-A refits to
 the v4 pack. D066 v1–v3 also remain loadable;
-`openimcc-redox-v5.json` is the redox default. See
+`openimcc-redox-v6.json` is the redox default. See
 [`docs/liquid-from-solid.md`](docs/liquid-from-solid.md) for the source choice
 and derivation.
 

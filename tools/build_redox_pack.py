@@ -18,9 +18,9 @@ from openimcc.redox_pack import canonical_redox_digest, load_redox_pack
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 FRAGMENT_DIR = ROOT / "src/openimcc/data/fragments"
 BASE_PACK = PACK_DIR / "openimcc-redox-cr-candidate-v4.json"
-DEFAULT_PACK = PACK_DIR / "openimcc-redox-v5.json"
+DEFAULT_PACK = PACK_DIR / "openimcc-redox-v6.json"
 REDOX_FRAGMENTS = ("sr", "li", "zn", "yb")
-DEFAULT_VERSION = "1.8.0-cr-candidate"
+DEFAULT_VERSION = "1.8.0"
 
 
 def build_default_redox_pack(
@@ -74,8 +74,8 @@ def build_default_redox_pack(
     content["errata"].append(
         {
             "version": DEFAULT_VERSION,
-            "date": "2026-11-09",
-            "change": "Adds accepted Sr, Li, Zn, and Yb association rows to the Cr redox pack.",
+            "date": "2026-11-14",
+            "change": "Reissues the selected default identity; thermochemical rows are unchanged.",
         }
     )
     content["canonical_content_digest"] = canonical_redox_digest(content)

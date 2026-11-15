@@ -52,7 +52,7 @@
 | Kind | File | SHA-256 |
 | --- | --- | --- |
 | Melt | `imcc-sf04-d066-v4.json` | `5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29` |
-| Redox | `openimcc-redox-v5.json` | `94279c8627a13ae7af3416f20d1e38867b79842d0054990c7b47108d23b4a968` |
+| Redox | `openimcc-redox-v6.json` | `a52b899af7fc93b5d950a82dabd6e6eaa89948b6bd45ab65c7f629969bc3c57e` |
 | Gas | `gas-shomate-default-v1.csv` | `7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36` |
 | Condensate | `condensate-default-v1.csv` | `1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b` |
 
@@ -60,9 +60,15 @@
   correction and the Si₂O₂(g)/AlSiO(g) channels. The versioned condensate
   default uses the O-035 SiO₂(cr) correction.
 
-- The redox v5 default retains the Cr correction and adds Sr, Li, Zn, and Yb
+- The redox v6 default retains the Cr correction and adds Sr, Li, Zn, and Yb
   association rows. Ni, P, S, and Co activity helpers load their fragment data
   through one shared registry.
+
+- Released `openimcc-redox-v6.json` as version `1.8.0`, reissuing the selected
+  v5 data under a release identity. Reaction and species thermochemistry rows
+  are unchanged; v5 remains available for reproduction. The raw file SHA-256
+  and canonical content digest change because the pack version and version
+  history changed.
 
 - Added source-based Si₂O₂(g) and AlSiO(g) channels. Si₂O₂ is covered from 298
   to 3000 K; AlSiO is source-based through 2200 K and is flagged when

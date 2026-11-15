@@ -15,7 +15,8 @@ from openimcc.redox_pack import canonical_redox_digest, load_redox_pack
 ROOT = Path(__file__).resolve().parents[1]
 CANDIDATE = ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json"
 LEGACY_DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
-CURRENT_DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json"
+CURRENT_DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v6.json"
+PREVIOUS_DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json"
 
 
 def _candidate_result(T: float, log10_f_o2: float, inventory=None):
@@ -27,6 +28,37 @@ def _candidate_result(T: float, log10_f_o2: float, inventory=None):
         feed, T, "imposed", log10_f_o2 * math.log(10.0),
         redox_pack_path=CANDIDATE,
     )
+
+
+def test_default_release_identity_preserves_redox_evaluation_bits():
+    feed = {
+        "Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
+        "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05,
+    }
+    temperature = 1673.0
+    lambda_imposed = -10.0 * math.log(10.0)
+    current = evaluate_redox(
+        feed, temperature, "imposed", lambda_imposed=lambda_imposed
+    )
+    previous = evaluate_redox(
+        feed,
+        temperature,
+        "imposed",
+        lambda_imposed=lambda_imposed,
+        redox_pack_path=PREVIOUS_DEFAULT,
+    )
+
+    assert (
+        current.redox_pack_digest
+        == load_redox_pack(CURRENT_DEFAULT).canonical_digest
+    )
+    assert current.redox_pack_digest != previous.redox_pack_digest
+    for result_field in fields(current):
+        if result_field.name in {"redox_pack_digest", "receipt"}:
+            continue
+        assert getattr(current, result_field.name) == getattr(
+            previous, result_field.name
+        )
 
 
 def test_candidate_cr_fraction_matches_independent_2021_equation_at_three_points():

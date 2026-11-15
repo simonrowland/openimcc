@@ -57,7 +57,7 @@ def test_named_profiles_load(name: str, melt_version: str, has_redox: bool) -> N
     else:
         assert profile.gas_datapack.gas_path.name == "gas-shomate-default-v1.csv"
         assert profile.gas_datapack.oxide_path.name == "condensate-default-v1.csv"
-        assert profile.redox_pack_path.name == "openimcc-redox-v5.json"
+        assert profile.redox_pack_path.name == "openimcc-redox-v6.json"
     with pytest.raises(FrozenInstanceError):
         profile.name = "published"
 

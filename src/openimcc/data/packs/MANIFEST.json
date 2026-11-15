@@ -13,8 +13,8 @@
       "sha256": "5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29"
     },
     "redox": {
-      "file": "openimcc-redox-v5.json",
-      "sha256": "94279c8627a13ae7af3416f20d1e38867b79842d0054990c7b47108d23b4a968"
+      "file": "openimcc-redox-v6.json",
+      "sha256": "a52b899af7fc93b5d950a82dabd6e6eaa89948b6bd45ab65c7f629969bc3c57e"
     }
   },
   "packs": [
@@ -677,6 +677,26 @@
       "model": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference; Sr, Li, Zn, and Yb association rows.",
       "n_rows": 18,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by the released identity openimcc-redox-v6.json.",
+      "provenance_classes": {
+        "extension-compound-thermo": 15,
+        "janaf_direct_liquid": 2,
+        "measured-melt-composition-conditioned-effective-k": 1
+      },
+      "provenance_split": null,
+      "role": "historical",
+      "sha256": "94279c8627a13ae7af3416f20d1e38867b79842d0054990c7b47108d23b4a968",
+      "superseded_by": "openimcc-redox-v6.json"
+    },
+    {
+      "bytes": 204827,
+      "datapack_version": "1.8.0",
+      "family": "redox-cr",
+      "file": "openimcc-redox-v6.json",
+      "kind": "redox",
+      "model": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference; Sr, Li, Zn, and Yb association rows.",
+      "n_rows": 18,
+      "n_screened_not_activated": 0,
       "provenance_classes": {
         "extension-compound-thermo": 15,
         "janaf_direct_liquid": 2,
@@ -684,7 +704,7 @@
       },
       "provenance_split": null,
       "role": "default",
-      "sha256": "94279c8627a13ae7af3416f20d1e38867b79842d0054990c7b47108d23b4a968"
+      "sha256": "a52b899af7fc93b5d950a82dabd6e6eaa89948b6bd45ab65c7f629969bc3c57e"
     }
   ],
   "schema": "openimcc-pack-manifest.v1",

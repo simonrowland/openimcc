@@ -31,7 +31,7 @@ from tools.liquid_from_solid import liquid_from_solid
 ROOT = Path(__file__).resolve().parents[1]
 PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
 DEFAULT_PACK_PATH = (
-    ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json"
+    ROOT / "src/openimcc/data/packs/openimcc-redox-v6.json"
 )
 SOURCE_PATH = ROOT / "data-src/redox-thermochemistry.json"
 PROVENANCE_SUCCESSOR_PATHS = (
@@ -42,6 +42,7 @@ PROVENANCE_SUCCESSOR_PATHS = (
     ROOT / "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json",
+    ROOT / "src/openimcc/data/packs/openimcc-redox-v6.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json",
 )

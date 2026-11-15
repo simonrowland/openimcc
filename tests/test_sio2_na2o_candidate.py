@@ -211,10 +211,10 @@ def test_redox_candidate_uses_the_same_silica_standard() -> None:
     gas = _candidate_gas()
     assert candidate.version == "1.7.0-sio2-na2o-candidate"
     assert candidate.canonical_digest == "78de6c0591af964d39d2f1282534e23eb78a7c2334e74d4ad6510f91f0e20fe1"
-    # The redox v5 default retains the existing SiO2(l) standard-state row.
-    assert default.version == "1.8.0-cr-candidate"
+    # The released default retains the existing SiO2(l) standard-state row.
+    assert default.version == "1.8.0"
     assert default.canonical_digest == (
-        "b927cf95fe788016d37ccfac87a9c80bbb15ec519aa624d929e3106c1759adf0"
+        "4beed3886a70ddda484fd2da46c1da74c8a0ea23dd8e6125cca4ecdadaf7cdbc"
     )
     wrapper = candidate.content["thermo_species"]["SiO2(l)"]
     assert "Candidate SiO2(l) standard" in wrapper["range_flags"][0]

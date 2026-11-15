@@ -72,10 +72,10 @@ def load_profile(name: str) -> Profile:
             name="openimcc",
             melt_pack=load_datapack(),
             gas_datapack=gas,
-            redox_pack_path=_PACKS_DIR / "openimcc-redox-v5.json",
+            redox_pack_path=_PACKS_DIR / "openimcc-redox-v6.json",
             provenance=(
                 "D066 v4 melt, versioned openimcc gas and condensate tables, "
-                "and the v5 Cr, Sr, Li, Zn, and Yb redox pack."
+                "and the v6 Cr, Sr, Li, Zn, and Yb redox pack."
             ),
         )
     if name == "published":

@@ -40,7 +40,7 @@ from openimcc.model import ImccMalformedDatapackError
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json"
+DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v6.json"
 
 
 def _formula_atoms() -> dict[str, dict[str, float]]:
