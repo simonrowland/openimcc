@@ -112,10 +112,10 @@ seed does not contribute to the certificate.
 
 `phase_boundary_brackets()` scans the requested interval for every change in
 the certified phase set, then refines each eligible solidus or liquidus with
-Brent's method. A solidus is the first heating state with certified positive
-liquid; a liquidus is the first state where every feasible crystal is
-certified absent and all checks pass. An unresolved amount range does not
-establish absence. The result retains every crossing, its final temperature
+Brent's method in either transition direction. A solidus is the first heating
+state with certified positive liquid; a liquidus is the first state where
+every feasible crystal is certified absent and all checks pass. An unresolved
+amount range does not establish absence. The result retains every crossing, its final temperature
 bracket, endpoint status and phase sets. A refusal or unresolved point breaks
 the scan; no root is interpolated across it. Liquid-dependent boundaries below
 1700 K or above 3000 K are `OUT_OF_DOMAIN` on `temperature_K`.

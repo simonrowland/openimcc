@@ -610,8 +610,15 @@ def _dual_potential_ranges(
     """
     rt = R_J_MOL_K * temperature_K
     scaled_g = g / rt
-    scaled_objective = objective / rt
-    equality = b[None, :]
+    bulk_scale = float(np.max(np.abs(b), initial=0.0))
+    if not math.isfinite(bulk_scale) or bulk_scale <= 0.0:
+        return tuple((-math.inf, math.inf) for _ in range(A.shape[0])), False
+    # Normalize both sides of the dual-face equality by the same bulk scale.
+    # This keeps HiGHS' feasibility test independent of the user's mole units;
+    # the original-unit endpoint check below remains the certificate.
+    normalized_bulk = b / bulk_scale
+    scaled_objective = objective / (rt * bulk_scale)
+    equality = normalized_bulk[None, :]
     equality_rhs = np.asarray([scaled_objective], dtype=float)
     inequality = A.T
     result: list[tuple[float, float]] = []
@@ -3399,6 +3406,22 @@ def _boundary_is_certified(result: PhaseEquilibriumResult) -> bool:
     )
 
 
+def _boundary_has_positive_liquid(
+    result: PhaseEquilibriumResult,
+    balance_tol: float,
+) -> bool:
+    if result.liquid_parent_mol is not None:
+        return math.fsum(result.liquid_parent_mol.values()) > 0.0
+    liquid_range = result.receipt.solver.get("liquid_parent_scale_range_mol")
+    if not isinstance(liquid_range, (tuple, list)) or len(liquid_range) != 2:
+        return False
+    lower = float(liquid_range[0])
+    bulk_scale = math.fsum(result.bulk_parent_mol.values())
+    return lower > balance_tol * bulk_scale + _roundoff_bound(
+        (lower, bulk_scale), 8
+    )
+
+
 def phase_boundary_brackets(
     bulk: Mapping[str, float] | Sequence[float],
     T_low_K: float,
@@ -3417,7 +3440,7 @@ def phase_boundary_brackets(
     Samples outside 1700–3000 K remain OUT_OF_DOMAIN. A bracket is never
     bridged across a refused or unresolved equilibrium point, and each Brent
     evaluation reruns equilibrium/domain checks before using its residual.
-    Multiple heating crossings are retained in temperature order.
+    Crossings in either transition direction are retained in temperature order.
     """
     low = float(T_low_K)
     high = float(T_high_K)
@@ -3458,11 +3481,11 @@ def phase_boundary_brackets(
             result_cache[float(temperature)] = state
         if state.labels.validity == "OUT_OF_DOMAIN":
             raise ValueError("temperature_K is outside the liquid-equilibrium domain")
-        if state.refusal is not None and state.refusal.code != "incipient_liquid_unresolved":
+        if state.refusal is not None:
             raise ValueError(
                 f"boundary point at {temperature:g} K refused: {state.refusal.code}"
             )
-        if state.refusal is None and not _boundary_is_certified(state):
+        if not _boundary_is_certified(state):
             raise ValueError("boundary point lacks an independent KKT certificate")
         if kind == "solidus":
             value = _solidus_boundary_residual(
@@ -3500,9 +3523,9 @@ def phase_boundary_brackets(
         f_right = residual(kind, right)
         if not (math.isfinite(f_left) and math.isfinite(f_right)):
             raise ValueError("boundary residual is not finite at a scan endpoint")
-        if f_left == 0.0:
+        if abs(f_left) <= _LOGQ_COEXISTENCE_TOL:
             root = left
-        elif f_right == 0.0:
+        elif abs(f_right) <= _LOGQ_COEXISTENCE_TOL:
             root = right
         elif f_left * f_right > 0.0:
             raise ValueError("scan phase change does not bracket the thermodynamic root")
@@ -3555,9 +3578,9 @@ def phase_boundary_brackets(
         left_state, right_state = results[index], results[index + 1]
         if not (_boundary_is_certified(left_state) and _boundary_is_certified(right_state)):
             continue
-        left_liquid = left_state.liquid_parent_mol is not None
-        right_liquid = right_state.liquid_parent_mol is not None
-        if not left_liquid and right_liquid and not left_state.crystal_only_minimum:
+        left_liquid = _boundary_has_positive_liquid(left_state, tol)
+        right_liquid = _boundary_has_positive_liquid(right_state, tol)
+        if left_liquid != right_liquid:
             try:
                 solidus_crossings.append(refine(
                     "solidus", temperatures[index], temperatures[index + 1],
@@ -3568,15 +3591,19 @@ def phase_boundary_brackets(
                 refinement_errors.append(
                     f"solidus:{temperatures[index]:g}-{temperatures[index + 1]:g}:{exc}"
                 )
-        left_may_have_solid = any(
-            value in ("present", "unresolved")
+        left_crystals_absent = all(
+            value in ("absent", "infeasible")
             for value in left_state.phase_presence.values()
         )
         right_crystals_absent = all(
             value in ("absent", "infeasible")
             for value in right_state.phase_presence.values()
         )
-        if left_may_have_solid and right_crystals_absent and right_liquid:
+        if (
+            left_crystals_absent != right_crystals_absent
+            and (left_crystals_absent and left_liquid
+                 or right_crystals_absent and right_liquid)
+        ):
             try:
                 liquidus_crossings.append(refine(
                     "liquidus", temperatures[index], temperatures[index + 1],
@@ -3648,6 +3675,10 @@ def phase_boundary_brackets(
             "liquidus_status": liquidus_status,
             "scan_endpoint_statuses": tuple(
                 _boundary_endpoint_status(result) for result in results
+            ),
+            "scan_liquid_parent_scale_ranges_mol": tuple(
+                result.receipt.solver.get("liquid_parent_scale_range_mol")
+                for result in results
             ),
             "scan_phase_sets": tuple(
                 tuple(sorted(

@@ -16,6 +16,7 @@ from scipy.optimize import brentq as independent_brentq
 from openimcc import diagnostics
 from openimcc import gas as gas_module
 from openimcc._constants import R_J_MOL_K
+from openimcc.declared_assemblage import EquilibriumRefusal
 from openimcc.equilibrium import (
     CrystalCandidate,
     _CandidateState,
@@ -443,6 +444,47 @@ def test_fully_solid_nonunique_extents_have_unique_activities(
         assert result.identifiable_activities[parent] == pytest.approx(0.25, abs=2.0e-9)
 
 
+def test_fully_solid_dual_face_ranges_are_scale_invariant(
+    monkeypatch, ideal_pack, gas_pack
+):
+    temperature = 2000.0
+    activity_logs = {"CaO": math.log(0.25), "SiO2": math.log(0.25)}
+    ca = _candidate_from_log_activities(
+        "solid-CaO", {"CaO": 1.0}, activity_logs, temperature, gas_pack
+    )
+    silica = _candidate_from_log_activities(
+        "solid-SiO2", {"SiO2": 1.0}, activity_logs, temperature, gas_pack
+    )
+    compound = CrystalCandidate(
+        "solid-CaSiO3", {"CaO": 1.0, "SiO2": 1.0},
+        ca.G_crystal_J_mol + silica.G_crystal_J_mol,
+    )
+    _install_synthetic_default_candidates(monkeypatch, (ca, silica, compound), gas_pack)
+
+    results = [
+        equilibrate(
+            {"CaO": scale, "SiO2": scale}, temperature, pack=ideal_pack,
+        )
+        for scale in (1.0, 1.0e-8, 1.0e-10)
+    ]
+    reference = results[0]
+    assert all(result.labels.validity == "IN" for result in results)
+    assert all(result.refusal is None for result in results)
+    for result in results:
+        for parent in ("CaO", "SiO2"):
+            assert result.activity_ranges_ln[parent] == pytest.approx(
+                reference.activity_ranges_ln[parent], abs=2.0e-9
+            )
+        for phase in reference.phase_amount_ranges_mol:
+            expected = tuple(
+                endpoint * result.bulk_parent_mol["CaO"]
+                for endpoint in reference.phase_amount_ranges_mol[phase]
+            )
+            assert result.phase_amount_ranges_mol[phase] == pytest.approx(
+                expected, abs=2.0e-18
+            )
+
+
 def test_fully_solid_unique_extent_can_have_unbounded_activity_ranges(
     monkeypatch, ideal_pack, gas_pack
 ):
@@ -513,43 +555,63 @@ def test_peritectic_solidus_and_liquidus_match_independent_analytics(
     monkeypatch, ideal_pack, gas_pack
 ):
     invariant_K = 2000.0
-    rt = R_J_MOL_K * invariant_K
-    ca_liquid = species_thermo("CaO", "l", invariant_K, gas_pack).G_J_mol
-    silica_liquid = species_thermo("SiO2", "l", invariant_K, gas_pack).G_J_mol
-    ca = CrystalCandidate(
-        "phase-A", {"CaO": 1.0}, ca_liquid + rt * math.log(0.5)
+    liquid_x_ca = 0.25
+    ca = _candidate_from_log_activities(
+        "phase-A", {"CaO": 1.0},
+        {"CaO": math.log(liquid_x_ca)}, invariant_K, gas_pack,
     )
-    compound = CrystalCandidate(
+    compound = _candidate_from_log_activities(
         "phase-AB", {"CaO": 1.0, "SiO2": 1.0},
-        ca_liquid + silica_liquid + rt * math.log(0.25),
+        {"CaO": math.log(liquid_x_ca), "SiO2": math.log(1.0 - liquid_x_ca)},
+        invariant_K, gas_pack,
     )
     _install_synthetic_default_candidates(monkeypatch, (ca, compound), gas_pack)
-    bulk = {"CaO": 1.5, "SiO2": 0.5}
+    bulk = {"CaO": 0.6, "SiO2": 0.4}
 
-    # At the invariant, the liquid has equal parent proportions and both
-    # crystals are saturated. The compound amount ranges from zero to 0.5 mol.
+    # At the invariant, L has x(CaO)=0.25 and AB has x(CaO)=0.5, so AB
+    # lies between the liquid and A. With bulk x(CaO)=0.6, balances give
+    # n_A=0.2+0.5*n_L and n_AB=0.4-0.75*n_L, with 0≤n_L≤8/15.
     invariant = equilibrate(bulk, invariant_K, pack=ideal_pack)
     assert invariant.labels.validity == "IN"
-    assert invariant.phase_amount_ranges_mol["phase-A"] == pytest.approx((1.0, 1.0))
-    assert invariant.phase_amount_ranges_mol["phase-AB"] == pytest.approx((0.0, 0.5))
+    assert invariant.phase_amount_ranges_mol["phase-A"] == pytest.approx((0.2, 7.0 / 15.0))
+    assert invariant.phase_amount_ranges_mol["phase-AB"] == pytest.approx((0.0, 0.4))
+    assert invariant.receipt.solver["liquid_parent_scale_range_mol"] == pytest.approx(
+        (0.0, 8.0 / 15.0)
+    )
     assert invariant.phase_amounts_unique is False
 
-    def independent_liquidus_residual(temperature):
+    def independent_a_saturation(temperature):
         liquid_g = species_thermo("CaO", "l", temperature, gas_pack).G_J_mol
-        return math.log(0.75) + (liquid_g - ca.G_crystal_J_mol) / (
+        return math.log(bulk["CaO"]) + (liquid_g - ca.G_crystal_J_mol) / (
             R_J_MOL_K * temperature
         )
 
-    analytic_liquidus = independent_brentq(
-        independent_liquidus_residual, invariant_K, 3000.0
+    def independent_ab_saturation(temperature):
+        liquid_g = math.fsum(
+            species_thermo(parent, "l", temperature, gas_pack).G_J_mol
+            for parent in ("CaO", "SiO2")
+        )
+        return math.log(bulk["CaO"] * bulk["SiO2"]) + (
+            liquid_g - compound.G_crystal_J_mol
+        ) / (R_J_MOL_K * temperature)
+
+    a_disappears_K = independent_brentq(
+        independent_a_saturation, invariant_K, 3000.0
     )
-    upper = analytic_liquidus + 10.0
+    ab_disappears_K = independent_brentq(
+        independent_ab_saturation, invariant_K, 3000.0
+    )
+    # All-liquid stability requires both affinities nonpositive; A sets the
+    # higher-temperature root for this invariant composition and bulk.
+    analytic_liquidus = max(a_disappears_K, ab_disappears_K)
+    upper = 2100.0
     boundaries = phase_boundary_brackets(
-        bulk, 1990.0, upper, pack=ideal_pack, scan_points=3,
+        bulk, 1990.0, upper, pack=ideal_pack, scan_points=12,
     )
     detail = (
         boundaries.refusal,
         boundaries.receipt.solver.get("scan_endpoint_statuses"),
+        boundaries.receipt.solver.get("scan_liquid_parent_scale_ranges_mol"),
         boundaries.receipt.solver.get("scan_phase_sets"),
         boundaries.receipt.solver.get("boundary_refinement_errors"),
     )
@@ -559,6 +621,81 @@ def test_peritectic_solidus_and_liquidus_match_independent_analytics(
     assert boundaries.liquidus[0].root_temperature_K == pytest.approx(analytic_liquidus, abs=0.1)
     assert boundaries.solidus[0].lower_phase_set
     assert boundaries.liquidus[0].upper_phase_set == ()
+
+
+def test_refused_refinement_point_cannot_certify_boundary(
+    monkeypatch, ideal_pack, gas_pack
+):
+    invariant_K = 2000.0
+    activity_logs = {"CaO": math.log(0.5), "SiO2": math.log(0.5)}
+    candidates = (
+        _candidate_from_log_activities(
+            "solid-CaO", {"CaO": 1.0}, activity_logs, invariant_K, gas_pack
+        ),
+        _candidate_from_log_activities(
+            "solid-SiO2", {"SiO2": 1.0}, activity_logs, invariant_K, gas_pack
+        ),
+    )
+    _install_synthetic_default_candidates(monkeypatch, candidates, gas_pack)
+    from openimcc import equilibrium as equilibrium_module
+
+    actual_equilibrate = equilibrium_module.equilibrate
+
+    def refused_root(bulk, temperature, **kwargs):
+        result = actual_equilibrate(bulk, temperature, **kwargs)
+        if abs(temperature - invariant_K) < 1.0e-6:
+            refusal = EquilibriumRefusal(
+                "injected_refinement_refusal", "Synthetic failed refinement certificate."
+            )
+            return replace(
+                result,
+                labels=replace(result.labels, validity="DEPENDS"),
+                refusal=refusal,
+                kkt_recheck={"independent_kkt_passed": 0.0},
+            )
+        return result
+
+    monkeypatch.setattr(equilibrium_module, "equilibrate", refused_root)
+    boundaries = phase_boundary_brackets(
+        {"CaO": 1.0, "SiO2": 1.0}, 1990.0, 2010.0,
+        pack=ideal_pack, scan_points=2,
+    )
+    assert boundaries.labels.validity == "DEPENDS"
+    assert boundaries.refusal is not None
+    assert boundaries.solidus_status == "DEPENDS"
+    assert boundaries.liquidus_status == "DEPENDS"
+    assert boundaries.solidus == ()
+    assert boundaries.liquidus == ()
+
+
+def test_phase_boundaries_refine_cooling_direction_crossing(
+    monkeypatch, ideal_pack, gas_pack
+):
+    from openimcc import equilibrium as equilibrium_module
+
+    def temperature_dependent_default(temperature, selected_gas_pack=None):
+        selected_gas_pack = gas_pack if selected_gas_pack is None else selected_gas_pack
+        liquid_g = species_thermo("SiO2", "l", temperature, selected_gas_pack).G_J_mol
+        candidate = CrystalCandidate(
+            "temperature-dependent-SiO2", {"SiO2": 1.0},
+            liquid_g + R_J_MOL_K * temperature * (2000.0 - temperature) / 1000.0,
+        )
+        state = _CandidateState(
+            candidate, candidate.source_authority,
+            candidate.temperature_range_K, True,
+        )
+        return (state,), "synthetic-crystal-data", "synthetic-pure-data", selected_gas_pack, ()
+
+    monkeypatch.setattr(
+        equilibrium_module, "_default_candidate_states", temperature_dependent_default
+    )
+    boundaries = phase_boundary_brackets(
+        {"SiO2": 1.0}, 1900.0, 2100.0, pack=ideal_pack, scan_points=3,
+    )
+    assert boundaries.solidus_status == "AVAILABLE", boundaries.to_dict()
+    assert boundaries.liquidus_status == "AVAILABLE", boundaries.to_dict()
+    assert boundaries.solidus[0].root_temperature_K == pytest.approx(2000.0, abs=0.1)
+    assert boundaries.liquidus[0].root_temperature_K == pytest.approx(2000.0, abs=0.1)
 
 
 def test_polymorph_extents_do_not_hide_the_liquidus(
