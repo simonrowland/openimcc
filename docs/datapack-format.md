@@ -825,8 +825,8 @@ Top-level redox fields:
 | schema | string | Versioned schema identifier, currently `openimcc-redox-pack.v2`. |
 | version | string | Version of this thermochemistry component. |
 | errata | array of objects | Pack-specific correction records with `change`, `date`, and `version`; present on redox versions that revise shipped thermochemistry. |
-| candidate_only | boolean | Candidate-pack gate for composition-conditioned empirical effective-K rows; only recognized candidate versions accept this field. |
-| dataset_provenance | object | Candidate-only split of anchor datasets and held-out independent datasets, each with citation, role, and source URL. |
+| candidate_only | boolean | Feature-validation marker required for the composition-conditioned Cr effective-K row. It also applies to the released v6 default and does not indicate the pack's release status. |
+| dataset_provenance | object | Anchor datasets and held-out independent datasets for the composition-conditioned Cr effective-K row, each with citation, role, and source URL. |
 | created | string | Date the component record was created. |
 | model | string | Human-readable description of the component's reaction thermochemistry. |
 | units | object | Explicit formula-unit, elemental-inventory, temperature, Gibbs-energy, band, and pressure units. |
