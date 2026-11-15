@@ -38,6 +38,14 @@
   include source rows, pack digest, range and extrapolation labels, and typed
   no-switch and unresolved-sign results. See `docs/pure-oxide-standard-checks.md`.
 
+### Melt and crystal equilibrium
+
+- Added a fixed-pressure ideal-melt and stoichiometric-crystal equilibrium
+  solver with feasible active-set updates, independent KKT rechecks, and a
+  dual-optimal-face liquid-absence certificate. Liquid claims are restricted
+  to 1700–3000 K; redox-sensitive phases and active excess-Gibbs packs return
+  typed refusals. See docs/equilibrium.md.
+
 ### Gas oxygen balance
 
 - Added multi-parent oxygen-demand metadata for mixed gas products. The
