@@ -824,6 +824,51 @@ def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
             assert counterpart.labels.validity in ("IN", "DEPENDS")
 
 
+def test_explicit_multioxide_candidate_obeys_source_cap(ideal_pack, gas_pack):
+    cap_K = 2000.0
+    phase_id = "explicit-source-capped-multioxide"
+    bulk = {"CaO": 1.0, "SiO2": 1.0}
+    parent_liquid_gibbs = math.fsum(
+        species_thermo(parent, "l", cap_K, gas_pack).G_J_mol
+        for parent in bulk
+    )
+    candidate = CrystalCandidate(
+        phase_id,
+        {"CaO": 1.0, "SiO2": 1.0},
+        parent_liquid_gibbs - 40.0 * R_J_MOL_K * cap_K,
+        formula="CaSiO3",
+        temperature_range_K=(1700.0, 3000.0),
+        source={"melting_point": {"temperature_K": cap_K}},
+    )
+
+    above_cap = equilibrate(
+        bulk, cap_K + 1.0, candidates=(candidate,), pack=ideal_pack,
+    )
+    assert above_cap.phase_presence[phase_id] == "absent"
+    assert above_cap.labels.coverage[phase_id] == "above_source_melting_point"
+    assert above_cap.receipt.solver["crystals_above_source_melting_point"] == (
+        phase_id,
+    )
+    assert (
+        f"crystals_above_source_melting_point:{phase_id}"
+        in above_cap.labels.notices
+    )
+    assert phase_id not in above_cap.receipt.solver["missing_candidate_phase_ids"]
+    assert "missing_phase_data" not in above_cap.labels.notices
+    assert "restricted_candidate_set" in above_cap.labels.notices
+
+    boundaries = phase_boundary_brackets(
+        bulk, cap_K - 10.0, cap_K + 10.0, candidates=(candidate,),
+        pack=ideal_pack, scan_points=2,
+    )
+    assert boundaries.labels.validity == "DEPENDS", boundaries.to_dict()
+    assert boundaries.solidus_status == "DEPENDS", boundaries.to_dict()
+    assert boundaries.liquidus_status == "DEPENDS", boundaries.to_dict()
+    assert boundaries.solidus == ()
+    assert boundaries.liquidus == ()
+    assert f"source_cap:{phase_id}@{cap_K:g}K" in boundaries.labels.notices
+
+
 def test_polymorph_extents_do_not_hide_the_liquidus(
     monkeypatch, ideal_pack, gas_pack
 ):

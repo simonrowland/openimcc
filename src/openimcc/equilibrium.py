@@ -328,6 +328,19 @@ def _source_solid_limit_K(row: Mapping[str, Any]) -> float | None:
     return None if value is None else float(value)
 
 
+def _source_cap_excludes_candidate(
+    stoichiometry: Mapping[str, float],
+    source: Mapping[str, Any],
+    temperature_K: float,
+) -> bool:
+    limit = _source_solid_limit_K(source)
+    return (
+        len(stoichiometry) > 1
+        and limit is not None
+        and temperature_K > limit
+    )
+
+
 def _source_solid_limits_K(
     candidates: Sequence[str | CrystalCandidate] | None,
 ) -> dict[str, float]:
@@ -385,7 +398,6 @@ def _evaluate_fusion_crystal_row(
     """Build one Berman or Barin fusion-node candidate and flag missing data."""
     from openimcc import gas
 
-    source_solid_limit = _source_solid_limit_K(row)
     nodes = sorted(float(value) for value in row["fusion_gibbs_nodes_kJ_mol"])
     domain = (
         max(float(row["valid_temperature_K"][0]), nodes[0]),
@@ -400,10 +412,8 @@ def _evaluate_fusion_crystal_row(
         )
         return _CandidateState(placeholder, authority, domain, False, reason)
 
-    if (
-        len(row["oxide_stoichiometry"]) > 1
-        and source_solid_limit is not None
-        and temperature_K > source_solid_limit
+    if _source_cap_excludes_candidate(
+        row["oxide_stoichiometry"], row, temperature_K
     ):
         return unavailable_state("above_source_melting_point"), False
     if not domain[0] <= temperature_K <= domain[1]:
@@ -556,12 +566,19 @@ def _resolve_candidates(
     selected: list[_CandidateState] = []
     for item in candidates:
         if isinstance(item, CrystalCandidate):
-            available = (
-                item.temperature_range_K is None
-                or item.temperature_range_K[0] <= temperature_K <= item.temperature_range_K[1]
+            source_capped = _source_cap_excludes_candidate(
+                item.stoichiometry, item.source, temperature_K,
             )
+            in_temperature_range = (
+                item.temperature_range_K is None
+                or item.temperature_range_K[0]
+                <= temperature_K
+                <= item.temperature_range_K[1]
+            )
+            available = not source_capped and in_temperature_range
             selected.append(_CandidateState(
                 item, item.source_authority, item.temperature_range_K, available,
+                "above_source_melting_point" if source_capped else
                 None if available else "temperature_out_of_range",
             ))
         elif isinstance(item, str) and item in by_id:
@@ -3890,11 +3907,6 @@ def phase_boundary_brackets(
                 bulk, temperature, candidates, pack, inner_tol, max_iter, y_init
             )
         residual_cache[key] = value
-        if (
-            state.refusal is not None
-            and abs(value) > affinity_tol_ln
-        ):
-            raise ValueError("an unresolved equilibrium point is not the boundary root")
         return value
 
     def refine(
