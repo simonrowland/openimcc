@@ -633,6 +633,37 @@ def _janaf_artifact(
     )
 
 
+def _barin_artifact(mapper: SourceMapper) -> dict[str, Any]:
+    relative_file = "diagnostics/barin-aluminate-crystals.json"
+    path = DATA / relative_file
+    raw = path.read_bytes()
+    content = json.loads(raw)
+    rows: list[dict[str, Any]] = []
+    for phase in content["phases"]:
+        record = _row(f"phases:{phase['id']}", phase["formula"])
+        source = phase["source"]
+        _add_citation(
+            record, source["citation"], "derived", mapper,
+            citation_key=source["work_id"],
+        )
+        for oxide in phase["oxide_stoichiometry"]:
+            reference = content["conversion"]["parent_oxide_references"][oxide]
+            _add_citation(
+                record, reference["citation"], "derived", mapper,
+                citation_key=reference["table_id"],
+            )
+        _missing_provenance(record)
+        rows.append(record)
+    return _finish_artifact(
+        identity=content["schema"],
+        file="data/" + relative_file,
+        raw=raw,
+        rows=rows,
+        runtime_digest=_sha256(raw),
+        mapper=mapper,
+    )
+
+
 def build() -> dict[str, Any]:
     mapping = _json(MAPPINGS)
     vocabulary = _json(VOCABULARY)
@@ -687,6 +718,7 @@ def build() -> dict[str, Any]:
             collection="rows",
             mapper=mapper,
         ),
+        _barin_artifact(mapper),
     ]
     referenced_work_ids = {
         work_id for artifact in artifacts for work_id in artifact["work_ids"]

@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 _PURE_OXIDE_RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
 _CRYSTAL_RESOURCE = "data/diagnostics/crystal-phases.json"
+_BARIN_RESOURCE = "data/diagnostics/barin-aluminate-crystals.json"
 _PRESSURE_BAR_STANDARD = 1.0
 _PHASE_RESIDUAL_TOLERANCE_J_MOL = 1.0
 
@@ -130,6 +131,7 @@ def _make_receipt(
     pure_digest: str,
     gas_pack: Any | None,
 ) -> CalculationReceipt:
+    _barin_data, barin_digest = _load_json(_BARIN_RESOURCE)
     return build_calculation_receipt(
         request={
             "declared_phases": phases,
@@ -144,6 +146,7 @@ def _make_receipt(
         },
         data_digests={
             "crystal_phases": crystal_digest,
+            "barin_aluminate_crystals": barin_digest,
             "janaf_pure_oxide_crystals": pure_digest,
             "gas": getattr(gas_pack, "gas_table_digest", None),
             "condensate": getattr(gas_pack, "condensate_table_digest", None),
@@ -188,6 +191,7 @@ def _empty_result(
     labels = PhaseEquilibriumLabels(
         identity={
             "crystal_phases": "openimcc-crystal-phases-v1",
+            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v1",
             "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
             "gas_table_digest": getattr(gas_pack, "gas_table_digest", "unresolved"),
             "condensate_table_digest": getattr(
@@ -351,8 +355,11 @@ def evaluate_declared_assemblage(
 
     pure_data, pure_digest = _load_json(_PURE_OXIDE_RESOURCE)
     crystal_data, crystal_digest = _load_json(_CRYSTAL_RESOURCE)
+    barin_data, _barin_digest = _load_json(_BARIN_RESOURCE)
     pure_by_id = {row["id"]: row for row in pure_data["phases"]}
-    crystal_by_id = {row["id"]: row for row in crystal_data["phases"]}
+    crystal_by_id = {
+        row["id"]: row for row in (*crystal_data["phases"], *barin_data["phases"])
+    }
     redox_names = {"fe3o4", "magnetite", "fe2o3", "hematite", "ferric"}
     redox_phases = tuple(
         phase for phase in declared
@@ -755,6 +762,7 @@ def evaluate_declared_assemblage(
     labels = PhaseEquilibriumLabels(
         identity={
             "crystal_phases": "openimcc-crystal-phases-v1",
+            "barin_aluminate_crystals": str(barin_data["schema"]),
             "janaf_pure_oxide_crystals": str(pure_data["schema"]),
             "gas_table_digest": active_pack.gas_table_digest,
             "condensate_table_digest": active_pack.condensate_table_digest,

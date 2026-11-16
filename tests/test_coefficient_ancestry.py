@@ -84,6 +84,9 @@ def _expected_row_ids(artifact: dict) -> set[str]:
     if file == "diagnostics/janaf-pure-oxide-liquid-pairs.json":
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"rows:{row['table_id']}" for row in content["rows"]}
+    if file == "diagnostics/barin-aluminate-crystals.json":
+        content = json.loads(path.read_text(encoding="utf-8"))
+        return {f"phases:{row['id']}" for row in content["phases"]}
     raise AssertionError(f"unexpected packaged ancestry artifact: {file}")
 
 
@@ -93,7 +96,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 7
+    assert len(entries) == 8
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -132,6 +135,13 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     temperature = max(298.15, pair["source_temperature_K"][0])
     result = evaluate_janaf_apparent_gibbs(pair["table_id"], temperature)
     assert result.provenance["resource_sha256"] == liquid_pairs["runtime_digest"]
+
+    barin = _artifact(entries, "openimcc-barin-aluminate-crystals-v1")
+    assert set(barin["work_ids"]) == {"barin-1995", "janaf-4th"}
+    assert all(
+        source["role"] == "derived"
+        for row in barin["rows"] for source in row["sources"]
+    )
 
 
 def test_every_default_row_has_mapped_or_unmapped_lineage() -> None:

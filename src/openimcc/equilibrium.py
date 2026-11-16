@@ -40,9 +40,15 @@ from openimcc.receipt import CalculationReceipt, build_calculation_receipt
 
 _PURE_RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
 _CRYSTAL_RESOURCE = "data/diagnostics/crystal-phases.json"
+_BARIN_RESOURCE = "data/diagnostics/barin-aluminate-crystals.json"
 _PRESSURE_BAR = 1.0
 _LIQUID_DOMAIN_K = (1700.0, 3000.0)
 phase_state_contract_version = 1
+
+_MISSING_PHASE_COMPONENTS = {
+    "CA6": frozenset(("CaO", "Al2O3")),
+    "beta-alumina": frozenset(("Na2O", "Al2O3")),
+}
 
 # Each named tolerance applies to a different physical/numerical certificate.
 _DEFAULT_BALANCE_TOL = 1.0e-10
@@ -338,8 +344,10 @@ def _default_candidate_states(
 
     pure, pure_digest = _load_json(_PURE_RESOURCE)
     crystals, crystal_digest = _load_json(_CRYSTAL_RESOURCE)
+    barin, _barin_digest = _load_json(_BARIN_RESOURCE)
     pure_by_id = {row["id"]: row for row in pure["phases"]}
     crystal_by_id = {row["id"]: row for row in crystals["phases"]}
+    barin_by_id = {row["id"]: row for row in barin["phases"]}
     if gas_pack is None:
         gas_pack, _ = diagnostics._crystal_thermo_context(None)
     states: list[_CandidateState] = []
@@ -376,6 +384,57 @@ def _default_candidate_states(
                 authority, domain, row.get("source", {}),
             )
             states.append(_CandidateState(placeholder, authority, domain, False, "standard_out_of_range"))
+            continue
+        g_crystal = math.fsum(
+            float(nu) * liquid_gibbs[oxide]
+            for oxide, nu in row["oxide_stoichiometry"].items()
+        ) - fusion_kJ * 1000.0
+        candidate = CrystalCandidate(
+            phase_id, row["oxide_stoichiometry"], g_crystal,
+            row.get("formula"), authority, domain, row.get("source", {}),
+        )
+        states.append(_CandidateState(candidate, authority, domain, True))
+
+    # Barin gives crystal formation Gibbs energies from the elements, while
+    # the solver needs G_crystal on the selected parent-liquid reference. The
+    # balanced Hess cycle is ΔG_fus = Σν_i ΔfG°_JANAF(parent_i,l) − ΔfG°_Barin(cr),
+    # so G_crystal = Σν_i G_parent_i,l − ΔG_fus. The source functions are
+    # kJ/mol formula unit; convert ΔG_fus by 1000 before combining with the
+    # J/mol parent standards. Sanity: at 1000 K, CA has Barin ΔfG=−1931.566
+    # kJ/mol and JANAF CaO(l)+Al2O3(l) gives −1799.692 kJ/mol, hence
+    # ΔG_fus=+131.874 kJ/mol, matching the stored node.
+    for phase_id, row in sorted(barin_by_id.items()):
+        nodes = sorted(float(value) for value in row["fusion_gibbs_nodes_kJ_mol"])
+        domain = (
+            max(float(row["valid_temperature_K"][0]), nodes[0]),
+            min(float(row["valid_temperature_K"][1]), nodes[-1]),
+        )
+        authority = _phase_authority(row)
+        if not domain[0] <= temperature_K <= domain[1]:
+            unavailable.append(phase_id)
+            placeholder = CrystalCandidate(
+                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
+                authority, domain, row.get("source", {}),
+            )
+            states.append(_CandidateState(
+                placeholder, authority, domain, False, "temperature_out_of_range"
+            ))
+            continue
+        try:
+            liquid_gibbs = {
+                oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
+                for oxide in row["oxide_stoichiometry"]
+            }
+            fusion_kJ = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
+        except (gas.ImccGasTemperatureOutsideDomainError, ValueError):
+            unavailable.append(phase_id)
+            placeholder = CrystalCandidate(
+                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
+                authority, domain, row.get("source", {}),
+            )
+            states.append(_CandidateState(
+                placeholder, authority, domain, False, "standard_out_of_range"
+            ))
             continue
         g_crystal = math.fsum(
             float(nu) * liquid_gibbs[oxide]
@@ -965,8 +1024,10 @@ def _independent_thermochemical_standards(
     liquid = _melt_liquid_standards(parents, temperature_K, gas_pack)
     pure, _ = _load_json(_PURE_RESOURCE)
     crystals, _ = _load_json(_CRYSTAL_RESOURCE)
+    barin, _ = _load_json(_BARIN_RESOURCE)
     pure_ids = {row["id"] for row in pure["phases"]}
     crystal_rows = {row["id"]: row for row in crystals["phases"]}
+    barin_rows = {row["id"]: row for row in barin["phases"]}
     crystal_gibbs: dict[str, float] = {}
     for state in states:
         phase = state.candidate.phase_id
@@ -978,6 +1039,17 @@ def _independent_thermochemical_standards(
             ).G_J_mol
         elif phase in crystal_rows:
             row = crystal_rows[phase]
+            parent_liquid_g = {
+                oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
+                for oxide in row["oxide_stoichiometry"]
+            }
+            fusion = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
+            crystal_gibbs[phase] = math.fsum(
+                float(nu) * parent_liquid_g[oxide]
+                for oxide, nu in row["oxide_stoichiometry"].items()
+            ) - fusion * 1000.0
+        elif phase in barin_rows:
+            row = barin_rows[phase]
             parent_liquid_g = {
                 oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
                 for oxide in row["oxide_stoichiometry"]
@@ -1587,6 +1659,7 @@ def _result_receipt(
     gas_pack: Any | None = None,
 ) -> CalculationReceipt:
     kernel = pack.kernel_datapack if isinstance(pack, ImccLoadedDatapack) else pack
+    _barin_data, barin_digest = _load_json(_BARIN_RESOURCE)
     return build_calculation_receipt(
         request={
             "bulk_parent_mol": dict(bulk),
@@ -1597,6 +1670,7 @@ def _result_receipt(
         data_digests={
             "melt_binding": getattr(pack, "binding_digest", getattr(kernel, "binding_digest", None)),
             "crystal_phases": crystal_digest,
+            "barin_aluminate_crystals": barin_digest,
             "janaf_pure_oxide_crystals": pure_digest,
             "parent_liquid_standards": (
                 gas_pack.condensate_table_digest if gas_pack is not None else
@@ -1651,6 +1725,7 @@ def _labels(
             "melt_model": str(getattr(kernel, "model_id", "unresolved")),
             "melt_binding_digest": str(getattr(pack, "binding_digest", getattr(kernel, "binding_digest", "unresolved"))),
             "crystal_phases": "openimcc-crystal-phases-v1",
+            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v1",
             "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
             "standard_pressure_bar": "1.0",
         },
@@ -1660,6 +1735,10 @@ def _labels(
                 if state.available and state.domain else state.reason or "unavailable"
             )
             for state in states
+        } | {
+            phase: "missing_phase_data"
+            for phase in missing
+            if phase not in {state.candidate.phase_id for state in states}
         },
         validity=validity,
         out_of_domain_axes=tuple(axes),
@@ -3111,7 +3190,14 @@ def _equilibrate_one(
                 "unsupported_redox_phase", str(exc), ("crystal_candidates",)
             ),
         )
-    missing = tuple(sorted(set(unavailable) | set(unsupported)))
+    missing_set = set(unavailable) | set(unsupported)
+    if not explicit:
+        present_components = set(normalized_bulk)
+        missing_set.update(
+            phase for phase, components in _MISSING_PHASE_COMPONENTS.items()
+            if components <= present_components
+        )
+    missing = tuple(sorted(missing_set))
 
     from openimcc import gas as gas_module
     try:

@@ -853,10 +853,11 @@ def test_default_anorthite_case_excludes_zero_bulk_phases():
     assert all(amount == pytest.approx(0.0, abs=1.0e-12) for amount in result.solid_mol.values())
     assert result.liquid_mass_fraction == pytest.approx(1.0)
     assert result.kkt_recheck["independent_kkt_passed"] == 1.0
-    assert result.refusal is None
-    assert result.labels.validity == "IN"
+    assert result.refusal is not None
+    assert result.refusal.code == "missing_phase_data"
+    assert result.labels.validity == "DEPENDS"
     missing = result.receipt.solver["missing_candidate_phase_ids"]
-    assert missing == ()
+    assert set(missing) == {"C12A7", "CA6"}
     dropped = {
         "akermanite", "diopside", "fayalite", "FeO", "hercynite",
         "ilmenite", "monticellite",
@@ -978,11 +979,15 @@ def test_vapour_domain_does_not_change_condensed_equilibrium_labels():
     with_vapour = equilibrate(bulk, 1800.0, fO2=1.0e-8)
     vapour = with_vapour.to_dict()["phase_state_contract"]["output"]["vapour"]
 
-    assert condensed.labels.validity == "IN"
-    assert condensed.labels.out_of_domain_axes == ()
+    assert condensed.labels.validity == "DEPENDS"
+    assert set(condensed.labels.out_of_domain_axes) == {
+        "crystal.C12A7.temperature_K", "crystal.CA6.temperature_K",
+    }
     assert with_vapour.labels == condensed.labels
-    assert with_vapour.labels.validity == "IN"
-    assert with_vapour.labels.out_of_domain_axes == ()
+    assert with_vapour.labels.validity == "DEPENDS"
+    assert set(with_vapour.labels.out_of_domain_axes) == {
+        "crystal.C12A7.temperature_K", "crystal.CA6.temperature_K",
+    }
     assert vapour["status"] == "OUT_OF_DOMAIN"
     assert set(vapour["out_of_domain_axes"]) == {
         f"gas_species.{species}.temperature_K"

@@ -11,11 +11,31 @@ set of stoichiometric line-compound crystals.
         1900.0,
     )
 
-The default crystal candidates are the phase functions in the diagnostics
-crystal dataset plus the reconstructed JANAF pure-oxide crystals. Pass
-candidates= to restrict the set or to supply CrystalCandidate values for a
-synthetic system. Restricted sets are explicitly labelled and cannot support
-an unrestricted stability claim.
+The default crystal candidates include the phases in the diagnostics crystal
+dataset, the JANAF pure-oxide crystals, and six aluminate crystals from Barin
+(1995): CaAl2O4 (CA), CaAl4O7 (CA2), Ca3Al2O6 (C3A), Ca12Al14O33 (C12A7),
+NaAlO2, and MgAl2O4. Their printed solid Gibbs-energy nodes are used only
+within these ranges: CA 298.15–1800 K, CA2 298.15–2000 K, C3A
+298.15–1800 K, C12A7 298.15–1700 K, NaAlO2 298.15–1900 K, and MgAl2O4
+298.15–2408 K. NaAlO2 keeps the SOL-A to SOL-B transition at 740 K. The
+conversion to the solver's liquid-parent basis uses a Hess cycle with the
+JANAF liquid CaO, Al2O3, Na2O, and MgO tables. Barin's compound-liquid rows
+are not candidates. Source locators are Barin (1995), pp. 442–445 (calcium
+aluminates), p. 1132 (NaAlO2), and p. 1015 (MgAl2O4).
+
+CA6 (CaAl12O19) and beta-alumina are not in the candidate data. When the bulk
+contains the parent oxides needed to form either missing phase, the solver
+keeps the phase-set result labelled `DEPENDS` on missing phase data, even if
+its numerical equilibrium checks pass. Pass candidates= to restrict the set
+or to supply CrystalCandidate values for a synthetic system. Restricted sets
+are explicitly labelled and cannot support an unrestricted stability claim.
+
+For MgAl2O4, the sources remain separate on the shared 1323–2408 K range.
+The existing Berman fusion function is 5.677–9.326 kJ/mol above the Barin
+Hess-cycle fusion values over the combined source-node grid. Barin's crystal
+formation Gibbs values are 9.779–21.962 kJ/mol above JANAF Al-089 on that
+range; subtracting the same JANAF liquid-oxide formation values leaves this
+formation-energy difference unchanged. No average is formed.
 
 ## Scope
 
