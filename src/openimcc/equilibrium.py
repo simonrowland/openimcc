@@ -318,6 +318,16 @@ def _has_active_excess(pack: Any) -> bool:
     return any(term.active for term in getattr(pack, "excess_gibbs_terms", ()))
 
 
+def _source_solid_limit_K(row: Mapping[str, Any]) -> float | None:
+    limit = row.get("source_solid_limit")
+    if isinstance(limit, Mapping):
+        value = limit.get("temperature_K")
+    else:
+        melting = row.get("melting_point")
+        value = melting.get("temperature_K") if isinstance(melting, Mapping) else None
+    return None if value is None else float(value)
+
+
 def _melt_liquid_standards(
     parents: Sequence[str], temperature_K: float, gas_pack: Any,
 ) -> np.ndarray:
@@ -357,12 +367,26 @@ def _default_candidate_states(
     # ν is mol oxide/mol formula and the stored fusion node is kJ/mol formula,
     # so multiplying the latter by 1000 makes both terms J/mol formula.
     for phase_id, row in sorted(crystal_by_id.items()):
+        source_solid_limit = _source_solid_limit_K(row)
         nodes = sorted(float(value) for value in row["fusion_gibbs_nodes_kJ_mol"])
         domain = (
             max(float(row["valid_temperature_K"][0]), nodes[0]),
             min(float(row["valid_temperature_K"][1]), nodes[-1]),
         )
         authority = _phase_authority(row)
+        if (
+            len(row["oxide_stoichiometry"]) > 1
+            and source_solid_limit is not None
+            and temperature_K > source_solid_limit
+        ):
+            placeholder = CrystalCandidate(
+                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
+                authority, domain, row.get("source", {}),
+            )
+            states.append(_CandidateState(
+                placeholder, authority, domain, False, "above_source_melting_point"
+            ))
+            continue
         if not domain[0] <= temperature_K <= domain[1]:
             unavailable.append(phase_id)
             placeholder = CrystalCandidate(
@@ -395,7 +419,10 @@ def _default_candidate_states(
         )
         states.append(_CandidateState(candidate, authority, domain, True))
 
-    # Barin gives crystal formation Gibbs energies from the elements, while
+    # Barin Chapter 4.4 defines standard states at 1 bar and Chapter 4.5 sets
+    # elemental reference phases at 1 bar (p. I-36), matching the solver; no
+    # 1 atm-to-1 bar oxygen-reference correction is needed. Barin gives crystal
+    # formation Gibbs energies from the elements, while
     # the solver needs G_crystal on the selected parent-liquid reference. The
     # balanced Hess cycle is ΔG_fus = Σν_i ΔfG°_JANAF(parent_i,l) − ΔfG°_Barin(cr),
     # so G_crystal = Σν_i G_parent_i,l − ΔG_fus. The source functions are
@@ -404,12 +431,26 @@ def _default_candidate_states(
     # kJ/mol and JANAF CaO(l)+Al2O3(l) gives −1799.692 kJ/mol, hence
     # ΔG_fus=+131.874 kJ/mol, matching the stored node.
     for phase_id, row in sorted(barin_by_id.items()):
+        source_solid_limit = _source_solid_limit_K(row)
         nodes = sorted(float(value) for value in row["fusion_gibbs_nodes_kJ_mol"])
         domain = (
             max(float(row["valid_temperature_K"][0]), nodes[0]),
             min(float(row["valid_temperature_K"][1]), nodes[-1]),
         )
         authority = _phase_authority(row)
+        if (
+            len(row["oxide_stoichiometry"]) > 1
+            and source_solid_limit is not None
+            and temperature_K > source_solid_limit
+        ):
+            placeholder = CrystalCandidate(
+                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
+                authority, domain, row.get("source", {}),
+            )
+            states.append(_CandidateState(
+                placeholder, authority, domain, False, "above_source_melting_point"
+            ))
+            continue
         if not domain[0] <= temperature_K <= domain[1]:
             unavailable.append(phase_id)
             placeholder = CrystalCandidate(
@@ -1689,6 +1730,10 @@ def _result_receipt(
             "dual_face_relative_tolerance": _DUAL_FACE_REL_TOL,
             "activity_identifiability_tolerance_ln": _INNER_ACTIVITY_ERROR_TOL_LN,
             "pressure_bar": _PRESSURE_BAR,
+            "crystals_above_source_melting_point": tuple(sorted(
+                state.candidate.phase_id for state in candidates
+                if state.reason == "above_source_melting_point"
+            )),
             **dict(solver),
         },
     )
@@ -1707,8 +1752,13 @@ def _labels(
 ) -> PhaseEquilibriumLabels:
     kernel = pack.kernel_datapack if isinstance(pack, ImccLoadedDatapack) else pack
     authorities = [
-        state.authority for state in states if state.available
+        state.authority for state in states
+        if state.available or state.reason == "above_source_melting_point"
     ]
+    above_source_melting = tuple(sorted(
+        state.candidate.phase_id for state in states
+        if state.reason == "above_source_melting_point"
+    ))
     authorities.extend(
         _OXIDE_PROVENANCE_AUTHORITY.get(parent, "external_datapack")
         for parent in parent_oxides
@@ -1746,6 +1796,10 @@ def _labels(
         flags=tuple(dict.fromkeys(flags)),
         notices=tuple(dict.fromkeys((
             *notices,
+            *(
+                ("crystals_above_source_melting_point:" + ",".join(above_source_melting),)
+                if above_source_melting else ()
+            ),
             *(("restricted_candidate_set",) if explicit_candidates else ()),
             *(("missing_phase_data",) if missing else ()),
         ))),
@@ -1798,7 +1852,7 @@ def _empty_result(
     phase_ids = tuple(state.candidate.phase_id for state in states)
     result_ranges = dict(solid_ranges or {})
     for state in states:
-        if state.reason == "absent_by_construction":
+        if state.reason in ("absent_by_construction", "above_source_melting_point"):
             result_ranges[state.candidate.phase_id] = (0.0, 0.0)
     return PhaseEquilibriumResult(
         temperature_K=temperature_K,
@@ -1814,7 +1868,9 @@ def _empty_result(
         phase_presence={
             state.candidate.phase_id: (
                 "infeasible" if state.reason == "infeasible" else
-                "absent" if state.reason == "absent_by_construction" else
+                "absent" if state.reason in (
+                    "absent_by_construction", "above_source_melting_point"
+                ) else
                 "unresolved"
             )
             for state in states
@@ -2290,10 +2346,14 @@ def _positive_branch(
                     ),
                     solver=history_solver(failure_reason=reason),
                 )
-            most = sorted(
+            ordered_trial_absent = sorted(
                 trial_absent,
-                key=lambda i: (-affinities[phase_ids[i]], phase_ids[i]),
-            )[0]
+                key=lambda i: (
+                    i == pending_add,
+                    -affinities[phase_ids[i]],
+                    phase_ids[i],
+                ),
+            )
             replacement_sets: list[tuple[int, ...]] = []
             ordered_remove = sorted(
                 active,
@@ -2312,63 +2372,68 @@ def _positive_branch(
                 dict(_solver_residuals)
                 if reason == "error_budget_unresolved" else {}
             )
-            for remove in replacement_sets:
-                trial_active = [i for i in active if i not in remove]
-                if most not in trial_active:
-                    trial_active.append(most)
-                trial_n = n.copy()
-                for i in remove:
-                    trial_n[i] = 0.0
-                trial_n[most] = 0.0
-                trial_key = tuple(sorted(phase_ids[i] for i in trial_active))
-                if trial_key in history_seen:
-                    continue
-                trial_result = _solve_active_equalities(
-                    trial_n, trial_active, A, b, states, parents, liquid_gibbs,
-                    temperature_K, pack, affinity_tol_ln, balance_tol,
-                    inner_tol, max_iter,
-                )
-                trial_n, trial_ok, _reason, _diag = trial_result
-                if not trial_ok:
-                    if _reason == "error_budget_unresolved":
-                        trial_error_budget.update(_diag)
-                    continue
-                trial_liquid, _err = _safe_liquid(A, trial_n, b, balance_tol)
-                if trial_liquid is None:
-                    continue
-                try:
-                    trial_melt = _positive_melt(
-                        trial_liquid, parents, temperature_K, pack, inner_tol, max_iter
+            replacement_trials = 0
+            for most in ordered_trial_absent:
+                for remove in replacement_sets:
+                    trial_active = [i for i in active if i not in remove]
+                    if most not in trial_active:
+                        trial_active.append(most)
+                    trial_n = n.copy()
+                    for i in remove:
+                        trial_n[i] = 0.0
+                    trial_n[most] = 0.0
+                    trial_key = tuple(sorted(phase_ids[i] for i in trial_active))
+                    if trial_key in history_seen:
+                        continue
+                    replacement_trials += 1
+                    trial_result = _solve_active_equalities(
+                        trial_n, trial_active, A, b, states, parents, liquid_gibbs,
+                        temperature_K, pack, affinity_tol_ln, balance_tol,
+                        inner_tol, max_iter,
                     )
-                    trial_logs = _melt_logs(trial_melt, parents)
-                except (ImccRefusal, ArithmeticError):
-                    continue
-                trial_aff = {}
-                for state in candidates_all:
-                    candidate = state.candidate
-                    if state.available and set(candidate.stoichiometry).issubset(by_parent):
-                        trial_aff[candidate.phase_id] = _phase_affinity_from_melt(
-                            candidate, by_parent, liquid_gibbs, trial_logs, temperature_K
+                    trial_n, trial_ok, _reason, _diag = trial_result
+                    if not trial_ok:
+                        if _reason == "error_budget_unresolved":
+                            trial_error_budget.update(_diag)
+                        continue
+                    trial_liquid, _err = _safe_liquid(A, trial_n, b, balance_tol)
+                    if trial_liquid is None:
+                        continue
+                    try:
+                        trial_melt = _positive_melt(
+                            trial_liquid, parents, temperature_K, pack, inner_tol, max_iter
                         )
-                all_equalities = all(
-                    abs(trial_aff.get(phase_ids[i], math.inf)) <= affinity_tol_ln
-                    for i in trial_active
-                )
-                trial_phase_names = {phase_ids[i] for i in trial_active}
-                all_inequalities = all(
-                    trial_aff.get(state.candidate.phase_id, -math.inf) <= affinity_tol_ln
-                    for state in candidates_all
-                    if state.available and state.candidate.phase_id not in trial_phase_names
-                    and set(state.candidate.stoichiometry).issubset(by_parent)
-                )
-                if all_equalities and all_inequalities:
-                    n, active = trial_n, trial_active
-                    pending_add = None
-                    tie_breaks.append(
-                        "replacement:" + ",".join(phase_ids[i] for i in remove)
-                        + "->" + phase_ids[most]
+                        trial_logs = _melt_logs(trial_melt, parents)
+                    except (ImccRefusal, ArithmeticError):
+                        continue
+                    trial_aff = {}
+                    for state in candidates_all:
+                        candidate = state.candidate
+                        if state.available and set(candidate.stoichiometry).issubset(by_parent):
+                            trial_aff[candidate.phase_id] = _phase_affinity_from_melt(
+                                candidate, by_parent, liquid_gibbs, trial_logs, temperature_K
+                            )
+                    all_equalities = all(
+                        abs(trial_aff.get(phase_ids[i], math.inf)) <= affinity_tol_ln
+                        for i in trial_active
                     )
-                    replacement_found = True
+                    trial_phase_names = {phase_ids[i] for i in trial_active}
+                    all_inequalities = all(
+                        trial_aff.get(state.candidate.phase_id, -math.inf) <= affinity_tol_ln
+                        for state in candidates_all
+                        if state.available and state.candidate.phase_id not in trial_phase_names
+                        and set(state.candidate.stoichiometry).issubset(by_parent)
+                    )
+                    if all_equalities and all_inequalities:
+                        n, active = trial_n, trial_active
+                        pending_add = None
+                        tie_breaks.append(
+                            "replacement:" + ",".join(phase_ids[i] for i in remove)
+                            + "->" + phase_ids[most]
+                        )
+                        replacement_found = True
+                        break
+                if replacement_found:
                     break
             if replacement_found:
                 continue
@@ -2384,7 +2449,7 @@ def _positive_branch(
                     "active_set_incompatibility",
                     "No deterministic one- or two-phase replacement set passed all crystal inequalities.",
                     tuple(f"phase.{phase_ids[i]}" for i in active),
-                    {"replacement_trials": float(len(replacement_sets)), **trial_error_budget},
+                    {"replacement_trials": float(replacement_trials), **trial_error_budget},
                 ),
                 solver=history_solver(failure_reason=reason),
             )
@@ -2462,7 +2527,7 @@ def _positive_branch(
         missing_set = set(missing)
         for state in candidates_all:
             phase = state.candidate.phase_id
-            if state.reason == "absent_by_construction":
+            if state.reason in ("absent_by_construction", "above_source_melting_point"):
                 state_ranges[phase] = (0.0, 0.0)
                 state_amounts[phase] = 0.0
                 presence[phase] = "absent"
@@ -2718,11 +2783,11 @@ def _solid_result(
     missing_set = set(missing)
     proven_absent = {
         state.candidate.phase_id for state in all_states
-        if state.reason == "absent_by_construction"
+        if state.reason in ("absent_by_construction", "above_source_melting_point")
     }
     for state in all_states:
         phase = state.candidate.phase_id
-        if state.reason == "absent_by_construction":
+        if state.reason in ("absent_by_construction", "above_source_melting_point"):
             solid_ranges[phase] = (0.0, 0.0)
             amounts[phase] = 0.0
             phase_presence[phase] = "absent"

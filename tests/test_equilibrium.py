@@ -784,7 +784,7 @@ def test_default_anorthite_boundary_remains_out_of_domain_below_1700():
         1798.7, abs=0.2
     )
     assert forsterite.solidus[0].bracket_K[0] >= 1700.0
-    assert forsterite.liquidus_status == "DEPENDS"
+    assert forsterite.liquidus_status == "NO_CROSSING"
 
 
 def test_cpu_median_per_warm_sweep_point(ideal_pack, gas_pack, monkeypatch):
@@ -843,9 +843,8 @@ def test_phase_amount_ranges_are_invariant_to_bulk_scale(ideal_pack, gas_pack):
 
 
 def test_default_anorthite_case_excludes_zero_bulk_phases():
-    result = equilibrate(
-        {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1800.0,
-    )
+    bulk = {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}
+    result = equilibrate(bulk, 1800.0)
     assert result.liquid_parent_mol == pytest.approx(
         {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}
     )
@@ -865,6 +864,18 @@ def test_default_anorthite_case_excludes_zero_bulk_phases():
     for phase in dropped:
         assert result.phase_presence[phase] == "infeasible"
         assert result.phase_amount_ranges_mol[phase] == (0.0, 0.0)
+
+    hot = equilibrate(bulk, 1900.0)
+    hot_missing = hot.receipt.solver["missing_candidate_phase_ids"]
+    assert hot.labels.validity == "DEPENDS"
+    assert {"CA6", "C12A7"} <= set(hot_missing)
+    assert "anorthite" not in hot_missing
+    assert "anorthite" in hot.receipt.solver["crystals_above_source_melting_point"]
+    assert any(
+        notice.startswith("crystals_above_source_melting_point:")
+        and "anorthite" in notice
+        for notice in hot.labels.notices
+    )
     print(
         "anorthite-1800 returned liquid:", dict(result.liquid_parent_mol),
         "solid amounts:", dict(result.solid_mol),
@@ -962,15 +973,15 @@ def test_crystal_vapour_withholds_nonidentifiable_channels(
     assert result.to_dict()["phase_state_contract"]["output"]["vapour"]["status"] == "DEPENDS"
 
 
-def test_vapour_status_inherits_condensed_equilibrium_dependency():
+def test_vapour_status_is_available_when_source_molten_candidates_clear_dependencies():
     result = equilibrate(
         {"CaO": 3.0, "SiO2": 1.0}, 1900.0, fO2=1.0e-8,
     )
 
-    assert result.labels.validity == "DEPENDS"
-    assert result.refusal is not None
-    assert result.refusal.code == "missing_phase_data"
-    assert result.to_dict()["phase_state_contract"]["output"]["vapour"]["status"] == "DEPENDS"
+    assert result.labels.validity == "IN"
+    assert result.refusal is None
+    assert result.to_dict()["phase_state_contract"]["output"]["vapour"]["status"] == "AVAILABLE"
+    assert result.receipt.solver["crystals_above_source_melting_point"]
 
 
 def test_vapour_domain_does_not_change_condensed_equilibrium_labels():

@@ -101,6 +101,20 @@ def test_barin_phase_formulas_and_printed_node_ranges() -> None:
         ("SOL-A", [298.15, 740.0]),
         ("SOL-B", [740.0, 1900.0]),
     ]
+    source_solid_limits = {
+        phase["id"]: phase["source_solid_limit"]
+        for phase in data["phases"] if "source_solid_limit" in phase
+    }
+    assert {
+        phase: limit["temperature_K"]
+        for phase, limit in source_solid_limits.items()
+    } == {"CA": 1875.0, "CA2": 2035.0, "C3A": 1808.0, "MgAl2O4": 2408.0}
+    assert {phase: limit["kind"] for phase, limit in source_solid_limits.items()} == {
+        "CA": "decomposition", "CA2": "decomposition", "C3A": "decomposition",
+        "MgAl2O4": "melting",
+    }
+    assert "C12A7" not in source_solid_limits
+    assert "NaAlO2" not in source_solid_limits
 
 
 def test_formation_gibbs_reconstruction_and_independent_oxide_hess_cycles() -> None:
@@ -219,6 +233,54 @@ def test_ca_al2o3_join_returns_certified_states(bulk, temperature, expected_crys
     assert "barin_aluminate_crystals" in result.receipt.data_digests
     if "CaO" in bulk and "Al2O3" in bulk:
         assert "CA6" in result.receipt.solver["missing_candidate_phase_ids"]
+
+
+def test_active_set_replacement_tries_lime_after_failed_c3a() -> None:
+    result = equilibrate({"CaO": 3.0, "Al2O3": 1.0}, 1700.0)
+    summary = {
+        "validity": result.labels.validity,
+        "refusal": result.refusal.code if result.refusal else None,
+        "active_set_history": result.active_set_history,
+        "solid_mol": result.solid_mol,
+        "liquid_parent_mol": result.liquid_parent_mol,
+        "kkt_recheck": dict(result.kkt_recheck),
+    }
+    assert result.refusal is None or result.refusal.code == "missing_phase_data", summary
+    assert result.kkt_recheck.get("independent_kkt_passed") == 1.0, summary
+    assert result.solid_mol is not None
+    assert result.solid_mol["CaO"] == pytest.approx(1.343335, abs=1.0e-5)
+    assert result.liquid_parent_mol == pytest.approx(
+        {"CaO": 1.656665, "Al2O3": 1.0}, abs=1.0e-5
+    )
+    assert result.phase_presence["C3A"] == "absent"
+    assert ("C3A",) in result.active_set_history
+    assert ("CaO",) in result.active_set_history
+
+
+def test_source_molten_crystals_are_named_and_not_missing() -> None:
+    calcium_aluminate = equilibrate({"CaO": 3.0, "Al2O3": 1.0}, 1900.0)
+    calcium_molten = ("C3A", "CA")
+    assert calcium_aluminate.receipt.solver["crystals_above_source_melting_point"] == (
+        calcium_molten
+    )
+    assert any(
+        notice == "crystals_above_source_melting_point:C3A,CA"
+        for notice in calcium_aluminate.labels.notices
+    )
+    missing = calcium_aluminate.receipt.solver["missing_candidate_phase_ids"]
+    assert {"CA6", "C12A7"} <= set(missing)
+    assert not set(calcium_molten) & set(missing)
+    for phase in calcium_molten:
+        assert calcium_aluminate.phase_presence[phase] == "absent"
+        assert calcium_aluminate.phase_amount_ranges_mol[phase] == (0.0, 0.0)
+
+    magnesium_aluminate = equilibrate({"MgO": 1.0, "Al2O3": 1.0}, 2500.0)
+    assert magnesium_aluminate.receipt.solver[
+        "crystals_above_source_melting_point"
+    ] == ("MgAl2O4", "spinel")
+    assert magnesium_aluminate.labels.validity == "IN"
+    assert magnesium_aluminate.refusal is None
+    assert magnesium_aluminate.receipt.solver["missing_candidate_phase_ids"] == ()
 
 
 def test_missing_sodium_and_magnesium_exclude_barins_candidates() -> None:

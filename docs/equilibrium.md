@@ -23,12 +23,31 @@ JANAF liquid CaO, Al2O3, Na2O, and MgO tables. Barin's compound-liquid rows
 are not candidates. Source locators are Barin (1995), pp. 442–445 (calcium
 aluminates), p. 1132 (NaAlO2), and p. 1015 (MgAl2O4).
 
+Barin defines its standard state and element reference phases at 1 bar
+(Chapter 4, p. I-36), the same reference pressure used by the solver. It prints
+decomposition points for CA at 1875 K, CA2 at 2035 K, and C3A at 1808 K
+(pp. 442–443 and 445), and a SOL-to-LIQ melting row for MgAl2O4 at 2408 K
+(p. 1015). Above these temperatures those crystals are excluded because their
+source says the solid is no longer stable. Berman multioxide crystals are
+treated the same way using their recorded melting point, including an
+incongruent melting onset. These exclusions appear in the
+`crystals_above_source_melting_point` notice and receipt field; they do not
+count as missing data. Barin prints no melting or decomposition point for
+C12A7, whose table ends at 1700 K, so it remains missing above that range.
+NaAlO2's printed SOL-A to SOL-B change at 740 K is a solid transition, not a
+melting point (p. 1132).
+
 CA6 (CaAl12O19) and beta-alumina are not in the candidate data. When the bulk
 contains the parent oxides needed to form either missing phase, the solver
 keeps the phase-set result labelled `DEPENDS` on missing phase data, even if
-its numerical equilibrium checks pass. Pass candidates= to restrict the set
-or to supply CrystalCandidate values for a synthetic system. Restricted sets
-are explicitly labelled and cannot support an unrestricted stability claim.
+its numerical equilibrium checks pass. A table that ends without a printed
+melting or decomposition point also remains missing above its last Gibbs
+node. `IN` means the state is certified among the candidates available at the
+requested temperature; crystals excluded above their source-printed melting
+or decomposition point are listed in the `crystals_above_source_melting_point`
+notice. Pass candidates= to restrict the set or to supply CrystalCandidate
+values for a synthetic system. Restricted sets are explicitly labelled and
+cannot support an unrestricted stability claim.
 
 For MgAl2O4, the sources remain separate on the shared 1323–2408 K range.
 The existing Berman fusion function is 5.677–9.326 kJ/mol above the Barin
