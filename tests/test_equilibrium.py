@@ -699,8 +699,9 @@ def test_phase_boundaries_refine_cooling_direction_crossing(
     assert boundaries.liquidus[0].root_temperature_K == pytest.approx(2000.0, abs=0.1)
 
 
+@pytest.mark.parametrize("coincident_crossing", (False, True))
 def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
-    monkeypatch, ideal_pack, gas_pack
+    monkeypatch, ideal_pack, gas_pack, coincident_crossing
 ):
     from openimcc import equilibrium as equilibrium_module
 
@@ -721,9 +722,15 @@ def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
             "source_authority": "external_datapack",
             "temperature_range_K": (1700.0, 3000.0),
         }
+        affinity_offset = (
+            math.log(4.0) + 0.01 * (cap_K - temperature)
+            if coincident_crossing else 4.0
+        )
         compound = CrystalCandidate(
             phase_id=compound_id,
-            G_crystal_J_mol=liquid_reference - 4.0 * R_J_MOL_K * temperature,
+            G_crystal_J_mol=(
+                liquid_reference - affinity_offset * R_J_MOL_K * temperature
+            ),
             **common,
         )
         alternate = CrystalCandidate(
@@ -763,18 +770,30 @@ def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
     above_residual = equilibrium_module._liquidus_boundary_residual(
         bulk, cap_K + 1.0, None, ideal_pack, 1.0e-12, 100,
     )
-    assert cap_residual > 0.0
+    if coincident_crossing:
+        assert cap_residual == pytest.approx(0.0, abs=1.0e-8)
+    else:
+        assert cap_residual > 0.0
     assert math.isfinite(above_residual) and above_residual < 0.0
 
     boundaries = phase_boundary_brackets(
         bulk, 1990.0, 2010.0, pack=ideal_pack, scan_points=2,
     )
-    assert boundaries.labels.validity == "IN", boundaries.to_dict()
-    assert boundaries.solidus_status == "NO_CROSSING", boundaries.to_dict()
-    assert boundaries.liquidus_status == "NO_CROSSING", boundaries.to_dict()
-    assert boundaries.solidus == ()
-    assert boundaries.liquidus == ()
-    assert f"source_cap:{compound_id}@{cap_K:g}K" in boundaries.labels.notices
+    if coincident_crossing:
+        assert boundaries.labels.validity == "DEPENDS", boundaries.to_dict()
+        assert boundaries.solidus_status == "DEPENDS", boundaries.to_dict()
+        assert boundaries.liquidus_status == "DEPENDS", boundaries.to_dict()
+        assert boundaries.solidus == ()
+        assert boundaries.liquidus == ()
+        assert f"source_cap_unresolved:{compound_id}@{cap_K:g}K" in boundaries.labels.notices
+        assert f"source_cap:{compound_id}@{cap_K:g}K" not in boundaries.labels.notices
+    else:
+        assert boundaries.labels.validity == "IN", boundaries.to_dict()
+        assert boundaries.solidus_status == "NO_CROSSING", boundaries.to_dict()
+        assert boundaries.liquidus_status == "NO_CROSSING", boundaries.to_dict()
+        assert boundaries.solidus == ()
+        assert boundaries.liquidus == ()
+        assert f"source_cap:{compound_id}@{cap_K:g}K" in boundaries.labels.notices
 
     temperatures = (1990.0, cap_K, just_above_cap, 2010.0)
     forward = equilibrate_sweep(
@@ -784,14 +803,21 @@ def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
         bulk, tuple(reversed(temperatures)), pack=ideal_pack,
     )
     reverse_by_temperature = {result.temperature_K: result for result in reverse}
-    for result in forward:
-        counterpart = reverse_by_temperature[result.temperature_K]
-        assert result.labels.validity == counterpart.labels.validity == "IN"
+    forward_by_temperature = {result.temperature_K: result for result in forward}
+    for temperature in (cap_K, just_above_cap):
+        result = forward_by_temperature[temperature]
+        counterpart = reverse_by_temperature[temperature]
         assert result.phase_presence == counterpart.phase_presence
-        assert result.labels.notices == counterpart.labels.notices
-    above = reverse_by_temperature[just_above_cap]
-    assert above.receipt.solver["crystals_above_source_melting_point"] == (compound_id,)
-    assert f"crystals_above_source_melting_point:{compound_id}" in above.labels.notices
+        if temperature == just_above_cap:
+            assert result.labels.validity == counterpart.labels.validity == "IN"
+            assert result.labels.notices == counterpart.labels.notices
+            assert result.receipt.solver["crystals_above_source_melting_point"] == (
+                compound_id,
+            )
+            assert f"crystals_above_source_melting_point:{compound_id}" in result.labels.notices
+        elif coincident_crossing:
+            assert result.labels.validity in ("IN", "DEPENDS")
+            assert counterpart.labels.validity in ("IN", "DEPENDS")
 
 
 def test_polymorph_extents_do_not_hide_the_liquidus(

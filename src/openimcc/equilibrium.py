@@ -3731,7 +3731,7 @@ def _solidus_boundary_residual(
     return float(logq)
 
 
-def _liquidus_boundary_residual(
+def _liquidus_candidate_residuals(
     bulk: Mapping[str, float] | Sequence[float],
     temperature_K: float,
     candidates: Sequence[str | CrystalCandidate] | None,
@@ -3739,8 +3739,8 @@ def _liquidus_boundary_residual(
     inner_tol: float,
     max_iter: int,
     y_init: Sequence[float] | None = None,
-) -> float:
-    """Return the largest crystal affinity in the hypothetical all-liquid state."""
+) -> dict[str, float]:
+    """Return each available crystal affinity in the hypothetical all-liquid state."""
     context = _boundary_context(bulk, temperature_K, candidates, pack)
     if context.missing:
         raise ValueError("missing crystal functions prevent a liquidus certificate")
@@ -3751,17 +3751,30 @@ def _liquidus_boundary_residual(
     )
     logs = _melt_logs(melt, context.parents)
     by_parent = {name: index for index, name in enumerate(context.parents)}
-    affinities = [
-        _phase_affinity_from_melt(
+    return {
+        state.candidate.phase_id: _phase_affinity_from_melt(
             state.candidate, by_parent, context.liquid_gibbs, logs, temperature_K
         )
         for state in context.all_states
         if state.available
         and not (set(state.candidate.stoichiometry) - set(context.parents))
-    ]
-    if not affinities:
-        return -math.inf
-    return float(max(affinities))
+    }
+
+
+def _liquidus_boundary_residual(
+    bulk: Mapping[str, float] | Sequence[float],
+    temperature_K: float,
+    candidates: Sequence[str | CrystalCandidate] | None,
+    pack: Any | None,
+    inner_tol: float,
+    max_iter: int,
+    y_init: Sequence[float] | None = None,
+) -> float:
+    """Return the largest crystal affinity in the hypothetical all-liquid state."""
+    affinities = _liquidus_candidate_residuals(
+        bulk, temperature_K, candidates, pack, inner_tol, max_iter, y_init
+    )
+    return float(max(affinities.values(), default=-math.inf))
 
 
 def _boundary_endpoint_status(result: PhaseEquilibriumResult) -> str:
@@ -3890,7 +3903,7 @@ def phase_boundary_brackets(
         residual_cache[key] = value
         if (
             state.refusal is not None
-            and abs(value) > _LOGQ_COEXISTENCE_TOL
+            and abs(value) > affinity_tol_ln
         ):
             raise ValueError("an unresolved equilibrium point is not the boundary root")
         return value
@@ -3906,9 +3919,9 @@ def phase_boundary_brackets(
         f_right = residual(kind, right)
         if not (math.isfinite(f_left) and math.isfinite(f_right)):
             raise ValueError("boundary residual is not finite at a scan endpoint")
-        if abs(f_left) <= _LOGQ_COEXISTENCE_TOL:
+        if abs(f_left) <= affinity_tol_ln:
             root = left
-        elif abs(f_right) <= _LOGQ_COEXISTENCE_TOL:
+        elif abs(f_right) <= affinity_tol_ln:
             root = right
         elif f_left * f_right > 0.0:
             raise ValueError("scan phase change does not bracket the thermodynamic root")
@@ -3919,7 +3932,7 @@ def phase_boundary_brackets(
                 maxiter=100,
             ))
         root_residual = residual(kind, root)
-        if abs(root_residual) > _LOGQ_COEXISTENCE_TOL:
+        if abs(root_residual) > affinity_tol_ln:
             raise ValueError(
                 "refined boundary root residual exceeds the coexistence tolerance"
             )
@@ -3990,8 +4003,20 @@ def phase_boundary_brackets(
                     f"{phase}@{source_caps.get(phase, temperatures[index + 1]):g}K"
                     for phase in sorted(removed_by_source)
                 )
+                try:
+                    cap_affinities = _liquidus_candidate_residuals(
+                        bulk, temperatures[index], candidates, pack,
+                        inner_tol, max_iter,
+                    )
+                except (ValueError, ArithmeticError, FloatingPointError, ImccRefusal):
+                    cap_affinities = {}
+                removed_crystals_supersaturated = all(
+                    cap_affinities.get(phase, -math.inf) > affinity_tol_ln
+                    for phase in removed_by_source
+                )
                 if (
                     changed_phases <= removed_by_source
+                    and removed_crystals_supersaturated
                     and _boundary_is_certified(left_state)
                     and _boundary_is_certified(right_state)
                 ):
