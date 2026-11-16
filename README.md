@@ -1535,6 +1535,52 @@ flag as a structural limit of the complex set, not as a measured
 disagreement. The fix is to add the orthosilicate and pyrosilicate
 complexes. Nothing is retuned.
 
+#### Known limit: silica activity in CaO–, MgO– and MnO–SiO2 liquids near 1773–1873 K
+
+openimcc predicts silica activities about 0.43 dex (a factor of 2.7) below
+measurements in binary silicate liquids:
+- Morita, Kume & Sano (2000, ISIJ Int. 40, 554–560): CaO–SiO2 and MgO–SiO2
+  at 1823–1873 K;
+- Zaitsev (2000, VI Int. Conf. on Molten Slags, Fluxes and Salts, paper 045):
+  MnO–SiO2 at 1773 K.
+
+In the same CaO–SiO2 melts, CaO activities from Kume et al. (2000, ISIJ Int.
+40, 561–566) read about 0.5 dex high. At 1873 K and x(CaO) = 0.506, the
+measured a(SiO2) and a(CaO) are 0.247 and 6.2e-4; openimcc gives 0.081 and
+3.1e-3.
+
+This is not a reference-state artefact:
+- Converting the measured silica activity from cristobalite to liquid SiO2
+  moves it by only 0.015–0.027 dex.
+- The measured pair and the predicted pair each satisfy the Gibbs–Duhem
+  relation; the data do so to about 0.1 dex.
+
+The lime comparison carries a larger conversion, from solid to liquid CaO
+through the JANAF tables (Ca-027/Ca-028). Those tables place melting at
+3200 K, about 300 K above the commonly accepted value. At the JANAF fusion
+enthalpy (79.5 kJ/mol), a melting point near 2890 K would shrink that
+conversion by about 0.14 dex at 1823–1873 K. That reduces the lime bias but
+does not remove it.
+
+The model cause is the balance between the calcium silicate complexes. At the
+example point, CaSiO3 holds about 82% of the silica and Ca2SiO4 about 10%.
+Silica that is too low, together with lime that is too high, points to the
+relative stability of those two complexes, not to association that is
+uniformly too strong. In MnO–SiO2 the manganese silicate complexes hold about
+75% of the silica, which gives the same low silica activity.
+
+A single change to the Ca2SiO4 constant would fit these rows, but it cannot be
+validated:
+- Kume's CaO values are reduced using Morita's silica values, so the two
+  series are linked rather than independent.
+- No independent CaO–SiO2 binary activity data are available at these
+  temperatures. MgO–SiO2 has one independent check, Arutyunyan et al. (2005),
+  but it does not constrain the calcium complexes.
+
+Nothing is retuned. Until independent paired measurements are available,
+treat silica activities in these binaries near 1773–1873 K as about 0.4 dex low
+and lime activities as high.
+
 #### Known limit: complex rows below their demonstrated range
 
 The complex rows are evaluated from 1700 K, but several Fegley & Cameron
