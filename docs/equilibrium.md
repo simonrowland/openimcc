@@ -78,8 +78,10 @@ their feasible ranges, phase presence, saturated candidates, activities,
 phase affinities, labels, notices, a refusal, and a calculation receipt.
 kkt_recheck contains residuals recomputed independently at the returned
 state. A positive-liquid state is accepted only after the parent balances,
-each present crystal equality, every absent-crystal inequality, and the inner
-melt normalization, mass-action, and parent-inventory checks pass.
+each present crystal equality, every available absent-crystal inequality, and
+the inner melt normalization, mass-action, and parent-inventory checks pass.
+An unavailable crystal above its source-printed melting point is absent by
+source rule, not because its calculated affinity shows thermodynamic undersaturation.
 
 When the bulk can be represented by crystals alone, the solver first minimizes
 the crystal Gibbs energy as a linear program. Its dual chemical potentials
@@ -158,6 +160,12 @@ amount range does not establish absence. The result retains every crossing, its 
 bracket, endpoint status and phase sets. A refusal or unresolved point breaks
 the scan; no root is interpolated across it. Liquid-dependent boundaries below
 1700 K or above 3000 K are `OUT_OF_DOMAIN` on `temperature_K`.
+Scans split at source-printed crystal melting points. A phase-set change caused
+by removing a crystal at its source cap is reported with a `source_cap`
+notice, not as a model solidus or liquidus crossing. Model crossings are
+`AVAILABLE` only when their refined residual is within the coexistence tolerance;
+an ambiguous source-cap transition makes the result `DEPENDS` and is listed in
+the notice.
 
     from openimcc.equilibrium import equilibrate_sweep, phase_boundary_brackets
 

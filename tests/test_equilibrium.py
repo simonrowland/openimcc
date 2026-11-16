@@ -699,6 +699,101 @@ def test_phase_boundaries_refine_cooling_direction_crossing(
     assert boundaries.liquidus[0].root_temperature_K == pytest.approx(2000.0, abs=0.1)
 
 
+def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
+    monkeypatch, ideal_pack, gas_pack
+):
+    from openimcc import equilibrium as equilibrium_module
+
+    cap_K = 2000.0
+    compound_id = "synthetic-multioxide"
+    alternate_id = "available-alternate"
+    bulk = {"CaO": 1.0, "SiO2": 1.0}
+
+    def synthetic_defaults(temperature, selected_gas_pack=None):
+        selected_gas_pack = gas_pack if selected_gas_pack is None else selected_gas_pack
+        liquid_reference = math.fsum(
+            species_thermo(parent, "l", temperature, selected_gas_pack).G_J_mol
+            for parent in bulk
+        )
+        common = {
+            "stoichiometry": {"CaO": 1.0, "SiO2": 1.0},
+            "formula": "CaSiO3",
+            "source_authority": "external_datapack",
+            "temperature_range_K": (1700.0, 3000.0),
+        }
+        compound = CrystalCandidate(
+            phase_id=compound_id,
+            G_crystal_J_mol=liquid_reference - 4.0 * R_J_MOL_K * temperature,
+            **common,
+        )
+        alternate = CrystalCandidate(
+            phase_id=alternate_id,
+            G_crystal_J_mol=liquid_reference + 2.0 * R_J_MOL_K * temperature,
+            **common,
+        )
+        capped = temperature > cap_K
+        states = (
+            _CandidateState(
+                compound, compound.source_authority, compound.temperature_range_K,
+                not capped, "above_source_melting_point" if capped else None,
+            ),
+            _CandidateState(
+                alternate, alternate.source_authority,
+                alternate.temperature_range_K, True,
+            ),
+        )
+        return (
+            states, "synthetic-crystal-data", "synthetic-pure-data",
+            selected_gas_pack, (),
+        )
+
+    monkeypatch.setattr(
+        equilibrium_module, "_default_candidate_states", synthetic_defaults
+    )
+    monkeypatch.setattr(
+        equilibrium_module,
+        "_source_solid_limits_K",
+        lambda _candidates: {compound_id: cap_K},
+    )
+    just_above_cap = float(np.nextafter(cap_K, math.inf))
+
+    cap_residual = equilibrium_module._liquidus_boundary_residual(
+        bulk, cap_K, None, ideal_pack, 1.0e-12, 100,
+    )
+    above_residual = equilibrium_module._liquidus_boundary_residual(
+        bulk, cap_K + 1.0, None, ideal_pack, 1.0e-12, 100,
+    )
+    assert cap_residual > 0.0
+    assert math.isfinite(above_residual) and above_residual < 0.0
+
+    boundaries = phase_boundary_brackets(
+        bulk, 1990.0, 2010.0, pack=ideal_pack, scan_points=2,
+    )
+    assert boundaries.labels.validity == "IN", boundaries.to_dict()
+    assert boundaries.solidus_status == "NO_CROSSING", boundaries.to_dict()
+    assert boundaries.liquidus_status == "NO_CROSSING", boundaries.to_dict()
+    assert boundaries.solidus == ()
+    assert boundaries.liquidus == ()
+    assert f"source_cap:{compound_id}@{cap_K:g}K" in boundaries.labels.notices
+
+    temperatures = (1990.0, cap_K, just_above_cap, 2010.0)
+    forward = equilibrate_sweep(
+        bulk, temperatures, pack=ideal_pack,
+    )
+    reverse = equilibrate_sweep(
+        bulk, tuple(reversed(temperatures)), pack=ideal_pack,
+    )
+    reverse_by_temperature = {result.temperature_K: result for result in reverse}
+    for result in forward:
+        counterpart = reverse_by_temperature[result.temperature_K]
+        assert result.labels.validity == counterpart.labels.validity == "IN"
+        assert result.phase_presence == counterpart.phase_presence
+        assert result.labels.notices == counterpart.labels.notices
+    above = reverse_by_temperature[just_above_cap]
+    assert above.receipt.solver["crystals_above_source_melting_point"] == (compound_id,)
+    assert f"crystals_above_source_melting_point:{compound_id}" in above.labels.notices
+
+
 def test_polymorph_extents_do_not_hide_the_liquidus(
     monkeypatch, ideal_pack, gas_pack
 ):

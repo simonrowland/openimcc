@@ -328,6 +328,36 @@ def _source_solid_limit_K(row: Mapping[str, Any]) -> float | None:
     return None if value is None else float(value)
 
 
+def _source_solid_limits_K(
+    candidates: Sequence[str | CrystalCandidate] | None,
+) -> dict[str, float]:
+    selected_ids = (
+        None if candidates is None else
+        {item for item in candidates if isinstance(item, str)}
+    )
+    limits: dict[str, float] = {}
+    if selected_ids is None or selected_ids:
+        for resource in (_CRYSTAL_RESOURCE, _BARIN_RESOURCE):
+            data, _digest = _load_json(resource)
+            for row in data["phases"]:
+                phase_id = str(row["id"])
+                if selected_ids is not None and phase_id not in selected_ids:
+                    continue
+                if len(row["oxide_stoichiometry"]) <= 1:
+                    continue
+                limit = _source_solid_limit_K(row)
+                if limit is not None:
+                    limits[phase_id] = limit
+    if candidates is not None:
+        for item in candidates:
+            if not isinstance(item, CrystalCandidate) or len(item.stoichiometry) <= 1:
+                continue
+            limit = _source_solid_limit_K(item.source)
+            if limit is not None:
+                limits[item.phase_id] = limit
+    return limits
+
+
 def _melt_liquid_standards(
     parents: Sequence[str], temperature_K: float, gas_pack: Any,
 ) -> np.ndarray:
@@ -561,7 +591,11 @@ def _resolve_candidates(
         raise ValueError("candidate crystal phase IDs must be unique")
     return (
         tuple(selected), crystal_digest, pure_digest, gas_pack,
-        tuple(state.candidate.phase_id for state in selected if not state.available), True,
+        tuple(
+            state.candidate.phase_id for state in selected
+            if not state.available and state.reason != "above_source_melting_point"
+        ),
+        True,
     )
 
 
@@ -3787,7 +3821,18 @@ def phase_boundary_brackets(
         or scan_points < 2
     ):
         raise ValueError("temperature bounds must be finite and increasing; scan_points must be at least two")
-    temperatures = tuple(map(float, np.linspace(low, high, int(scan_points))))
+    source_limits = _source_solid_limits_K(candidates)
+    source_caps = {
+        phase: cap for phase, cap in source_limits.items()
+        if low <= cap < high
+    }
+    scan_temperatures = set(map(float, np.linspace(low, high, int(scan_points))))
+    for cap in source_caps.values():
+        scan_temperatures.add(cap)
+        just_above = float(np.nextafter(cap, math.inf))
+        if just_above <= high:
+            scan_temperatures.add(just_above)
+    temperatures = tuple(sorted(scan_temperatures))
     results = equilibrate_sweep(
         bulk, temperatures, candidates=candidates, pack=pack, tol=tol,
         affinity_tol_ln=affinity_tol_ln, inner_tol=inner_tol, max_iter=max_iter,
@@ -3874,6 +3919,10 @@ def phase_boundary_brackets(
                 maxiter=100,
             ))
         root_residual = residual(kind, root)
+        if abs(root_residual) > _LOGQ_COEXISTENCE_TOL:
+            raise ValueError(
+                "refined boundary root residual exceeds the coexistence tolerance"
+            )
         if abs(root_residual) <= 8.0 * np.finfo(float).eps:
             final_left = final_right = root
             final_residuals = (root_residual, root_residual)
@@ -3912,8 +3961,50 @@ def phase_boundary_brackets(
     liquidus_crossings: list[PhaseBoundaryCrossing] = []
     refinement_failed = False
     refinement_errors: list[str] = []
+    source_cap_notices: list[str] = []
+    source_cap_unresolved = False
     for index in range(len(results) - 1):
         left_state, right_state = results[index], results[index + 1]
+        left_capped = set(
+            left_state.receipt.solver.get("crystals_above_source_melting_point", ())
+        )
+        right_capped = set(
+            right_state.receipt.solver.get("crystals_above_source_melting_point", ())
+        )
+        removed_by_source = right_capped - left_capped
+        if removed_by_source:
+            left_phase_set = {
+                phase for phase, presence in left_state.phase_presence.items()
+                if presence == "present"
+            }
+            right_phase_set = {
+                phase for phase, presence in right_state.phase_presence.items()
+                if presence == "present"
+            }
+            changed_phases = left_phase_set ^ right_phase_set
+            left_liquid = _boundary_has_positive_liquid(left_state, tol)
+            right_liquid = _boundary_has_positive_liquid(right_state, tol)
+            transition_changed = bool(changed_phases) or left_liquid != right_liquid
+            if transition_changed:
+                cap_detail = ",".join(
+                    f"{phase}@{source_caps.get(phase, temperatures[index + 1]):g}K"
+                    for phase in sorted(removed_by_source)
+                )
+                if (
+                    changed_phases <= removed_by_source
+                    and _boundary_is_certified(left_state)
+                    and _boundary_is_certified(right_state)
+                ):
+                    source_cap_notices.append(f"source_cap:{cap_detail}")
+                    continue
+                refinement_failed = True
+                source_cap_unresolved = True
+                source_cap_notices.append(f"source_cap_unresolved:{cap_detail}")
+                refinement_errors.append(
+                    f"source_cap:{temperatures[index]:g}-{temperatures[index + 1]:g}:"
+                    "phase-set change could not be separated from a source cap"
+                )
+                continue
         if not (_boundary_is_certified(left_state) and _boundary_is_certified(right_state)):
             continue
         left_liquid = _boundary_has_positive_liquid(left_state, tol)
@@ -3954,11 +4045,13 @@ def phase_boundary_brackets(
                 )
 
     solidus_status: Literal["AVAILABLE", "NO_CROSSING", "OUT_OF_DOMAIN", "DEPENDS"] = (
+        "DEPENDS" if source_cap_unresolved else
         "AVAILABLE" if solidus_crossings else
         "DEPENDS" if depends_seen or refinement_failed else
         "OUT_OF_DOMAIN" if out_of_domain_seen else "NO_CROSSING"
     )
     liquidus_status: Literal["AVAILABLE", "NO_CROSSING", "OUT_OF_DOMAIN", "DEPENDS"] = (
+        "DEPENDS" if source_cap_unresolved else
         "AVAILABLE" if liquidus_crossings else
         "DEPENDS" if depends_seen or refinement_failed else
         "OUT_OF_DOMAIN" if out_of_domain_seen else "NO_CROSSING"
@@ -3975,6 +4068,7 @@ def phase_boundary_brackets(
         out_of_domain_axes=axes,
         notices=tuple(dict.fromkeys((
             *base_labels.notices,
+            *source_cap_notices,
             "temperature_scan_refined_by_phase_set_changes",
             *(('liquid_dependent_results_below_1700_K_out_of_domain',) if low < _LIQUID_DOMAIN_K[0] else ()),
         ))),
