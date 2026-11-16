@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from openimcc.declared_assemblage import evaluate_declared_assemblage
+from openimcc import diagnostics, equilibrium as equilibrium_module
 from openimcc.diagnostics import _interpolate_crystal_fusion_nodes
 from openimcc.equilibrium import equilibrate
 
@@ -64,7 +65,7 @@ def _source_series(phase: dict, quantity: str) -> list[tuple[float, float]]:
 
 def test_barin_phase_formulas_and_printed_node_ranges() -> None:
     data = _json(BARIN_PATH)
-    assert data["schema"] == "openimcc-barin-aluminate-crystals-v1"
+    assert data["schema"] == "openimcc-barin-aluminate-crystals-v2"
     assert len(data["phases"]) == 6
 
     for phase in data["phases"]:
@@ -84,7 +85,8 @@ def test_barin_phase_formulas_and_printed_node_ranges() -> None:
         assert all(polymorph["label"].startswith("SOL") for polymorph in phase["polymorphs"])
         for polymorph in phase["polymorphs"]:
             series = polymorph["source_series"]
-            assert set(series) == {"delta_fG", "H_minus_H298", "S"}
+            assert {"delta_fG", "H_minus_H298", "S"} <= set(series)
+            assert set(series) <= {"delta_fG", "H_minus_H298", "S", "Cp"}
             for quantity in series.values():
                 assert quantity["nodes"]
                 assert all(
@@ -95,6 +97,16 @@ def test_barin_phase_formulas_and_printed_node_ranges() -> None:
             assert [node["T_K"] for node in series["delta_fG"]["nodes"]] == [
                 node["T_K"] for node in series["H_minus_H298"]["nodes"]
             ] == [node["T_K"] for node in series["S"]["nodes"]]
+            if "Cp" in series:
+                assert [node["T_K"] for node in series["Cp"]["nodes"]] == [
+                    series["delta_fG"]["nodes"][-1]["T_K"]
+                ]
+
+    cp_nodes = {
+        phase["id"]: phase["polymorphs"][0]["source_series"]["Cp"]["nodes"][0]["value"]
+        for phase in data["phases"] if "Cp" in phase["polymorphs"][0]["source_series"]
+    }
+    assert cp_nodes == {"CA": 193.101, "CA2": 336.802, "C3A": 310.778}
 
     sodium = next(phase for phase in data["phases"] if phase["id"] == "NaAlO2")
     assert [(p["label"], p["valid_temperature_K"]) for p in sodium["polymorphs"]] == [
@@ -115,6 +127,94 @@ def test_barin_phase_formulas_and_printed_node_ranges() -> None:
     }
     assert "C12A7" not in source_solid_limits
     assert "NaAlO2" not in source_solid_limits
+
+
+@pytest.mark.parametrize("phase_id", ("CA", "CA2", "C3A"))
+def test_constant_cp_continuation_is_continuous_at_last_node(phase_id: str) -> None:
+    data = _json(BARIN_PATH)
+    phase = next(row for row in data["phases"] if row["id"] == phase_id)
+    series = phase["polymorphs"][0]["source_series"]
+    last_g = series["delta_fG"]["nodes"][-1]
+    last_s = series["S"]["nodes"][-1]
+    t0 = float(last_g["T_K"])
+    g0 = float(last_g["value"])
+    s0 = float(last_s["value"])
+    cp = float(series["Cp"]["nodes"][0]["value"])
+
+    continued_g = diagnostics._continued_barin_delta_f_g_kj_mol(phase, t0)
+    continued_s = s0 + cp * math.log(t0 / t0)
+    continued_h = continued_g * 1000.0 + t0 * continued_s
+    source_h = g0 * 1000.0 + t0 * s0
+    assert continued_g == pytest.approx(g0, abs=1.0e-12)
+    assert continued_s == pytest.approx(s0, abs=1.0e-12)
+    assert continued_h - source_h == pytest.approx(0.0, abs=1.0e-9)
+    assert diagnostics._crystal_fusion_gibbs_kj_mol(phase, t0) == pytest.approx(
+        phase["fusion_gibbs_nodes_kJ_mol"][f"{t0:.2f}"], abs=1.0e-9
+    )
+
+
+@pytest.mark.parametrize(
+    ("phase_id", "last_node", "limit", "bulk"),
+    (
+        ("CA", 1800.0, 1875.0, {"CaO": 1.0, "Al2O3": 1.0}),
+        ("CA2", 2000.0, 2035.0, {"CaO": 1.0, "Al2O3": 2.0}),
+        ("C3A", 1800.0, 1808.0, {"CaO": 3.0, "Al2O3": 1.0}),
+    ),
+)
+def test_continuation_availability_ends_at_source_limit(
+    phase_id: str, last_node: float, limit: float, bulk: dict[str, float],
+) -> None:
+    below_limit = math.nextafter(limit, -math.inf)
+    states = equilibrium_module._default_candidate_states(below_limit)[0]
+    state = next(row for row in states if row.candidate.phase_id == phase_id)
+    assert state.available
+    assert state.domain == pytest.approx((298.15, limit))
+    assert state.continued_range_K == pytest.approx((last_node, limit))
+
+    at_limit = equilibrium_module._default_candidate_states(limit)[0]
+    at_limit_state = next(row for row in at_limit if row.candidate.phase_id == phase_id)
+    assert at_limit_state.available
+    assert at_limit_state.continued_range_K == pytest.approx((last_node, limit))
+
+    above_limit = math.nextafter(limit, math.inf)
+    capped_states = equilibrium_module._default_candidate_states(above_limit)[0]
+    capped = next(row for row in capped_states if row.candidate.phase_id == phase_id)
+    assert not capped.available
+    assert capped.reason == "above_source_melting_point"
+
+    # A single hotter result exercises all three source caps in its receipt.
+    if phase_id == "CA2":
+        hot = equilibrate(bulk, 2040.0)
+        assert {"CA", "CA2", "C3A"} <= set(
+            hot.receipt.solver["crystals_above_source_melting_point"]
+        )
+        assert not {"CA", "CA2", "C3A"} & set(
+            hot.receipt.solver["missing_candidate_phase_ids"]
+        )
+
+
+def test_continued_notice_and_receipt_cover_equilibrium_and_declared_results() -> None:
+    notice = "crystal_function_continued:CA:1800-1875K"
+    result = equilibrate({"CaO": 1.0, "Al2O3": 1.0}, 1810.0)
+    assert notice in result.labels.notices
+    assert result.receipt.solver["crystal_function_continued"] == (notice,)
+
+    declared = evaluate_declared_assemblage(("CA",), 1810.0)
+    assert notice in declared.labels.notices
+    assert declared.receipt.solver["crystal_function_continued"] == (notice,)
+
+
+def test_phases_without_a_printed_limit_remain_missing_above_their_last_node() -> None:
+    for phase_id, last_temperature in (("C12A7", 1700.0), ("NaAlO2", 1900.0)):
+        states, _digest, _pure_digest, _gas_pack, missing = (
+            equilibrium_module._default_candidate_states(
+                math.nextafter(last_temperature, math.inf)
+            )
+        )
+        state = next(row for row in states if row.candidate.phase_id == phase_id)
+        assert not state.available
+        assert state.reason == "temperature_out_of_range"
+        assert phase_id in missing
 
 
 def test_formation_gibbs_reconstruction_and_independent_oxide_hess_cycles() -> None:
@@ -228,7 +328,7 @@ def test_ca_al2o3_join_returns_certified_states(bulk, temperature, expected_crys
     assert barin_ids <= result.phase_presence.keys()
     assert present == expected_crystals, summary
     assert result.labels.identity["barin_aluminate_crystals"] == (
-        "openimcc-barin-aluminate-crystals-v1"
+        "openimcc-barin-aluminate-crystals-v2"
     )
     assert "barin_aluminate_crystals" in result.receipt.data_digests
     if "CaO" in bulk and "Al2O3" in bulk:
@@ -299,6 +399,6 @@ def test_missing_beta_alumina_keeps_sodium_alumina_bulk_dependent() -> None:
 def test_declared_barin_phase_receipt_names_its_data_identity() -> None:
     result = evaluate_declared_assemblage(("CA",), 1800.0)
     assert result.labels.identity["barin_aluminate_crystals"] == (
-        "openimcc-barin-aluminate-crystals-v1"
+        "openimcc-barin-aluminate-crystals-v2"
     )
     assert "barin_aluminate_crystals" in result.receipt.data_digests

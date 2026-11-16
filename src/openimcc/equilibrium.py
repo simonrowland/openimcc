@@ -298,6 +298,7 @@ class _CandidateState:
     domain: tuple[float, float] | None
     available: bool
     reason: str | None = None
+    continued_range_K: tuple[float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -398,11 +399,7 @@ def _evaluate_fusion_crystal_row(
     """Build one Berman or Barin fusion-node candidate and flag missing data."""
     from openimcc import gas
 
-    nodes = sorted(float(value) for value in row["fusion_gibbs_nodes_kJ_mol"])
-    domain = (
-        max(float(row["valid_temperature_K"][0]), nodes[0]),
-        min(float(row["valid_temperature_K"][1]), nodes[-1]),
-    )
+    domain = diagnostics._crystal_fusion_domain(row)
     authority = _phase_authority(row)
 
     def unavailable_state(reason: str) -> _CandidateState:
@@ -423,7 +420,9 @@ def _evaluate_fusion_crystal_row(
             oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
             for oxide in row["oxide_stoichiometry"]
         }
-        fusion_kJ = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
+        fusion_kJ = diagnostics._crystal_fusion_gibbs_kj_mol(
+            row, temperature_K, liquid_gibbs,
+        )
     except (gas.ImccGasTemperatureOutsideDomainError, ValueError):
         return unavailable_state("standard_out_of_range"), True
     g_crystal = math.fsum(
@@ -434,7 +433,15 @@ def _evaluate_fusion_crystal_row(
         phase_id, row["oxide_stoichiometry"], g_crystal,
         row.get("formula"), authority, domain, row.get("source", {}),
     )
-    return _CandidateState(candidate, authority, domain, True), False
+    continuation = diagnostics._crystal_continuation_range(row)
+    continued_range = (
+        continuation
+        if continuation is not None and temperature_K > continuation[0]
+        else None
+    )
+    return _CandidateState(
+        candidate, authority, domain, True, continued_range_K=continued_range,
+    ), False
 
 
 def _exclude_zero_bulk_infeasible_candidates(
@@ -1117,7 +1124,9 @@ def _independent_thermochemical_standards(
                 oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
                 for oxide in row["oxide_stoichiometry"]
             }
-            fusion = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
+            fusion = diagnostics._crystal_fusion_gibbs_kj_mol(
+                row, temperature_K, parent_liquid_g,
+            )
             crystal_gibbs[phase] = math.fsum(
                 float(nu) * parent_liquid_g[oxide]
                 for oxide, nu in row["oxide_stoichiometry"].items()
@@ -1128,7 +1137,9 @@ def _independent_thermochemical_standards(
                 oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
                 for oxide in row["oxide_stoichiometry"]
             }
-            fusion = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
+            fusion = diagnostics._crystal_fusion_gibbs_kj_mol(
+                row, temperature_K, parent_liquid_g,
+            )
             crystal_gibbs[phase] = math.fsum(
                 float(nu) * parent_liquid_g[oxide]
                 for oxide, nu in row["oxide_stoichiometry"].items()
@@ -1767,6 +1778,11 @@ def _result_receipt(
                 state.candidate.phase_id for state in candidates
                 if state.reason == "above_source_melting_point"
             )),
+            "crystal_function_continued": tuple(sorted(
+                f"crystal_function_continued:{state.candidate.phase_id}:"
+                f"{state.continued_range_K[0]:g}-{state.continued_range_K[1]:g}K"
+                for state in candidates if state.continued_range_K is not None
+            )),
             **dict(solver),
         },
     )
@@ -1803,12 +1819,17 @@ def _labels(
             if isinstance(term.provenance, Mapping) else "external_datapack"
             for term in getattr(pack, "excess_gibbs_terms", ())
         )
+    continued_notices = tuple(sorted(
+        f"crystal_function_continued:{state.candidate.phase_id}:"
+        f"{state.continued_range_K[0]:g}-{state.continued_range_K[1]:g}K"
+        for state in states if state.continued_range_K is not None
+    ))
     return PhaseEquilibriumLabels(
         identity={
             "melt_model": str(getattr(kernel, "model_id", "unresolved")),
             "melt_binding_digest": str(getattr(pack, "binding_digest", getattr(kernel, "binding_digest", "unresolved"))),
             "crystal_phases": "openimcc-crystal-phases-v1",
-            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v1",
+            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v2",
             "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
             "standard_pressure_bar": "1.0",
         },
@@ -1829,6 +1850,7 @@ def _labels(
         flags=tuple(dict.fromkeys(flags)),
         notices=tuple(dict.fromkeys((
             *notices,
+            *continued_notices,
             *(
                 ("crystals_above_source_melting_point:" + ",".join(above_source_melting),)
                 if above_source_melting else ()

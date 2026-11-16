@@ -23,6 +23,14 @@ JANAF liquid CaO, Al2O3, Na2O, and MgO tables. Barin's compound-liquid rows
 are not candidates. Source locators are Barin (1995), pp. 442–445 (calcium
 aluminates), p. 1132 (NaAlO2), and p. 1015 (MgAl2O4).
 
+Between their final printed nodes and source limits, CA, CA2, and C3A continue
+with constant heat capacity from the last Barin Cp node, anchored at the last
+printed Gibbs energy; the unchanged JANAF liquid parent standards convert the
+result to the solver's fusion basis. These crystals remain available through
+their printed decomposition points, and each calculation using a continued
+segment records its phase and temperature range in a notice and receipt. The
+continuation stops at the source limit.
+
 Barin defines its standard state and element reference phases at 1 bar
 (Chapter 4, p. I-36), the same reference pressure used by the solver. It prints
 decomposition points for CA at 1875 K, CA2 at 2035 K, and C3A at 1808 K

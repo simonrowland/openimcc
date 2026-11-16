@@ -136,7 +136,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     result = evaluate_janaf_apparent_gibbs(pair["table_id"], temperature)
     assert result.provenance["resource_sha256"] == liquid_pairs["runtime_digest"]
 
-    barin = _artifact(entries, "openimcc-barin-aluminate-crystals-v1")
+    barin = _artifact(entries, "openimcc-barin-aluminate-crystals-v2")
     assert set(barin["work_ids"]) == {"barin-1995", "janaf-4th"}
     assert all(
         source["role"] == "derived"

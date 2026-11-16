@@ -130,6 +130,7 @@ def _make_receipt(
     crystal_digest: str,
     pure_digest: str,
     gas_pack: Any | None,
+    crystal_function_continued: tuple[str, ...] = (),
 ) -> CalculationReceipt:
     _barin_data, barin_digest = _load_json(_BARIN_RESOURCE)
     return build_calculation_receipt(
@@ -156,6 +157,7 @@ def _make_receipt(
             "identifiability": "componentwise_nullspace_projection",
             "phase_residual_tolerance_J_mol": _PHASE_RESIDUAL_TOLERANCE_J_MOL,
             "standard_pressure_bar": _PRESSURE_BAR_STANDARD,
+            "crystal_function_continued": crystal_function_continued,
             "pure_crystal_gibbs_conversion": (
                 "JANAF apparent G = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T); "
                 "kJ/mol enthalpies and J/(mol K) entropy converted to J/mol"
@@ -187,11 +189,12 @@ def _empty_result(
     phase_standard_gibbs_J_mol: Mapping[str, float] | None = None,
     phase_affinities_ln: Mapping[str, float] | None = None,
     gas_depends: Mapping[str, str] | None = None,
+    crystal_function_continued: tuple[str, ...] = (),
 ) -> DeclaredAssemblageResult:
     labels = PhaseEquilibriumLabels(
         identity={
             "crystal_phases": "openimcc-crystal-phases-v1",
-            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v1",
+            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v2",
             "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
             "gas_table_digest": getattr(gas_pack, "gas_table_digest", "unresolved"),
             "condensate_table_digest": getattr(
@@ -200,7 +203,8 @@ def _empty_result(
             "standard_pressure_bar": "1.0",
         },
         coverage={}, validity=validity, out_of_domain_axes=axes,
-        evidence_class=evidence_class, flags=flags, notices=notices,
+        evidence_class=evidence_class, flags=flags,
+        notices=tuple(dict.fromkeys((*notices, *crystal_function_continued))),
     )
     receipt = _make_receipt(
         phases=phases, temperature_K=temperature_K, fO2=fO2,
@@ -208,6 +212,7 @@ def _empty_result(
         include_ions=include_ions, oxygen_balance=oxygen_balance,
         allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
         pure_digest=pure_digest, gas_pack=gas_pack,
+        crystal_function_continued=crystal_function_continued,
     )
     return DeclaredAssemblageResult(
         temperature_K=temperature_K, declared_phases=phases,
@@ -415,6 +420,7 @@ def evaluate_declared_assemblage(
     active_pack = gas_pack if gas_pack is not None else _default_pack
 
     phase_ranges: dict[str, str] = {}
+    continued_notices: list[str] = []
     pure_crystal_values = {}
     phase_authorities: list[str] = []
     out_of_domain_axes: list[str] = []
@@ -422,15 +428,18 @@ def evaluate_declared_assemblage(
         row = pure_by_id.get(phase_id)
         if row is None:
             row = crystal_by_id[phase_id]
-            source_nodes = row["fusion_gibbs_nodes_kJ_mol"]
-            lo, hi = map(float, row["valid_temperature_K"])
-            lo = max(lo, min(map(float, source_nodes)))
-            hi = min(hi, max(map(float, source_nodes)))
+            lo, hi = diagnostics._crystal_fusion_domain(row)
             if not lo <= temperature <= hi:
                 out_of_domain_axes.append(f"crystal.{phase_id}.temperature_K")
                 continue
             phase_ranges[phase_id] = f"{lo:g}-{hi:g} K"
             phase_authorities.append(_phase_authority(row))
+            continuation = diagnostics._crystal_continuation_range(row)
+            if continuation is not None and temperature > continuation[0]:
+                continued_notices.append(
+                    f"crystal_function_continued:{phase_id}:"
+                    f"{continuation[0]:g}-{continuation[1]:g}K"
+                )
         else:
             try:
                 crystal_value = evaluate_janaf_crystal(phase_id, temperature)
@@ -494,6 +503,16 @@ def evaluate_declared_assemblage(
                 f"{liquid.source_table_id or liquid.source_row_id}; "
                 f"{liquid.T_min:g}-{liquid.T_max:g} K"
             )
+        reference_liquid_gibbs = (
+            liquid_gibbs
+            if active_pack.condensate_table_digest == reference_pack.condensate_table_digest
+            else {
+                oxide: gas_module.species_thermo(
+                    oxide, "l", temperature, reference_pack,
+                ).G_J_mol
+                for oxide in phase_components
+            }
+        )
 
         for phase_index, phase_id in enumerate(declared):
             row = pure_by_id.get(phase_id)
@@ -503,19 +522,16 @@ def evaluate_declared_assemblage(
                     active_authorities.append("estimated_systematic")
             else:
                 row = crystal_by_id[phase_id]
-                fusion_kj = diagnostics._interpolate_crystal_fusion_nodes(row, temperature)
+                fusion_kj = diagnostics._crystal_fusion_gibbs_kj_mol(
+                    row, temperature, reference_liquid_gibbs,
+                )
                 if (
                     active_pack.condensate_table_digest
                     != reference_pack.condensate_table_digest
                 ):
                     fusion_kj += math.fsum(
                         float(nu) * (
-                            gas_module.species_thermo(
-                                oxide, "l", temperature, active_pack
-                            ).G_J_mol
-                            - gas_module.species_thermo(
-                                oxide, "l", temperature, reference_pack
-                            ).G_J_mol
+                            liquid_gibbs[oxide] - reference_liquid_gibbs[oxide]
                         ) / 1000.0
                         for oxide, nu in row["oxide_stoichiometry"].items()
                     )
@@ -600,6 +616,7 @@ def evaluate_declared_assemblage(
                 phase: float(residual_vector[index] / (R_J_MOL_K * temperature))
                 for index, phase in enumerate(declared)
             },
+            crystal_function_continued=tuple(continued_notices),
         )
 
     identifiable = []
@@ -676,6 +693,7 @@ def evaluate_declared_assemblage(
                     ), flags=("gas_species_out_of_range",),
                     notices=("declared_assemblage_not_minimized",),
                     refusal=refusal, axes=axes,
+                    crystal_function_continued=tuple(continued_notices),
                 )
     elif fO2 is not None:
         try:
@@ -702,6 +720,7 @@ def evaluate_declared_assemblage(
                 ), flags=("gas_species_out_of_range",),
                 notices=("declared_assemblage_not_minimized",),
                 refusal=refusal, axes=axes,
+                crystal_function_continued=tuple(continued_notices),
             )
 
     flags = ["fixed_pressure_1_bar", "gas_is_post_processing"]
@@ -709,6 +728,7 @@ def evaluate_declared_assemblage(
         "declared_assemblage_assumed",
         "declared_assemblage_not_minimized",
         "gas_not_in_condensed_mass_balance",
+        *continued_notices,
     ]
     if "K2O" in declared:
         flags.append("k2o_liquid_standard_estimated")
@@ -778,6 +798,7 @@ def evaluate_declared_assemblage(
         include_ions=include_ions, oxygen_balance=oxygen_balance,
         allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
         pure_digest=pure_digest, gas_pack=active_pack,
+        crystal_function_continued=tuple(continued_notices),
     )
     return DeclaredAssemblageResult(
         temperature_K=temperature, declared_phases=declared,
