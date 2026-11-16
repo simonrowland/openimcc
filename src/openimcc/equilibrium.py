@@ -376,6 +376,82 @@ def _redox_candidate(candidate: CrystalCandidate) -> bool:
     return any(name.lower().replace(" ", "") == "fe2o3" for name in candidate.stoichiometry)
 
 
+def _evaluate_fusion_crystal_row(
+    phase_id: str,
+    row: Mapping[str, Any],
+    temperature_K: float,
+    gas_pack: Any,
+) -> tuple[_CandidateState, bool]:
+    """Build one Berman or Barin fusion-node candidate and flag missing data."""
+    from openimcc import gas
+
+    source_solid_limit = _source_solid_limit_K(row)
+    nodes = sorted(float(value) for value in row["fusion_gibbs_nodes_kJ_mol"])
+    domain = (
+        max(float(row["valid_temperature_K"][0]), nodes[0]),
+        min(float(row["valid_temperature_K"][1]), nodes[-1]),
+    )
+    authority = _phase_authority(row)
+
+    def unavailable_state(reason: str) -> _CandidateState:
+        placeholder = CrystalCandidate(
+            phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
+            authority, domain, row.get("source", {}),
+        )
+        return _CandidateState(placeholder, authority, domain, False, reason)
+
+    if (
+        len(row["oxide_stoichiometry"]) > 1
+        and source_solid_limit is not None
+        and temperature_K > source_solid_limit
+    ):
+        return unavailable_state("above_source_melting_point"), False
+    if not domain[0] <= temperature_K <= domain[1]:
+        return unavailable_state("temperature_out_of_range"), True
+    try:
+        liquid_gibbs = {
+            oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
+            for oxide in row["oxide_stoichiometry"]
+        }
+        fusion_kJ = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
+    except (gas.ImccGasTemperatureOutsideDomainError, ValueError):
+        return unavailable_state("standard_out_of_range"), True
+    g_crystal = math.fsum(
+        float(nu) * liquid_gibbs[oxide]
+        for oxide, nu in row["oxide_stoichiometry"].items()
+    ) - fusion_kJ * 1000.0
+    candidate = CrystalCandidate(
+        phase_id, row["oxide_stoichiometry"], g_crystal,
+        row.get("formula"), authority, domain, row.get("source", {}),
+    )
+    return _CandidateState(candidate, authority, domain, True), False
+
+
+def _exclude_zero_bulk_infeasible_candidates(
+    all_states: Sequence[_CandidateState],
+    unavailable: Sequence[str],
+    normalized_bulk: Mapping[str, float],
+    parent_names: Sequence[str],
+) -> tuple[tuple[_CandidateState, ...], tuple[str, ...]]:
+    zero_bulk_parents = set(parent_names) - set(normalized_bulk)
+    infeasible = {
+        state.candidate.phase_id
+        for state in all_states
+        if set(state.candidate.stoichiometry) & zero_bulk_parents
+    }
+    if not infeasible:
+        return tuple(all_states), tuple(unavailable)
+    filtered_states = tuple(
+        replace(state, available=False, reason="infeasible")
+        if state.candidate.phase_id in infeasible else state
+        for state in all_states
+    )
+    filtered_unavailable = tuple(
+        phase for phase in unavailable if phase not in infeasible
+    )
+    return filtered_states, filtered_unavailable
+
+
 def _default_candidate_states(
     temperature_K: float,
     gas_pack: Any | None = None,
@@ -397,57 +473,12 @@ def _default_candidate_states(
     # ν is mol oxide/mol formula and the stored fusion node is kJ/mol formula,
     # so multiplying the latter by 1000 makes both terms J/mol formula.
     for phase_id, row in sorted(crystal_by_id.items()):
-        source_solid_limit = _source_solid_limit_K(row)
-        nodes = sorted(float(value) for value in row["fusion_gibbs_nodes_kJ_mol"])
-        domain = (
-            max(float(row["valid_temperature_K"][0]), nodes[0]),
-            min(float(row["valid_temperature_K"][1]), nodes[-1]),
+        state, missing = _evaluate_fusion_crystal_row(
+            phase_id, row, temperature_K, gas_pack,
         )
-        authority = _phase_authority(row)
-        if (
-            len(row["oxide_stoichiometry"]) > 1
-            and source_solid_limit is not None
-            and temperature_K > source_solid_limit
-        ):
-            placeholder = CrystalCandidate(
-                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
-                authority, domain, row.get("source", {}),
-            )
-            states.append(_CandidateState(
-                placeholder, authority, domain, False, "above_source_melting_point"
-            ))
-            continue
-        if not domain[0] <= temperature_K <= domain[1]:
+        states.append(state)
+        if missing:
             unavailable.append(phase_id)
-            placeholder = CrystalCandidate(
-                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
-                authority, domain, row.get("source", {}),
-            )
-            states.append(_CandidateState(placeholder, authority, domain, False, "temperature_out_of_range"))
-            continue
-        try:
-            liquid_gibbs = {
-                oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
-                for oxide in row["oxide_stoichiometry"]
-            }
-            fusion_kJ = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
-        except (gas.ImccGasTemperatureOutsideDomainError, ValueError):
-            unavailable.append(phase_id)
-            placeholder = CrystalCandidate(
-                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
-                authority, domain, row.get("source", {}),
-            )
-            states.append(_CandidateState(placeholder, authority, domain, False, "standard_out_of_range"))
-            continue
-        g_crystal = math.fsum(
-            float(nu) * liquid_gibbs[oxide]
-            for oxide, nu in row["oxide_stoichiometry"].items()
-        ) - fusion_kJ * 1000.0
-        candidate = CrystalCandidate(
-            phase_id, row["oxide_stoichiometry"], g_crystal,
-            row.get("formula"), authority, domain, row.get("source", {}),
-        )
-        states.append(_CandidateState(candidate, authority, domain, True))
 
     # Barin Chapter 4.4 defines standard states at 1 bar and Chapter 4.5 sets
     # elemental reference phases at 1 bar (p. I-36), matching the solver; no
@@ -461,61 +492,12 @@ def _default_candidate_states(
     # kJ/mol and JANAF CaO(l)+Al2O3(l) gives −1799.692 kJ/mol, hence
     # ΔG_fus=+131.874 kJ/mol, matching the stored node.
     for phase_id, row in sorted(barin_by_id.items()):
-        source_solid_limit = _source_solid_limit_K(row)
-        nodes = sorted(float(value) for value in row["fusion_gibbs_nodes_kJ_mol"])
-        domain = (
-            max(float(row["valid_temperature_K"][0]), nodes[0]),
-            min(float(row["valid_temperature_K"][1]), nodes[-1]),
+        state, missing = _evaluate_fusion_crystal_row(
+            phase_id, row, temperature_K, gas_pack,
         )
-        authority = _phase_authority(row)
-        if (
-            len(row["oxide_stoichiometry"]) > 1
-            and source_solid_limit is not None
-            and temperature_K > source_solid_limit
-        ):
-            placeholder = CrystalCandidate(
-                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
-                authority, domain, row.get("source", {}),
-            )
-            states.append(_CandidateState(
-                placeholder, authority, domain, False, "above_source_melting_point"
-            ))
-            continue
-        if not domain[0] <= temperature_K <= domain[1]:
+        states.append(state)
+        if missing:
             unavailable.append(phase_id)
-            placeholder = CrystalCandidate(
-                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
-                authority, domain, row.get("source", {}),
-            )
-            states.append(_CandidateState(
-                placeholder, authority, domain, False, "temperature_out_of_range"
-            ))
-            continue
-        try:
-            liquid_gibbs = {
-                oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
-                for oxide in row["oxide_stoichiometry"]
-            }
-            fusion_kJ = diagnostics._interpolate_crystal_fusion_nodes(row, temperature_K)
-        except (gas.ImccGasTemperatureOutsideDomainError, ValueError):
-            unavailable.append(phase_id)
-            placeholder = CrystalCandidate(
-                phase_id, row["oxide_stoichiometry"], 0.0, row.get("formula"),
-                authority, domain, row.get("source", {}),
-            )
-            states.append(_CandidateState(
-                placeholder, authority, domain, False, "standard_out_of_range"
-            ))
-            continue
-        g_crystal = math.fsum(
-            float(nu) * liquid_gibbs[oxide]
-            for oxide, nu in row["oxide_stoichiometry"].items()
-        ) - fusion_kJ * 1000.0
-        candidate = CrystalCandidate(
-            phase_id, row["oxide_stoichiometry"], g_crystal,
-            row.get("formula"), authority, domain, row.get("source", {}),
-        )
-        states.append(_CandidateState(candidate, authority, domain, True))
 
     # JANAF pure-oxide G values use the single packaged reconstruction and its
     # stable crystal cap, preserving the transition-row convention.
@@ -3202,19 +3184,9 @@ def _equilibrate_one(
                 ("bulk_parent_mol",),
             ),
         )
-    zero_bulk_parents = set(parent_names) - set(normalized_bulk)
-    infeasible = {
-        state.candidate.phase_id
-        for state in all_states
-        if set(state.candidate.stoichiometry) & zero_bulk_parents
-    }
-    if infeasible:
-        all_states = tuple(
-            replace(state, available=False, reason="infeasible")
-            if state.candidate.phase_id in infeasible else state
-            for state in all_states
-        )
-        unavailable = tuple(phase for phase in unavailable if phase not in infeasible)
+    all_states, unavailable = _exclude_zero_bulk_infeasible_candidates(
+        all_states, unavailable, normalized_bulk, parent_names,
+    )
     bulk_vector = np.asarray([normalized_bulk[name] for name in parents], dtype=float)
     if (
         not math.isfinite(float(tol)) or float(tol) <= 0.0
@@ -3675,18 +3647,9 @@ def _boundary_context(
     all_states, _crystal_digest, _pure_digest, gas_pack, unavailable, _explicit = (
         _resolve_candidates(candidates, temperature_K, gas_pack)
     )
-    zero_bulk = set(parent_names) - set(normalized_bulk)
-    infeasible = {
-        state.candidate.phase_id for state in all_states
-        if set(state.candidate.stoichiometry) & zero_bulk
-    }
-    if infeasible:
-        all_states = tuple(
-            replace(state, available=False, reason="infeasible")
-            if state.candidate.phase_id in infeasible else state
-            for state in all_states
-        )
-        unavailable = tuple(phase for phase in unavailable if phase not in infeasible)
+    all_states, unavailable = _exclude_zero_bulk_infeasible_candidates(
+        all_states, unavailable, normalized_bulk, parent_names,
+    )
     redox = [state.candidate.phase_id for state in all_states if _redox_candidate(state.candidate)]
     if redox:
         raise ValueError("redox-sensitive crystal phases are unsupported")
