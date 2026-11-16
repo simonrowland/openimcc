@@ -3731,36 +3731,6 @@ def _solidus_boundary_residual(
     return float(logq)
 
 
-def _liquidus_candidate_residuals(
-    bulk: Mapping[str, float] | Sequence[float],
-    temperature_K: float,
-    candidates: Sequence[str | CrystalCandidate] | None,
-    pack: Any | None,
-    inner_tol: float,
-    max_iter: int,
-    y_init: Sequence[float] | None = None,
-) -> dict[str, float]:
-    """Return each available crystal affinity in the hypothetical all-liquid state."""
-    context = _boundary_context(bulk, temperature_K, candidates, pack)
-    if context.missing:
-        raise ValueError("missing crystal functions prevent a liquidus certificate")
-    liquid = np.asarray([context.bulk[name] for name in context.parents], dtype=float)
-    melt = _positive_melt(
-        liquid, context.parents, temperature_K, context.pack,
-        inner_tol, max_iter, y_init,
-    )
-    logs = _melt_logs(melt, context.parents)
-    by_parent = {name: index for index, name in enumerate(context.parents)}
-    return {
-        state.candidate.phase_id: _phase_affinity_from_melt(
-            state.candidate, by_parent, context.liquid_gibbs, logs, temperature_K
-        )
-        for state in context.all_states
-        if state.available
-        and not (set(state.candidate.stoichiometry) - set(context.parents))
-    }
-
-
 def _liquidus_boundary_residual(
     bulk: Mapping[str, float] | Sequence[float],
     temperature_K: float,
@@ -3771,10 +3741,27 @@ def _liquidus_boundary_residual(
     y_init: Sequence[float] | None = None,
 ) -> float:
     """Return the largest crystal affinity in the hypothetical all-liquid state."""
-    affinities = _liquidus_candidate_residuals(
-        bulk, temperature_K, candidates, pack, inner_tol, max_iter, y_init
+    context = _boundary_context(bulk, temperature_K, candidates, pack)
+    if context.missing:
+        raise ValueError("missing crystal functions prevent a liquidus certificate")
+    liquid = np.asarray([context.bulk[name] for name in context.parents], dtype=float)
+    melt = _positive_melt(
+        liquid, context.parents, temperature_K, context.pack,
+        inner_tol, max_iter, y_init,
     )
-    return float(max(affinities.values(), default=-math.inf))
+    logs = _melt_logs(melt, context.parents)
+    by_parent = {name: index for index, name in enumerate(context.parents)}
+    affinities = [
+        _phase_affinity_from_melt(
+            state.candidate, by_parent, context.liquid_gibbs, logs, temperature_K
+        )
+        for state in context.all_states
+        if state.available
+        and not (set(state.candidate.stoichiometry) - set(context.parents))
+    ]
+    if not affinities:
+        return -math.inf
+    return float(max(affinities))
 
 
 def _boundary_endpoint_status(result: PhaseEquilibriumResult) -> str:
@@ -3804,6 +3791,42 @@ def _boundary_has_positive_liquid(
     bulk_scale = math.fsum(result.bulk_parent_mol.values())
     return lower > balance_tol * bulk_scale + _roundoff_bound(
         (lower, bulk_scale), 8
+    )
+
+
+def _source_cap_transition_phases(
+    left_state: PhaseEquilibriumResult,
+    right_state: PhaseEquilibriumResult,
+    balance_tol: float,
+    cap_endpoint_phases: Sequence[str] = (),
+) -> tuple[tuple[str, ...], bool, bool]:
+    """Return cap phases, plus phase-set and liquid-presence change flags."""
+    left_capped = set(
+        left_state.receipt.solver.get("crystals_above_source_melting_point", ())
+    )
+    right_capped = set(
+        right_state.receipt.solver.get("crystals_above_source_melting_point", ())
+    )
+    cap_phases = (left_capped ^ right_capped) | set(cap_endpoint_phases)
+    if not cap_phases:
+        return (), False, False
+    left_phase_set = {
+        phase for phase, presence in left_state.phase_presence.items()
+        if presence == "present"
+    }
+    right_phase_set = {
+        phase for phase, presence in right_state.phase_presence.items()
+        if presence == "present"
+    }
+    phase_set_changed = left_phase_set != right_phase_set
+    liquid_presence_changed = (
+        _boundary_has_positive_liquid(left_state, balance_tol)
+        != _boundary_has_positive_liquid(right_state, balance_tol)
+    )
+    return (
+        tuple(sorted(cap_phases)) if phase_set_changed or liquid_presence_changed else (),
+        phase_set_changed,
+        liquid_presence_changed,
     )
 
 
@@ -3837,10 +3860,13 @@ def phase_boundary_brackets(
     source_limits = _source_solid_limits_K(candidates)
     source_caps = {
         phase: cap for phase, cap in source_limits.items()
-        if low <= cap < high
+        if low <= cap <= high
     }
     scan_temperatures = set(map(float, np.linspace(low, high, int(scan_points))))
     for cap in source_caps.values():
+        just_below = float(np.nextafter(cap, -math.inf))
+        if just_below >= low:
+            scan_temperatures.add(just_below)
         scan_temperatures.add(cap)
         just_above = float(np.nextafter(cap, math.inf))
         if just_above <= high:
@@ -3975,61 +4001,36 @@ def phase_boundary_brackets(
     refinement_failed = False
     refinement_errors: list[str] = []
     source_cap_notices: list[str] = []
-    source_cap_unresolved = False
+    source_cap_solidus_affected = False
+    source_cap_liquidus_affected = False
     for index in range(len(results) - 1):
         left_state, right_state = results[index], results[index + 1]
-        left_capped = set(
-            left_state.receipt.solver.get("crystals_above_source_melting_point", ())
+        cap_endpoint_phases = tuple(
+            phase for phase, cap in source_caps.items()
+            if cap == temperatures[index + 1]
         )
-        right_capped = set(
-            right_state.receipt.solver.get("crystals_above_source_melting_point", ())
+        (
+            source_cap_phases,
+            phase_set_changed,
+            liquid_presence_changed,
+        ) = _source_cap_transition_phases(
+            left_state, right_state, tol, cap_endpoint_phases,
         )
-        removed_by_source = right_capped - left_capped
-        if removed_by_source:
-            left_phase_set = {
-                phase for phase, presence in left_state.phase_presence.items()
-                if presence == "present"
-            }
-            right_phase_set = {
-                phase for phase, presence in right_state.phase_presence.items()
-                if presence == "present"
-            }
-            changed_phases = left_phase_set ^ right_phase_set
-            left_liquid = _boundary_has_positive_liquid(left_state, tol)
-            right_liquid = _boundary_has_positive_liquid(right_state, tol)
-            transition_changed = bool(changed_phases) or left_liquid != right_liquid
-            if transition_changed:
-                cap_detail = ",".join(
-                    f"{phase}@{source_caps.get(phase, temperatures[index + 1]):g}K"
-                    for phase in sorted(removed_by_source)
-                )
-                try:
-                    cap_affinities = _liquidus_candidate_residuals(
-                        bulk, temperatures[index], candidates, pack,
-                        inner_tol, max_iter,
-                    )
-                except (ValueError, ArithmeticError, FloatingPointError, ImccRefusal):
-                    cap_affinities = {}
-                removed_crystals_supersaturated = all(
-                    cap_affinities.get(phase, -math.inf) > affinity_tol_ln
-                    for phase in removed_by_source
-                )
-                if (
-                    changed_phases <= removed_by_source
-                    and removed_crystals_supersaturated
-                    and _boundary_is_certified(left_state)
-                    and _boundary_is_certified(right_state)
-                ):
-                    source_cap_notices.append(f"source_cap:{cap_detail}")
-                    continue
-                refinement_failed = True
-                source_cap_unresolved = True
-                source_cap_notices.append(f"source_cap_unresolved:{cap_detail}")
-                refinement_errors.append(
-                    f"source_cap:{temperatures[index]:g}-{temperatures[index + 1]:g}:"
-                    "phase-set change could not be separated from a source cap"
-                )
-                continue
+        if source_cap_phases:
+            cap_detail = ",".join(
+                f"{phase}@{source_caps.get(phase, temperatures[index + 1]):g}K"
+                for phase in source_cap_phases
+            )
+            source_cap_notices.append(f"source_cap:{cap_detail}")
+            if phase_set_changed or liquid_presence_changed:
+                source_cap_liquidus_affected = True
+            if liquid_presence_changed:
+                source_cap_solidus_affected = True
+            refinement_errors.append(
+                f"source_cap:{temperatures[index]:g}-{temperatures[index + 1]:g}:"
+                "phase-set or liquid-presence change at a source cap"
+            )
+            continue
         if not (_boundary_is_certified(left_state) and _boundary_is_certified(right_state)):
             continue
         left_liquid = _boundary_has_positive_liquid(left_state, tol)
@@ -4070,20 +4071,21 @@ def phase_boundary_brackets(
                 )
 
     solidus_status: Literal["AVAILABLE", "NO_CROSSING", "OUT_OF_DOMAIN", "DEPENDS"] = (
-        "DEPENDS" if source_cap_unresolved else
+        "DEPENDS" if source_cap_solidus_affected else
         "AVAILABLE" if solidus_crossings else
         "DEPENDS" if depends_seen or refinement_failed else
         "OUT_OF_DOMAIN" if out_of_domain_seen else "NO_CROSSING"
     )
     liquidus_status: Literal["AVAILABLE", "NO_CROSSING", "OUT_OF_DOMAIN", "DEPENDS"] = (
-        "DEPENDS" if source_cap_unresolved else
+        "DEPENDS" if source_cap_liquidus_affected else
         "AVAILABLE" if liquidus_crossings else
         "DEPENDS" if depends_seen or refinement_failed else
         "OUT_OF_DOMAIN" if out_of_domain_seen else "NO_CROSSING"
     )
     base_labels = results[0].labels
+    source_cap_affected = source_cap_solidus_affected or source_cap_liquidus_affected
     validity: Literal["IN", "OUT_OF_DOMAIN", "DEPENDS"] = (
-        "DEPENDS" if depends_seen or refinement_failed else
+        "DEPENDS" if depends_seen or refinement_failed or source_cap_affected else
         "OUT_OF_DOMAIN" if out_of_domain_seen else "IN"
     )
     axes = ("temperature_K",) if out_of_domain_seen else ()
@@ -4099,7 +4101,7 @@ def phase_boundary_brackets(
         ))),
     )
     refusal = None
-    if depends_seen or refinement_failed:
+    if depends_seen or refinement_failed or source_cap_affected:
         refusal = EquilibriumRefusal(
             "boundary_refinement_unresolved",
             "A required scan point or phase-boundary refinement was refused or unresolved.",

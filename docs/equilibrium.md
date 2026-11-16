@@ -160,12 +160,12 @@ amount range does not establish absence. The result retains every crossing, its 
 bracket, endpoint status and phase sets. A refusal or unresolved point breaks
 the scan; no root is interpolated across it. Liquid-dependent boundaries below
 1700 K or above 3000 K are `OUT_OF_DOMAIN` on `temperature_K`.
-Scans split at source-printed crystal melting points. A phase-set change caused
-by removing a crystal at its source cap is reported with a `source_cap`
-notice, not as a model solidus or liquidus crossing. Model crossings are
-`AVAILABLE` only when their refined residual is within the coexistence tolerance;
-an ambiguous source-cap transition makes the result `DEPENDS` and is listed in
-the notice.
+Across a source-printed melting cap, if the certified phase set or liquid
+presence changes, the scan records a `source_cap` notice naming the crystal
+and cap and returns `DEPENDS` for the affected boundary type (both types when
+liquid presence changes), without reporting a model crossing at the cap. Model
+crossings away from source caps remain eligible for `AVAILABLE` when their
+residual passes the coexistence tolerance.
 
     from openimcc.equilibrium import equilibrate_sweep, phase_boundary_brackets
 

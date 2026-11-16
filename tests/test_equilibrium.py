@@ -690,8 +690,11 @@ def test_phase_boundaries_refine_cooling_direction_crossing(
     monkeypatch.setattr(
         equilibrium_module, "_default_candidate_states", temperature_dependent_default
     )
+    monkeypatch.setattr(
+        equilibrium_module, "_source_solid_limits_K", lambda _candidates: {},
+    )
     boundaries = phase_boundary_brackets(
-        {"SiO2": 1.0}, 1900.0, 2100.0, pack=ideal_pack, scan_points=3,
+        {"SiO2": 1.0}, 1990.0, 2010.0, pack=ideal_pack, scan_points=3,
     )
     assert boundaries.solidus_status == "AVAILABLE", boundaries.to_dict()
     assert boundaries.liquidus_status == "AVAILABLE", boundaries.to_dict()
@@ -722,6 +725,10 @@ def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
             "source_authority": "external_datapack",
             "temperature_range_K": (1700.0, 3000.0),
         }
+        # At all-liquid x=(0.5, 0.5), the capped phase's affinity is its Gibbs
+        # offset minus ln(4), so offset 4 is positive while the alternate is
+        # undersaturated. Its removal changes liquid presence, the solidus-side
+        # analogue of positive affinity at an incipient liquid composition.
         affinity_offset = (
             math.log(4.0) + 0.01 * (cap_K - temperature)
             if coincident_crossing else 4.0
@@ -764,36 +771,19 @@ def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
     )
     just_above_cap = float(np.nextafter(cap_K, math.inf))
 
-    cap_residual = equilibrium_module._liquidus_boundary_residual(
-        bulk, cap_K, None, ideal_pack, 1.0e-12, 100,
-    )
-    above_residual = equilibrium_module._liquidus_boundary_residual(
-        bulk, cap_K + 1.0, None, ideal_pack, 1.0e-12, 100,
-    )
-    if coincident_crossing:
-        assert cap_residual == pytest.approx(0.0, abs=1.0e-8)
-    else:
-        assert cap_residual > 0.0
-    assert math.isfinite(above_residual) and above_residual < 0.0
-
     boundaries = phase_boundary_brackets(
         bulk, 1990.0, 2010.0, pack=ideal_pack, scan_points=2,
     )
-    if coincident_crossing:
-        assert boundaries.labels.validity == "DEPENDS", boundaries.to_dict()
-        assert boundaries.solidus_status == "DEPENDS", boundaries.to_dict()
-        assert boundaries.liquidus_status == "DEPENDS", boundaries.to_dict()
-        assert boundaries.solidus == ()
-        assert boundaries.liquidus == ()
-        assert f"source_cap_unresolved:{compound_id}@{cap_K:g}K" in boundaries.labels.notices
-        assert f"source_cap:{compound_id}@{cap_K:g}K" not in boundaries.labels.notices
-    else:
-        assert boundaries.labels.validity == "IN", boundaries.to_dict()
-        assert boundaries.solidus_status == "NO_CROSSING", boundaries.to_dict()
-        assert boundaries.liquidus_status == "NO_CROSSING", boundaries.to_dict()
-        assert boundaries.solidus == ()
-        assert boundaries.liquidus == ()
-        assert f"source_cap:{compound_id}@{cap_K:g}K" in boundaries.labels.notices
+    assert boundaries.labels.validity == "DEPENDS", boundaries.to_dict()
+    assert boundaries.solidus_status == "DEPENDS", boundaries.to_dict()
+    assert boundaries.liquidus_status == "DEPENDS", boundaries.to_dict()
+    assert boundaries.solidus == ()
+    assert boundaries.liquidus == ()
+    assert f"source_cap:{compound_id}@{cap_K:g}K" in boundaries.labels.notices
+    assert not any(
+        notice.startswith("source_cap_unresolved:")
+        for notice in boundaries.labels.notices
+    )
 
     temperatures = (1990.0, cap_K, just_above_cap, 2010.0)
     forward = equilibrate_sweep(
@@ -802,6 +792,20 @@ def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
     reverse = equilibrate_sweep(
         bulk, tuple(reversed(temperatures)), pack=ideal_pack,
     )
+    for sweep in (forward, reverse):
+        ordered = sorted(sweep, key=lambda result: result.temperature_K)
+        cap_transitions = []
+        for left, right in zip(ordered, ordered[1:]):
+            phases, _phase_set_changed, _liquid_presence_changed = (
+                equilibrium_module._source_cap_transition_phases(
+                    left, right, 1.0e-10,
+                )
+            )
+            if phases:
+                cap_transitions.append(
+                    (left.temperature_K, right.temperature_K, phases)
+                )
+        assert cap_transitions == [(cap_K, just_above_cap, (compound_id,))]
     reverse_by_temperature = {result.temperature_K: result for result in reverse}
     forward_by_temperature = {result.temperature_K: result for result in forward}
     for temperature in (cap_K, just_above_cap):
