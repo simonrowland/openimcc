@@ -522,8 +522,20 @@ def evaluate_declared_assemblage(
                     active_authorities.append("estimated_systematic")
             else:
                 row = crystal_by_id[phase_id]
+                continuation = diagnostics._crystal_continuation_range(row)
+                reference_liquid_gibbs_at_node = (
+                    {
+                        oxide: gas_module.species_thermo(
+                            oxide, "l", continuation[0], reference_pack,
+                        ).G_J_mol
+                        for oxide in row["oxide_stoichiometry"]
+                    }
+                    if continuation is not None and temperature >= continuation[0]
+                    else None
+                )
                 fusion_kj = diagnostics._crystal_fusion_gibbs_kj_mol(
                     row, temperature, reference_liquid_gibbs,
+                    reference_liquid_gibbs_at_node,
                 )
                 if (
                     active_pack.condensate_table_digest

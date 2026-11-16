@@ -763,7 +763,7 @@ def _interpolate_crystal_fusion_nodes(phase: Mapping[str, Any], temperature_K: f
 
 def _crystal_continuation_parameters(
     phase: Mapping[str, Any],
-) -> tuple[float, float, float, float, float] | None:
+) -> tuple[float, float, float, float] | None:
     limit = phase.get("source_solid_limit")
     if not isinstance(limit, Mapping):
         return None
@@ -795,7 +795,6 @@ def _crystal_continuation_parameters(
     return (
         temperature_0,
         temperature_limit,
-        float(g_node["value"]),
         float(s_node["value"]),
         float(cp_node["value"]),
     )
@@ -822,66 +821,82 @@ def _crystal_fusion_domain(
     return domain
 
 
-def _continued_barin_delta_f_g_kj_mol(
+def _continued_crystal_absolute_g_increment_kj_mol(
     phase: Mapping[str, Any], temperature_K: float,
 ) -> float:
     parameters = _crystal_continuation_parameters(phase)
     if parameters is None:
         raise ValueError(f"{phase['id']} has no sourced crystal continuation")
-    temperature_0, temperature_limit, g_0, entropy_0, heat_capacity = parameters
+    temperature_0, temperature_limit, entropy_0, heat_capacity = parameters
     if not temperature_0 <= temperature_K <= temperature_limit:
         raise ValueError(
             f"{phase['id']} continuation has no Gibbs value at {temperature_K:g} K"
         )
 
-    # Premise: dG/dT=-S and dS/dT=Cp/T, with Cp fixed at the last Barin node.
-    # Integrating S(T)=S(T0)+Cp*ln(T/T0) gives
-    # G(T)=G(T0)-S(T0)(T-T0)+Cp[(T-T0)-T*ln(T/T0)].
-    # The anchored G0 is printed ΔfG in kJ/mol; S0 and Cp are J/(mol K).
-    # Convert G0 to J/mol, evaluate the expression in J/mol, then convert back.
-    # At T0, ΔT and ln(T/T0) vanish, so G and S are continuous and H=G+TS
-    # has zero jump. Curvature terms over the sourced gaps are CA -0.297615,
-    # CA2 -0.102549, and C3A -0.005517 kJ/mol (each less than 1% of its
-    # linear entropy term).
+    # Premise: dG_cr/dT=-S_cr and dS_cr/dT=Cp_cr/T; hold Cp_cr at its last
+    # Barin value. Integrating gives the absolute-crystal Gibbs increment
+    # ΔG_cr,abs=-S_cr(T0)ΔT+Cp_cr[(ΔT)-T ln(T/T0)].
+    # The Hess cycle gives ΔG_fus(T)=ΔG_fus,node(T0)
+    # +[ΣνG_parent(l,T)-ΣνG_parent(l,T0)]-ΔG_cr,abs(T0→T).
+    # Thus anchor at the stored fusion node, add the change in the same JANAF
+    # parent G functions, and subtract ΔG_cr,abs.
+    # Each parent G difference cancels its additive elemental reference;
+    # parent oxides and crystal have matching elemental totals, so this keeps
+    # the node's formation-energy basis. S and Cp are J/(mol K), temperatures
+    # K, and the expression is J/mol; divide by 1000 for kJ/mol formula.
+    # At T0 both increments are zero, so ΔG_fus is exactly the stored node.
+    # Across the gaps the crystal curvature terms are CA -0.297615, CA2
+    # -0.102549, and C3A -0.005517 kJ/mol, under 1% of the linear terms.
     delta_temperature = temperature_K - temperature_0
-    gibbs_j_mol = (
-        g_0 * 1000.0
-        - entropy_0 * delta_temperature
+    increment_j_mol = (
+        -entropy_0 * delta_temperature
         + heat_capacity * (
-            delta_temperature - temperature_K * math.log(temperature_K / temperature_0)
+            delta_temperature
+            - temperature_K * math.log(temperature_K / temperature_0)
         )
     )
-    return gibbs_j_mol / 1000.0
+    return increment_j_mol / 1000.0
 
 
 def _crystal_fusion_gibbs_kj_mol(
     phase: Mapping[str, Any],
     temperature_K: float,
     parent_liquid_gibbs_J_mol: Mapping[str, float] | None = None,
+    parent_liquid_gibbs_at_node_J_mol: Mapping[str, float] | None = None,
 ) -> float:
     nodes = sorted(float(value) for value in phase["fusion_gibbs_nodes_kJ_mol"])
-    if temperature_K <= nodes[-1]:
-        return _interpolate_crystal_fusion_nodes(phase, temperature_K)
     continuation = _crystal_continuation_range(phase)
+    if temperature_K < nodes[-1] or (
+        temperature_K == nodes[-1] and continuation is None
+    ):
+        return _interpolate_crystal_fusion_nodes(phase, temperature_K)
     if continuation is None or temperature_K > continuation[1]:
         raise ValueError(
             f"{phase['id']} fusion function has no source node at {temperature_K:g} K"
         )
 
-    if parent_liquid_gibbs_J_mol is None:
+    if (
+        parent_liquid_gibbs_J_mol is None
+        or parent_liquid_gibbs_at_node_J_mol is None
+    ):
         raise ValueError(
-            f"{phase['id']} continuation requires JANAF liquid-parent Gibbs values"
+            f"{phase['id']} continuation requires JANAF parent Gibbs values at T and T0"
         )
-    parent_liquid_gibbs = math.fsum(
-        float(coefficient) * parent_liquid_gibbs_J_mol[oxide]
+    parent_increment = math.fsum(
+        float(coefficient) * (
+            parent_liquid_gibbs_J_mol[oxide]
+            - parent_liquid_gibbs_at_node_J_mol[oxide]
+        )
         for oxide, coefficient in phase["oxide_stoichiometry"].items()
     )
-    crystal_gibbs_kj_mol = _continued_barin_delta_f_g_kj_mol(
+    crystal_increment = _continued_crystal_absolute_g_increment_kj_mol(
         phase, temperature_K,
     )
-    # Preserve the established solver basis: ΔG_fus=ΣνG_parent(l)-G_crystal.
-    # Parent JANAF liquid standards are evaluated as published and are unchanged.
-    return parent_liquid_gibbs / 1000.0 - crystal_gibbs_kj_mol
+    return (
+        _interpolate_crystal_fusion_nodes(phase, nodes[-1])
+        + parent_increment / 1000.0
+        - crystal_increment
+    )
 
 
 def _closure_miss(
