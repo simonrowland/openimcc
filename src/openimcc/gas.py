@@ -3505,8 +3505,15 @@ def evaluate_gas(
                 if carrier not in act:
                     act[carrier] = math.fsum(item.activity for item in estimates)
 
-    if reactions is None or (include_ions and requested_channels is not None):
+    if reactions is None or (include_ions and requested_channels):
         reactions, omitted_channels = _default_reactions(tuple(act), datapack, T)
+
+    if requested_channels == ():
+        for name, activity in act.items():
+            if not math.isfinite(activity) or activity < 0.0:
+                raise ValueError(
+                    f"activity of {name!r} must be finite and >= 0, got {activity}"
+                )
 
     omitted_channels = dict(omitted_channels)
 
@@ -4022,7 +4029,7 @@ def evaluate_gas(
             gas_name, datapack, pressure_rows
         )
 
-    if include_ions:
+    if include_ions and requested_channels != ():
         _add_ion_channels(
             result,
             domain_flags,

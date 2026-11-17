@@ -1629,6 +1629,24 @@ def test_ion_subsets_use_full_gas_charge_closure(
         )
 
 
+def test_empty_gas_subset_does_not_emit_ions(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    result = evaluate_gas(
+        {"Na2O": 1.0}, 2000.0, 1.0e-8, gas_pack,
+        gas_species=(), include_ions=True,
+    )
+    assert dict(result) == {}
+    assert dict(result.domain_flags) == {}
+    assert dict(result.provenance_class) == {}
+
+    with pytest.raises(ImccGasInvalidFugacityError):
+        evaluate_gas(
+            {"Na2O": 1.0}, 2000.0, 0.0, gas_pack,
+            gas_species=(), include_ions=True,
+        )
+
+
 def test_cu_minus_is_opt_in_and_cu_plus_remains_declined(
     gas_pack: ImccGasDatapack,
 ) -> None:
