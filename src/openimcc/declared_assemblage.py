@@ -477,6 +477,7 @@ def evaluate_declared_assemblage(
             notices=("declared_assemblage_not_minimized",), refusal=refusal,
             axes=tuple(out_of_domain_axes),
             non_identifiable_components=unavailable_components,
+            crystal_function_continued=tuple(continued_notices),
         )
 
     phase_components = sorted({

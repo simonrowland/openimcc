@@ -279,6 +279,17 @@ def test_phase_temperature_outside_source_range_is_refused():
     assert result.labels.out_of_domain_axes == ("crystal.spinel.temperature_K",)
 
 
+def test_out_of_domain_declared_set_preserves_continued_phase_notice():
+    result = evaluate_declared_assemblage(("CA", "K2O"), 1850.0)
+    notice = "crystal_function_continued:CA:1800-1875K"
+
+    assert result.labels.validity == "OUT_OF_DOMAIN"
+    assert result.refusal.code == "phase_temperature_out_of_range"
+    assert result.labels.out_of_domain_axes == ("crystal.K2O.temperature_K",)
+    assert notice in result.labels.notices
+    assert result.receipt.solver["crystal_function_continued"] == (notice,)
+
+
 def test_k2o_estimated_reference_controls_result_authority(gas_pack):
     result = evaluate_declared_assemblage(("K2O",), 1005.0, gas_pack=gas_pack)
 
