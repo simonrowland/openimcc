@@ -513,6 +513,18 @@ def pure_oxide_standard_check(
     if definition.construction:
         authority = f"constructed liquid standard; {authority}"
         least_authoritative = f"constructed liquid standard {liquid_source or 'K2O(l)'}"
+    if authority_record is not None and authority_record.composition_scope:
+        composition_scope = authority_record.composition_scope
+        scope_label = ", ".join(
+            f"{component} {low:g}–{high:g} wt%"
+            for component, (low, high) in composition_scope.items()
+        )
+        least_authoritative += f"; composition evidence scope: {scope_label}"
+        pure_oxide_scope = composition_scope.get(f"{definition.oxide}_wt_pct")
+        if pure_oxide_scope is not None and not (
+            pure_oxide_scope[0] <= 100.0 <= pure_oxide_scope[1]
+        ):
+            least_authoritative += f"; pure {definition.oxide} is outside this scope"
 
     crystal_digest = (
         str(_janaf_crystal(definition.oxide, min(temp, crystal_range[1])).provenance["source_sha256"])

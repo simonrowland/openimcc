@@ -269,6 +269,13 @@ def test_k2o_is_a_flagged_construction_and_below_1700_root_is_labelled():
     assert "extrapolated below 1700 K" in result.switch_prediction.temperature_axis_label
 
 
+def test_k2o_authority_label_reports_its_composition_scope():
+    result = pure_oxide_standard_check("K2O", 1500.0)
+
+    assert "K2O_wt_pct 25–40 wt%" in result.least_authoritative_input
+    assert "pure K2O is outside this scope" in result.least_authoritative_input
+
+
 def test_out_of_range_janaf_temperature_is_a_typed_refusal():
     with pytest.raises(StandardCheckRefusal) as caught:
         pure_oxide_standard_check("CaO", 3601.0)
