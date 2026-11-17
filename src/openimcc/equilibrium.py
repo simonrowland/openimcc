@@ -3153,6 +3153,7 @@ def _equilibrate_one(
     """
     selected_pack = _loaded_pack(pack)
     kernel = selected_pack.kernel_datapack if isinstance(selected_pack, ImccLoadedDatapack) else selected_pack
+    parent_names = tuple(str(name) for name in kernel.parent_oxides)
     temperature_is_real = is_declared_real_scalar(T_K, allow_numeric_str=True)
     try:
         temperature = float(T_K) if temperature_is_real else math.nan
@@ -3176,9 +3177,12 @@ def _equilibrate_one(
         fallback_states, crystal_digest, pure_digest, gas_pack, _unavailable, _explicit = (
             _resolve_candidates(None, candidate_temperature, gas_pack)
         )
-        empty_bulk: dict[str, float] = {}
+        try:
+            rejected_bulk, _ = _parse_bulk(bulk, parent_names)
+        except (TypeError, ValueError, KeyError, OverflowError):
+            rejected_bulk = {}
         return _empty_result(
-            bulk=empty_bulk,
+            bulk=rejected_bulk,
             temperature_K=temperature,
             pack=selected_pack,
             states=fallback_states,
@@ -3190,7 +3194,6 @@ def _equilibrate_one(
             ),
         )
 
-    parent_names = tuple(str(name) for name in kernel.parent_oxides)
     if (
         not temperature_is_real
         or not math.isfinite(temperature)

@@ -1317,6 +1317,17 @@ def test_absent_by_construction_is_absent_in_solid_result(
         assert result.phase_amount_ranges_mol[phase] == (0.0, 0.0)
 
 
+def test_duplicate_candidate_refusal_preserves_validated_bulk():
+    bulk = {"MgO": 1.0, "SiO2": 2.0}
+
+    result = equilibrate(bulk, 1800.0, candidates=("forsterite", "forsterite"))
+
+    assert result.refusal is not None
+    assert result.refusal.code == "missing_phase_data"
+    assert result.bulk_parent_mol == bulk
+    assert result.receipt.request["bulk_parent_mol"] == bulk
+
+
 def test_inner_activity_uncertainty_covers_trace_residual_and_scale(ideal_pack):
     parents = ("SiO2", "MgO")
     liquid = np.asarray((1.0e-6, 1.0))
