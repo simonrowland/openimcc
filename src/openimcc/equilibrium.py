@@ -497,15 +497,14 @@ def _default_candidate_states(
 
     # Barin Chapter 4.4 defines standard states at 1 bar and Chapter 4.5 sets
     # elemental reference phases at 1 bar (p. I-36), matching the solver; no
-    # 1 atm-to-1 bar oxygen-reference correction is needed. Barin gives crystal
-    # formation Gibbs energies from the elements, while
-    # the solver needs G_crystal on the selected parent-liquid reference. The
-    # balanced Hess cycle is ΔG_fus = Σν_i ΔfG°_JANAF(parent_i,l) − ΔfG°_Barin(cr),
-    # so G_crystal = Σν_i G_parent_i,l − ΔG_fus. The source functions are
-    # kJ/mol formula unit; convert ΔG_fus by 1000 before combining with the
-    # J/mol parent standards. Sanity: at 1000 K, CA has Barin ΔfG=−1931.566
-    # kJ/mol and JANAF CaO(l)+Al2O3(l) gives −1799.692 kJ/mol, hence
-    # ΔG_fus=+131.874 kJ/mol, matching the stored node.
+    # 1 atm-to-1 bar oxygen-reference correction is needed. Barin's crystal
+    # Hf(298), H−H298, and S and the JANAF liquid-parent Hf(298), H−H298, and S
+    # define G_abs=Hf(298)+Hinc−T*S/1000. The balanced v3 Hess cycle is
+    # ΔG_fus,abs=Σν_i G_abs,parent_i,l−G_abs,Barin(cr), so
+    # G_crystal=Σν_i G_parent_i,l−ΔG_fus,abs. Enthalpy and fusion values are
+    # kJ/mol formula; S is J/(mol K), so convert fusion by 1000 before combining
+    # with the J/mol parent standards. Sanity: at 1000 K, CA has
+    # ΔG_fus,abs=+131.430 kJ/mol, matching the v3 stored node.
     for phase_id, row in sorted(barin_by_id.items()):
         state, missing = _evaluate_fusion_crystal_row(
             phase_id, row, temperature_K, gas_pack,

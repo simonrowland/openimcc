@@ -30,12 +30,12 @@ Source locators are Barin (1995), pp. 442–445 (calcium aluminates), p. 1132
 
 Between their final printed nodes and source limits, CA, CA2, and C3A continue
 with constant heat capacity from the last Barin Cp node, anchored at the last
-printed Gibbs energy and using JANAF liquid-parent increments to preserve the
-solver's fusion basis. This continuation holds the Barin/JANAF element-reference
-residual fixed at its last-node value over the short gap. These crystals remain
-available through their printed decomposition points, and each calculation
-using a continued segment records its phase and temperature range in a notice
-and receipt. The continuation stops at the source limit.
+printed fusion node and adding JANAF liquid-parent absolute-G increments less
+the Barin-crystal absolute-G increment. Since the v3 anchor is already on that
+common basis, no element-reference residual is carried into the short gap.
+These crystals remain available through their printed decomposition points.
+Each calculation using a continued segment records its phase and temperature
+range in a notice and receipt. The continuation stops at the source limit.
 
 Barin defines its standard state and element reference phases at 1 bar
 (Chapter 4, p. I-36), the same reference pressure used by the solver. It prints

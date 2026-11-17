@@ -838,8 +838,9 @@ def _continued_crystal_absolute_g_increment_kj_mol(
     # ΔG_cr,abs=-S_cr(T0)ΔT+Cp_cr[(ΔT)-T ln(T/T0)].
     # The crystal increment uses absolute-G dG/dT=-S, with S and Cp in
     # J/(mol K) and T in K; the result is J/mol before division by 1000.
-    # The fusion Hess cycle and its element-reference residual are described
-    # where this increment is combined with the JANAF parent increments.
+    # The v3 fusion node anchors the common absolute-G Hess cycle; the fusion
+    # update subtracts this crystal increment from JANAF liquid-parent
+    # absolute-G increments, without carrying an element-reference residual.
     # Across the gaps the crystal curvature terms are CA -0.297615, CA2
     # -0.102549, and C3A -0.005517 kJ/mol, under 1% of the linear terms.
     delta_temperature = temperature_K - temperature_0
