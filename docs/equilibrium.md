@@ -28,6 +28,14 @@ element-referenced meaning. Barin's compound-liquid rows are not candidates.
 Source locators are Barin (1995), pp. 442–445 (calcium aluminates), p. 1132
 (NaAlO2), and p. 1015 (MgAl2O4).
 
+The R&H crystal rows use the `openimcc-crystal-phases-v2` identity: each source
+crystal's absolute Gibbs energy is reconstructed from its printed 298.15 K
+formation enthalpy, enthalpy increment, and entropy, then differenced against
+the existing parent-liquid standards on the same absolute-G basis. Berman rows
+and JANAF pure-oxide controls are unchanged; the published v1 identity retains
+its former element-referenced meaning. R&H solid limits are recorded for
+fayalite (1490 K), ilmenite (1640 K), and perovskite (2188 K).
+
 Between their final printed nodes and source limits, CA, CA2, and C3A continue
 with constant heat capacity from the last Barin Cp node, anchored at the last
 printed fusion node and adding JANAF liquid-parent absolute-G increments less

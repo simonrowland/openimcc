@@ -193,7 +193,7 @@ def _empty_result(
 ) -> DeclaredAssemblageResult:
     labels = PhaseEquilibriumLabels(
         identity={
-            "crystal_phases": "openimcc-crystal-phases-v1",
+            "crystal_phases": "openimcc-crystal-phases-v2",
             "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v3",
             "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
             "gas_table_digest": getattr(gas_pack, "gas_table_digest", "unresolved"),
@@ -782,7 +782,7 @@ def evaluate_declared_assemblage(
 
     labels = PhaseEquilibriumLabels(
         identity={
-            "crystal_phases": "openimcc-crystal-phases-v1",
+            "crystal_phases": "openimcc-crystal-phases-v2",
             "barin_aluminate_crystals": str(barin_data["schema"]),
             "janaf_pure_oxide_crystals": str(pure_data["schema"]),
             "gas_table_digest": active_pack.gas_table_digest,

@@ -664,6 +664,95 @@ def _barin_artifact(mapper: SourceMapper) -> dict[str, Any]:
     )
 
 
+def _crystal_phase_artifact(mapper: SourceMapper) -> dict[str, Any]:
+    relative_file = "diagnostics/crystal-phases.json"
+    path = DATA / relative_file
+    raw = path.read_bytes()
+    content = json.loads(raw)
+    janaf_crystal_path = DATA / "diagnostics/janaf-pure-oxide-crystals.json"
+    janaf_crystal_content = json.loads(janaf_crystal_path.read_bytes())
+    janaf_liquid_path = DATA / "diagnostics/janaf-pure-oxide-liquid-pairs.json"
+    janaf_liquid_content = json.loads(janaf_liquid_path.read_bytes())
+    crystal_rows = {
+        row["formula"]: row for row in janaf_crystal_content["phases"]
+    }
+    liquid_rows = {
+        row["oxide"]: row for row in janaf_liquid_content["rows"]
+    }
+    rows: list[dict[str, Any]] = []
+    for phase in content["phases"]:
+        record = _row(f"phases:{phase['id']}", phase["formula"])
+        source = phase["source"]
+        if source.get("authors") == "Berman":
+            _add_citation(
+                record,
+                source["journal"],
+                "derived",
+                mapper,
+                citation_key=source.get("doi"),
+            )
+            parent_rows = crystal_rows
+        else:
+            citation = "Robie and Hemingway (1995), USGS Bulletin 2131"
+            _add_citation(
+                record,
+                citation,
+                "derived",
+                mapper,
+                citation_key="robie and hemingway (1995), usgs bulletin 2131",
+            )
+            parent_rows = liquid_rows
+        for oxide in phase["oxide_stoichiometry"]:
+            reference = parent_rows[oxide]
+            table_id = reference.get("crystal_table_id") or reference["table_id"]
+            citation = f"Chase (1998), NIST-JANAF Thermochemical Tables; table {table_id}"
+            _add_citation(
+                record,
+                citation,
+                "derived",
+                mapper,
+                citation_key=table_id,
+            )
+        _missing_provenance(record)
+        rows.append(record)
+
+    for control in content["pure_oxide_controls"]:
+        record = _row(
+            f"pure_oxide_controls:{control['id']}", control["formula"],
+        )
+        _add_citation(
+            record,
+            control["source"]["journal"],
+            "derived",
+            mapper,
+            citation_key=control["source"].get("doi"),
+        )
+        for table_rows, table_key in (
+            (crystal_rows, "crystal_table_id"),
+            (liquid_rows, "table_id"),
+        ):
+            reference = table_rows[control["id"]]
+            table_id = reference[table_key]
+            citation = f"Chase (1998), NIST-JANAF Thermochemical Tables; table {table_id}"
+            _add_citation(
+                record,
+                citation,
+                "derived",
+                mapper,
+                citation_key=table_id,
+            )
+        _missing_provenance(record)
+        rows.append(record)
+    return _finish_artifact(
+        identity=content["schema"],
+        file="data/" + relative_file,
+        raw=raw,
+        rows=rows,
+        runtime_digest=_sha256(raw),
+        mapper=mapper,
+    )
+
+
 def build() -> dict[str, Any]:
     mapping = _json(MAPPINGS)
     vocabulary = _json(VOCABULARY)
@@ -719,6 +808,7 @@ def build() -> dict[str, Any]:
             mapper=mapper,
         ),
         _barin_artifact(mapper),
+        _crystal_phase_artifact(mapper),
     ]
     referenced_work_ids = {
         work_id for artifact in artifacts for work_id in artifact["work_ids"]

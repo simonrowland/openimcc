@@ -1,5 +1,5 @@
 {
-  "schema": "openimcc-crystal-phases-v1",
+  "schema": "openimcc-crystal-phases-v2",
   "units": {
     "temperature": "K",
     "berman_HfPrTr_J_mol": "J mol-1",
@@ -26,7 +26,10 @@
     "disorder_d4": "J mol-1 K-3",
     "independent_fusion.enthalpy_kJ_mol": "kJ mol-1 mineral formula unit",
     "independent_fusion.enthalpy_uncertainty_kJ_mol": "kJ mol-1 mineral formula unit",
-    "independent_fusion.melting_temperature_K": "K"
+    "independent_fusion.melting_temperature_K": "K",
+    "formation_enthalpy_298_kJ_mol": "kJ mol-1 crystal formula unit, printed R&H value at 298.15 K",
+    "source_crystal_enthalpy_increment_nodes_kJ_mol": "kJ mol-1 crystal formula unit, H(T)-H(298.15 K)",
+    "source_crystal_entropy_nodes_J_mol_K": "J mol-1 K-1 crystal formula unit, printed R&H entropy"
   },
   "phases": [
     {
@@ -1100,7 +1103,8 @@
         "year": 1995,
         "journal": "USGS Bulletin 2131",
         "table_page": "332",
-        "table": "High-temperature individual phase formation-from-elements table"
+        "table": "High-temperature individual phase formation-from-elements table",
+        "printed_phase_description": "Orthorhombic crystals 298.15 to 1490 K. Fayalite melts incongruently at 1490 K.\n            Liquid 1490 to 1800 K."
       },
       "valid_temperature_K": [
         1300,
@@ -1111,8 +1115,8 @@
         1400
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "1300": 41.479529006584485,
-        "1400": 34.462932360988844
+        "1300": 40.84232900670395,
+        "1400": 33.74813236092609
       },
       "solid_solution_bound": true,
       "source_crystal_gibbs_nodes_kJ_mol": {
@@ -1125,7 +1129,25 @@
         "congruent": false
       },
       "closure_diagnostic": false,
-      "rh_crosscheck": {}
+      "rh_crosscheck": {},
+      "formation_enthalpy_298_kJ_mol": -1478.2,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "1300": 177.125,
+        "1400": 197.82000000000002
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "1300": 400.43,
+        "1400": 415.77
+      },
+      "source_solid_limit": {
+        "temperature_K": 1490.0,
+        "kind": "melting",
+        "locator": {
+          "page": 332,
+          "row": "Melting T",
+          "column": "temperature"
+        }
+      }
     },
     {
       "id": "hercynite",
@@ -1139,7 +1161,8 @@
         "year": 1995,
         "journal": "USGS Bulletin 2131",
         "table_page": "233",
-        "table": "High-temperature individual phase formation-from-elements table"
+        "table": "High-temperature individual phase formation-from-elements table",
+        "printed_phase_description": "CUbic crystals 298.15 to 1400 K."
       },
       "valid_temperature_K": [
         1300,
@@ -1150,8 +1173,8 @@
         1400
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "1300": 62.124145741,
-        "1400": 58.708471805
+        "1300": 61.88854574114521,
+        "1400": 58.3356718051632
       },
       "solid_solution_bound": true,
       "source_crystal_gibbs_nodes_kJ_mol": {
@@ -1160,7 +1183,16 @@
       },
       "melting_point": null,
       "closure_diagnostic": false,
-      "rh_crosscheck": {}
+      "rh_crosscheck": {},
+      "formation_enthalpy_298_kJ_mol": -1950.5,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "1300": 173.134,
+        "1400": 192.38799999999998
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "1300": 361.25,
+        "1400": 375.52
+      }
     },
     {
       "id": "ilmenite",
@@ -1174,7 +1206,8 @@
         "year": 1995,
         "journal": "USGS Bulletin 2131",
         "table_page": "235",
-        "table": "High-temperature individual phase formation-from-elements table"
+        "table": "High-temperature individual phase formation-from-elements table",
+        "printed_phase_description": "Rhombohedral crystals 298.15 to 1640 K."
       },
       "valid_temperature_K": [
         1300,
@@ -1187,10 +1220,10 @@
         1600
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "1300": 51.64567852,
-        "1400": 46.841511921,
-        "1500": 42.006564761,
-        "1600": 36.95535081
+        "1300": 51.32672852030396,
+        "1400": 46.54411192136604,
+        "1500": 41.63106476087751,
+        "1600": 36.60415080955249
       },
       "solid_solution_bound": true,
       "source_crystal_gibbs_nodes_kJ_mol": {
@@ -1201,7 +1234,29 @@
       },
       "melting_point": null,
       "closure_diagnostic": false,
-      "rh_crosscheck": {}
+      "rh_crosscheck": {},
+      "formation_enthalpy_298_kJ_mol": -1232.0,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "1300": 129.285,
+        "1400": 144.046,
+        "1500": 159.195,
+        "1600": 174.768
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "1300": 291.57,
+        "1400": 302.51,
+        "1500": 312.96,
+        "1600": 323.01
+      },
+      "source_solid_limit": {
+        "temperature_K": 1640.0,
+        "kind": "melting",
+        "locator": {
+          "page": 235,
+          "row": "Rhombohedral crystals 298.15 to 1640 K",
+          "column": "phase_as_published"
+        }
+      }
     },
     {
       "id": "perovskite",
@@ -1215,7 +1270,8 @@
         "year": 1995,
         "journal": "USGS Bulletin 2131",
         "table_page": "232",
-        "table": "High-temperature individual phase formation-from-elements table"
+        "table": "High-temperature individual phase formation-from-elements table",
+        "printed_phase_description": "Orthorhombic crystals 1530 K; cubic crystals 1530 to 1800 K."
       },
       "valid_temperature_K": [
         1300,
@@ -1228,10 +1284,10 @@
         1800
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "1500": 148.45171145,
-        "1600": 144.885880243,
-        "1700": 140.980904016,
-        "1800": 136.968897478
+        "1500": 150.44371234908613,
+        "1600": 146.96748115172977,
+        "1700": 143.19790435201708,
+        "1800": 139.30760050268282
       },
       "solid_solution_bound": false,
       "source_crystal_gibbs_nodes_kJ_mol": {
@@ -1246,7 +1302,29 @@
         "congruent": true
       },
       "closure_diagnostic": false,
-      "rh_crosscheck": {}
+      "rh_crosscheck": {},
+      "formation_enthalpy_298_kJ_mol": -1660.6,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "1500": 152.565,
+        "1600": 168.416,
+        "1700": 181.815,
+        "1800": 195.246
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "1500": 292.1,
+        "1600": 302.46,
+        "1700": 310.58,
+        "1800": 318.28
+      },
+      "source_solid_limit": {
+        "temperature_K": 2188.0,
+        "kind": "melting",
+        "locator": {
+          "page": 232,
+          "row": "Melting T",
+          "column": "temperature"
+        }
+      }
     },
     {
       "id": "ulvospinel",
@@ -1260,7 +1338,8 @@
         "year": 1995,
         "journal": "USGS Bulletin 2131",
         "table_page": "236",
-        "table": "High-temperature individual phase formation-from-elements table"
+        "table": "High-temperature individual phase formation-from-elements table",
+        "printed_phase_description": "Cubic crystals 298.15 to 1800 K."
       },
       "valid_temperature_K": [
         1300,
@@ -1275,12 +1354,12 @@
         1800
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "1300": 70.518639447,
-        "1400": 64.161921252,
-        "1500": 57.7758078,
-        "1600": 51.384302812,
-        "1700": 45.185683843,
-        "1800": 39.073685231
+        "1300": 69.88123944687027,
+        "1400": 63.46512125164509,
+        "1500": 57.03830780005842,
+        "1600": 50.64830281173158,
+        "1700": 44.343083842941496,
+        "1800": 38.20468523127511
       },
       "solid_solution_bound": true,
       "source_crystal_gibbs_nodes_kJ_mol": {
@@ -1293,7 +1372,24 @@
       },
       "melting_point": null,
       "closure_diagnostic": false,
-      "rh_crosscheck": {}
+      "rh_crosscheck": {},
+      "formation_enthalpy_298_kJ_mol": -1493.8,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "1300": 185.71800000000002,
+        "1400": 208.544,
+        "1500": 232.35,
+        "1600": 257.184,
+        "1700": 283.084,
+        "1800": 310.068
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "1300": 441.5,
+        "1400": 458.41,
+        "1500": 474.83,
+        "1600": 490.86,
+        "1700": 506.55,
+        "1800": 521.97
+      }
     }
   ],
   "pure_oxide_controls": [
@@ -1399,11 +1495,11 @@
     }
   ],
   "fusion_node_method": {
-    "method": "For Berman phases, the crystal-to-crystalline-parent-oxide leg is evaluated within the internally consistent crystal dataset and oxide fusion Gibbs nodes give each parent crystal-to-liquid standard. For Robie and Hemingway phases, each parent liquid standard is converted from the packaged apparent Gibbs energy to formation Gibbs at T by subtracting the JANAF reference-state element G_app values; the stoichiometric sum is then differenced against the printed R&H crystal formation Gibbs energy, which uses the same formation-from-elements-at-T convention.",
-    "liquid_standard_source": "Packaged condensate standards evaluated by the gas layer Gibbs helper; FeO and TiO2 use their packaged liquid-parent functions. Alternate condensate tables shift the liquid leg using the same helper.",
+    "method": "Berman and JANAF pure-oxide-control rows are unchanged. R&H rows use an absolute-G Hess cycle: G_abs,crystal = ΔfH298 + [H(T)-H(298.15)] - T*S(T), and ΔG_fus = ΣνG_abs,parent(liquid) - G_abs,R&H(crystal).",
+    "liquid_standard_source": "The existing packaged parent-liquid Gibbs standards are evaluated by the gas-layer Gibbs helper, preserving the solver's standard states.",
     "source": "Berman (1988), Tables 2, 3a/3b, and Table 5 where applicable; Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition; Robie and Hemingway (1995), USGS Bulletin 2131, cited per phase.",
     "interpolation": "Piecewise linear only between listed source nodes; no endpoint extrapolation.",
-    "element_reference_source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition, reference-state element tables; printed G_app nodes are included at crystal source temperatures for audit."
+    "element_reference_source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition. The printed element G_app nodes are retained for audit; R&H fusion nodes no longer subtract these element-reference functions."
   },
   "element_reference_g_app_nodes_kJ_mol": {
     "Fe": {
@@ -1427,8 +1523,8 @@
       "1400": -51.2288,
       "1500": -56.973,
       "1600": -62.9072,
-      "1700": -69.0234,
-      "1800": -75.3102
+      "1700": -69.4688,
+      "1800": -78.7284
     },
     "Al": {
       "1300": -65.9178,
@@ -1466,5 +1562,10 @@
       "Ti": "1907"
     },
     "column": "Printed -[G°-H°(298.15 K)]/T in J mol-1 K-1; converted as G_app=-T*column, in kJ mol-1."
+  },
+  "source": {
+    "citation": "Robie and Hemingway (1995), USGS Bulletin 2131, Thermodynamic Properties of Minerals and Related Substances",
+    "source_commit": "9aacc2f6308e49a5a1988c25487518ba346d9ad0",
+    "record_path_template": "data/literature/compilations/robie-hemingway-1995-usgs-b2131/records/high-temperature-p{page}.json"
   }
 }

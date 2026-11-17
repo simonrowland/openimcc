@@ -1821,7 +1821,7 @@ def _labels(
         identity={
             "melt_model": str(getattr(kernel, "model_id", "unresolved")),
             "melt_binding_digest": str(getattr(pack, "binding_digest", getattr(kernel, "binding_digest", "unresolved"))),
-            "crystal_phases": "openimcc-crystal-phases-v1",
+            "crystal_phases": "openimcc-crystal-phases-v2",
             "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v3",
             "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
             "standard_pressure_bar": "1.0",

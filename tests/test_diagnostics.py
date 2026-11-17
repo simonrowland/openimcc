@@ -420,7 +420,7 @@ def test_p2o5_crystal_results_require_an_explicit_extension_pack():
     assert explicit_anorthite.notices == ()
 
 
-def test_fe_ti_fusion_nodes_use_the_janaf_elemental_reference_chain(packaged_gas_pack):
+def test_fe_ti_fusion_nodes_use_an_absolute_g_hess_cycle(packaged_gas_pack):
     from openimcc.diagnostics import load_crystal_dataset
     from openimcc.gas import species_thermo
 
@@ -438,49 +438,35 @@ def test_fe_ti_fusion_nodes_use_the_janaf_elemental_reference_chain(packaged_gas
         "perovskite": {"1500": -1239.4, "1600": -1211.8,
                        "1700": -1184.1, "1800": -1154.3},
     }
-    element_stoichiometry = {
-        "fayalite": {"Fe": 2, "Si": 1, "O2": 2},
-        "hercynite": {"Fe": 1, "Al": 2, "O2": 2},
-        "ilmenite": {"Fe": 1, "Ti": 1, "O2": 1.5},
-        "ulvospinel": {"Fe": 2, "Ti": 1, "O2": 2},
-        "perovskite": {"Ca": 1, "Ti": 1, "O2": 1.5},
-    }
     phases = {row["id"]: row for row in dataset["phases"]}
     for phase_id, crystal_nodes in printed_crystal_nodes.items():
         phase = phases[phase_id]
         assert phase["source_crystal_gibbs_nodes_kJ_mol"] == crystal_nodes
         assert phase["solid_solution_bound"] is (phase_id != "perovskite")
         assert phase["source"]["table_page"]
-        for t_text, crystal_g in crystal_nodes.items():
+        assert set(phase["source_crystal_enthalpy_increment_nodes_kJ_mol"]) == set(
+            phase["source_crystal_entropy_nodes_J_mol_K"]
+        ) == set(crystal_nodes)
+        for t_text in crystal_nodes:
             temp = float(t_text)
-            liquid_g_app = sum(
+            crystal_absolute_g = (
+                phase["formation_enthalpy_298_kJ_mol"]
+                + phase["source_crystal_enthalpy_increment_nodes_kJ_mol"][t_text]
+                - temp * phase["source_crystal_entropy_nodes_J_mol_K"][t_text] / 1000
+            )
+            parent_absolute_g = math.fsum(
                 amount * species_thermo(oxide, "l", temp, gas_pack).G_J_mol / 1000
                 for oxide, amount in phase["oxide_stoichiometry"].items()
             )
-            element_g_app = sum(
-                amount * elements[element][t_text]
-                for element, amount in element_stoichiometry[phase_id].items()
-            )
-            fusion_g = liquid_g_app - element_g_app - crystal_g
+            fusion_g = parent_absolute_g - crystal_absolute_g
             assert phase["fusion_gibbs_nodes_kJ_mol"][t_text] == pytest.approx(
-                fusion_g, abs=0.05
+                fusion_g, abs=1e-9
             )
-
-    # Fayalite p. 332, 1400 K: pack parent G_app minus the printed JANAF
-    # Fe, Si, and O2 reference functions gives formation Gibbs at T. Subtract
-    # the printed R&H crystal formation Gibbs on that same reference.
-    fayalite = phases["fayalite"]
-    temp = 1400.0
-    feo = species_thermo("FeO", "l", temp, gas_pack).G_J_mol / 1000
-    silica = species_thermo("SiO2", "l", temp, gas_pack).G_J_mol / 1000
-    hand = (2 * (feo - elements["Fe"]["1400"] - 0.5 * elements["O2"]["1400"])
-            + silica - elements["Si"]["1400"] - elements["O2"]["1400"]
-            - fayalite["source_crystal_gibbs_nodes_kJ_mol"]["1400"])
-    assert hand == pytest.approx(34.463, abs=0.05)
-    assert 0 < hand < 50  # 90 K below fayalite's incongruent melting point.
 
     # The same conversion on SiO2(l) agrees with the printed JANAF liquid
     # formation value at 1400 K (p. 1754) within the packaged fit residual.
+    temp = 1400.0
+    silica = species_thermo("SiO2", "l", temp, gas_pack).G_J_mol / 1000
     silica_formation_g = silica - elements["Si"]["1400"] - elements["O2"]["1400"]
     silica_janaf_printed_g = -659.670
     assert silica_formation_g == pytest.approx(-659.378, abs=0.001)

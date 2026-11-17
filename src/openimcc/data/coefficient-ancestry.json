@@ -2,8 +2,8 @@
   "schema": "openimcc-coefficient-ancestry.v1",
   "vocabulary_snapshot": {
     "commit": "856c0cf09b",
-    "work_id_count": 15,
-    "sha256": "4167a53b863cb8c9c2bbcec35b55a05bfd7707e914c04014731fc45c1f57300a"
+    "work_id_count": 17,
+    "sha256": "a1281d39e924e1ce07fc52bbb776c686b0fd95515e9af68a0fb2be66d8d615ad"
   },
   "artifacts": [
     {
@@ -20122,6 +20122,640 @@
       "counts": {
         "rows": 6,
         "mapped_rows": 6,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-crystal-phases-v2",
+      "file": "data/diagnostics/crystal-phases.json",
+      "digest": "37e6c007386ee99bd63d4cede1a5aa098ec586c82a8914c49b7e440623e70d80",
+      "runtime_digest": "37e6c007386ee99bd63d4cede1a5aa098ec586c82a8914c49b7e440623e70d80",
+      "rows": [
+        {
+          "id": "phases:forsterite",
+          "label": "Mg2SiO4",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-008"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:enstatite",
+          "label": "MgSiO3",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-008"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:diopside",
+          "label": "CaMgSi2O6",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-008"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:anorthite",
+          "label": "CaAl2Si2O8",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Al-096"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:spinel",
+          "label": "MgAl2O4",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-008"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Al-096"
+            }
+          ]
+        },
+        {
+          "id": "phases:akermanite",
+          "label": "Ca2MgSi2O7",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-008"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:gehlenite",
+          "label": "Ca2Al2SiO7",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Al-096"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:merwinite",
+          "label": "Ca3MgSi2O8",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-008"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:monticellite",
+          "label": "CaMgSiO4",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-008"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:wollastonite",
+          "label": "CaSiO3",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:pseudowollastonite",
+          "label": "CaSiO3",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:quartz_beta",
+          "label": "SiO2",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:tridymite_high",
+          "label": "SiO2",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:cristobalite_beta",
+          "label": "SiO2",
+          "sources": [
+            {
+              "work_id": "berman-1988-jpetrology",
+              "role": "derived",
+              "citation": "Journal of Petrology, 29(2), 445–522"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            }
+          ]
+        },
+        {
+          "id": "phases:fayalite",
+          "label": "Fe2SiO4",
+          "sources": [
+            {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Fe-019"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-038"
+            }
+          ]
+        },
+        {
+          "id": "phases:hercynite",
+          "label": "FeAl2O4",
+          "sources": [
+            {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Fe-019"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Al-100"
+            }
+          ]
+        },
+        {
+          "id": "phases:ilmenite",
+          "label": "FeTiO3",
+          "sources": [
+            {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Fe-019"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-044"
+            }
+          ]
+        },
+        {
+          "id": "phases:perovskite",
+          "label": "CaTiO3",
+          "sources": [
+            {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-028"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-044"
+            }
+          ]
+        },
+        {
+          "id": "phases:ulvospinel",
+          "label": "Fe2TiO4",
+          "sources": [
+            {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Fe-019"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-044"
+            }
+          ]
+        },
+        {
+          "id": "pure_oxide_controls:SiO2",
+          "label": "SiO2",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF Thermochemical Tables, 4th edition"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-035"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "O-038"
+            }
+          ]
+        },
+        {
+          "id": "pure_oxide_controls:MgO",
+          "label": "MgO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF Thermochemical Tables, 4th edition"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-008"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Mg-009"
+            }
+          ]
+        },
+        {
+          "id": "pure_oxide_controls:CaO",
+          "label": "CaO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF Thermochemical Tables, 4th edition"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-027"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Ca-028"
+            }
+          ]
+        },
+        {
+          "id": "pure_oxide_controls:Al2O3",
+          "label": "Al2O3",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF Thermochemical Tables, 4th edition"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Al-096"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Al-100"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "berman-1988-jpetrology",
+        "janaf-4th",
+        "robie-hemingway-1995-usgs-b2131"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 23,
+        "mapped_rows": 23,
         "unmapped_citations": 0,
         "rows_with_unmapped": 0
       }

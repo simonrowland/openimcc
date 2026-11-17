@@ -87,6 +87,14 @@ def _expected_row_ids(artifact: dict) -> set[str]:
     if file == "diagnostics/barin-aluminate-crystals.json":
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"phases:{row['id']}" for row in content["phases"]}
+    if file == "diagnostics/crystal-phases.json":
+        content = json.loads(path.read_text(encoding="utf-8"))
+        phases = {f"phases:{row['id']}" for row in content["phases"]}
+        controls = {
+            f"pure_oxide_controls:{row['id']}"
+            for row in content["pure_oxide_controls"]
+        }
+        return phases | controls
     raise AssertionError(f"unexpected packaged ancestry artifact: {file}")
 
 
@@ -96,7 +104,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 8
+    assert len(entries) == 9
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -142,6 +150,12 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
         source["role"] == "derived"
         for row in barin["rows"] for source in row["sources"]
     )
+
+    crystals = _artifact(entries, "openimcc-crystal-phases-v2")
+    assert set(crystals["work_ids"]) == {
+        "berman-1988-jpetrology", "janaf-4th", "robie-hemingway-1995-usgs-b2131",
+    }
+    assert crystals["complete"] is True
 
 
 def test_every_default_row_has_mapped_or_unmapped_lineage() -> None:
