@@ -836,15 +836,10 @@ def _continued_crystal_absolute_g_increment_kj_mol(
     # Premise: dG_cr/dT=-S_cr and dS_cr/dT=Cp_cr/T; hold Cp_cr at its last
     # Barin value. Integrating gives the absolute-crystal Gibbs increment
     # ΔG_cr,abs=-S_cr(T0)ΔT+Cp_cr[(ΔT)-T ln(T/T0)].
-    # The Hess cycle gives ΔG_fus(T)=ΔG_fus,node(T0)
-    # +[ΣνG_parent(l,T)-ΣνG_parent(l,T0)]-ΔG_cr,abs(T0→T).
-    # Thus anchor at the stored fusion node, add the change in the same JANAF
-    # parent G functions, and subtract ΔG_cr,abs.
-    # Each parent G difference cancels its additive elemental reference;
-    # parent oxides and crystal have matching elemental totals, so this keeps
-    # the node's formation-energy basis. S and Cp are J/(mol K), temperatures
-    # K, and the expression is J/mol; divide by 1000 for kJ/mol formula.
-    # At T0 both increments are zero, so ΔG_fus is exactly the stored node.
+    # The crystal increment uses absolute-G dG/dT=-S, with S and Cp in
+    # J/(mol K) and T in K; the result is J/mol before division by 1000.
+    # The fusion Hess cycle and its element-reference residual are described
+    # where this increment is combined with the JANAF parent increments.
     # Across the gaps the crystal curvature terms are CA -0.297615, CA2
     # -0.102549, and C3A -0.005517 kJ/mol, under 1% of the linear terms.
     delta_temperature = temperature_K - temperature_0
@@ -858,11 +853,67 @@ def _continued_crystal_absolute_g_increment_kj_mol(
     return increment_j_mol / 1000.0
 
 
+def _janaf_liquid_absolute_g_increment_J_mol(
+    table_id: str | None, temperature_K: float, anchor_temperature_K: float,
+) -> float:
+    from openimcc.janaf_crystals import _load_liquid_rows
+
+    if table_id is None:
+        raise ValueError("oxide has no JANAF liquid-parent source table")
+    rows, _digest = _load_liquid_rows()
+    row = rows[table_id]
+    nodes_by_temperature = {
+        float(node["T_K"]): node
+        for node in (*row["nodes"], *row["transition_rows"])
+    }
+    if temperature_K == anchor_temperature_K:
+        return 0.0
+
+    source_nodes = sorted(nodes_by_temperature.items())
+    for (low_temperature, low_node), (high_temperature, high_node) in zip(
+        source_nodes, source_nodes[1:],
+    ):
+        if low_temperature <= anchor_temperature_K < high_temperature:
+            if not anchor_temperature_K <= temperature_K <= high_temperature:
+                break
+            interval = high_temperature - low_temperature
+            fraction = (temperature_K - low_temperature) / interval
+            low_gibbs = (
+                float(low_node["enthalpy_increment_kJ_mol"]) * 1000.0
+                - low_temperature * float(low_node["entropy_J_mol_K"])
+            )
+            high_gibbs = (
+                float(high_node["enthalpy_increment_kJ_mol"]) * 1000.0
+                - high_temperature * float(high_node["entropy_J_mol_K"])
+            )
+            low_slope = -float(low_node["entropy_J_mol_K"])
+            high_slope = -float(high_node["entropy_J_mol_K"])
+            x2 = fraction * fraction
+            x3 = x2 * fraction
+            h00 = 2.0 * x3 - 3.0 * x2 + 1.0
+            h10 = x3 - 2.0 * x2 + fraction
+            h01 = -2.0 * x3 + 3.0 * x2
+            h11 = x3 - x2
+            interpolated_gibbs = (
+                h00 * low_gibbs
+                + h10 * interval * low_slope
+                + h01 * high_gibbs
+                + h11 * interval * high_slope
+            )
+            anchor_gibbs = (
+                float(low_node["enthalpy_increment_kJ_mol"]) * 1000.0
+                - anchor_temperature_K * float(low_node["entropy_J_mol_K"])
+            )
+            return interpolated_gibbs - anchor_gibbs
+    raise ValueError(
+        f"JANAF liquid row {table_id} has no source interval from "
+        f"{anchor_temperature_K:g} to {temperature_K:g} K"
+    )
+
+
 def _crystal_fusion_gibbs_kj_mol(
     phase: Mapping[str, Any],
     temperature_K: float,
-    parent_liquid_gibbs_J_mol: Mapping[str, float] | None = None,
-    parent_liquid_gibbs_at_node_J_mol: Mapping[str, float] | None = None,
 ) -> float:
     nodes = sorted(float(value) for value in phase["fusion_gibbs_nodes_kJ_mol"])
     continuation = _crystal_continuation_range(phase)
@@ -875,23 +926,35 @@ def _crystal_fusion_gibbs_kj_mol(
             f"{phase['id']} fusion function has no source node at {temperature_K:g} K"
         )
 
-    if (
-        parent_liquid_gibbs_J_mol is None
-        or parent_liquid_gibbs_at_node_J_mol is None
-    ):
-        raise ValueError(
-            f"{phase['id']} continuation requires JANAF parent Gibbs values at T and T0"
-        )
+    from openimcc.janaf_crystals import _JANAF_OXIDE_PAIRS
+
+    temperature_0 = continuation[0]
     parent_increment = math.fsum(
         float(coefficient) * (
-            parent_liquid_gibbs_J_mol[oxide]
-            - parent_liquid_gibbs_at_node_J_mol[oxide]
+            _janaf_liquid_absolute_g_increment_J_mol(
+                _JANAF_OXIDE_PAIRS[oxide].liquid_table,
+                temperature_K,
+                temperature_0,
+            )
         )
         for oxide, coefficient in phase["oxide_stoichiometry"].items()
     )
     crystal_increment = _continued_crystal_absolute_g_increment_kj_mol(
         phase, temperature_K,
     )
+    # Premise: the stored node is ΣνΔfG_JANAF(parent,l)-ΔfG_Barin(crystal).
+    # JANAF gives G_app=Hf(298)+[H(T)-H(298)]-T*S; the Hf(298) constant cancels
+    # in an increment. Form each source-node G_i=Hinc_i*1000-T_i*S_i and use a
+    # cubic Hermite segment with endpoint slopes dG/dT=-S. With S=-G' and
+    # H=G+T*S, this is ΔG_parent,abs=[H(T)-H(T0)]-[T*S(T)-T0*S(T0)]. Therefore
+    # ΔG_fus(T)=ΔG_fus,node(T0)+ΣνΔG_parent,abs-ΔG_cr,abs. In J/mol, the parent
+    # and crystal increments use S,Cp in J/(mol K) and T in K; divide by 1000
+    # for kJ/mol formula. Both increments vanish at T0, so G is continuous
+    # and the slope is -ΣνS_parent,JANAF(T0)+S_cr,Barin(T0). Anchoring the stored
+    # node also holds any Barin/JANAF element-reference residual fixed at δ(T0)
+    # over the gap. The stored-node secant is diagnostic only: differing
+    # element references, including Ca's 1757 K boiling point in the 1700–1800
+    # K interval, can change its average slope.
     return (
         _interpolate_crystal_fusion_nodes(phase, nodes[-1])
         + parent_increment / 1000.0

@@ -25,11 +25,12 @@ aluminates), p. 1132 (NaAlO2), and p. 1015 (MgAl2O4).
 
 Between their final printed nodes and source limits, CA, CA2, and C3A continue
 with constant heat capacity from the last Barin Cp node, anchored at the last
-printed Gibbs energy; the unchanged JANAF liquid parent standards convert the
-result to the solver's fusion basis. These crystals remain available through
-their printed decomposition points, and each calculation using a continued
-segment records its phase and temperature range in a notice and receipt. The
-continuation stops at the source limit.
+printed Gibbs energy and using JANAF liquid-parent increments to preserve the
+solver's fusion basis. This continuation holds the Barin/JANAF element-reference
+residual fixed at its last-node value over the short gap. These crystals remain
+available through their printed decomposition points, and each calculation
+using a continued segment records its phase and temperature range in a notice
+and receipt. The continuation stops at the source limit.
 
 Barin defines its standard state and element reference phases at 1 bar
 (Chapter 4, p. I-36), the same reference pressure used by the solver. It prints

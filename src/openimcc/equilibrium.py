@@ -420,20 +420,7 @@ def _evaluate_fusion_crystal_row(
             oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
             for oxide in row["oxide_stoichiometry"]
         }
-        continuation = diagnostics._crystal_continuation_range(row)
-        parent_gibbs_at_node = (
-            {
-                oxide: gas.species_thermo(
-                    oxide, "l", continuation[0], gas_pack,
-                ).G_J_mol
-                for oxide in row["oxide_stoichiometry"]
-            }
-            if continuation is not None and temperature_K >= continuation[0]
-            else None
-        )
-        fusion_kJ = diagnostics._crystal_fusion_gibbs_kj_mol(
-            row, temperature_K, liquid_gibbs, parent_gibbs_at_node,
-        )
+        fusion_kJ = diagnostics._crystal_fusion_gibbs_kj_mol(row, temperature_K)
     except (gas.ImccGasTemperatureOutsideDomainError, ValueError):
         return unavailable_state("standard_out_of_range"), True
     g_crystal = math.fsum(
@@ -1135,20 +1122,7 @@ def _independent_thermochemical_standards(
                 oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
                 for oxide in row["oxide_stoichiometry"]
             }
-            continuation = diagnostics._crystal_continuation_range(row)
-            parent_gibbs_at_node = (
-                {
-                    oxide: gas.species_thermo(
-                        oxide, "l", continuation[0], gas_pack,
-                    ).G_J_mol
-                    for oxide in row["oxide_stoichiometry"]
-                }
-                if continuation is not None and temperature_K >= continuation[0]
-                else None
-            )
-            fusion = diagnostics._crystal_fusion_gibbs_kj_mol(
-                row, temperature_K, parent_liquid_g, parent_gibbs_at_node,
-            )
+            fusion = diagnostics._crystal_fusion_gibbs_kj_mol(row, temperature_K)
             crystal_gibbs[phase] = math.fsum(
                 float(nu) * parent_liquid_g[oxide]
                 for oxide, nu in row["oxide_stoichiometry"].items()
@@ -1159,20 +1133,7 @@ def _independent_thermochemical_standards(
                 oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
                 for oxide in row["oxide_stoichiometry"]
             }
-            continuation = diagnostics._crystal_continuation_range(row)
-            parent_gibbs_at_node = (
-                {
-                    oxide: gas.species_thermo(
-                        oxide, "l", continuation[0], gas_pack,
-                    ).G_J_mol
-                    for oxide in row["oxide_stoichiometry"]
-                }
-                if continuation is not None and temperature_K >= continuation[0]
-                else None
-            )
-            fusion = diagnostics._crystal_fusion_gibbs_kj_mol(
-                row, temperature_K, parent_liquid_g, parent_gibbs_at_node,
-            )
+            fusion = diagnostics._crystal_fusion_gibbs_kj_mol(row, temperature_K)
             crystal_gibbs[phase] = math.fsum(
                 float(nu) * parent_liquid_g[oxide]
                 for oxide, nu in row["oxide_stoichiometry"].items()

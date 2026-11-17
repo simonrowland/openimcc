@@ -12,12 +12,14 @@ from openimcc.declared_assemblage import evaluate_declared_assemblage
 from openimcc import diagnostics, equilibrium as equilibrium_module
 from openimcc.diagnostics import _interpolate_crystal_fusion_nodes
 from openimcc.equilibrium import equilibrate
-from openimcc.gas import species_thermo
 
 
 ROOT = Path(__file__).resolve().parents[1]
 BARIN_PATH = ROOT / "src/openimcc/data/diagnostics/barin-aluminate-crystals.json"
 CRYSTAL_PATH = ROOT / "src/openimcc/data/diagnostics/crystal-phases.json"
+JANAF_LIQUID_PATH = (
+    ROOT / "src/openimcc/data/diagnostics/janaf-pure-oxide-liquid-pairs.json"
+)
 
 
 def _json(path: Path) -> dict:
@@ -114,6 +116,7 @@ def test_barin_phase_formulas_and_printed_node_ranges() -> None:
         ("SOL-A", [298.15, 740.0]),
         ("SOL-B", [740.0, 1900.0]),
     ]
+
     source_solid_limits = {
         phase["id"]: phase["source_solid_limit"]
         for phase in data["phases"] if "source_solid_limit" in phase
@@ -130,55 +133,69 @@ def test_barin_phase_formulas_and_printed_node_ranges() -> None:
     assert "NaAlO2" not in source_solid_limits
 
 
+def _janaf_parent_entropy_sum_J_mol_K(
+    phase: dict, references: dict, temperature_K: float,
+) -> float:
+    rows = {
+        row["table_id"]: row for row in _json(JANAF_LIQUID_PATH)["rows"]
+    }
+    return math.fsum(
+        float(coefficient) * float(
+            {
+                float(node["T_K"]): node
+                for node in (
+                    *rows[references[oxide]["table_id"]]["nodes"],
+                    *rows[references[oxide]["table_id"]]["transition_rows"],
+                )
+            }[temperature_K]["entropy_J_mol_K"]
+        )
+        for oxide, coefficient in phase["oxide_stoichiometry"].items()
+    )
+
+
 @pytest.mark.parametrize("phase_id", ("CA", "CA2", "C3A"))
-def test_constant_cp_fusion_continuation_is_continuous_and_has_sane_slope(
+def test_constant_cp_fusion_continuation_is_continuous_and_self_consistent(
     phase_id: str,
 ) -> None:
     data = _json(BARIN_PATH)
     phase = next(row for row in data["phases"] if row["id"] == phase_id)
     node_temperatures = sorted(float(t) for t in phase["fusion_gibbs_nodes_kJ_mol"])
-    t0, previous_temperature = node_temperatures[-1], node_temperatures[-2]
+    t0 = node_temperatures[-1]
     node_gibbs = float(phase["fusion_gibbs_nodes_kJ_mol"][f"{t0:.2f}"])
-    gas_pack = diagnostics._crystal_thermo_context(None)[0]
-
-    def parent_gibbs(temperature: float) -> dict[str, float]:
-        return {
-            oxide: species_thermo(oxide, "l", temperature, gas_pack).G_J_mol
-            for oxide in phase["oxide_stoichiometry"]
-        }
-
-    parent_at_node = parent_gibbs(t0)
-    at_node = diagnostics._crystal_fusion_gibbs_kj_mol(
-        phase, t0, parent_at_node, parent_at_node,
-    )
+    at_node = diagnostics._crystal_fusion_gibbs_kj_mol(phase, t0)
     assert at_node == pytest.approx(node_gibbs, abs=1.0e-12)
 
     epsilon = 1.0e-6
-    just_above = diagnostics._crystal_fusion_gibbs_kj_mol(
-        phase, t0 + epsilon, parent_gibbs(t0 + epsilon), parent_at_node,
-    )
+    just_above = diagnostics._crystal_fusion_gibbs_kj_mol(phase, t0 + epsilon)
     no_jump = just_above - node_gibbs
     assert abs(no_jump) < 1.0e-5
 
-    source_slope = (
-        node_gibbs
-        - float(phase["fusion_gibbs_nodes_kJ_mol"][f"{previous_temperature:.2f}"])
-    ) / (t0 - previous_temperature)
-    slope_step = 1.0e-2
+    # The stored-node secant is report-only: JANAF and Barin can use different
+    # elemental reference functions, leaving a residual that changes across
+    # the interval; the 1700–1800 K CA/C3A secant also crosses Ca's boiling point.
+    parent_entropy = _janaf_parent_entropy_sum_J_mol_K(
+        phase, data["conversion"]["parent_oxide_references"], t0,
+    )
+    crystal_entropy = next(
+        value for temperature, value in _source_series(phase, "S")
+        if temperature == t0
+    )
+    expected_slope = (crystal_entropy - parent_entropy) / 1000.0
+    slope_step = 1.0e-3
     continued_slope = (
         diagnostics._crystal_fusion_gibbs_kj_mol(
-            phase, t0 + slope_step, parent_gibbs(t0 + slope_step), parent_at_node,
+            phase, t0 + slope_step,
         ) - at_node
     ) / slope_step
-    assert continued_slope == pytest.approx(source_slope, abs=0.1)
+    assert continued_slope == pytest.approx(expected_slope, abs=1.0e-6)
 
 
 @pytest.mark.parametrize(
     ("phase_id", "expected_fusion_at_limit"),
     (
-        ("CA", 107.046660942),
-        ("CA2", 152.878711274),
-        ("C3A", 202.864404047),
+        ("CA", 107.002694620),
+        ("CA2", 152.873064502),
+        ("C3A", 202.848036084),
     ),
 )
 def test_continued_fusion_gibbs_at_source_limit(
@@ -187,17 +204,7 @@ def test_continued_fusion_gibbs_at_source_limit(
     data = _json(BARIN_PATH)
     phase = next(row for row in data["phases"] if row["id"] == phase_id)
     t0, limit = diagnostics._crystal_continuation_range(phase)
-    gas_pack = diagnostics._crystal_thermo_context(None)[0]
-
-    def parent_gibbs(temperature: float) -> dict[str, float]:
-        return {
-            oxide: species_thermo(oxide, "l", temperature, gas_pack).G_J_mol
-            for oxide in phase["oxide_stoichiometry"]
-        }
-
-    fusion_at_limit = diagnostics._crystal_fusion_gibbs_kj_mol(
-        phase, limit, parent_gibbs(limit), parent_gibbs(t0),
-    )
+    fusion_at_limit = diagnostics._crystal_fusion_gibbs_kj_mol(phase, limit)
     assert math.isfinite(fusion_at_limit)
     assert fusion_at_limit == pytest.approx(expected_fusion_at_limit, abs=1.0e-6)
 
@@ -215,18 +222,7 @@ def test_equilibrium_inside_ca_continuation_has_plausible_crystal_standard() -> 
     phase = next(
         row for row in _json(BARIN_PATH)["phases"] if row["id"] == "CA"
     )
-    gas_pack = diagnostics._crystal_thermo_context(None)[0]
-    parent_at_node = {
-        oxide: species_thermo(oxide, "l", 1800.0, gas_pack).G_J_mol
-        for oxide in phase["oxide_stoichiometry"]
-    }
-    parent_at_temperature = {
-        oxide: species_thermo(oxide, "l", 1850.0, gas_pack).G_J_mol
-        for oxide in phase["oxide_stoichiometry"]
-    }
-    fusion = diagnostics._crystal_fusion_gibbs_kj_mol(
-        phase, 1850.0, parent_at_temperature, parent_at_node,
-    )
+    fusion = diagnostics._crystal_fusion_gibbs_kj_mol(phase, 1850.0)
     assert math.isfinite(fusion)
     assert 90.0 < fusion < 120.0
     if ca_row.SI is not None:
