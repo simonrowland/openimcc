@@ -4087,11 +4087,11 @@ def evaluate_gas(
                 "exceeds 1 bar; "
                 "ideal-gas ion closure is not credible at this pressure"
             )
-            domain_flags = {
-                name: "; ".join(filter(None, (flag, closure_notice)))
-                for name, flag in domain_flags.items()
-                if name.endswith(("+", "-"))
-            }
+            for name, flag in domain_flags.items():
+                if name.endswith(("+", "-")):
+                    domain_flags[name] = "; ".join(
+                        filter(None, (flag, closure_notice))
+                    )
 
     p_species = tuple(
         name for name in ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS")

@@ -1502,6 +1502,7 @@ def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(
             if not species.endswith(("+", "-"))
         }
         assert dict(default) == dict(explicit_default) == neutral_only
+        assert set(neutral_only) <= set(with_ions.domain_flags)
         outputs[temperature] = with_ions
 
         positive = sum(with_ions[species] for species in ("Na+", "K+", "Ca+"))
