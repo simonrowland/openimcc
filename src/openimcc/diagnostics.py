@@ -942,19 +942,16 @@ def _crystal_fusion_gibbs_kj_mol(
     crystal_increment = _continued_crystal_absolute_g_increment_kj_mol(
         phase, temperature_K,
     )
-    # Premise: the stored node is ΣνΔfG_JANAF(parent,l)-ΔfG_Barin(crystal).
-    # JANAF gives G_app=Hf(298)+[H(T)-H(298)]-T*S; the Hf(298) constant cancels
-    # in an increment. Form each source-node G_i=Hinc_i*1000-T_i*S_i and use a
-    # cubic Hermite segment with endpoint slopes dG/dT=-S. With S=-G' and
-    # H=G+T*S, this is ΔG_parent,abs=[H(T)-H(T0)]-[T*S(T)-T0*S(T0)]. Therefore
-    # ΔG_fus(T)=ΔG_fus,node(T0)+ΣνΔG_parent,abs-ΔG_cr,abs. In J/mol, the parent
-    # and crystal increments use S,Cp in J/(mol K) and T in K; divide by 1000
-    # for kJ/mol formula. Both increments vanish at T0, so G is continuous
-    # and the slope is -ΣνS_parent,JANAF(T0)+S_cr,Barin(T0). Anchoring the stored
-    # node also holds any Barin/JANAF element-reference residual fixed at δ(T0)
-    # over the gap. The stored-node secant is diagnostic only: differing
-    # element references, including Ca's 1757 K boiling point in the 1700–1800
-    # K interval, can change its average slope.
+    # Premise: the stored v3 node is already on the common absolute-G basis.
+    # For each source, Hf(298) cancels in an increment; with G=H-TS and
+    # dG/dT=-S, the JANAF Hermite segment gives
+    # ΔG_abs=[H(T)-H(T0)]-[T*S(T)-T0*S(T0)]. Therefore the continued fusion
+    # value is the stored node plus ΣνΔG_parent,abs-ΔG_crystal,abs. Entropy
+    # and Cp use J/(mol K), T uses K, and the combined increment is divided
+    # by 1000 to return kJ/mol crystal formula. Both increments vanish at T0,
+    # so the result is continuous and its tangent follows the absolute-G
+    # entropy slope S_crystal-ΣνS_parent. The anchor supplies the matching
+    # absolute-G value without reintroducing the old element-reference term.
     return (
         _interpolate_crystal_fusion_nodes(phase, nodes[-1])
         + parent_increment / 1000.0

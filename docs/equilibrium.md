@@ -17,11 +17,16 @@ dataset, the JANAF pure-oxide crystals, and six aluminate crystals from Barin
 NaAlO2, and MgAl2O4. Their printed solid Gibbs-energy nodes are used only
 within these ranges: CA 298.15–1800 K, CA2 298.15–2000 K, C3A
 298.15–1800 K, C12A7 298.15–1700 K, NaAlO2 298.15–1900 K, and MgAl2O4
-298.15–2408 K. NaAlO2 keeps the SOL-A to SOL-B transition at 740 K. The
-conversion to the solver's liquid-parent basis uses a Hess cycle with the
-JANAF liquid CaO, Al2O3, Na2O, and MgO tables. Barin's compound-liquid rows
-are not candidates. Source locators are Barin (1995), pp. 442–445 (calcium
-aluminates), p. 1132 (NaAlO2), and p. 1015 (MgAl2O4).
+298.15–2408 K. NaAlO2 keeps the SOL-A to SOL-B transition at 740 K. Fusion
+nodes use a common absolute-G Hess basis: each species is evaluated from its
+formation enthalpy at 298.15 K, enthalpy increment, and entropy, with
+ΔG_fus = ΣνG_abs,JANAF(parent liquid) − G_abs,Barin(crystal). The JANAF
+parents use the packaged liquid-pair tables; no temperature-dependent element
+functions enter this cycle. This basis is recorded as
+`openimcc-barin-aluminate-crystals-v3`; the earlier v2 identity retains its
+element-referenced meaning. Barin's compound-liquid rows are not candidates.
+Source locators are Barin (1995), pp. 442–445 (calcium aluminates), p. 1132
+(NaAlO2), and p. 1015 (MgAl2O4).
 
 Between their final printed nodes and source limits, CA, CA2, and C3A continue
 with constant heat capacity from the last Barin Cp node, anchored at the last

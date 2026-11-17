@@ -194,7 +194,7 @@ def _empty_result(
     labels = PhaseEquilibriumLabels(
         identity={
             "crystal_phases": "openimcc-crystal-phases-v1",
-            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v2",
+            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v3",
             "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
             "gas_table_digest": getattr(gas_pack, "gas_table_digest", "unresolved"),
             "condensate_table_digest": getattr(

@@ -56,6 +56,53 @@ def _interpolate(nodes: list[tuple[float, float]], temperature: float) -> float:
     raise ValueError(f"no source interval at {temperature:g} K")
 
 
+def _janaf_absolute_g_J_mol(row: dict, temperature_K: float) -> float:
+    transition = next(
+        (
+            node for node in reversed(row["transition_rows"])
+            if float(node["T_K"]) == temperature_K
+        ),
+        None,
+    )
+    nodes = [transition] if transition is not None else [
+        *row["nodes"], *row["transition_rows"],
+    ]
+    h_increment = _interpolate(
+        [(float(node["T_K"]), float(node["enthalpy_increment_kJ_mol"]))
+         for node in nodes],
+        temperature_K,
+    )
+    entropy = _interpolate(
+        [(float(node["T_K"]), float(node["entropy_J_mol_K"])) for node in nodes],
+        temperature_K,
+    )
+    return (
+        (float(row["formation_enthalpy_298_kJ_mol"]) + h_increment) * 1000.0
+        - temperature_K * entropy
+    )
+
+
+def _barin_absolute_g_J_mol(phase: dict, temperature_K: float) -> float:
+    source_node = None
+    for polymorph in phase["polymorphs"]:
+        series = polymorph["source_series"]
+        enthalpy = {
+            float(node["T_K"]): float(node["value"])
+            for node in series["H_minus_H298"]["nodes"]
+        }
+        entropy = {
+            float(node["T_K"]): float(node["value"])
+            for node in series["S"]["nodes"]
+        }
+        if temperature_K in enthalpy and temperature_K in entropy:
+            source_node = enthalpy[temperature_K], entropy[temperature_K]
+    assert source_node is not None
+    h_increment, entropy = source_node
+    return (
+        float(phase["formation_enthalpy_298_kJ_mol"]) + h_increment
+    ) * 1000.0 - temperature_K * entropy
+
+
 def _source_series(phase: dict, quantity: str) -> list[tuple[float, float]]:
     return sorted(
         (
@@ -68,7 +115,7 @@ def _source_series(phase: dict, quantity: str) -> list[tuple[float, float]]:
 
 def test_barin_phase_formulas_and_printed_node_ranges() -> None:
     data = _json(BARIN_PATH)
-    assert data["schema"] == "openimcc-barin-aluminate-crystals-v2"
+    assert data["schema"] == "openimcc-barin-aluminate-crystals-v3"
     assert len(data["phases"]) == 6
 
     for phase in data["phases"]:
@@ -170,9 +217,8 @@ def test_constant_cp_fusion_continuation_is_continuous_and_self_consistent(
     no_jump = just_above - node_gibbs
     assert abs(no_jump) < 1.0e-5
 
-    # The stored-node secant is report-only: JANAF and Barin can use different
-    # elemental reference functions, leaving a residual that changes across
-    # the interval; the 1700–1800 K CA/C3A secant also crosses Ca's boiling point.
+    # The stored nodes use a common absolute-G basis. The 1700–1800 K
+    # calcium-aluminate secants are checked separately against their entropy slopes.
     parent_entropy = _janaf_parent_entropy_sum_J_mol_K(
         phase, data["conversion"]["parent_oxide_references"], t0,
     )
@@ -193,9 +239,11 @@ def test_constant_cp_fusion_continuation_is_continuous_and_self_consistent(
 @pytest.mark.parametrize(
     ("phase_id", "expected_fusion_at_limit"),
     (
-        ("CA", 107.002694620),
-        ("CA2", 152.873064502),
-        ("C3A", 202.848036084),
+        # v3 changes the stored absolute-G anchor; the continuation increments
+        # are unchanged, so only these source-limit values move with the anchor.
+        ("CA", 106.977894620),
+        ("CA2", 153.410064502),
+        ("C3A", 201.940236084),
     ),
 )
 def test_continued_fusion_gibbs_at_source_limit(
@@ -294,43 +342,107 @@ def test_phases_without_a_printed_limit_remain_missing_above_their_last_node() -
         assert phase_id in missing
 
 
-def test_formation_gibbs_reconstruction_and_independent_oxide_hess_cycles() -> None:
+def test_independent_absolute_g_hess_cycles() -> None:
     data = _json(BARIN_PATH)
     references = data["conversion"]["parent_oxide_references"]
-    oxide_nodes = {
+    pair_rows = {
+        row["table_id"]: row for row in _json(JANAF_LIQUID_PATH)["rows"]
+    }
+    for phase in data["phases"]:
+        for key, fusion in phase["fusion_gibbs_nodes_kJ_mol"].items():
+            temperature = float(key)
+            parent_g = math.fsum(
+                float(coefficient) * _janaf_absolute_g_J_mol(
+                    pair_rows[references[oxide]["table_id"]], temperature,
+                )
+                for oxide, coefficient in phase["oxide_stoichiometry"].items()
+            )
+            crystal_g = _barin_absolute_g_J_mol(phase, temperature)
+            assert (parent_g - crystal_g) / 1000.0 == pytest.approx(
+                float(fusion), abs=1.0e-9,
+            )
+
+
+def test_v3_minus_v2_nodes_match_independent_element_reference_residual() -> None:
+    data = _json(BARIN_PATH)
+    references = data["conversion"]["parent_oxide_references"]
+    pair_rows = {
+        row["table_id"]: row for row in _json(JANAF_LIQUID_PATH)["rows"]
+    }
+    oxide_formation_g = {
         oxide: _source_formation_gibbs(reference["table_id"])
         for oxide, reference in references.items()
     }
-    reconstruction_errors = {}
+    phases = {phase["id"]: phase for phase in data["phases"]}
+    audit_examples = (("C12A7", 1700.0, -19.63), ("CA", 1800.0, -0.025))
 
-    for phase in data["phases"]:
-        max_delta_f_g_error = 0.0
-        for polymorph in phase["polymorphs"]:
-            series = polymorph["source_series"]
-            for node in series["delta_fG"]["nodes"]:
-                temperature = float(node["T_K"])
-                oxide_formation_g = sum(
-                    float(coefficient) * _interpolate(oxide_nodes[oxide], temperature)
-                    for oxide, coefficient in phase["oxide_stoichiometry"].items()
+    for phase_id, temperature, expected in audit_examples:
+        phase = phases[phase_id]
+        fusion = float(phase["fusion_gibbs_nodes_kJ_mol"][f"{temperature:.2f}"])
+        old_parent_g = math.fsum(
+            float(coefficient) * _interpolate(
+                oxide_formation_g[oxide], temperature,
+            )
+            for oxide, coefficient in phase["oxide_stoichiometry"].items()
+        )
+        old_crystal_g = _interpolate(_source_series(phase, "delta_fG"), temperature)
+        old_fusion = old_parent_g - old_crystal_g
+
+        parent_reference_term = math.fsum(
+            float(coefficient) * (
+                _janaf_absolute_g_J_mol(
+                    pair_rows[references[oxide]["table_id"]], temperature,
+                ) / 1000.0
+                - _interpolate(oxide_formation_g[oxide], temperature)
+            )
+            for oxide, coefficient in phase["oxide_stoichiometry"].items()
+        )
+        crystal_reference_term = (
+            _barin_absolute_g_J_mol(phase, temperature) / 1000.0 - old_crystal_g
+        )
+        independent_element_term = parent_reference_term - crystal_reference_term
+        assert fusion - old_fusion == pytest.approx(independent_element_term, abs=1e-9)
+        assert fusion - old_fusion == pytest.approx(expected, abs=0.1)
+
+
+def test_ca_aluminate_1700_1800_kink_secant_matches_entropy_slope() -> None:
+    data = _json(BARIN_PATH)
+    references = data["conversion"]["parent_oxide_references"]
+    pair_rows = {
+        row["table_id"]: row for row in _json(JANAF_LIQUID_PATH)["rows"]
+    }
+    for phase_id in ("CA", "CA2", "C3A"):
+        phase = next(row for row in data["phases"] if row["id"] == phase_id)
+        low, high = 1700.0, 1800.0
+        secant = (
+            float(phase["fusion_gibbs_nodes_kJ_mol"][f"{high:.2f}"])
+            - float(phase["fusion_gibbs_nodes_kJ_mol"][f"{low:.2f}"])
+        ) / (high - low)
+        endpoint_slopes = []
+        for temperature in (low, high):
+            crystal_entropy = next(
+                float(node["value"])
+                for polymorph in reversed(phase["polymorphs"])
+                for node in polymorph["source_series"]["S"]["nodes"]
+                if float(node["T_K"]) == temperature
+            )
+            parent_entropy = math.fsum(
+                float(coefficient) * float(
+                    next(
+                        node["entropy_J_mol_K"]
+                        for node in (
+                            *pair_rows[references[oxide]["table_id"]]["nodes"],
+                            *pair_rows[references[oxide]["table_id"]]["transition_rows"],
+                        )
+                        if float(node["T_K"]) == temperature
+                    )
                 )
-                fusion = float(phase["fusion_gibbs_nodes_kJ_mol"][f"{temperature:.2f}"])
-                reconstructed_delta_f_g = oxide_formation_g - fusion
-                max_delta_f_g_error = max(
-                    max_delta_f_g_error, abs(reconstructed_delta_f_g - float(node["value"]))
-                )
-                assert reconstructed_delta_f_g == pytest.approx(node["value"], abs=1e-9)
-
-            # H−H298 and S are carried as the printed nodes, not inferred by
-            # differentiating Gibbs nodes. Thus their node reconstruction
-            # error is zero by representation; check each aligned value exists.
-            temperatures = [node["T_K"] for node in series["delta_fG"]["nodes"]]
-            for quantity in ("H_minus_H298", "S"):
-                nodes = series[quantity]["nodes"]
-                assert [node["T_K"] for node in nodes] == temperatures
-                assert all(math.isfinite(float(node["value"])) for node in nodes)
-
-        reconstruction_errors[phase["id"]] = max_delta_f_g_error
-        assert reconstruction_errors[phase["id"]] <= 1e-9
+                for oxide, coefficient in phase["oxide_stoichiometry"].items()
+            )
+            endpoint_slopes.append((crystal_entropy - parent_entropy) / 1000.0)
+        assert secant == pytest.approx(
+            math.fsum(endpoint_slopes) / 2.0, abs=1.0e-4,
+        )
 
 
 def test_spinel_is_compared_with_berman_and_janaf_without_averaging() -> None:
@@ -365,8 +477,9 @@ def test_spinel_is_compared_with_berman_and_janaf_without_averaging() -> None:
             _interpolate(barin_formation, temperature)
             - _interpolate(janaf_crystal, temperature)
         )
-    assert min(barin_minus_berman) == pytest.approx(5.67698852374042)
-    assert max(barin_minus_berman) == pytest.approx(9.326397581285839)
+    # The Barin fusion curve now uses the v3 absolute-G anchor.
+    assert min(barin_minus_berman) == pytest.approx(5.149792523740572)
+    assert max(barin_minus_berman) == pytest.approx(7.642652765361433)
     assert min(barin_minus_janaf) == pytest.approx(9.77944)
     assert max(barin_minus_janaf) == pytest.approx(21.9622)
 
@@ -405,14 +518,14 @@ def test_ca_al2o3_join_returns_certified_states(bulk, temperature, expected_crys
     assert barin_ids <= result.phase_presence.keys()
     assert present == expected_crystals, summary
     assert result.labels.identity["barin_aluminate_crystals"] == (
-        "openimcc-barin-aluminate-crystals-v2"
+        "openimcc-barin-aluminate-crystals-v3"
     )
     assert "barin_aluminate_crystals" in result.receipt.data_digests
     if "CaO" in bulk and "Al2O3" in bulk:
         assert "CA6" in result.receipt.solver["missing_candidate_phase_ids"]
 
 
-def test_active_set_replacement_tries_lime_after_failed_c3a() -> None:
+def test_absolute_g_anchor_selects_lime_without_c3a_trial() -> None:
     result = equilibrate({"CaO": 3.0, "Al2O3": 1.0}, 1700.0)
     summary = {
         "validity": result.labels.validity,
@@ -430,8 +543,9 @@ def test_active_set_replacement_tries_lime_after_failed_c3a() -> None:
         {"CaO": 1.656665, "Al2O3": 1.0}, abs=1.0e-5
     )
     assert result.phase_presence["C3A"] == "absent"
-    assert ("C3A",) in result.active_set_history
-    assert ("CaO",) in result.active_set_history
+    # The v3 anchor keeps the final CaO phase and amounts but skips the C3A trial.
+    assert ("C3A",) not in result.active_set_history
+    assert result.active_set_history[-1] == ("CaO",)
 
 
 def test_source_molten_crystals_are_named_and_not_missing() -> None:
@@ -476,6 +590,6 @@ def test_missing_beta_alumina_keeps_sodium_alumina_bulk_dependent() -> None:
 def test_declared_barin_phase_receipt_names_its_data_identity() -> None:
     result = evaluate_declared_assemblage(("CA",), 1800.0)
     assert result.labels.identity["barin_aluminate_crystals"] == (
-        "openimcc-barin-aluminate-crystals-v2"
+        "openimcc-barin-aluminate-crystals-v3"
     )
     assert "barin_aluminate_crystals" in result.receipt.data_digests

@@ -1,5 +1,5 @@
 {
-  "schema": "openimcc-barin-aluminate-crystals-v2",
+  "schema": "openimcc-barin-aluminate-crystals-v3",
   "source": {
     "work_id": "barin-1995",
     "citation": "Barin, I. (1995). Thermochemical Data of Pure Substances (3rd ed.). VCH.",
@@ -19,41 +19,41 @@
     "Cp_J_mol_K": "J mol-1 K-1 crystal formula unit"
   },
   "conversion": {
-    "method": "Hess cycle from the crystal to its liquid parent oxides",
-    "equation": "deltaG_fus = sum(nu_i * delta_fG_JANAF(parent_oxide_i,l)) - delta_fG_Barin(crystal); G_crystal = sum(nu_i * G_parent_i,l) - deltaG_fus",
-    "unit_check": "All source and fusion Gibbs values are kJ/mol crystal formula; multiply fusion by 1000 before combining with J/mol parent-liquid G.",
+    "method": "Absolute-G Hess cycle from Barin crystal and JANAF liquid-parent formation enthalpy, enthalpy increment, and entropy",
+    "equation": "G_abs,s(T) = delta_fH_s(298.15) + [H_s(T)-H_s(298.15)] - T*S_s(T)/1000; deltaG_fus,abs = sum(nu_i * G_abs,JANAF(parent_oxide_i,l)) - G_abs,Barin(crystal)",
+    "unit_check": "Formation and enthalpy-increment values are kJ/mol; S is J/(mol K), so T*S/1000 is kJ/mol. Stoichiometric sums and fusion nodes are kJ/mol crystal formula.",
     "parent_oxide_references": {
       "CaO": {
         "table_id": "Ca-028",
         "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed.; table Ca-028.",
         "source_sha256": "44546e962fd516f7e9cf035429593916440008b7f81c06b5915da86b1203d072",
-        "quantity": "formation_gibbs_energy",
+        "quantity": "absolute_gibbs_energy",
         "unit": "kJ/mol oxide formula",
-        "interpolation": "linear between printed liquid-table formation Gibbs nodes"
+        "interpolation": "linear between source enthalpy-increment and entropy nodes separately, including transition rows"
       },
       "Al2O3": {
         "table_id": "Al-100",
         "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed.; table Al-100.",
         "source_sha256": "b27ae0ccebb7433b209b9dbd7f0b67448e49cf2b613625e22b05709e49c0dbe0",
-        "quantity": "formation_gibbs_energy",
+        "quantity": "absolute_gibbs_energy",
         "unit": "kJ/mol oxide formula",
-        "interpolation": "linear between printed liquid-table formation Gibbs nodes"
+        "interpolation": "linear between source enthalpy-increment and entropy nodes separately, including transition rows"
       },
       "Na2O": {
         "table_id": "Na-013",
         "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed.; table Na-013.",
         "source_sha256": "6d1a2122965e67cea023a9732122e6755049a651ab233273c66c9e756be91270",
-        "quantity": "formation_gibbs_energy",
+        "quantity": "absolute_gibbs_energy",
         "unit": "kJ/mol oxide formula",
-        "interpolation": "linear between printed liquid-table formation Gibbs nodes"
+        "interpolation": "linear between source enthalpy-increment and entropy nodes separately, including transition rows"
       },
       "MgO": {
         "table_id": "Mg-009",
         "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed.; table Mg-009.",
         "source_sha256": "f31771f1a45e7749f20bcdc70557a32e85dcb9d79a8b53f7c59c6a3cda482a41",
-        "quantity": "formation_gibbs_energy",
+        "quantity": "absolute_gibbs_energy",
         "unit": "kJ/mol oxide formula",
-        "interpolation": "linear between printed liquid-table formation Gibbs nodes"
+        "interpolation": "linear between source enthalpy-increment and entropy nodes separately, including transition rows"
       }
     }
   },
@@ -71,23 +71,23 @@
         1800.0
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "298.15": 143.86000000000013,
-        "300.00": 143.83300000000008,
-        "400.00": 142.31099999999992,
-        "500.00": 140.7579999999998,
-        "600.00": 139.13500000000022,
-        "700.00": 137.43100000000004,
-        "800.00": 135.65499999999997,
-        "900.00": 133.80399999999986,
-        "1000.00": 131.87400000000002,
-        "1100.00": 129.87499999999977,
-        "1200.00": 127.8130000000001,
-        "1300.00": 125.78099999999995,
-        "1400.00": 123.70499999999993,
-        "1500.00": 121.2650000000001,
-        "1600.00": 118.44499999999994,
-        "1700.00": 115.27999999999997,
-        "1800.00": 110.04700000000003
+        "298.15": 143.81168260000004,
+        "300.00": 143.78359999999975,
+        "400.00": 142.23540000000048,
+        "500.00": 140.64049999999997,
+        "600.00": 138.96480000000065,
+        "700.00": 137.20090000000073,
+        "800.00": 135.3525999999997,
+        "900.00": 133.42440000000033,
+        "1000.00": 131.4300000000003,
+        "1100.00": 129.37840000000006,
+        "1200.00": 127.2808,
+        "1300.00": 125.13990000000013,
+        "1400.00": 122.91459999999961,
+        "1500.00": 120.2829999999999,
+        "1600.00": 117.23260000000028,
+        "1700.00": 113.79950000000008,
+        "1800.00": 110.02219999999988
       },
       "source": {
         "work_id": "barin-1995",
@@ -98,7 +98,14 @@
         "pdf_page_index": 556,
         "row": "SOL crystal rows",
         "uncertainty": null,
-        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved."
+        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved.",
+        "formation_enthalpy_locator": {
+          "page": 557,
+          "published_page": 442,
+          "pdf_page_index": 556,
+          "row": "SOL 298.15",
+          "column": "ΔHf"
+        }
       },
       "source_solid_limit": {
         "temperature_K": 1875.0,
@@ -929,7 +936,8 @@
             "column": "ΔGf"
           }
         }
-      ]
+      ],
+      "formation_enthalpy_298_kJ_mol": -2326.304
     },
     {
       "id": "CA2",
@@ -944,25 +952,25 @@
         2000.0
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "298.15": 221.68399999999974,
-        "300.00": 221.6510000000003,
-        "400.00": 219.73199999999952,
-        "500.00": 217.71799999999985,
-        "600.00": 215.53900000000021,
-        "700.00": 213.1810000000005,
-        "800.00": 210.65700000000015,
-        "900.00": 207.97400000000016,
-        "1000.00": 205.1329999999998,
-        "1100.00": 202.16600000000017,
-        "1200.00": 199.0880000000002,
-        "1300.00": 196.0,
-        "1400.00": 192.7810000000004,
-        "1500.00": 188.79100000000017,
-        "1600.00": 184.0029999999997,
-        "1700.00": 178.48800000000028,
-        "1800.00": 170.55700000000024,
-        "1900.00": 163.4079999999999,
-        "2000.00": 155.67999999999984
+        "298.15": 221.63622944999997,
+        "300.00": 221.60130000000026,
+        "400.00": 219.65799999999945,
+        "500.00": 217.60049999999956,
+        "600.00": 215.3775999999998,
+        "700.00": 212.9702999999995,
+        "800.00": 210.39240000000018,
+        "900.00": 207.65959999999995,
+        "1000.00": 204.79100000000017,
+        "1100.00": 201.8118000000004,
+        "1200.00": 198.73680000000058,
+        "1300.00": 195.57710000000043,
+        "1400.00": 192.2492000000002,
+        "1500.00": 188.10599999999977,
+        "1600.00": 183.1251999999995,
+        "1700.00": 177.3827999999994,
+        "1800.00": 170.9448000000002,
+        "1900.00": 163.8757999999989,
+        "2000.00": 156.21700000000055
       },
       "source": {
         "work_id": "barin-1995",
@@ -973,7 +981,14 @@
         "pdf_page_index": 557,
         "row": "SOL crystal rows",
         "uncertainty": null,
-        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved."
+        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved.",
+        "formation_enthalpy_locator": {
+          "page": 558,
+          "published_page": 443,
+          "pdf_page_index": 557,
+          "row": "SOL 298.15",
+          "column": "ΔHf"
+        }
       },
       "source_solid_limit": {
         "temperature_K": 2035.0,
@@ -1894,7 +1909,8 @@
             "column": "ΔGf"
           }
         }
-      ]
+      ],
+      "formation_enthalpy_298_kJ_mol": -4025.799
     },
     {
       "id": "C3A",
@@ -1909,23 +1925,23 @@
         1800.0
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "298.15": 280.95600000000013,
-        "300.00": 280.8699999999999,
-        "400.00": 276.1699999999996,
-        "500.00": 271.5630000000001,
-        "600.00": 266.9760000000001,
-        "700.00": 262.37800000000016,
-        "800.00": 257.77900000000045,
-        "900.00": 253.15099999999984,
-        "1000.00": 248.4689999999996,
-        "1100.00": 243.71399999999994,
-        "1200.00": 238.88499999999976,
-        "1300.00": 234.24299999999948,
-        "1400.00": 229.66100000000006,
-        "1500.00": 224.8130000000001,
-        "1600.00": 219.67500000000018,
-        "1700.00": 214.2800000000002,
-        "1800.00": 203.38999999999987
+        "298.15": 280.80986970000004,
+        "300.00": 280.72019999999975,
+        "400.00": 275.94160000000056,
+        "500.00": 271.2089999999994,
+        "600.00": 266.4522000000002,
+        "700.00": 261.64779999999973,
+        "800.00": 256.79320000000007,
+        "900.00": 251.8843999999999,
+        "1000.00": 246.93100000000004,
+        "1100.00": 241.942,
+        "1200.00": 236.92439999999942,
+        "1300.00": 231.8805999999995,
+        "1400.00": 226.76839999999993,
+        "1500.00": 221.26850000000059,
+        "1600.00": 215.36319999999978,
+        "1700.00": 209.08739999999943,
+        "1800.00": 202.48219999999947
       },
       "source": {
         "work_id": "barin-1995",
@@ -1936,7 +1952,14 @@
         "pdf_page_index": 559,
         "row": "SOL crystal rows",
         "uncertainty": null,
-        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved."
+        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved.",
+        "formation_enthalpy_locator": {
+          "page": 560,
+          "published_page": 445,
+          "pdf_page_index": 559,
+          "row": "SOL 298.15",
+          "column": "ΔHf"
+        }
       },
       "source_solid_limit": {
         "temperature_K": 1808.0,
@@ -2767,7 +2790,8 @@
             "column": "ΔGf"
           }
         }
-      ]
+      ],
+      "formation_enthalpy_298_kJ_mol": -3587.801
     },
     {
       "id": "C12A7",
@@ -2782,22 +2806,22 @@
         1700.0
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "298.15": 1347.280999999999,
-        "300.00": 1346.9770000000026,
-        "400.00": 1330.3420000000006,
-        "500.00": 1313.8590000000004,
-        "600.00": 1297.095000000003,
-        "700.00": 1279.9719999999998,
-        "800.00": 1262.6319999999996,
-        "900.00": 1245.0679999999975,
-        "1000.00": 1227.262999999999,
-        "1100.00": 1209.277,
-        "1200.00": 1191.1759999999977,
-        "1300.00": 1174.083999999999,
-        "1400.00": 1157.389000000001,
-        "1500.00": 1138.8599999999988,
-        "1600.00": 1118.402,
-        "1700.00": 1096.2799999999988
+        "298.15": 1346.6970868499957,
+        "300.00": 1346.3817000000017,
+        "400.00": 1329.432200000003,
+        "500.00": 1312.4450000000033,
+        "600.00": 1295.0229999999974,
+        "700.00": 1277.1113000000005,
+        "800.00": 1258.804400000001,
+        "900.00": 1240.194599999999,
+        "1000.00": 1221.418999999998,
+        "1100.00": 1202.6130999999987,
+        "1200.00": 1183.8786,
+        "1300.00": 1165.2903000000006,
+        "1400.00": 1146.5966000000008,
+        "1500.00": 1125.5779999999977,
+        "1600.00": 1102.1655999999966,
+        "1700.00": 1076.6421999999984
       },
       "source": {
         "work_id": "barin-1995",
@@ -2808,7 +2832,14 @@
         "pdf_page_index": 559,
         "row": "SOL crystal rows",
         "uncertainty": null,
-        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved."
+        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved.",
+        "formation_enthalpy_locator": {
+          "page": 560,
+          "published_page": 445,
+          "pdf_page_index": 559,
+          "row": "SOL 298.15",
+          "column": "ΔHf"
+        }
       },
       "polymorphs": [
         {
@@ -3562,7 +3593,8 @@
             "column": "ΔGf"
           }
         }
-      ]
+      ],
+      "formation_enthalpy_298_kJ_mol": -19429.998
     },
     {
       "id": "NaAlO2",
@@ -3577,25 +3609,25 @@
         1900.0
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "298.15": 133.79150000000004,
-        "300.00": 133.7745000000001,
-        "400.00": 132.59699999999998,
-        "500.00": 131.0039999999999,
-        "600.00": 129.091,
-        "700.00": 126.91999999999996,
-        "740.00": 125.95920000000001,
-        "800.00": 124.64250000000004,
-        "900.00": 122.25849999999991,
-        "1000.00": 119.72299999999996,
-        "1100.00": 117.06849999999997,
-        "1200.00": 114.30949999999996,
-        "1300.00": 111.46799999999996,
-        "1400.00": 108.52700000000004,
-        "1500.00": 105.26225,
-        "1600.00": 101.89850000000001,
-        "1700.00": 98.23650000000009,
-        "1800.00": 94.37450000000013,
-        "1900.00": 90.33249999999998
+        "298.15": 133.79099712499988,
+        "300.00": 133.77499999999998,
+        "400.00": 132.59709999999973,
+        "500.00": 131.00474999999983,
+        "600.00": 129.0944999999997,
+        "700.00": 126.92964999999981,
+        "740.00": 126.18127000000004,
+        "800.00": 124.6614999999997,
+        "900.00": 122.28974999999991,
+        "1000.00": 119.77449999999976,
+        "1100.00": 117.13769999999977,
+        "1200.00": 114.40099999999984,
+        "1300.00": 111.57769999999982,
+        "1400.00": 108.65639999999985,
+        "1500.00": 105.65031827515395,
+        "1600.00": 102.06660000000034,
+        "1700.00": 98.4255999999998,
+        "1800.00": 94.58269999999993,
+        "1900.00": 90.55960000000005
       },
       "source": {
         "work_id": "barin-1995",
@@ -3606,7 +3638,14 @@
         "pdf_page_index": 1247,
         "row": "SOL crystal rows",
         "uncertainty": null,
-        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved."
+        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved.",
+        "formation_enthalpy_locator": {
+          "page": 1248,
+          "published_page": 1132,
+          "pdf_page_index": 1247,
+          "row": "SOL-A 298.15",
+          "column": "ΔHf"
+        }
       },
       "polymorphs": [
         {
@@ -4571,7 +4610,8 @@
             "column": "ΔGf"
           }
         }
-      ]
+      ],
+      "formation_enthalpy_298_kJ_mol": -1133.195
     },
     {
       "id": "MgAl2O4",
@@ -4586,30 +4626,30 @@
         2408.0
       ],
       "fusion_gibbs_nodes_kJ_mol": {
-        "298.15": 136.279,
-        "300.00": 136.21499999999992,
-        "400.00": 132.72199999999998,
-        "500.00": 129.24800000000005,
-        "600.00": 125.75799999999981,
-        "700.00": 122.24099999999999,
-        "800.00": 118.69900000000007,
-        "900.00": 115.1389999999999,
-        "1000.00": 111.52099999999996,
-        "1100.00": 107.92599999999993,
-        "1200.00": 104.36400000000003,
-        "1300.00": 100.83799999999997,
-        "1400.00": 96.84100000000012,
-        "1500.00": 92.9659999999999,
-        "1600.00": 88.7360000000001,
-        "1700.00": 84.1840000000002,
-        "1800.00": 79.346,
-        "1900.00": 74.25199999999995,
-        "2000.00": 68.92700000000013,
-        "2100.00": 63.39500000000021,
-        "2200.00": 57.652000000000044,
-        "2300.00": 51.695000000000164,
-        "2400.00": 45.396999999999935,
-        "2408.00": 44.89463999999998
+        "298.15": 136.2816128999998,
+        "300.00": 136.2170999999994,
+        "400.00": 132.7248000000004,
+        "500.00": 129.2489999999998,
+        "600.00": 125.76779999999962,
+        "700.00": 122.27029999999922,
+        "800.00": 118.75720000000001,
+        "900.00": 115.23869999999988,
+        "1000.00": 111.71799999999985,
+        "1100.00": 108.21009999999978,
+        "1200.00": 104.71819999999934,
+        "1300.00": 101.2489999999998,
+        "1400.00": 97.75720000000001,
+        "1500.00": 93.92200000000003,
+        "1600.00": 89.72820000000002,
+        "1700.00": 85.21629999999959,
+        "1800.00": 80.41640000000007,
+        "1900.00": 75.36329999999953,
+        "2000.00": 70.07400000000007,
+        "2100.00": 64.58039999999937,
+        "2200.00": 58.87559999999985,
+        "2300.00": 52.95650000000023,
+        "2400.00": 47.13864046242725,
+        "2408.00": 46.658142440693155
       },
       "source": {
         "work_id": "barin-1995",
@@ -4620,7 +4660,14 @@
         "pdf_page_index": 1130,
         "row": "SOL crystal rows",
         "uncertainty": null,
-        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved."
+        "uncertainty_note": "Barin does not report uncertainties for these tabulated values; source rounding is preserved.",
+        "formation_enthalpy_locator": {
+          "page": 1131,
+          "published_page": 1015,
+          "pdf_page_index": 1130,
+          "row": "SOL 298.15",
+          "column": "ΔHf"
+        }
       },
       "source_solid_limit": {
         "temperature_K": 2408.0,
@@ -5746,7 +5793,8 @@
             "column": "ΔGf"
           }
         }
-      ]
+      ],
+      "formation_enthalpy_298_kJ_mol": -2299.903
     }
   ]
 }
