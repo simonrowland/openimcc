@@ -31,15 +31,6 @@ SOURCE_SOLID_LIMITS = {
         "kind": "melting",
         "locator": {"page": 332, "row": "Melting T", "column": "temperature"},
     },
-    "ilmenite": {
-        "temperature_K": 1640.0,
-        "kind": "melting",
-        "locator": {
-            "page": 235,
-            "row": "Rhombohedral crystals 298.15 to 1640 K",
-            "column": "phase_as_published",
-        },
-    },
     "perovskite": {
         "temperature_K": 2188.0,
         "kind": "melting",
@@ -161,11 +152,6 @@ def _validate_source_solid_limit(record: dict[str, Any], phase_id: str) -> None:
     limit = SOURCE_SOLID_LIMITS.get(phase_id)
     if limit is None:
         return
-    description = record["phase_as_published"]
-    if phase_id == "ilmenite":
-        if "298.15 to 1640 K" not in description:
-            raise ValueError("ilmenite source range does not support the 1640 K limit")
-        return
     footer_tokens = [
         token
         for item in record.get("metadata", ())
@@ -177,7 +163,10 @@ def _validate_source_solid_limit(record: dict[str, Any], phase_id: str) -> None:
     source_temperature = float(limit["temperature_K"])
     if not any(float(token["value"]) == source_temperature for token in footer_tokens):
         raise ValueError(f"{phase_id} source record does not print its solid limit")
-    if phase_id == "fayalite" and "melts incongruently at 1490 K" not in description:
+    if (
+        phase_id == "fayalite"
+        and "melts incongruently at 1490 K" not in record["phase_as_published"]
+    ):
         raise ValueError("fayalite source description does not support its melting limit")
 
 
@@ -294,6 +283,7 @@ def build(data: dict[str, Any], source_repository: Path) -> dict[str, Any]:
         for temperature in source_temperatures:
             key = str(int(temperature)) if temperature.is_integer() else str(temperature)
             enthalpy_increment, entropy = source_nodes[temperature]
+            enthalpy_increment = round(enthalpy_increment, 3)
             phase["source_crystal_enthalpy_increment_nodes_kJ_mol"][key] = (
                 enthalpy_increment
             )
@@ -310,6 +300,8 @@ def build(data: dict[str, Any], source_repository: Path) -> dict[str, Any]:
         phase["fusion_gibbs_nodes_kJ_mol"] = rebuilt
         if phase_id in SOURCE_SOLID_LIMITS:
             phase["source_solid_limit"] = SOURCE_SOLID_LIMITS[phase_id]
+        else:
+            phase.pop("source_solid_limit", None)
     return result
 
 

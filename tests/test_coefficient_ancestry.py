@@ -153,9 +153,33 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
 
     crystals = _artifact(entries, "openimcc-crystal-phases-v2")
     assert set(crystals["work_ids"]) == {
-        "berman-1988-jpetrology", "janaf-4th", "robie-hemingway-1995-usgs-b2131",
+        "berman-1988-internally-consistent-mineral-thermodynamic-data",
+        "darken-gurry-1946-iron-oxygen-ii",
+        "janaf-4th",
     }
-    assert crystals["complete"] is True
+    assert crystals["complete"] is False
+    rh_rows = {
+        f"phases:{phase}"
+        for phase in ("fayalite", "hercynite", "ilmenite", "perovskite", "ulvospinel")
+    }
+    rh_citations = [
+        item for item in crystals["unmapped"]
+        if item["citation"] == "Robie and Hemingway (1995), USGS Bulletin 2131"
+    ]
+    assert {item["row"] for item in rh_citations} == rh_rows
+    assert all(
+        item["reason"] == (
+            "No curated citation-key mapping resolves to a work ID in the vocabulary."
+        )
+        for item in rh_citations
+    )
+    for phase in ("fayalite", "hercynite", "ilmenite", "ulvospinel"):
+        row = next(item for item in crystals["rows"] if item["id"] == f"phases:{phase}")
+        assert any(
+            source["work_id"] == "darken-gurry-1946-iron-oxygen-ii"
+            for source in row["sources"]
+        )
+        assert not any("Fe-019" in source["citation"] for source in row["sources"])
 
 
 def test_every_default_row_has_mapped_or_unmapped_lineage() -> None:

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from openimcc.diagnostics import _crystal_thermo_context
+from openimcc.diagnostics import CrystalStatus, _crystal_thermo_context
 from openimcc.equilibrium import (
     _source_cap_excludes_candidate,
     _source_solid_limit_K,
@@ -199,7 +199,7 @@ def test_absolute_g_hess_cycle_independently_at_two_temperatures(
 
 def test_rh_source_solid_limits_apply_to_melted_crystals() -> None:
     phases = {phase["id"]: phase for phase in _dataset()["phases"]}
-    expected_limits = {"fayalite": 1490.0, "ilmenite": 1640.0, "perovskite": 2188.0}
+    expected_limits = {"fayalite": 1490.0, "perovskite": 2188.0}
     for phase_id, temperature in expected_limits.items():
         phase = phases[phase_id]
         assert _source_solid_limit_K(phase) == temperature
@@ -210,6 +210,11 @@ def test_rh_source_solid_limits_apply_to_melted_crystals() -> None:
         assert _source_cap_excludes_candidate(
             phase["oxide_stoichiometry"], phase, temperature + 1.0,
         )
+    ilmenite = phases["ilmenite"]
+    assert "source_solid_limit" not in ilmenite
+    assert _source_solid_limit_K(ilmenite) is None
+    assert ilmenite["valid_temperature_K"] == [1300, 1600]
+    assert max(map(float, ilmenite["fusion_gibbs_nodes_kJ_mol"])) == 1600.0
 
 
 def test_equilibrium_sanity_bulk_cases_use_crystal_phases_v2() -> None:
@@ -223,13 +228,16 @@ def test_equilibrium_sanity_bulk_cases_use_crystal_phases_v2() -> None:
         "MgO": 10.0, "CaO": 11.0, "Na2O": 0.4, "K2O": 0.1,
     }
     bulks = (
-        {
-            oxide: amount / molecular_weights[oxide]
-            for oxide, amount in mare_weight_percent.items()
-        },
-        {"CaO": 1.0, "TiO2": 1.0, "SiO2": 1.0},
+        (
+            "mare-basalt-like",
+            {
+                oxide: amount / molecular_weights[oxide]
+                for oxide, amount in mare_weight_percent.items()
+            },
+        ),
+        ("CaO-TiO2-SiO2", {"CaO": 1.0, "TiO2": 1.0, "SiO2": 1.0}),
     )
-    for bulk in bulks:
+    for name, bulk in bulks:
         for temperature in (1700.0, 1800.0):
             result = equilibrate(bulk, temperature)
             assert result.labels.identity["crystal_phases"] == "openimcc-crystal-phases-v2"
@@ -238,3 +246,14 @@ def test_equilibrium_sanity_bulk_cases_use_crystal_phases_v2() -> None:
                 row for row in result.phase_saturation_indices
                 if row.phase == "perovskite"
             )
+            if name == "mare-basalt-like":
+                assert result.refusal is not None
+                assert result.refusal.code == "missing_phase_data"
+                assert "crystal.ilmenite" in result.refusal.axes
+                assert result.labels.coverage["ilmenite"] == "temperature_out_of_range"
+                ilmenite = next(
+                    row for row in result.phase_saturation_indices
+                    if row.phase == "ilmenite"
+                )
+                assert ilmenite.status is CrystalStatus.OUT_OF_RANGE
+                assert ilmenite.SI is None

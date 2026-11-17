@@ -33,8 +33,9 @@ crystal's absolute Gibbs energy is reconstructed from its printed 298.15 K
 formation enthalpy, enthalpy increment, and entropy, then differenced against
 the existing parent-liquid standards on the same absolute-G basis. Berman rows
 and JANAF pure-oxide controls are unchanged; the published v1 identity retains
-its former element-referenced meaning. R&H solid limits are recorded for
-fayalite (1490 K), ilmenite (1640 K), and perovskite (2188 K).
+its former element-referenced meaning. R&H melting limits are recorded for
+fayalite (1490 K) and perovskite (2188 K). Ilmenite's table ends at 1600 K
+without a printed melting point, so it is missing above its final source node.
 
 Between their final printed nodes and source limits, CA, CA2, and C3A continue
 with constant heat capacity from the last Barin Cp node, anchored at the last

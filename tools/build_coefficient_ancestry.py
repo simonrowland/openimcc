@@ -683,7 +683,8 @@ def _crystal_phase_artifact(mapper: SourceMapper) -> dict[str, Any]:
     for phase in content["phases"]:
         record = _row(f"phases:{phase['id']}", phase["formula"])
         source = phase["source"]
-        if source.get("authors") == "Berman":
+        is_berman = source.get("authors") == "Berman"
+        if is_berman:
             _add_citation(
                 record,
                 source["journal"],
@@ -694,15 +695,19 @@ def _crystal_phase_artifact(mapper: SourceMapper) -> dict[str, Any]:
             parent_rows = crystal_rows
         else:
             citation = "Robie and Hemingway (1995), USGS Bulletin 2131"
-            _add_citation(
-                record,
-                citation,
-                "derived",
-                mapper,
-                citation_key="robie and hemingway (1995), usgs bulletin 2131",
-            )
+            _add_citation(record, citation, "derived", mapper)
             parent_rows = liquid_rows
         for oxide in phase["oxide_stoichiometry"]:
+            if not is_berman and oxide == "FeO":
+                _add_citation(
+                    record,
+                    "Darken & Gurry (1946), Tables IIIA, IIIB, VI, "
+                    "selected FeO(l) standard reduced via Masson (1965), Eq. 17",
+                    "derived",
+                    mapper,
+                    citation_key="darken & gurry (1946)",
+                )
+                continue
             reference = parent_rows[oxide]
             table_id = reference.get("crystal_table_id") or reference["table_id"]
             citation = f"Chase (1998), NIST-JANAF Thermochemical Tables; table {table_id}"
