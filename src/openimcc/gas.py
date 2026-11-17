@@ -5178,7 +5178,6 @@ def evaluate_gas_oxygen_balance(
 
     ion_parents: dict[str, str] = {}
     if include_ions:
-        # Ions inherit each neutral channel's parent oxygen demand per atom.
         # Their exponent uses the parent's declared exponent as an effective
         # monotonicity proxy; the true charge-closure response is composition
         # dependent (see limitation in this function's docstring).
@@ -5186,18 +5185,18 @@ def evaluate_gas_oxygen_balance(
             if neutral not in species_data:
                 continue
             neutral_data = species_data[neutral]
-            neutral_atoms = _formula_atoms(neutral)
-            neutral_element_count = sum(
-                count for element, count in neutral_atoms.items() if element != "O"
-            )
-            if neutral_element_count <= 0:
-                continue
+            # Premise: ionization changes charge only, so an oxide molecule and
+            # its cation retain the same atoms and parent-oxide demand per molecule.
+            # Atom balance: the flux coefficient is y - x*(nu_O/nu_M), so keep
+            # the full oxygen count y and full demand instead of dividing by x.
+            # Cs2O+ check: y=1 and x*(nu_O/nu_M)=2*(1/2)=1, giving 1-1=0;
+            # the molecule's one oxygen atom is counted once.
             ion_data = OxygenBalanceSpeciesMetadata(
                 # Electron mass is negligible at the precision of the gas
                 # atomic masses and the ambipolar pair is assigned ion mass.
                 neutral_data.molar_mass,
-                0.0,
-                neutral_data.parent_oxygen_demand / neutral_element_count,
+                neutral_data.oxygen_atoms,
+                neutral_data.parent_oxygen_demand,
                 neutral_data.pO2_exponent,
             )
             # This weight/exponent product must have the same nonnegative

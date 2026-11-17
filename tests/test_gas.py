@@ -6207,6 +6207,34 @@ def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
         )
 
 
+def test_knudsen_ion_balance_counts_molecular_oxygen_once(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {"Cs2O": 1.0}
+    _p_o2, pressures, _diagnostics = evaluate_gas_oxygen_balance(
+        activities, 2200.0, gas_pack,
+        parent_oxides=("Cs2O",), include_ions=True,
+    )
+    metadata = gas_module.gas_channel_metadata(
+        activities, 2200.0, gas_pack,
+        parent_oxides=("Cs2O",), include_ions=True,
+    )
+    terms = []
+    for species, pressure in pressures.items():
+        if species.endswith("-"):
+            continue
+        formula = species.removesuffix("+")
+        molar_mass = oxygen_balance_species_metadata(
+            {formula: None}
+        )[formula].molar_mass
+        data = metadata[species]
+        terms.append(
+            (data.oxygen_atoms - data.parent_oxygen_demand)
+            * pressure / math.sqrt(molar_mass)
+        )
+    assert math.fsum(terms) == pytest.approx(0.0, abs=1.0e-14)
+
+
 def test_ion_oxygen_balance_refuses_multiple_sampled_roots(
     gas_pack: ImccGasDatapack,
     monkeypatch: pytest.MonkeyPatch,
