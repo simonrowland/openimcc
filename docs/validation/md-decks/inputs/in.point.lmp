@@ -36,14 +36,18 @@ thermo 100
 variable H equal enthalpy
 variable PE equal pe/atoms
 variable vol equal vol
-variable q6 atom orientorder/atom degrees 6
-compute q6mean all reduce ave v_q6
-compute msd all msd
+variable Tsample equal temp
+group oxygen type 2
+compute q6all all orientorder/atom degrees 1 6
+compute q6mean all reduce ave c_q6all[1]
+compute msd oxygen msd
 fix integrate all npt temp ${temp} ${temp} 100.0 iso 0.0 0.0 1000.0
 thermo_style custom step temp v_H c_msd[4] v_PE v_vol c_q6mean
 run ${eq}
 reset_timestep 0
-fix sample all ave/time 100 1 100 v_H c_msd[4] v_PE v_vol temp c_q6mean file ${samples}
+uncompute msd
+compute msd oxygen msd
+fix sample all ave/time 100 1 100 v_H c_msd[4] v_PE v_vol v_Tsample c_q6mean file ${samples}
 run ${prod}
 unfix sample
 unfix integrate

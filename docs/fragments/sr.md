@@ -1,6 +1,6 @@
 # Strontium melt fragment
 
-`src/openimcc/data/fragments/sr/rows.json` supplies the Sr rows packaged in the default redox v5 pack. It adds Sr(l) and SrO(l) thermochemical standards and redox rows for SrO(l), SrSiO3(l), Sr2SiO4(l), and SrAl2O4(l). The existing gas model already has Sr-bearing vapor species; callers can supply the resulting SrO parent activity when evaluating those channels.
+`src/openimcc/data/fragments/sr/rows.json` supplies Sr rows first packaged in redox v5 and retained in the current default `openimcc-redox-v6.json` pack. It adds Sr(l) and SrO(l) thermochemical standards and redox rows for SrO(l), SrSiO3(l), Sr2SiO4(l), and SrAl2O4(l). The existing gas model already has Sr-bearing vapor species; callers can supply the resulting SrO parent activity when evaluating those channels.
 
 The thermochemistry is deliberately marked provisional. The rows are included in the immutable default pack; the source fragment remains the assembly input for a later pack version.
 

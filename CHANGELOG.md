@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Input validation
+
+- Boolean values are no longer accepted as numeric inputs by
+  `evaluate_p2o5_activity`, `evaluate_sulfur`,
+  `evaluate_subsolidus_reactions`, or `equilibrate`. `trace_fractions_from_wt`
+  also refuses a negative amount for a known major oxide.
+- Datapack open I/O errors and numeric overflow now raise
+  `ImccMalformedDatapackError`; the CLI exits with status 2. Malformed liquid-
+  standard overrides are refused instead of being silently omitted.
+
+### Gas channels and oxygen closure
+
+- Ion closure preserves neutral-species `domain_flags`, and
+  `gas_species=()` returns an empty result without adding electrons.
+- Corrected the Cs2O+ oxygen-balance coefficient; the ion-only oxygen closure
+  now counts its actual oxygen stoichiometry.
+- Default-path VapoRock table selection now emits a warning.
+
 ### Gas thermochemistry
 
 - Changed `species_thermo(...).H_app_kJ_mol` to report formation-anchored
@@ -15,6 +33,12 @@
   the independent KKT recheck failed.
 - A direct root accepted after analytic Newton polishing now reports
   `solver_path="direct-newton-polish"` instead of `"direct"`.
+- `evidence_class="unresolved"` is reserved for genuinely unranked authority
+  tokens and early refusals with incomplete source sets. The restored
+  `compilation_assessed` authority rank keeps ordinary compiled-crystal
+  results ranked.
+- Duplicate-candidate refusals retain the validated bulk composition, and the
+  certified K2O label reports its 25–40 wt% scope.
 
 ### Redox and selected-pack behavior
 

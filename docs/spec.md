@@ -31,8 +31,9 @@ change the base model.
 ### 1.1 Named data profiles
 
 `load_profile("openimcc")` selects D066 v4, the packaged openimcc gas and
-condensate tables, and redox v5. `load_profile("published")` selects the
-frozen SF04 melt records and the shared JANAF gas table with the LAM1984/1987
+condensate tables, and `openimcc-redox-v6.json`.
+`load_profile("published")` selects the frozen SF04 melt records and the
+shared JANAF gas table with the LAM1984/1987
 condensate rows used by the published comparison. The latter reproduces the
 paper's records, including the known frozen-metadata errata. Profiles have no
 mutable global selection state; callers may also pass the loaded `Profile`

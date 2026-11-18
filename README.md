@@ -42,6 +42,9 @@ and returns per-parent **activity** and **activity coefficient γ**, the full
 species vector, and the **degree of association D** (total moles in, moles of
 species out — D > 1 means an associated solution, D = 1 would be ideal oxide
 mixing).
+For an absent parent (`X_i = 0`), its activity coefficient is undefined;
+`parent_gamma` and `gamma(name)` return `0.0` as a placeholder, not as a
+physical coefficient.
 
 ## Trace components outside the eight-oxide melt model
 
@@ -93,15 +96,14 @@ liquid saturation from melt composition, temperature, and sulfur fugacity or
 inventory. See [Sulfur capacity and matte saturation](docs/sulfur.md) for its
 equations, calibration limits, and typed notices.
 
-## What it is *not*
+## Phase-equilibrium scope
 
-**This is not a phase-equilibrium code, and it is not a MELTS.** alphaMELTS,
-MELTS and MAGEMin perform multiphase Gibbs minimisation: they return a phase
-assemblage, a liquidus, fractionation paths. `openimcc` does homogeneous
-speciation **inside a single liquid**. There is no phase assemblage to return
-and no solid solution model. If you want to know what crystallises, you want one
-of those; if you want the activity of Na2O in a melt you already know is liquid,
-you want this.
+`openimcc.equilibrium.equilibrate()` computes fixed-pressure Gibbs equilibrium
+between an ideal associate melt and a declared set of stoichiometric
+line-compound crystals. It does not model solid solutions, redox-sensitive
+crystals, or fractionation paths, and a restricted candidate set cannot support
+an unrestricted stability claim. This is narrower than alphaMELTS, MELTS, and
+MAGEMin; see [the equilibrium solver scope](docs/equilibrium.md).
 
 It pairs with them rather than competing: activities from here feed a vapour
 model, a volatility calculation, or an evaporation-flux term.
@@ -860,6 +862,9 @@ order. If a depleted parent needs a composition homotopy to converge,
 If an otherwise direct root needs the analytic Newton polish, its solver path
 is `"direct-newton-polish"` instead of `"direct"`; its
 `continuation_stages` remains zero.
+An inner-melt arithmetic refusal uses
+`refusal.code="arithmetic_failure"`; `kkt_residual` is reserved for a failed
+independent KKT recheck.
 For low-temperature refusals recovered from a warm root at a higher
 temperature, `solver_path` is `"temperature-continuation"`; its stage count
 includes the warm solve's recovery stages and the final solve at the requested
@@ -903,8 +908,8 @@ buffer offset such as ΔIW.
 ### Published SF04 versus openimcc derivations
 
 `load_profile("openimcc")` selects the D066 v4 melt pack, the default
-openimcc gas and condensate tables, and redox v5. This is the source-railed,
-re-derived set. `load_profile("published")` selects the frozen
+openimcc gas and condensate tables, and `openimcc-redox-v6.json`. This is the
+source-railed, re-derived set. `load_profile("published")` selects the frozen
 `imcc-sf04-v1.0.2.json` melt records, the shared JANAF gas table, and the
 LAM1984/1987 condensate table in `sf04-published`. It reproduces the paper's
 records, including the known frozen-metadata errata. SF04 publishes no redox
@@ -1220,7 +1225,10 @@ remain incomplete. The major-oxide parents now cover 1200–3000 K, and each
 selected supercooled-liquid continuation is identified in the result flags.
 
 For gas rows, `G_J_mol = 1000*H_app_kJ_mol - T*S_J_molK`; the factor of
-1000 converts enthalpy to J/mol. For the LAM condensates in `sf04-published`,
+1000 converts enthalpy to J/mol. `feo_liquid_standard_offset(T_K, profile)`
+returns `G_J_mol(profile) - G_J_mol(Fe-019)` in J/mol; it does not subtract
+the kJ/mol `H_app_kJ_mol` values directly. For the LAM condensates in
+`sf04-published`,
 the following measured model-minus-JANAF G residual ranges are comparison
 context.
 
@@ -1617,7 +1625,7 @@ explicit constant-Cp continuation, which every affected gas result flags.
 
 The frozen published reproduction pack remains unchanged: every row is its
 source's published value. The current default melt and redox packs are D066 v4
-and redox v5, respectively; their source corrections and provenance are
+and redox v6, respectively; their source corrections and provenance are
 recorded in the packs.
 
 ### Independently pinned behaviour

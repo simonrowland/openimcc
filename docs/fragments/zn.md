@@ -1,6 +1,7 @@
 # Zinc melt fragment
 
-The Zn association row is included in the immutable redox v5 default. This
+The Zn association row was first included in the immutable redox v5 default and
+remains in the current default `openimcc-redox-v6.json` pack. This
 source fragment remains the assembly input for a later pack version.
 
 This fragment adds `ZnO(l)` as a registered redox parent, a liquid-zinc

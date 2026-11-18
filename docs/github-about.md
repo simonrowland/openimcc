@@ -34,8 +34,10 @@ a censored, mixed-standard-state number, not an accuracy figure: 304
 predictions are produced — 301 headline-scored and 3 flagged — while 94 fall
 outside the declared temperature domain and 4 are refused.
 
-It is not a phase-equilibrium code. It does homogeneous speciation inside one
-liquid, and pairs with MELTS-family codes rather than competing with them.
+It also includes a fixed-pressure solver for an ideal associate melt and a
+declared set of stoichiometric line-compound crystals. It does not model solid
+solutions or fractionation paths, so it pairs with MELTS-family codes rather
+than replacing their broader phase-equilibrium models.
 
 ## Accuracy contract
 

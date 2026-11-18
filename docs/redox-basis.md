@@ -120,7 +120,7 @@ or select the combined Cr+Ti candidate with
 `evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json")`.
 The manifest marks both as opt-ins, not defaults. The Ti-only pack starts from
 the standard-state redox v4 pack; the combined pack carries both empirical
-rows. The v5 default includes the Cr row and the Sr, Li, Zn, and Yb
+rows. The v6 default includes the Cr row and the Sr, Li, Zn, and Yb
 associations; the Cr-Ti pack remains opt-in.
 
 The Ti row uses `TiO2 = TiO1.5 + 1/4 O2`, so `nu_O2=+1/4`. Berry et al.

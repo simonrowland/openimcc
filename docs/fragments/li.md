@@ -1,8 +1,8 @@
 # Lithium melt-activity fragment
 
-This fragment supplies the Li₂O parent standard and two lithium-silicate association rows packaged in the default redox v5 pack. The gas table already contains Li(g), LiO(g), Li₂O(g), and Li₂O₂(g), so it adds the missing melt-side Li₂O activity without changing those gas rows.
+This fragment supplies the Li₂O parent standard and two lithium-silicate association rows first packaged in redox v5 and retained in the default `openimcc-redox-v6.json` pack. The gas table already contains Li(g), LiO(g), Li₂O(g), and Li₂O₂(g), so it adds the missing melt-side Li₂O activity without changing those gas rows.
 
-The fragment rows are included in the immutable redox v5 default. The source data remains the assembly input for a later pack version; no overlay loader is used.
+The fragment rows remain in the immutable redox v5 historical pack and the current v6 default. The source data remains the assembly input for a later pack version; no overlay loader is used.
 
 ## Rows and source construction
 

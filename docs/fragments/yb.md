@@ -1,6 +1,7 @@
 # Yb silicate association fragment
 
-The default redox v5 pack includes these Yb-bearing silicate associations. The
+The current default `openimcc-redox-v6.json` pack includes these Yb-bearing
+silicate associations, first packaged in redox v5. The
 fragment registers Yb2O3(l) as the Yb(III) activity parent and adds two
 associates:
 

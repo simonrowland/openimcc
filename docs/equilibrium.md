@@ -106,6 +106,11 @@ the inner melt normalization, mass-action, and parent-inventory checks pass.
 An unavailable crystal above its source-printed melting point is absent by
 source rule, not because its calculated affinity shows thermodynamic undersaturation.
 
+If an otherwise direct inner-melt root is accepted after analytic Newton
+polishing, its `solver_path` is `"direct-newton-polish"`; this path has zero
+continuation stages. A composition or temperature recovery continues to use
+its corresponding continuation path.
+
 An inner melt arithmetic error is reported as the typed refusal code
 `arithmetic_failure`. The `kkt_residual` code retains its distinct meaning: the
 independent KKT recheck failed. Other typed inner-melt refusals use

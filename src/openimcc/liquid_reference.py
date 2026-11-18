@@ -398,10 +398,12 @@ def feo_liquid_standard_offset(
 ) -> FeOLiquidStandardOffset:
     """Return G°(FeO,l | profile) − G°(FeO,l | JANAF Fe-019) in J/mol.
 
-    Both terms are the runtime apparent standard Gibbs energy ``H_app − T*S``
-    from :func:`openimcc.gas.species_thermo`, evaluated from the selected
-    profile's shipped condensate row and the shipped Fe-019 row. The same
-    stoichiometric FeO(l) quantity and elemental reference are used on both
+    Both terms are the runtime apparent standard Gibbs energy ``G_J_mol`` in
+    J/mol from :func:`openimcc.gas.species_thermo`, evaluated from the selected
+    profile's shipped condensate row and the shipped Fe-019 row. This is
+    ``1000 * H_app_kJ_mol - T * S_J_molK``; the factor of 1000 converts the
+    enthalpy to J/mol before subtraction. The same stoichiometric FeO(l)
+    quantity and elemental reference are used on both
     sides, so their difference is also the difference in formation Gibbs
     energy; it is never a pasted anchor or an independently fitted function.
 

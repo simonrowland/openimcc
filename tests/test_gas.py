@@ -5640,6 +5640,8 @@ def _generic_oxygen_balance_residual_tolerance(
     solver_logp_tolerance = 1e-12 + 4.0 * math.ulp(1.0) * max(
         abs(bracket[0]), abs(bracket[1])
     )
+    # With the O2 exponent 1 and default (-30, 0) bracket, this is about
+    # 4.7e-12, the solver's relative-residual certificate for this metadata.
     return max(
         32.0 * math.ulp(1.0),
         2.0 * math.log(10.0) * max(1.0, max_exponent) * solver_logp_tolerance,

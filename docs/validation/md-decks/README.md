@@ -11,15 +11,25 @@ thermochemical model.
 - `scripts/make_cell.py`: neutral random periodic starting cells.
 - `scripts/run.sh`: sequential temperature runs with relaxation and
   crystallization screening. Set `LAMMPS`, `OUT`, and `MATERIALS` first.
-- `analysis/analyze.py`: enthalpy, quadratic heat-capacity fit, density, and
-  heat-capacity integration-residual analysis. NumPy 1.x and 2.x are supported.
 - `inputs/potential.md`: parameter values, conversions, citations, and limits.
+- `analysis/analyze.py`: enthalpy and density with contiguous-block standard
+  errors; it checks completed sample files, production timesteps, target
+  temperature (within 5%), and actual formula-unit counts. It also fits a
+  quadratic heat capacity and reports an algebraic consistency check.
+  NumPy 1.x and 2.x are supported.
+
+**Status: syntax-checked, not executed.** `lmp` was unavailable while these
+deck fixes were made. The pilot analysis uses one cell seed and one Langevin
+stream per point; its block standard errors describe within-stream sampling and
+do not estimate between-stream uncertainty. The heat-capacity algebraic
+consistency check only confirms that the fitted polynomial and derivative
+agree; it is not an independent validation of the fit.
 
 ## Measurements and outcomes
 
-The decks sample enthalpy, heat capacity, oxygen mean-square displacement,
-density, and a crystallization-order diagnostic over temperature. The pilot
-found:
+The decks sample enthalpy, oxygen mean-square displacement, density, and a
+crystallization-order diagnostic over temperature. A quadratic fit to sampled
+enthalpy estimates heat capacity. The pilot found:
 
 - **SiO2:** calibration failed; the simulated liquid Cp was about 20–25% higher
   than the calorimetric liquid Cp.

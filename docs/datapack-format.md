@@ -32,6 +32,10 @@ do not select or change runtime loading.
 `superseded_by` names the pack that replaces it in recommended use; it need
 not have a higher version.
 
+`load_profile("openimcc")` selects the default melt pack, packaged gas and
+condensate tables, and `openimcc-redox-v6.json`. The `published` profile has no
+redox component.
+
 ## 1. What a pack contains
 
 An IMCC datapack contains an ordered set of parent-oxide formula units, one
@@ -78,10 +82,12 @@ and the returned activity coefficient is gamma_i = x_i* / x_i. An
 `analytical_parent` excess-Gibbs candidate leaves speciation unchanged. A
 `species_pair` candidate changes the coupled mass-action solution. Both report
 parent activity `a_i = x_i* exp(mu_i^ex / RT)` and `gamma_i = a_i / x_i`,
-keeping activity distinct from the free-parent species fraction. A complex is
-inactive on a particular solve when any parent with positive nu_ij has zero
-analytical input; inactive complexes are assigned zero and do not impose a
-temperature domain check.
+keeping activity distinct from the free-parent species fraction. If a parent
+is absent (`X_i = 0`), its activity coefficient is undefined; `parent_gamma`
+and `gamma(name)` return `0.0` as a placeholder. A complex is inactive on a
+particular solve when any parent with positive nu_ij has zero analytical
+input; inactive complexes are assigned zero and do not impose a temperature
+domain check.
 
 The adapter also exposes `result.labels.acid_sink_ratio` as a typed
 `float | None`: it is the continuous ratio `x*(SiO2) / x(SiO2)` for the
