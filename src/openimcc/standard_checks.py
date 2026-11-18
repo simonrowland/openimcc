@@ -421,8 +421,6 @@ def pure_oxide_standard_check(
     """
     from openimcc.gas import (
         ImccGasTemperatureOutsideDomainError,
-        default_condensate_database_path,
-        default_gas_database_path,
         load_gas_datapack,
     )
     from openimcc.liquid_reference import liquid_reference_authority
@@ -435,8 +433,8 @@ def pure_oxide_standard_check(
         raise ValueError("temperature_K must be finite and positive")
     if crystal_source not in {"auto", "janaf", "packaged"}:
         raise ValueError("crystal_source must be 'auto', 'janaf', or 'packaged'")
-    path = Path(condensate_path) if condensate_path is not None else default_condensate_database_path()
-    gas_pack = load_gas_datapack(default_gas_database_path(), path)
+    gas_pack = load_gas_datapack(oxide_path=condensate_path)
+    path = Path(gas_pack.oxide_path)
     crystal_name, crystal_range, crystal_id, crystal_is_packaged = _selected_crystal_source(
         definition.oxide, definition, gas_pack, crystal_source
     )
