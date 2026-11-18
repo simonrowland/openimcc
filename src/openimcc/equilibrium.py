@@ -2269,6 +2269,11 @@ def _positive_branch(
         scaled_state = tuple(map(float, n / scales))
         state_key = (active_key, scaled_state)
         history.append(active_key)
+        # A revisited physical state can differ by solver noise in its phase
+        # amounts; n/scales is dimensionless, so compare it at absolute 1e-14.
+        # This matches lsq_linear's tol, is tighter than balance (1e-10) and
+        # affinity (1e-8) tolerances, and is twice round(..., 14)'s 5e-15
+        # half-bin, allowing adjacent rounded states to register as repeats.
         repeated_state = any(
             previous_active == active_key
             and all(

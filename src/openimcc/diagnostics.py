@@ -146,6 +146,10 @@ def score_against_calorimetry(
         (entry["id"], normalized_composition(entry["composition_mol"]))
         for entry in entries if "composition_mol" in entry
     ]
+    # These keys are dimensionless sum-normalized mole fractions. Two records
+    # on opposite edges of a 12-decimal rounding bin can differ by 1e-12, so
+    # this bound reconnects the same composition after normalization drift
+    # without making nearby but distinct recipes equivalent.
     composition_tolerance = 1.0e-12
     rows_by_id: dict[str, list[Mapping[str, Any]]] = {}
     for row in results:

@@ -7439,6 +7439,18 @@ def test_boiling_temperature_rejects_nonfinite_bracket_endpoints(
         )
 
 
+def test_boiling_temperature_rejects_unrepresentable_ambient_pressure(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(
+        ValueError, match="ambient_pressure_bar must be finite and positive"
+    ):
+        gas_boiling_temperature(
+            {"CaO": 1.0}, gas_pack, 10**1000, (1200.0, 1300.0),
+            parent_oxides=("CaO",), allow_extrapolation=True,
+        )
+
+
 def test_boiling_temperature_forwards_include_ions(monkeypatch: pytest.MonkeyPatch) -> None:
     from types import SimpleNamespace
 

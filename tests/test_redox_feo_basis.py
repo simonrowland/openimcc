@@ -73,6 +73,7 @@ def test_default_pair_has_verified_basis_and_bit_identical_numeric_result() -> N
                 "max_iter": 100,
                 "redox_pack_path": None,
                 "melt_pack_path": None,
+                "strict_pack_standards": False,
             },
         },
         data_digests={

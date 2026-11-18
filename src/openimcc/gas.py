@@ -5616,7 +5616,12 @@ def gas_boiling_temperature(
         ambient_pressure_bar, allow_numeric_str=True
     ):
         raise ValueError("ambient_pressure_bar must be finite and positive")
-    ambient_pressure_bar = float(ambient_pressure_bar)
+    try:
+        ambient_pressure_bar = float(ambient_pressure_bar)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError(
+            "ambient_pressure_bar must be finite and positive"
+        ) from exc
     if not math.isfinite(ambient_pressure_bar) or ambient_pressure_bar <= 0:
         raise ValueError("ambient_pressure_bar must be finite and positive")
     if not all(
