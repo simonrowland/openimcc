@@ -719,10 +719,11 @@ def _validate_row(row: Mapping, label: str) -> None:
 
 
 def test_every_published_row_uses_the_band_schema() -> None:
+    pack_dir = ROOT / "src/openimcc/data/packs"
     redox_paths = [
-        ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json",
+        *sorted(pack_dir.glob("openimcc-redox-v*.json")),
     ]
-    redox_paths.extend(sorted((ROOT / "src/openimcc/data/packs").glob("openimcc-redox-*-candidate*.json")))
+    redox_paths.extend(sorted(pack_dir.glob("openimcc-redox-*-candidate*.json")))
     for path in redox_paths:
         redox = json.loads(path.read_text())
         for key, row in redox["thermo_species"].items():
