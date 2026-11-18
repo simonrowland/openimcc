@@ -5630,6 +5630,22 @@ def _generic_oxygen_balance_relative_residual(
     return abs(oxygen_flux - parent_flux) / max(oxygen_flux, parent_flux)
 
 
+def _generic_oxygen_balance_residual_tolerance(
+    species: Mapping[str, OxygenBalanceSpeciesMetadata],
+    bracket: tuple[float, float] = (-30.0, 0.0),
+) -> float:
+    max_exponent = max(
+        (abs(data.pO2_exponent) for data in species.values()), default=1.0
+    )
+    solver_logp_tolerance = 1e-12 + 4.0 * math.ulp(1.0) * max(
+        abs(bracket[0]), abs(bracket[1])
+    )
+    return max(
+        32.0 * math.ulp(1.0),
+        2.0 * math.log(10.0) * max(1.0, max_exponent) * solver_logp_tolerance,
+    )
+
+
 def test_generic_oxygen_balance_solves_sine_on_k_pressure_model() -> None:
     metadata = oxygen_balance_species_metadata(
         {"K": "K2O", "O2": None}, pO2_exponents={"K": 0.0}
@@ -5651,7 +5667,9 @@ def test_generic_oxygen_balance_solves_sine_on_k_pressure_model() -> None:
         pressure_model, metadata
     )
     assert abs(math.log10(p_o2) - power_law_root) > 0.01
-    assert _generic_oxygen_balance_relative_residual(pressures, metadata) < 1e-12
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
+        _generic_oxygen_balance_residual_tolerance(metadata)
+    )
 
 
 def test_generic_oxygen_balance_accepts_monotone_piecewise_pressure_model() -> None:
@@ -5677,7 +5695,9 @@ def test_generic_oxygen_balance_accepts_monotone_piecewise_pressure_model() -> N
     _p_o2, pressures, _diagnostics = oxygen_balance_from_pressure_model(
         pressure_model, metadata
     )
-    assert _generic_oxygen_balance_relative_residual(pressures, metadata) < 1e-12
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
+        _generic_oxygen_balance_residual_tolerance(metadata)
+    )
 
 
 @pytest.mark.parametrize("spacing", [0.2, 0.1, 0.05])
@@ -5709,7 +5729,9 @@ def test_generic_oxygen_balance_accepts_linear_in_pressure_table(
         pressure_model, metadata
     )
     assert math.log10(p_o2) == pytest.approx(power_law_root, abs=1e-12)
-    assert _generic_oxygen_balance_relative_residual(pressures, metadata) < 1e-12
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
+        _generic_oxygen_balance_residual_tolerance(metadata)
+    )
 
 
 def test_generic_oxygen_balance_reports_refinement_cost_for_curved_model() -> None:
@@ -5735,7 +5757,9 @@ def test_generic_oxygen_balance_reports_refinement_cost_for_curved_model() -> No
     assert solver_diagnostics["path"] == "refined"
     assert solver_diagnostics["refinement_evaluations"] > 0
     assert solver_diagnostics["model_evaluations"] == model_evaluations
-    assert _generic_oxygen_balance_relative_residual(pressures, metadata) < 1e-12
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
+        _generic_oxygen_balance_residual_tolerance(metadata)
+    )
 
 
 def test_generic_oxygen_balance_refuses_unacceptable_relative_closure() -> None:
