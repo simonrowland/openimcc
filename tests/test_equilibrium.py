@@ -1328,6 +1328,20 @@ def test_duplicate_candidate_refusal_preserves_validated_bulk():
     assert result.receipt.request["bulk_parent_mol"] == bulk
 
 
+def test_inner_melt_arithmetic_failure_has_explicit_code(monkeypatch, ideal_pack):
+    def arithmetic_failure(*_args, **_kwargs):
+        raise ArithmeticError("synthetic arithmetic failure")
+
+    monkeypatch.setattr("openimcc.equilibrium._positive_melt", arithmetic_failure)
+    result = equilibrate(
+        {"SiO2": 1.0}, 2000.0, candidates=(), pack=ideal_pack,
+    )
+
+    assert result.refusal is not None
+    assert result.refusal.code == "arithmetic_failure"
+    assert result.to_dict()["refusal"]["code"] == "arithmetic_failure"
+
+
 def test_inner_activity_uncertainty_covers_trace_residual_and_scale(ideal_pack):
     parents = ("SiO2", "MgO")
     liquid = np.asarray((1.0e-6, 1.0))

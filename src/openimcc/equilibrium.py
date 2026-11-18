@@ -2299,7 +2299,7 @@ def _positive_branch(
                 states=candidates_all, crystal_digest=crystal_digest,
                 pure_digest=pure_digest, explicit_candidates=explicit_candidates,
                 refusal=EquilibriumRefusal(
-                    "inner_melt_failed" if isinstance(exc, ImccRefusal) else "kkt_residual",
+                    "inner_melt_failed" if isinstance(exc, ImccRefusal) else "arithmetic_failure",
                     str(exc), ("liquid_parent_mol",),
                 ),
                 solver=history_solver(),
