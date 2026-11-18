@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -277,7 +278,7 @@ def _run_test_file(root: Path, test_file: str) -> subprocess.CompletedProcess[st
         ).stdout.strip()
         environment["GIT_WORK_TREE"] = str(root)
     return subprocess.run(
-        [sys.executable, "-m", "pytest", test_file, "-q"],
+        [sys.executable, "-m", "pytest", test_file, "-vv", "--color=no", "-rf"],
         cwd=root,
         env=environment,
         capture_output=True,
@@ -309,10 +310,11 @@ def _is_expected_red(
 ) -> bool:
     output = result.stdout + result.stderr
     expected_node = f"{test_file}::{expected_failure}"
-    expected_line = f"FAILED {expected_node} - AssertionError"
-    return result.returncode == 1 and any(
-        line.startswith(expected_line) for line in output.splitlines()
+    expected_failure_line = re.compile(
+        rf"^FAILED {re.escape(expected_node)} - (?:assert\b|AssertionError\b)",
+        re.MULTILINE,
     )
+    return result.returncode == 1 and expected_failure_line.search(output) is not None
 
 
 def _run_mutation(

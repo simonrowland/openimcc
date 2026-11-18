@@ -1,47 +1,38 @@
 from __future__ import annotations
 
+import os
 import subprocess
+import sys
+from pathlib import Path
 
 from tools.verify_gas_binding_identity_mutations import _is_expected_red
 
 
-def test_mutation_verifier_requires_expected_assertion_failure() -> None:
-    test_file = "tests/test_gas_content_identity.py"
-    test_name = "test_reordering_rows_preserves_identity_and_gas_evaluation"
-    expected = subprocess.CompletedProcess(
-        args=[],
-        returncode=1,
-        stdout=(
-            f"FAILED {test_file}::{test_name} - AssertionError: assert digest_a == digest_b"
-        ),
-        stderr="",
+def test_mutation_verifier_recognizes_rewritten_assertion_and_rejects_error(
+    tmp_path: Path,
+) -> None:
+    test_file = "test_real_pytest_output.py"
+    (tmp_path / test_file).write_text(
+        "import pytest\n"
+        "@pytest.fixture\n"
+        "def setup_error():\n"
+        "    raise RuntimeError('setup failed')\n"
+        "def test_rewritten_assertion():\n"
+        "    assert 1 == 2\n"
+        "def test_setup_error_is_not_a_failure(setup_error):\n"
+        "    assert setup_error\n",
+        encoding="utf-8",
     )
-    assert _is_expected_red(expected, test_file, test_name)
-
-    setup_error = subprocess.CompletedProcess(
-        args=[],
-        returncode=1,
-        stdout=(
-            f"ERROR {test_file}::{test_name} - RuntimeError: setup failed"
-        ),
-        stderr="",
+    environment = os.environ.copy()
+    environment.pop("PYTEST_ADDOPTS", None)
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", test_file, "-vv", "--color=no", "-rf"],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
     )
-    assert not _is_expected_red(setup_error, test_file, test_name)
-
-    unexpected_exception = subprocess.CompletedProcess(
-        args=[],
-        returncode=1,
-        stdout=(
-            f"FAILED {test_file}::{test_name} - RuntimeError: setup failed"
-        ),
-        stderr="",
-    )
-    assert not _is_expected_red(unexpected_exception, test_file, test_name)
-
-    other_test = subprocess.CompletedProcess(
-        args=[],
-        returncode=1,
-        stdout=f"FAILED {test_file}::test_other - AssertionError: assert False",
-        stderr="",
-    )
-    assert not _is_expected_red(other_test, test_file, test_name)
+    assert result.returncode == 1
+    assert "FAILED test_real_pytest_output.py::test_rewritten_assertion - assert" in result.stdout
+    assert _is_expected_red(result, test_file, "test_rewritten_assertion")
+    assert not _is_expected_red(result, test_file, "test_setup_error_is_not_a_failure")
