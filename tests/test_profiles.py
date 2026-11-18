@@ -37,6 +37,18 @@ _BASALT = {
     "K2O": 0.78732,
 }
 
+_PUBLISHED_GAS_STANDARD_NOTICES = [
+    ("SiO2", "O-038", "LAM1987", None, "mismatch"),
+    ("MgO", "Mg-009", "LAM1987", None, "mismatch"),
+    ("CaO", "Ca-028", "LAM1987", None, "mismatch"),
+    ("Al2O3", "Al-100", "LAM1987", None, "mismatch"),
+    ("K2O", "FC87-Glushko-K2O", "LAM1984", None, "mismatch"),
+    ("K2O", "reference-unknown", "LAM1984", "K2SiO3", "reference-unknown"),
+    ("K2O", "reference-unknown", "LAM1984", "K2Si2O5", "reference-unknown"),
+    ("K2O", "reference-unknown", "LAM1984", "K2Si4O9", "reference-unknown"),
+    ("K2O", "reference-unknown", "LAM1984", "KCaAlSi2O7", "reference-unknown"),
+]
+
 
 @pytest.mark.parametrize(
     ("name", "melt_version", "has_redox"),
@@ -199,36 +211,21 @@ def test_published_gas_profile_does_not_borrow_other_liquid_authority() -> None:
     )
     assert "Fe" not in feo.liquid_reference_status
     assert "D&G/Masson" not in (feo.domain_flags["Fe"] or "")
-    pack_notices = tuple(
-        notice for notice in feo.notices if isinstance(notice, PackStandardNotice)
-    )
-    assert {
-        (
-            notice.oxide,
-            notice.declared_standard_id,
-            notice.active_standard_id,
-            notice.row_key,
-            notice.kind,
-        )
-        for notice in pack_notices
-    } == {
-        ("SiO2", "O-038", "LAM1987", None, "mismatch"),
-        ("MgO", "Mg-009", "LAM1987", None, "mismatch"),
-        ("CaO", "Ca-028", "LAM1987", None, "mismatch"),
-        ("Al2O3", "Al-100", "LAM1987", None, "mismatch"),
-        ("K2O", "FC87-Glushko-K2O", "LAM1984", None, "mismatch"),
-        ("K2O", "reference-unknown", "LAM1984", "K2SiO3", "reference-unknown"),
-        ("K2O", "reference-unknown", "LAM1984", "K2Si2O5", "reference-unknown"),
-        ("K2O", "reference-unknown", "LAM1984", "K2Si4O9", "reference-unknown"),
-        (
-            "K2O",
-            "reference-unknown",
-            "LAM1984",
-            "KCaAlSi2O7",
-            "reference-unknown",
-        ),
-    }
-    assert len(pack_notices) == 9
+
+    def notice_records(result):
+        return [
+            (
+                notice.oxide,
+                notice.declared_standard_id,
+                notice.active_standard_id,
+                notice.row_key,
+                notice.kind,
+            )
+            for notice in result.notices
+            if isinstance(notice, PackStandardNotice)
+        ]
+
+    assert notice_records(feo) == _PUBLISHED_GAS_STANDARD_NOTICES
     with pytest.raises(ImccLiquidStandardMismatchError):
         evaluate_gas(
             {"FeO": 1.0}, 1700.0, 1e-8,
@@ -247,6 +244,13 @@ def test_published_gas_profile_does_not_borrow_other_liquid_authority() -> None:
         for status in alumina.liquid_reference_status.values()
     )
     assert "band" not in (alumina.domain_flags["Al"] or "")
+    assert notice_records(alumina) == _PUBLISHED_GAS_STANDARD_NOTICES
+    with pytest.raises(ImccLiquidStandardMismatchError):
+        evaluate_gas(
+            {"Al2O3": 1.0}, 2500.0, 1e-8,
+            parent_oxides=("Al2O3",), gas_species=("Al",), profile=profile,
+            strict_pack_standards=True,
+        )
 
 
 def test_openimcc_profile_selects_the_default_redox_pack() -> None:

@@ -621,36 +621,34 @@ def active_liquid_standards(
     # FeO's selected source and authority are owned by liquid_reference.py.
     standards["FeO"] = feo_liquid_standard(selected).standard_id
 
-    if selected.redox_pack_path is None:
-        return standards
-
-    # FeO1.5(l) is half a metastable Fe2O3(l) construction. Fe-030 is its
-    # hematite crystal basis, not a JANAF liquid table.
-    redox_pack = selected.redox_pack
-    species = redox_pack.content["thermo_species"]
-    feo15 = species.get("FeO1.5(l)", {})
-    fe2o3 = species.get("Fe2O3(l)", {})
-    construction = fe2o3.get("construction", {})
-    provenance = fe2o3.get("provenance", {})
-    terms = feo15.get("terms", []) if isinstance(feo15, Mapping) else []
-    if (
-        isinstance(construction, Mapping)
-        and construction.get("crystal_source_table") == "Fe-030"
-        and construction.get("fusion_enthalpy_kj_mol") == 114.5
-        and construction.get("fusion_temperature_K") == 1895
-        and isinstance(provenance, Mapping)
-        and "Lesher and Spera supplemental Table S5.5"
-        in str(provenance.get("source", ""))
-        and any(
-            isinstance(term, Mapping)
-            and term.get("species") == "Fe2O3(l)"
-            and term.get("coefficient") == 0.5
-            for term in terms
-        )
-    ):
-        standards["FeO1.5"] = (
-            "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2"
-        )
+    if selected.redox_pack_path is not None:
+        # FeO1.5(l) is half a metastable Fe2O3(l) construction. Fe-030 is its
+        # hematite crystal basis, not a JANAF liquid table.
+        redox_pack = selected.redox_pack
+        species = redox_pack.content["thermo_species"]
+        feo15 = species.get("FeO1.5(l)", {})
+        fe2o3 = species.get("Fe2O3(l)", {})
+        construction = fe2o3.get("construction", {})
+        provenance = fe2o3.get("provenance", {})
+        terms = feo15.get("terms", []) if isinstance(feo15, Mapping) else []
+        if (
+            isinstance(construction, Mapping)
+            and construction.get("crystal_source_table") == "Fe-030"
+            and construction.get("fusion_enthalpy_kj_mol") == 114.5
+            and construction.get("fusion_temperature_K") == 1895
+            and isinstance(provenance, Mapping)
+            and "Lesher and Spera supplemental Table S5.5"
+            in str(provenance.get("source", ""))
+            and any(
+                isinstance(term, Mapping)
+                and term.get("species") == "Fe2O3(l)"
+                and term.get("coefficient") == 0.5
+                for term in terms
+            )
+        ):
+            standards["FeO1.5"] = (
+                "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2"
+            )
 
     # Extension parent references supplement oxide rows omitted from the gas
     # table without overriding profile-specific table identifiers.

@@ -1050,8 +1050,9 @@ pack manifests remain unchanged.
 `openimcc.active_liquid_standards(profile=None)` reports IDs selected by the
 active profile, using `openimcc` when no profile is supplied. It reads liquid
 table IDs from the selected gas table metadata and gets FeO(l) from
-`feo_liquid_standard(profile)`. The `published`
-profile reports its melt and gas table standards while omitting redox-derived
+`feo_liquid_standard(profile)`. With the redox-less `published` profile,
+`active_liquid_standards` and `check_pack_standards` report its melt, gas, and
+extension-parent liquid standards, including S, and omit only redox-derived
 entries such as FeO1.5(l). Gas FeO(l) source flags follow the selected
 profile's redox FeO fit when one is available. `evaluate` raises
 `ProfileRedoxUnavailableError` for the `published` profile when a redox-
@@ -1068,7 +1069,8 @@ require_basis=None)` compares declared IDs with the active profile.
 
 `mismatch` and `redox-mismatch` mean a declared ID differs from a present
 active ID. `not-active` means a concrete declared ID has no active liquid row;
-it is informational and never a refusal. `reference-unknown` identifies an
+it is informational by default, while strict pack-standard mode refuses it.
+`reference-unknown` identifies an
 unresolvable active reference or a declaration whose source basis is unknown.
 An `undeclared` result remains a missing declaration.
 

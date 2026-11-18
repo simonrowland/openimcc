@@ -320,20 +320,37 @@ def test_published_profile_standards_omit_redox_without_loading_a_pack(
     published = load_profile("published")
     active = active_liquid_standards(published)
 
-    assert active["SiO2"] == "LAM1987"
-    assert active["MgO"] == "LAM1987"
-    assert active["CaO"] == "LAM1987"
-    assert active["Al2O3"] == "LAM1987"
-    assert active["K2O"] == "LAM1984"
-    assert active["FeO"] == "Fe-019"
-    assert "FeO1.5" not in active
+    bee4590_standards = {
+        "Al2O3": "LAM1987",
+        "CaO": "LAM1987",
+        "Cr2O3": "Cr-015",
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "K2O": "LAM1984",
+        "Li2O": "Li-015",
+        "MgO": "LAM1987",
+        "Na2O": "Na-013",
+        "NbO2": "Nb-013",
+        "PbO": "O-007",
+        "Rb2O": "NG-1841",
+        "S": "S-004",
+        "SiO2": "LAM1987",
+        "TiO2": "O-044",
+        "V2O3": "O-063",
+    }
+    expected_without_redox = {
+        oxide: standard
+        for oxide, standard in bee4590_standards.items()
+        if oxide != "FeO1.5"
+    }
+    assert list(active.items()) == list(expected_without_redox.items())
 
     records = check_pack_standards(published.melt_pack, published)
-    assert {
+    assert [
         (record.oxide, record.declared, record.active, record.row_key, record.kind)
         for record in records
         if record.kind in {"mismatch", "reference-unknown"}
-    } == {
+    ] == [
         ("SiO2", "O-038", "LAM1987", None, "mismatch"),
         ("MgO", "Mg-009", "LAM1987", None, "mismatch"),
         ("CaO", "Ca-028", "LAM1987", None, "mismatch"),
@@ -343,7 +360,7 @@ def test_published_profile_standards_omit_redox_without_loading_a_pack(
         ("K2O", "reference-unknown", "LAM1984", "K2Si2O5", "reference-unknown"),
         ("K2O", "reference-unknown", "LAM1984", "K2Si4O9", "reference-unknown"),
         ("K2O", "reference-unknown", "LAM1984", "KCaAlSi2O7", "reference-unknown"),
-    }
+    ]
 
 
 def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
@@ -529,8 +546,94 @@ def test_d066_mixed_standard_checks_respect_profile_redox_availability() -> None
 
     published_v1_records = check_pack_standards(v1_path, "published")
     published_v4_records = check_pack_standards(v4_path, "published")
-    assert published_v1_records
-    assert published_v4_records
+
+    def record_fields(records):
+        return [
+            (
+                record.kind,
+                record.oxide,
+                record.declared,
+                record.active,
+                record.row_key,
+            )
+            for record in records
+        ]
+
+    assert record_fields(published_v1_records) == [
+        ("mismatch", "SiO2", "O-038", "LAM1987", None),
+        ("mismatch", "MgO", "Mg-009", "LAM1987", None),
+        ("mismatch", "CaO", "Ca-028", "LAM1987", None),
+        ("mismatch", "Al2O3", "Al-100", "LAM1987", None),
+        ("mismatch", "K2O", "K-012", "LAM1984", None),
+        ("non-source-basis", "K2O", "K-012", "LAM1984", None),
+        ("non-source-basis", "FeO", "Fe-019", "Fe-019", None),
+        (
+            "reference-unknown",
+            "K2O",
+            "reference-unknown",
+            "LAM1984",
+            "K2SiO3",
+        ),
+        (
+            "reference-unknown",
+            "K2O",
+            "reference-unknown",
+            "LAM1984",
+            "K2Si2O5",
+        ),
+        (
+            "reference-unknown",
+            "K2O",
+            "reference-unknown",
+            "LAM1984",
+            "K2Si4O9",
+        ),
+        (
+            "reference-unknown",
+            "K2O",
+            "reference-unknown",
+            "LAM1984",
+            "KCaAlSi2O7",
+        ),
+    ]
+    assert record_fields(published_v4_records) == [
+        ("mismatch", "SiO2", "SiO2-RBT84-CANDIDATE", "LAM1987", None),
+        ("mismatch", "MgO", "Mg-009", "LAM1987", None),
+        ("mismatch", "CaO", "Ca-028", "LAM1987", None),
+        ("mismatch", "Al2O3", "Al-100", "LAM1987", None),
+        ("mismatch", "Na2O", "Na2O-RBT84-CANDIDATE", "Na-013", None),
+        ("mismatch", "K2O", "K-012", "LAM1984", None),
+        ("mismatch", "FeO", "DG46-MASSON65", "Fe-019", None),
+        ("non-source-basis", "K2O", "K-012", "LAM1984", None),
+        (
+            "reference-unknown",
+            "K2O",
+            "reference-unknown",
+            "LAM1984",
+            "K2SiO3",
+        ),
+        (
+            "reference-unknown",
+            "K2O",
+            "reference-unknown",
+            "LAM1984",
+            "K2Si2O5",
+        ),
+        (
+            "reference-unknown",
+            "K2O",
+            "reference-unknown",
+            "LAM1984",
+            "K2Si4O9",
+        ),
+        (
+            "reference-unknown",
+            "K2O",
+            "reference-unknown",
+            "LAM1984",
+            "KCaAlSi2O7",
+        ),
+    ]
 
 
 def test_gas_evaluators_report_pack_standard_notices_and_strict_refusals() -> None:

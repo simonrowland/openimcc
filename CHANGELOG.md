@@ -18,10 +18,10 @@
 
 ### Redox and selected-pack behavior
 
-- `active_liquid_standards` and `check_pack_standards` report the melt and gas
-  standards for `published` without redox-derived entries. `evaluate` raises
-  `ProfileRedoxUnavailableError` for that profile when a redox-associate trace
-  is present.
+- `active_liquid_standards` and `check_pack_standards` report the melt, gas,
+  and extension-parent standards for `published`, omitting only redox-derived
+  entries such as FeO1.5. `evaluate` raises `ProfileRedoxUnavailableError`
+  for that profile when a redox-associate trace is present.
 - Gas FeO(l) source flags now follow the selected profile's redox FeO fit when
   one is available.
 - Closed Fe-free redox calculations without an oxygen-changing couple now
@@ -32,6 +32,11 @@
 
 ### Gas saturation oxygen closure
 
+- `evaluate_gas_oxygen_balance(profile=...)` now passes the selected profile
+  through its gas trials. The returned `ImccGasResult` carries that profile's
+  pack-standard notices and refuses ambiguous custom liquid-table setups (for
+  example, two recognized MgO tables) like `evaluate_gas(profile=...)`.
+  Pressures and roots are unchanged.
 - Corrected saturation weights for gas-parent channels that also consume a
   melt oxide, including halide channels such as NaCl. Their side-oxide oxygen
   demand now contributes to the saturation balance, changing oxygen pressure
