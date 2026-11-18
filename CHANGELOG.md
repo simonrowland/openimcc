@@ -42,6 +42,7 @@
 
 ### Redox and selected-pack behavior
 
+- Malformed liquid-standard declarations with non-string standard ids or citations now raise `ImccMalformedDatapackError`.
 - `active_liquid_standards` and `check_pack_standards` report the melt, gas,
   and extension-parent standards for `published`, omitting only redox-derived
   entries such as FeO1.5. `evaluate` raises `ProfileRedoxUnavailableError`

@@ -1375,5 +1375,5 @@ def test_non_string_liquid_standard_citations_are_rejected(
         liquid_standards=declaration,
     )
 
-    with pytest.raises(ValueError, match="must be strings"):
+    with pytest.raises(ImccMalformedDatapackError, match="must be strings"):
         pack_liquid_standards(embedded)

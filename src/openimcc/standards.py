@@ -315,10 +315,12 @@ def _immutable_standards(value: Any) -> Mapping[str, str]:
 
 
 def _immutable_text(value: Any) -> Mapping[str, str]:
+    from openimcc.model import ImccMalformedDatapackError
+
     if not isinstance(value, Mapping):
         return MappingProxyType({})
     if any(not isinstance(text, str) for text in value.values()):
-        raise ValueError("standard text values must be strings")
+        raise ImccMalformedDatapackError("standard text values must be strings")
     return MappingProxyType(
         {str(key): text for key, text in value.items()}
     )
