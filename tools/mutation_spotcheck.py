@@ -146,8 +146,18 @@ MUTATIONS = (
 )
 
 
-def _run(test: str) -> subprocess.CompletedProcess[str]:
+def _run(
+    test: str, *, source: Path | None = None
+) -> subprocess.CompletedProcess[str]:
+    if source is not None:
+        cache_dir = source.parent / "__pycache__"
+        if cache_dir.is_dir():
+            for bytecode in cache_dir.glob(f"{source.stem}.*.pyc"):
+                bytecode.unlink()
+
     environment = os.environ.copy()
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment.pop("PYTHONPYCACHEPREFIX", None)
     source_path = str(ROOT / "src")
     existing_path = environment.get("PYTHONPATH")
     environment["PYTHONPATH"] = (
@@ -156,7 +166,7 @@ def _run(test: str) -> subprocess.CompletedProcess[str]:
         else source_path + os.pathsep + existing_path
     )
     return subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", test],
+        [sys.executable, "-B", "-m", "pytest", "-q", test],
         cwd=ROOT,
         env=environment,
         text=True,
@@ -181,7 +191,7 @@ def main() -> int:
             failed.append(mutation.name)
             continue
 
-        baseline = _run(mutation.test)
+        baseline = _run(mutation.test, source=mutation.source)
         if baseline.returncode != 0:
             print(
                 f"ERROR {index:02d} {mutation.name}: focused test is not green "
@@ -193,7 +203,7 @@ def main() -> int:
 
         mutation.source.write_text(original.replace(mutation.old, mutation.new, 1))
         try:
-            mutated = _run(mutation.test)
+            mutated = _run(mutation.test, source=mutation.source)
             if mutated.returncode == 0:
                 print(
                     f"NOT-RED {index:02d} {mutation.name}: "

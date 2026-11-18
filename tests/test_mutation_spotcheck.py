@@ -25,3 +25,27 @@ def test_mutation_spotcheck_rejects_pytest_collection_error_as_red() -> None:
         args=[], returncode=4, stdout="ERROR: not found: tests/test_missing.py::test_case\nno tests ran"
     )
     assert not _is_expected_red(result)
+
+
+def test_mutation_spotcheck_clears_source_bytecode_before_pytest(
+    tmp_path, monkeypatch
+) -> None:
+    source = tmp_path / "kernel.py"
+    cache_dir = tmp_path / "__pycache__"
+    cache_dir.mkdir()
+    cache_path = cache_dir / "kernel.cpython-test.pyc"
+    cache_path.write_bytes(b"stale bytecode")
+    observed = {}
+
+    def run(args, **kwargs):
+        observed["args"] = args
+        observed["env"] = kwargs["env"]
+        assert not cache_path.exists()
+        return subprocess.CompletedProcess(args, 0, "")
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    _run("tests/test_example.py::test_case", source=source)
+
+    assert "-B" in observed["args"]
+    assert observed["env"]["PYTHONDONTWRITEBYTECODE"] == "1"
