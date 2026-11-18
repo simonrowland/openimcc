@@ -104,6 +104,9 @@ line-compound crystals. It does not model solid solutions, redox-sensitive
 crystals, or fractionation paths, and a restricted candidate set cannot support
 an unrestricted stability claim. This is narrower than alphaMELTS, MELTS, and
 MAGEMin; see [the equilibrium solver scope](docs/equilibrium.md).
+Typed refusals from `equilibrate()` use `arithmetic_failure` for inner-melt
+arithmetic errors and `kkt_residual` when the independent KKT recheck fails;
+see [the refusal contract](docs/equilibrium.md#result-and-certificates).
 
 It pairs with them rather than competing: activities from here feed a vapour
 model, a volatility calculation, or an evaporation-flux term.
@@ -862,9 +865,6 @@ order. If a depleted parent needs a composition homotopy to converge,
 If an otherwise direct root needs the analytic Newton polish, its solver path
 is `"direct-newton-polish"` instead of `"direct"`; its
 `continuation_stages` remains zero.
-An inner-melt arithmetic refusal uses
-`refusal.code="arithmetic_failure"`; `kkt_residual` is reserved for a failed
-independent KKT recheck.
 For low-temperature refusals recovered from a warm root at a higher
 temperature, `solver_path` is `"temperature-continuation"`; its stage count
 includes the warm solve's recovery stages and the final solve at the requested
