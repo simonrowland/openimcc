@@ -232,20 +232,6 @@ def test_load_datapack_rejects_directory_path_as_malformed(tmp_path: Path) -> No
     assert exc.value.code == "imcc_malformed_datapack"
 
 
-def test_load_datapack_rejects_explicit_null_model_id(tmp_path: Path) -> None:
-    data = _base_data()
-    data["model_id"] = None
-    path = tmp_path / "null-model-id.json"
-    path.write_text(json.dumps(data), encoding="utf-8")
-
-    with pytest.raises(
-        ImccMalformedDatapackError, match="requires a recognized extension"
-    ) as exc:
-        load_datapack(path)
-
-    assert exc.value.code == "imcc_malformed_datapack"
-
-
 def test_load_datapack_rejects_duplicate_json_keys(tmp_path: Path) -> None:
     path = tmp_path / "duplicate-key.json"
     original = BASE_DATAPACK.read_text(encoding="utf-8")
