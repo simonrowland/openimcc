@@ -35,6 +35,16 @@ _CRYSTAL_RESOURCE = "data/diagnostics/crystal-phases.json"
 _BARIN_RESOURCE = "data/diagnostics/barin-aluminate-crystals.json"
 _PRESSURE_BAR_STANDARD = 1.0
 _PHASE_RESIDUAL_TOLERANCE_J_MOL = 1.0
+_REDOX_PHASE_IDENTITIES = frozenset(
+    ("fe2o3", "fe3o4", "hematite", "magnetite", "ferric")
+)
+
+
+def _is_redox_phase_identity(identity: str) -> bool:
+    normalized = "".join(
+        character for character in identity.casefold() if character.isalnum()
+    )
+    return normalized in _REDOX_PHASE_IDENTITIES
 
 
 @dataclass(frozen=True)
@@ -373,10 +383,9 @@ def evaluate_declared_assemblage(
     crystal_by_id = {
         row["id"]: row for row in (*crystal_data["phases"], *barin_data["phases"])
     }
-    redox_names = {"fe3o4", "magnetite", "fe2o3", "hematite", "ferric"}
     redox_phases = tuple(
         phase for phase in declared
-        if any(token in phase.lower().replace(" ", "") for token in redox_names)
+        if _is_redox_phase_identity(phase)
     )
     if redox_phases:
         refusal = EquilibriumRefusal(

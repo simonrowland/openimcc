@@ -4,6 +4,7 @@ import csv
 import hashlib
 import json
 import re
+import runpy
 from importlib import resources
 from pathlib import Path
 import subprocess
@@ -20,6 +21,35 @@ from openimcc.standards import pack_liquid_standards
 
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_ROLES = {"derived", "fitted", "selected", "anchor", "diagnostic"}
+
+
+def test_redox_source_role_requires_bounded_citation_match():
+    redox_source_role = runpy.run_path(
+        str(ROOT / "tools" / "build_coefficient_ancestry.py")
+    )["_redox_source_role"]
+
+    assert redox_source_role(
+        "Li (2001)",
+        {"selection_rationale": "Selected from the alkali (2001) calibration."},
+        "derived",
+    ) == "derived"
+    assert redox_source_role(
+        "Li (2001)",
+        {"selection_rationale": "Li (2001) was selected for this redox row."},
+        "derived",
+    ) == "selected"
+
+
+def test_coefficient_source_lookup_requires_bounded_citation_match():
+    source_mapper = runpy.run_path(
+        str(ROOT / "tools" / "build_coefficient_ancestry.py")
+    )["SourceMapper"](
+        {"dois": {}, "citation_keys": {"Li (2001)": "li-work"}, "patterns": []},
+        {"li-work"},
+    )
+
+    assert source_mapper.resolve("alkali (2001)") == []
+    assert source_mapper.resolve("Li (2001)") == ["li-work"]
 
 
 def _json_resource(path: str) -> dict:

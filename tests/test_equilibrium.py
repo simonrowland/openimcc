@@ -25,6 +25,7 @@ from openimcc.equilibrium import (
     _inner_activity_uncertainty,
     _load_json,
     _parse_bulk,
+    _redox_candidate,
     _lp_solid_minimum,
     _minimize_logq_on_dual_face,
     _phase_extent_ranges,
@@ -1560,6 +1561,21 @@ def test_refusals_for_nonconvex_ferric_out_of_domain_and_nonfinite(
         {"CaO": float("nan")}, 1900.0, candidates=(), pack=ideal_pack,
     )
     assert refusal.refusal.code == "nonfinite_input"
+
+
+def test_nonferric_candidate_name_is_not_redox_evidence():
+    ferric_free = CrystalCandidate(
+        "ferric-free-spinel", {"MgO": 1.0, "Al2O3": 1.0}, 0.0,
+        formula="MgAl2O4",
+    )
+
+    assert not _redox_candidate(ferric_free)
+
+
+def test_fe3o4_stoichiometry_is_redox_evidence():
+    magnetite_formula = CrystalCandidate("mt", {"Fe3O4": 1.0}, 0.0)
+
+    assert _redox_candidate(magnetite_formula)
 
 
 def test_cpu_median_per_equilibrium_point(ideal_pack, gas_pack):

@@ -92,9 +92,8 @@ class SourceMapper:
             work_id = self.dois.get(_normalized_doi(match.group(0)))
             if work_id:
                 work_ids.append(work_id)
-        folded = evidence.casefold()
         for key, work_id in self.citation_keys.items():
-            if key in folded:
+            if _contains_bounded_citation(key, evidence):
                 work_ids.append(work_id)
         for pattern, work_id in self.patterns:
             if any(
@@ -136,6 +135,15 @@ def _citation_atoms(citation: str) -> list[str]:
     return list(dict.fromkeys(atoms))
 
 
+def _contains_bounded_citation(citation: str, text: str) -> bool:
+    normalized_citation = re.sub(r"[^a-z0-9]+", " ", citation.casefold()).strip()
+    if not normalized_citation:
+        return False
+    normalized_text = re.sub(r"[^a-z0-9]+", " ", text.casefold())
+    pattern = rf"(?<![a-z0-9]){re.escape(normalized_citation)}(?![a-z0-9])"
+    return re.search(pattern, normalized_text) is not None
+
+
 def _role_from_evidence(text: str, default: str = "derived") -> str:
     folded = text.casefold()
     if re.search(r"(?<![a-z])fit(?:ted|ting)?(?![a-z])", folded):
@@ -153,9 +161,7 @@ def _redox_source_role(
     rationale = str(provenance.get("selection_rationale", "")).casefold()
     dated_reference = re.match(r"(.+?\((?:19|20)[0-9]{2}\))", citation)
     reference = dated_reference.group(1) if dated_reference else citation.split(",", 1)[0]
-    normalized_citation = re.sub(r"[^a-z0-9]+", " ", reference.casefold()).strip()
-    normalized_rationale = re.sub(r"[^a-z0-9]+", " ", rationale)
-    if "select" in rationale and normalized_citation and normalized_citation in normalized_rationale:
+    if "select" in rationale and _contains_bounded_citation(reference, rationale):
         return "selected"
     return default
 

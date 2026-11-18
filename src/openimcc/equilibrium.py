@@ -26,6 +26,7 @@ from openimcc.declared_assemblage import (
     EquilibriumRefusal,
     PhaseEquilibriumLabels,
     _evaluate_gas_attachment,
+    _is_redox_phase_identity,
     _least_authority,
     _load_json,
     _phase_authority,
@@ -388,10 +389,14 @@ def _melt_liquid_standards(
 
 
 def _redox_candidate(candidate: CrystalCandidate) -> bool:
-    identity = f"{candidate.phase_id} {candidate.formula or ''}".lower().replace(" ", "")
-    if any(token in identity for token in ("fe2o3", "hematite", "magnetite", "ferric", "fe3o4")):
+    if any(
+        _is_redox_phase_identity(identity)
+        for identity in (candidate.phase_id, candidate.formula or "")
+    ):
         return True
-    return any(name.lower().replace(" ", "") == "fe2o3" for name in candidate.stoichiometry)
+    return any(
+        _is_redox_phase_identity(name) for name in candidate.stoichiometry
+    )
 
 
 def _evaluate_fusion_crystal_row(

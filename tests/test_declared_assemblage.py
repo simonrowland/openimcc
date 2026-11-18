@@ -312,6 +312,12 @@ def test_shipped_diagnostic_authorities_are_ranked():
     assert authorities <= _PROVENANCE_AUTHORITY_RANK.keys()
 
 
+def test_nonferric_phase_name_is_not_redox_evidence():
+    result = evaluate_declared_assemblage(("nonferric-olivine",), 1800.0)
+
+    assert result.refusal.code == "missing_phase_data"
+
+
 def test_phase_temperature_outside_source_range_is_refused():
     result = evaluate_declared_assemblage(("spinel",), 2500.0)
 
