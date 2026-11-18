@@ -254,6 +254,7 @@ def test_k_al_oversequestration_threshold_is_inclusive(
         parent_x=np.array([1.0]),
         D=1.0,
         complex_x=np.array([complex_x]),
+        species_names=("K2O", associate),
     )
     pack = SimpleNamespace(
         reactions=(associate,),
@@ -266,6 +267,37 @@ def test_k_al_oversequestration_threshold_is_inclusive(
     if notice is not None:
         assert str(notice) == K_AL_OVERSEQUESTRATION_NOTICE
         assert notice.score == "unscored"
+
+
+def test_k_al_notice_matches_reaction_name_after_species_index_shift() -> None:
+    selected = load_datapack(PACKS / "imcc-sf04-v1.0.2.json")
+    kernel_pack = selected.kernel_datapack
+    kca_index = kernel_pack.reactions.index("KCaAlSi2O7")
+    assert kca_index == 37
+
+    complex_names = list(kernel_pack.reactions)
+    complex_names.insert(kca_index, "FeO1.5(l)")
+    complex_x = np.zeros(len(complex_names))
+    complex_x[kca_index] = 0.51
+    complex_x[kca_index + 1] = 0.49
+    parent_x = np.ones(len(kernel_pack.parent_oxides))
+    parent_x[kernel_pack.parent_oxides.index("K2O")] = 0.5
+    shifted = SimpleNamespace(
+        parent_oxides=kernel_pack.parent_oxides,
+        parent_x=parent_x,
+        D=1.0,
+        complex_x=complex_x,
+        species_names=(*kernel_pack.parent_oxides, *complex_names),
+    )
+
+    notice = model._k_al_oversequestration_notice(
+        shifted,
+        kernel_pack,
+        selected.model_id,
+        selected.binding_digest,
+    )
+
+    assert notice is None
 
 
 @pytest.mark.parametrize("k2o_wt", [12.0, 25.0, 40.0])
@@ -406,6 +438,7 @@ def test_anorthite_row_sensitivity_threshold_is_inclusive() -> None:
             parent_x=np.array([0.25, 0.25, 0.50]),
             D=1.0,
             complex_x=np.array([fraction * 0.25]),
+            species_names=("CaO", "Al2O3", "SiO2", "CaAl2Si2O8"),
         )
         return model._anorthite_row_sensitivity_notice(
             solved, pack, "unscored-model", "unscored-digest"

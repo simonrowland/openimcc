@@ -407,6 +407,13 @@ def _na2o_activity_bias_notice(
     return None
 
 
+def _complex_fractions_by_name(result: ImccResult) -> dict[str, float]:
+    complex_names = result.species_names[len(result.parent_oxides):]
+    return dict(
+        zip(complex_names, (float(value) for value in result.complex_x), strict=True)
+    )
+
+
 def _k_al_oversequestration_notice(
     result: ImccResult,
     kernel_pack: ImccDatapack,
@@ -440,9 +447,10 @@ def _k_al_oversequestration_notice(
     # cited magnitude belongs to the single experiment, whose fraction is
     # about 0.99998, far above the gate. Al-free K2O-SiO2 melts give 0 and
     # never trigger.
+    complex_fractions = _complex_fractions_by_name(result)
     bound_k = sum(
         float(kernel_pack.nu[k_index, row_index])
-        * float(result.complex_x[row_index])
+        * complex_fractions.get(name, 0.0)
         for row_index, name in enumerate(kernel_pack.reactions)
         if name in _K_AL_ASSOCIATES
     )
@@ -478,9 +486,12 @@ def _anorthite_row_sensitivity_notice(
     # is the first >0.1-dex row-swap leverage found on the documented CAS grid;
     # composition-dependent shifts make it neither a physical crossover nor
     # an error bound.
+    complex_fraction = _complex_fractions_by_name(result).get(
+        "CaAl2Si2O8", 0.0
+    )
     bound_al = (
         float(kernel_pack.nu[al_index, row_index])
-        * float(result.complex_x[row_index])
+        * complex_fraction
     )
     fraction = bound_al / (float(result.D) * analytical_al)
     if fraction < _ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION:
@@ -3144,10 +3155,11 @@ def evaluate(
         # its original cation grouping and wording byte-for-byte.
         family_amounts: dict[tuple[str, ...], float] = {}
         bound_sink = 0.0
+        complex_fractions = _complex_fractions_by_name(result)
         for complex_index, complex_name in enumerate(kernel_pack.reactions):
             sink_amount = float(
                 kernel_pack.nu[sink_index, complex_index]
-                * result.complex_x[complex_index]
+                * complex_fractions.get(complex_name, 0.0)
             )
             if sink_amount <= 0.0:
                 continue
