@@ -2648,11 +2648,15 @@ def _positive_branch(
             if abs(phase_affinities.get(rejected, math.inf)) <= affinity_tol_ln:
                 saturated = tuple(sorted((*saturated, rejected)))
         authorities_missing = bool(missing) or explicit_candidates
+        range_refusal_axes = (
+            "phase_amount_ranges",
+            *(f"crystal.{phase}" for phase in missing),
+        )
         refusal = (
             EquilibriumRefusal(
                 "resolution_unresolved",
                 "A phase amount range solve did not resolve within numerical precision.",
-                ("phase_amount_ranges",),
+                range_refusal_axes,
                 {"phase_amount_ranges_certified": 0.0},
             )
             if not ranges_certified else
@@ -2673,7 +2677,7 @@ def _positive_branch(
             validity,
             (
                 tuple(f"crystal.{phase}.temperature_K" for phase in missing)
-                if ranges_certified else ("phase_amount_ranges",)
+                if ranges_certified else range_refusal_axes
             ),
             parents,
         )

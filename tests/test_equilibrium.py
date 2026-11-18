@@ -21,12 +21,13 @@ from openimcc.equilibrium import (
     CrystalCandidate,
     _CandidateState,
     _PURE_RESOURCE,
-    _load_json,
-    _inner_activity_uncertainty,
     _active_residual,
+    _inner_activity_uncertainty,
+    _load_json,
     _parse_bulk,
     _lp_solid_minimum,
     _minimize_logq_on_dual_face,
+    _phase_extent_ranges,
     _positive_branch,
     _solve_active_equalities,
     equilibrate,
@@ -1367,6 +1368,29 @@ def test_phase_labels_reject_unknown_validity():
 
     with pytest.raises(ValueError, match="validity must be one of"):
         replace(result.labels, validity="BAD")
+
+
+def test_range_refusal_retains_missing_crystal_axes(monkeypatch):
+    def uncertified_ranges(*args, **kwargs):
+        ranges, unique, _certified, liquid_scale_range = _phase_extent_ranges(
+            *args, **kwargs,
+        )
+        return ranges, unique, False, liquid_scale_range
+
+    monkeypatch.setattr(
+        "openimcc.equilibrium._phase_extent_ranges", uncertified_ranges,
+    )
+    result = equilibrate(
+        {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1800.0,
+    )
+
+    assert result.refusal is not None
+    assert result.refusal.code == "resolution_unresolved"
+    expected_missing = {"crystal.C12A7", "crystal.CA6"}
+    assert {"phase_amount_ranges", *expected_missing} <= set(result.refusal.axes)
+    assert {"phase_amount_ranges", *expected_missing} <= set(
+        result.labels.out_of_domain_axes
+    )
 
 
 def test_inner_activity_uncertainty_covers_trace_residual_and_scale(ideal_pack):
