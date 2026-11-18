@@ -180,6 +180,29 @@ def test_extension_row_nonfinite_domain_is_malformed(
     assert "endpoints must be finite Kelvin values" in str(exc.value)
 
 
+def test_extension_row_unrepresentable_coefficient_is_malformed(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ImccMalformedDatapackError) as exc:
+        load_datapack(_write_ext_pack(tmp_path, A=10**400))
+
+    assert exc.value.code == "imcc_malformed_datapack"
+
+
+@pytest.mark.parametrize(
+    "field", ["T_domain_K", "T_domain_paper_demonstrated_K"]
+)
+def test_extension_row_unrepresentable_temperature_endpoint_is_malformed(
+    tmp_path: Path, field: str,
+) -> None:
+    with pytest.raises(ImccMalformedDatapackError) as exc:
+        load_datapack(
+            _write_ext_pack(tmp_path, **{field: [10**400, 3000.0]})
+        )
+
+    assert exc.value.code == "imcc_malformed_datapack"
+
+
 @pytest.mark.parametrize("component", ["S", "P2O5"])
 def test_plain_pack_accepts_trace_sp_but_refuses_over_limit(component: str) -> None:
     pack = load_datapack(BASE_DATAPACK)

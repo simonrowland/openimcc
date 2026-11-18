@@ -1149,6 +1149,15 @@ class EngineBindingIdentity:
     gas_table_digest: str
 
 
+def _datapack_float(value: Any, field: str) -> float:
+    try:
+        return float(value)
+    except OverflowError as exc:
+        raise ImccMalformedDatapackError(
+            f"{field} is outside the finite float range"
+        ) from exc
+
+
 def _parse_excess_gibbs_terms(
     section: Any,
     parent_oxides: Sequence[str],
@@ -1193,7 +1202,7 @@ def _parse_excess_gibbs_terms(
                 raise ImccMalformedDatapackError(
                     f"{label} {field_name} must be a finite number"
                 )
-            number = float(value)
+            number = _datapack_float(value, f"{label} {field_name}")
             if not math.isfinite(number):
                 raise ImccMalformedDatapackError(
                     f"{label} {field_name} must be a finite number"
@@ -1236,7 +1245,10 @@ def _parse_excess_gibbs_terms(
                 raise ImccMalformedDatapackError(
                     f"{label} valid_composition bounds must be finite numbers"
                 )
-            low, high = (float(bound) for bound in bounds)
+            low, high = (
+                _datapack_float(bound, f"{label} valid_composition bound")
+                for bound in bounds
+            )
             if not (math.isfinite(low) and math.isfinite(high)) or not (
                 0.0 <= low <= high <= 1.0
             ):
@@ -1254,7 +1266,10 @@ def _parse_excess_gibbs_terms(
             raise ImccMalformedDatapackError(
                 f"{label} T_range_K must be a finite [low, high] pair"
             )
-        t_low, t_high = (float(bound) for bound in raw_temperature_range)
+        t_low, t_high = (
+            _datapack_float(bound, f"{label} T_range_K endpoint")
+            for bound in raw_temperature_range
+        )
         if not (math.isfinite(t_low) and math.isfinite(t_high)) or not (
             0.0 < t_low <= t_high
         ):
@@ -1585,7 +1600,10 @@ def _build_nu_vector(
         raise ImccMalformedDatapackError(
             f"{row_label} nu has unknown key {unknown_nu[0]!r}"
         )
-    return [float(_as_fraction(nu.get(name, 0))) for name in parent_oxides]
+    return [
+        _datapack_float(_as_fraction(nu.get(name, 0)), f"{row_label} nu[{name}]")
+        for name in parent_oxides
+    ]
 
 
 def _wt_to_mol(vector: np.ndarray, parent_oxides: Sequence[str]) -> np.ndarray:
@@ -1818,8 +1836,8 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             raise ImccMalformedDatapackError(
                 f"row {idx} A/B must be numeric"
             )
-        A_float = float(A_val)
-        B_float = float(B_val)
+        A_float = _datapack_float(A_val, f"{row_label} A")
+        B_float = _datapack_float(B_val, f"{row_label} B")
         if idx >= len(rows) and (
             not np.isfinite(A_float) or not np.isfinite(B_float)
         ):
@@ -1841,7 +1859,10 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             raise ImccMalformedDatapackError(
                 f"row {idx} T_domain_K values must be numeric"
             )
-        domain_values = (float(t_domain[0]), float(t_domain[1]))
+        domain_values = (
+            _datapack_float(t_domain[0], f"{row_label} T_domain_K endpoint"),
+            _datapack_float(t_domain[1], f"{row_label} T_domain_K endpoint"),
+        )
         if idx >= len(rows) and not all(
             np.isfinite(value) for value in domain_values
         ):
@@ -1866,7 +1887,16 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
                 raise ImccMalformedDatapackError(
                     f"row {idx} T_domain_paper_demonstrated_K values must be numeric"
                 )
-            paper_domain_values = (float(paper_domain[0]), float(paper_domain[1]))
+            paper_domain_values = (
+                _datapack_float(
+                    paper_domain[0],
+                    f"{row_label} T_domain_paper_demonstrated_K endpoint",
+                ),
+                _datapack_float(
+                    paper_domain[1],
+                    f"{row_label} T_domain_paper_demonstrated_K endpoint",
+                ),
+            )
             if not all(np.isfinite(value) for value in paper_domain_values):
                 raise ImccMalformedDatapackError(
                     f"row {idx} T_domain_paper_demonstrated_K values must be finite"
