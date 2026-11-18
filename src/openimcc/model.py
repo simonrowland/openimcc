@@ -1714,9 +1714,8 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             model_id=model_id,
             version=version,
         )
-    # Field-level band checks run only after the published-identity gate
-    # above: an unpublished or modified pack must refuse on its canonical
-    # hash and never reach field validation.
+    # The canonical-hash gate above protects published identities before the
+    # field-level band checks.
     _validate_band_schema_rows(data)
 
     if sp_extension is not None:
