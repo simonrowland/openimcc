@@ -736,7 +736,10 @@ def test_loader_refuses_unnamed_species_from_csv(
     rows[0]["species_name"] = ""
     _write_csv(table_path, fields, rows)
     kwargs = {"gas_path": table_path} if filename == TABLE_FILES[0] else {"oxide_path": table_path}
-    with pytest.raises(PublicInvalidIntervalError, match="species"):
+    with pytest.raises(
+        PublicInvalidIntervalError,
+        match="missing, empty, or whitespace-only species label",
+    ):
         load_gas_datapack(**kwargs)
 
 
@@ -751,7 +754,10 @@ def test_construction_refuses_missing_empty_or_whitespace_species_labels(
     labels = list(frame.index)
     labels[0] = invalid_label
     frame.index = pd.Index(labels, name="species_name")
-    with pytest.raises(PublicInvalidIntervalError, match="species"):
+    with pytest.raises(
+        PublicInvalidIntervalError,
+        match="missing, empty, or whitespace-only species label",
+    ):
         replace(loaded, **{frame_name: frame})
 
 
