@@ -1653,6 +1653,10 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         raise ImccMalformedDatapackError(
             f"datapack file not found: {source}"
         ) from exc
+    except OSError as exc:
+        raise ImccMalformedDatapackError(
+            f"cannot read datapack at {source}: {exc}"
+        ) from exc
 
     if not isinstance(data, dict):
         raise ImccMalformedDatapackError("datapack JSON root must be an object")

@@ -152,6 +152,15 @@ def test_out_of_domain_is_a_typed_refusal_not_a_crash(capsys):
     assert "900" in payload["reason"]
 
 
+def test_directory_pack_path_exits_as_typed_refusal(tmp_path: Path, capsys) -> None:
+    directory = tmp_path / "pack-directory"
+    directory.mkdir()
+
+    assert cli.main(["describe", "--pack", str(directory), "--json"]) == cli.EXIT_REFUSED
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["code"] == "imcc_malformed_datapack"
+
+
 def test_out_of_domain_refusal_returns_code_with_closed_stdout(monkeypatch):
     closed_stdout = io.StringIO()
     closed_stdout.close()

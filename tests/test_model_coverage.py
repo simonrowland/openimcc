@@ -222,6 +222,16 @@ def test_load_datapack_rejects_file_root_and_parent_shape_errors(
         assert message in str(exc.value)
 
 
+def test_load_datapack_rejects_directory_path_as_malformed(tmp_path: Path) -> None:
+    directory = tmp_path / "pack-directory"
+    directory.mkdir()
+
+    with pytest.raises(ImccMalformedDatapackError) as exc:
+        load_datapack(directory)
+
+    assert exc.value.code == "imcc_malformed_datapack"
+
+
 def test_load_datapack_rejects_duplicate_json_keys(tmp_path: Path) -> None:
     path = tmp_path / "duplicate-key.json"
     original = BASE_DATAPACK.read_text(encoding="utf-8")
