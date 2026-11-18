@@ -314,16 +314,23 @@ def _immutable_text(value: Any) -> Mapping[str, str]:
     )
 
 
-def _immutable_overrides(value: Any) -> Mapping[str, Mapping[str, str]]:
+def _immutable_overrides(
+    value: Any, *, field: str
+) -> Mapping[str, Mapping[str, str]]:
+    from openimcc.model import ImccMalformedDatapackError
+
     if not isinstance(value, Mapping):
-        return MappingProxyType({})
-    return MappingProxyType(
-        {
-            str(row_key): _immutable_standards(standards)
-            for row_key, standards in value.items()
-            if isinstance(standards, Mapping)
-        }
-    )
+        raise ImccMalformedDatapackError(
+            f"liquid_standards.{field} must be an object"
+        )
+    overrides: dict[str, Mapping[str, str]] = {}
+    for row_key, standards in value.items():
+        if not isinstance(standards, Mapping):
+            raise ImccMalformedDatapackError(
+                f"liquid_standards.{field} row {row_key!r} must be an object"
+            )
+        overrides[str(row_key)] = _immutable_standards(standards)
+    return MappingProxyType(overrides)
 
 
 def _immutable_diagnostic_value(value: Any) -> Any:
@@ -355,16 +362,20 @@ def _from_declaration(
 ) -> PackLiquidStandards:
     return PackLiquidStandards(
         standards=_immutable_standards(declaration.get("standards")),
-        row_overrides=_immutable_overrides(declaration.get("row_overrides")),
+        row_overrides=_immutable_overrides(
+            declaration.get("row_overrides", {}), field="row_overrides"
+        ),
         standard_basis=_immutable_text(declaration.get("standard_basis")),
         standard_citations=_immutable_text(
             declaration.get("standard_citations")
         ),
         row_override_basis=_immutable_overrides(
-            declaration.get("row_override_basis")
+            declaration.get("row_override_basis", {}),
+            field="row_override_basis",
         ),
         row_override_citations=_immutable_overrides(
-            declaration.get("row_override_citations")
+            declaration.get("row_override_citations", {}),
+            field="row_override_citations",
         ),
         row_diagnostics=_immutable_row_diagnostics(
             declaration.get("row_diagnostics")

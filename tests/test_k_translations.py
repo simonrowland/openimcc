@@ -486,6 +486,16 @@ def test_loader_rejects_invalid_inactive_row_metadata(
         load_datapack(path)
 
 
+def test_loader_rejects_explicit_null_active_flag(tmp_path: Path) -> None:
+    data = json.loads(PUBLISHED_PATH.read_text(encoding="utf-8"))
+    data["rows"][0]["active"] = None
+    path = tmp_path / "null-active-flag.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    with pytest.raises(ImccMalformedDatapackError, match="active must be a boolean"):
+        load_datapack(path)
+
+
 def test_free_fraction_pressure_bookkeeping_and_pure_k2o_endpoint(
     packaged_gas_pack,
 ) -> None:

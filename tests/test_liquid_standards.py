@@ -876,6 +876,35 @@ def test_loaded_objects_paths_and_row_overrides_resolve_to_registry() -> None:
     assert redox_loaded_info.standards["FeO"] == "Fe-019"
 
 
+def test_pack_row_liquid_standards_preserves_absent_override_default() -> None:
+    row = pack_row_liquid_standards(
+        {"liquid_standards": {"standards": {"FeO": "pack-wide"}}},
+        "row-x",
+    )
+
+    assert row["FeO"] == "pack-wide"
+
+
+@pytest.mark.parametrize(
+    "row_overrides",
+    [None, "invalid", {"row-x": None}, {"row-x": ["FeO"]}],
+)
+def test_pack_row_liquid_standards_rejects_malformed_overrides(
+    row_overrides: object,
+) -> None:
+    pack = {
+        "liquid_standards": {
+            "standards": {"FeO": "pack-wide"},
+            "row_overrides": row_overrides,
+        }
+    }
+
+    with pytest.raises(ImccMalformedDatapackError) as exc:
+        pack_row_liquid_standards(pack, "row-x")
+
+    assert exc.value.code == "imcc_malformed_datapack"
+
+
 @pytest.mark.parametrize("contents", ["{", "[]"])
 def test_pack_liquid_standards_rejects_invalid_pack_files(
     tmp_path: Path, contents: str
