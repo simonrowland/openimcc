@@ -1348,6 +1348,12 @@ def test_evaluate_uses_full_manganese_associate_solve_for_basalt(
         basis_type="mol",
         allow_extrapolation=True,
     )
+    from openimcc.redox_pack import load_redox_pack
+
+    mno_lineage = load_redox_pack().content["thermo_species"]["MnO(l)"][
+        "provenance"
+    ]["source"]
+    assert result.labels.coverage["MnO"] == mno_lineage
 
     for major, activity in expected.parent_activity.items():
         if major in result.parent_oxides:

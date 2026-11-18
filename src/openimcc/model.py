@@ -2904,13 +2904,18 @@ def evaluate(
             and rule.activity_model == "redox_associates"
         )
         trace_redox_pack = None
-        if redox_trace_oxides and selected_profile is not None:
-            if selected_profile.redox_pack_path is None:
+        if redox_trace_oxides:
+            if selected_profile is None:
+                from openimcc.redox_pack import load_redox_pack
+
+                trace_redox_pack = load_redox_pack()
+            elif selected_profile.redox_pack_path is None:
                 raise ProfileRedoxUnavailableError(
                     "the SF04 publication has no redox model; use "
                     "profile='openimcc' or pass explicit packs"
                 )
-            trace_redox_pack = selected_profile.redox_pack
+            else:
+                trace_redox_pack = selected_profile.redox_pack
         composition_moles = {
             name: float(amount)
             for name, amount in zip(parent_oxides, vector, strict=True)
@@ -2965,12 +2970,21 @@ def evaluate(
                     where=parent_x > 0.0,
                 )
                 complex_x = species_x[len(redox_parent_oxides):]
-                coverage = {
-                    name: result.labels.coverage.get(
-                        name, result.labels.evidence_class
-                    )
-                    for name in species_names
-                }
+                redox_thermo_species = trace_redox_pack.content["thermo_species"]
+                coverage = {}
+                for name in species_names:
+                    lineage = result.labels.coverage.get(name)
+                    if lineage is None:
+                        redox_name = (
+                            name if name.endswith("(l)") else f"{name}(l)"
+                        )
+                        provenance = redox_thermo_species.get(
+                            redox_name, {}
+                        ).get("provenance", {})
+                        lineage = provenance.get(
+                            "source", result.labels.evidence_class
+                        )
+                    coverage[name] = lineage
                 result = replace(
                     result,
                     parent_oxides=redox_parent_oxides,
