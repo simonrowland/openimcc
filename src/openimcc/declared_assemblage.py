@@ -111,9 +111,13 @@ def _phase_authority(phase: Mapping[str, Any]) -> str:
 
 
 def _least_authority(authorities: Sequence[str]) -> str:
+    if not authorities or any(
+        authority not in _PROVENANCE_AUTHORITY_RANK for authority in authorities
+    ):
+        return "unresolved"
     return min(
-        authorities or ("external_datapack",),
-        key=lambda authority: _PROVENANCE_AUTHORITY_RANK.get(authority, 2),
+        authorities,
+        key=_PROVENANCE_AUTHORITY_RANK.__getitem__,
     )
 
 
@@ -382,7 +386,7 @@ def evaluate_declared_assemblage(
             include_ions=include_ions, oxygen_balance=oxygen_balance,
             allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
             pure_digest=pure_digest, gas_pack=gas_pack, validity="DEPENDS",
-            evidence_class="external_datapack", flags=("redox_phase_refused",),
+            evidence_class="unresolved", flags=("redox_phase_refused",),
             notices=("declared_assemblage_not_minimized",), refusal=refusal,
         )
 
@@ -401,7 +405,7 @@ def evaluate_declared_assemblage(
             include_ions=include_ions, oxygen_balance=oxygen_balance,
             allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
             pure_digest=pure_digest, gas_pack=gas_pack, validity="DEPENDS",
-            evidence_class="external_datapack", flags=(),
+            evidence_class="unresolved", flags=(),
             notices=("declared_assemblage_not_minimized",), refusal=refusal,
             non_identifiable_components=(
                 tuple(sorted(set(requested_oxides))) if requested_oxides else ()

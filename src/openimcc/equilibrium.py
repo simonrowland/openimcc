@@ -1812,10 +1812,9 @@ def _labels(
         if state.reason == "above_source_melting_point"
     ))
     authorities.extend(
-        _OXIDE_PROVENANCE_AUTHORITY.get(parent, "external_datapack")
+        _OXIDE_PROVENANCE_AUTHORITY.get(parent, "unresolved")
         for parent in parent_oxides
     )
-    authorities.append(str(getattr(kernel, "evidence_class", "external_datapack")))
     if isinstance(pack, ImccLoadedDatapack):
         authorities.extend(
             str(term.provenance.get("source_authority", "external_datapack"))

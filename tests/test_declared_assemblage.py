@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from openimcc.declared_assemblage import evaluate_declared_assemblage
+from openimcc.declared_assemblage import (
+    _least_authority,
+    evaluate_declared_assemblage,
+)
 from openimcc.gas import evaluate_gas, load_gas_datapack, species_thermo
 from openimcc._constants import R_J_MOL_K
 from openimcc.janaf_crystals import evaluate_janaf_crystal
@@ -267,8 +270,20 @@ def test_redox_sensitive_phase_is_refused(phase):
 
     assert result.refusal.code == "redox_sensitive_phase"
     assert result.labels.validity == "DEPENDS"
+    assert result.labels.evidence_class == "unresolved"
     assert f"crystal.{phase}.redox" in result.refusal.axes
     assert phase in result.refusal.detail
+
+
+def test_missing_phase_refusal_has_unresolved_authority():
+    result = evaluate_declared_assemblage(("not-a-phase",), 1800.0)
+
+    assert result.refusal.code == "missing_phase_data"
+    assert result.labels.evidence_class == "unresolved"
+
+
+def test_unknown_source_authority_is_reported_as_unresolved():
+    assert _least_authority(("janaf_fitted", "unknown-source")) == "unresolved"
 
 
 def test_phase_temperature_outside_source_range_is_refused():

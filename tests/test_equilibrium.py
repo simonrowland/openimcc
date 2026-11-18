@@ -1342,6 +1342,16 @@ def test_inner_melt_arithmetic_failure_has_explicit_code(monkeypatch, ideal_pack
     assert result.to_dict()["refusal"]["code"] == "arithmetic_failure"
 
 
+def test_equilibrium_authority_excludes_kernel_identity_stamp():
+    result = equilibrate(
+        {"SiO2": 1.0, "MgO": 1.0, "Al2O3": 1.0, "CaO": 1.0},
+        1800.0,
+        candidates=(),
+    )
+
+    assert result.labels.evidence_class == "janaf_fitted"
+
+
 def test_inner_activity_uncertainty_covers_trace_residual_and_scale(ideal_pack):
     parents = ("SiO2", "MgO")
     liquid = np.asarray((1.0e-6, 1.0))

@@ -1247,3 +1247,28 @@ def test_embedded_declarations_precede_the_registry_and_unknown_packs_stay_unkno
     )
     assert unknown_redox.source == "undeclared"
     assert unknown_redox.pack_digest is None
+
+
+@pytest.mark.parametrize(
+    ("citation_field", "citation_value"),
+    [
+        ("standard_citations", {"FeO": None}),
+        ("row_override_citations", {"row-x": {"FeO": None}}),
+    ],
+)
+def test_non_string_liquid_standard_citations_are_rejected(
+    citation_field, citation_value,
+):
+    declaration = {
+        "standards": {"FeO": "embedded-table"},
+        citation_field: citation_value,
+    }
+    if citation_field == "row_override_citations":
+        declaration["row_overrides"] = {"row-x": {"FeO": "row-table"}}
+    embedded = SimpleNamespace(
+        binding_digest=load_datapack().binding_digest,
+        liquid_standards=declaration,
+    )
+
+    with pytest.raises(ValueError, match="must be strings"):
+        pack_liquid_standards(embedded)

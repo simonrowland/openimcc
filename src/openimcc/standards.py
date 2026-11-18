@@ -301,16 +301,20 @@ def _read_registry() -> dict[str, Any]:
 def _immutable_standards(value: Any) -> Mapping[str, str]:
     if not isinstance(value, Mapping):
         return MappingProxyType({})
+    if any(not isinstance(standard, str) for standard in value.values()):
+        raise ValueError("liquid standard values must be strings")
     return MappingProxyType(
-        {str(oxide): str(standard) for oxide, standard in value.items()}
+        {str(oxide): standard for oxide, standard in value.items()}
     )
 
 
 def _immutable_text(value: Any) -> Mapping[str, str]:
     if not isinstance(value, Mapping):
         return MappingProxyType({})
+    if any(not isinstance(text, str) for text in value.values()):
+        raise ValueError("standard text values must be strings")
     return MappingProxyType(
-        {str(key): str(text) for key, text in value.items()}
+        {str(key): text for key, text in value.items()}
     )
 
 
