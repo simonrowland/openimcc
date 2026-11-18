@@ -547,18 +547,14 @@ class LiquidOnlyNotice:
 
 
 def _crystal_thermo_context(condensate: str | Path | None):
-    from openimcc.gas import (
-        default_condensate_database_path, default_gas_database_path,
-        load_gas_datapack,
-    )
-    gas_path = default_gas_database_path()
-    default_oxide_path = default_condensate_database_path()
+    from openimcc.gas import load_gas_datapack
+
     if not condensate:
-        default_pack = load_gas_datapack(gas_path, default_oxide_path)
+        default_pack = load_gas_datapack()
         return default_pack, default_pack
     return (
-        load_gas_datapack(gas_path, Path(condensate)),
-        load_gas_datapack(gas_path, default_oxide_path),
+        load_gas_datapack(oxide_path=Path(condensate)),
+        load_gas_datapack(),
     )
 
 

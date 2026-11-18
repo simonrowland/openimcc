@@ -5070,14 +5070,14 @@ def evaluate_gas_oxygen_balance(
     molecular-flow ceiling.
 
     With ``include_ions=True``, charge closure is recalculated at each trial
-    pressure. Metal ions retain their neutral parent's oxygen demand per metal
-    atom. The ion's effective pO2 exponent is taken from that parent for the
-    generic solver's monotonicity check; charge closure makes the actual ion
-    pressure composition-dependent, so the generic monotonicity proof does
-    not strictly cover the ion contribution. Before solving, a fixed 64-interval
-    scan checks the allowed pO2 bracket and refuses when it finds multiple
-    simple sign-changing intervals. A finite scan cannot rule out a tangent
-    root between samples.
+    pressure. Each metal ion retains its neutral molecule's full oxygen count
+    and parent-oxide demand per molecule. The ion's effective pO2 exponent is
+    taken from that parent for the generic solver's monotonicity check; charge
+    closure makes the actual ion pressure composition-dependent, so the generic
+    monotonicity proof does not strictly cover the ion contribution. Before
+    solving, a fixed 64-interval scan checks the allowed pO2 bracket and refuses
+    when it finds multiple simple sign-changing intervals. A finite scan cannot
+    rule out a tangent root between samples.
     Positive ions are counted as ambipolar ion/electron pairs effusing at the
     ion mass. Counting free electrons at their own mass would apply the
     ``1/sqrt(m_e)`` factor to a beam that cannot escape with net charge; this

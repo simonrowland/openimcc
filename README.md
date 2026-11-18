@@ -1239,10 +1239,11 @@ the high fit uses 1500–3000 K nodes.
 
 Gas `H_app_kJ_mol` is formation-anchored and satisfies
 `G_J_mol = 1000*H_app_kJ_mol - T*S_J_molK`. The packaged gas table folds the
-formation enthalpy into Shomate F and stores H=0; for an explicit row that
-stores `dfH298` in H, the field keeps that anchor. Callers needing only
-H−H298 subtract the source record's `dfH298`. Condensate H_app includes the
-stable-phase 298.15 K anchor and the analytic temperature-dependent increment.
+formation enthalpy into Shomate F and stores H=0. A nonzero column H is not
+subtracted from `H_app`; the formation anchor is kept only when it lives in F.
+Callers needing only H−H298 subtract the source record's `dfH298`. Condensate
+H_app includes the stable-phase 298.15 K anchor and the analytic
+temperature-dependent increment.
 
 `default_gas_channels(parent_oxides, datapack=None)` returns the ordered
 `(channels, omitted)` pair used by the gas evaluator. Both functions use the

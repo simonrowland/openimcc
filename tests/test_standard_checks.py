@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from openimcc import diagnostics
 from openimcc.gas import ImccGasSourceOverrideWarning
 from openimcc.standard_checks import (
     JANAF_PAIR_TOLERANCE_KJ_MOL,
@@ -145,6 +146,36 @@ def test_pure_oxide_standard_check_warns_for_default_vaporock_tables(
         result = pure_oxide_standard_check("SiO2")
 
     assert result.pack_id == "condensate-thermo-data.csv"
+
+
+def test_crystal_diagnostics_warn_for_default_vaporock_tables(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    packaged_gas_pack,
+) -> None:
+    root = tmp_path / "vaporock"
+    gas_target = root / "src" / "vaporock" / "data"
+    oxide_target = root / "data"
+    gas_target.mkdir(parents=True)
+    oxide_target.mkdir(parents=True)
+    shutil.copy2(
+        packaged_gas_pack.gas_path,
+        gas_target / "JANAF-vapor-data-full.csv",
+    )
+    shutil.copy2(
+        packaged_gas_pack.oxide_path,
+        oxide_target / "condensate-thermo-data.csv",
+    )
+    monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
+
+    with pytest.warns(
+        ImccGasSourceOverrideWarning, match="OPENIMCC_VAPOROCK_ROOT"
+    ):
+        gas_pack, reference_pack = diagnostics._crystal_thermo_context(None)
+
+    assert gas_pack is reference_pack
+    assert gas_pack.gas_path == gas_target / "JANAF-vapor-data-full.csv"
+    assert gas_pack.oxide_path == oxide_target / "condensate-thermo-data.csv"
 
 
 def test_default_silica_switch_refuses_an_unresolved_endpoint_sign():

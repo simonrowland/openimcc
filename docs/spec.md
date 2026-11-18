@@ -330,7 +330,8 @@ p(e^-)=\sqrt{\frac{\sum_M K_Mp(M)}{1+\sum_AK_Ap(A)}}.
 The oxygen-balance evaluator is neutral-only by default. At temperatures above
 about 4000 K near 1 bar, callers can pass `include_ions=True` so charge closure
 is recomputed at each trial \(p_{\rm O_2}\) and metal-ion fluxes enter the
-balance. Ion oxygen demand follows the neutral parent's demand per metal atom.
+balance. Each metal ion retains its neutral molecule's full oxygen count and
+parent-oxide demand per molecule.
 The rail should enable this option at high temperature. The flux uses an
 ambipolar approximation: each positive ion leaves with an equal electron flux
 and the pair is assigned the ion's mass. A free-electron
