@@ -52,6 +52,28 @@ def test_authority_enum_and_inclusive_window_boundaries() -> None:
     assert liquid_reference_authority("SiO2(l)", 3000.001).authority is LiquidReferenceAuthority.EXTRAPOLATED
 
 
+def test_liquid_reference_record_reinitialization_is_rejected_before_mutation():
+    window = AuthorityWindow(
+        LiquidReferenceAuthority.CERTIFIED, (100.0, 200.0), 0.1, "dex", (),
+    )
+    record = LiquidReferenceRecord(
+        "SiO2(l)", LiquidReferenceAuthority.CERTIFIED, (100.0, 200.0),
+        0.1, "dex", (), ("test-source",),
+    )
+    original_window = vars(window).copy()
+    original_record = vars(record).copy()
+
+    with pytest.raises(TypeError, match="cannot be reinitialized"):
+        window.__init__("BAD", (1.0, 2.0), None, None, ())
+    with pytest.raises(TypeError, match="cannot be reinitialized"):
+        record.__init__(
+            "K2O(l)", "BAD", (1.0, 2.0), 0.2, "dex", (), ("bad-source",),
+        )
+
+    assert vars(window) == original_window
+    assert vars(record) == original_record
+
+
 def test_silica_authority_windows_and_boundaries() -> None:
     expected = {
         899: (LiquidReferenceAuthority.EXTRAPOLATED, (1500, 1800), None),

@@ -21,6 +21,7 @@ from scipy.special import logsumexp
 
 from openimcc import diagnostics
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
+from openimcc._frozen import _reject_reinitialization
 from openimcc.declared_assemblage import (
     EquilibriumRefusal,
     PhaseEquilibriumLabels,
@@ -68,6 +69,7 @@ _MAX_OUTER_ITERATIONS = 80
 _MAX_ACTIVE_RESTARTS = 40
 
 
+@_reject_reinitialization
 @dataclass(frozen=True)
 class CrystalCandidate:
     """A stoichiometric crystal Gibbs function at the requested temperature.

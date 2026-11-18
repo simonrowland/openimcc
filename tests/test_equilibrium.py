@@ -1328,6 +1328,16 @@ def test_duplicate_candidate_refusal_preserves_validated_bulk():
     assert result.receipt.request["bulk_parent_mol"] == bulk
 
 
+def test_crystal_candidate_reinitialization_is_rejected_before_mutation():
+    candidate = CrystalCandidate("quartz", {"SiO2": 1.0}, -850_000.0)
+    original = vars(candidate).copy()
+
+    with pytest.raises(TypeError, match="cannot be reinitialized"):
+        candidate.__init__("invalid", {"SiO2": -1.0}, math.nan)
+
+    assert vars(candidate) == original
+
+
 def test_inner_melt_arithmetic_failure_has_explicit_code(monkeypatch, ideal_pack):
     def arithmetic_failure(*_args, **_kwargs):
         raise ArithmeticError("synthetic arithmetic failure")

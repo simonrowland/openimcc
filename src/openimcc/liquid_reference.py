@@ -8,6 +8,8 @@ from functools import lru_cache
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal, Mapping
 
+from openimcc._frozen import _reject_reinitialization
+
 if TYPE_CHECKING:
     from openimcc.profiles import Profile
 
@@ -32,6 +34,7 @@ class EvidenceReference:
             object.__setattr__(self, "composition_scope", MappingProxyType(dict(self.composition_scope)))
 
 
+@_reject_reinitialization
 @dataclass(frozen=True)
 class AuthorityWindow:
     authority: LiquidReferenceAuthority
@@ -52,6 +55,7 @@ class AuthorityWindow:
             raise ValueError("uncertainty band must be non-negative")
 
 
+@_reject_reinitialization
 @dataclass(frozen=True)
 class LiquidReferenceRecord:
     species: str
