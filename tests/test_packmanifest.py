@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from tools import packmanifest
 
@@ -32,6 +33,61 @@ def test_check_rejects_duplicate_bad_record_and_wrong_pack_count(
         "manifest has 0 pack record(s); found 1 pack(s) on disk"
         in capsys.readouterr().err
     )
+
+
+def _isolated_manifest(tmp_path, monkeypatch) -> tuple[Path, Path]:
+    pack_dir = tmp_path / "packs"
+    gas_dir = tmp_path / "gas"
+    pack_dir.mkdir()
+    gas_dir.mkdir()
+    (pack_dir / "one.json").write_text('{"rows": []}\n', encoding="utf-8")
+    manifest_path = pack_dir / "MANIFEST.json"
+    monkeypatch.setattr(packmanifest, "PACK_DIR", pack_dir)
+    monkeypatch.setattr(packmanifest, "GAS_DIR", gas_dir)
+    monkeypatch.setattr(packmanifest, "MANIFEST", manifest_path)
+    monkeypatch.setattr(
+        packmanifest,
+        "_runtime_default_versions",
+        lambda: {"melt": "melt-v1", "redox": "redox-v1"},
+    )
+    monkeypatch.setattr(packmanifest, "_runtime_default_combination", lambda: {})
+    return pack_dir, manifest_path
+
+
+def test_write_refuses_corrupt_existing_manifest_without_overwriting(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    _pack_dir, manifest_path = _isolated_manifest(tmp_path, monkeypatch)
+    corrupt = "{ not valid JSON\n"
+    manifest_path.write_text(corrupt, encoding="utf-8")
+
+    result = packmanifest.main(["--write"])
+
+    assert result != 0
+    assert manifest_path.read_text(encoding="utf-8") == corrupt
+    assert "existing manifest" in capsys.readouterr().err
+
+
+def test_write_refuses_invalid_rebuilt_metadata_without_overwriting(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    _pack_dir, manifest_path = _isolated_manifest(tmp_path, monkeypatch)
+    original = json.dumps(
+        {
+            "packs": [
+                {"file": "one.json", "role": "opt-in", "family": "candidate"}
+            ],
+            "tables": [],
+            "DEFAULT-COMBINATION": {},
+        }
+    )
+    manifest_path.write_text(original, encoding="utf-8")
+
+    result = packmanifest.main(["--write"])
+
+    assert result != 0
+    assert manifest_path.read_text(encoding="utf-8") == original
+    assert "invalid manifest metadata" in capsys.readouterr().err
 
 
 def _lifecycle_manifest() -> dict:
@@ -157,7 +213,8 @@ def test_build_preserves_existing_lifecycle_metadata(tmp_path, monkeypatch) -> N
                         "role": "opt-in",
                         "family": "example",
                     }
-                ]
+                ],
+                "tables": [],
             }
         ),
         encoding="utf-8",

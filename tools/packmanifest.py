@@ -43,16 +43,16 @@ def _existing_metadata(section: str) -> dict[str, dict]:
         return {}
     try:
         recorded = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    if not isinstance(recorded, dict) or not isinstance(
-        recorded.get(section), list
-    ):
-        return {}
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"existing manifest cannot be read: {exc}") from exc
+    if not isinstance(recorded, dict) or not isinstance(recorded.get(section), list):
+        raise ValueError(f"existing manifest has no {section} metadata list")
     metadata = {}
-    for entry in recorded[section]:
+    for index, entry in enumerate(recorded[section]):
         if not isinstance(entry, dict) or not isinstance(entry.get("file"), str):
-            continue
+            raise ValueError(
+                f"existing manifest {section}[{index}] must have a file name"
+            )
         fields = {
             field: entry[field]
             for field in ROLE_METADATA_FIELDS
@@ -398,6 +398,16 @@ def _runtime_default_combination() -> dict[str, dict[str, str]]:
     }
 
 
+def _manifest_metadata_issues(manifest: dict) -> list[str]:
+    issues = _validate_roles(manifest, _runtime_default_versions())
+    issues.extend(_validate_kind_defaults(manifest))
+    if manifest.get("DEFAULT-COMBINATION") != _runtime_default_combination():
+        issues.append(
+            "DEFAULT-COMBINATION does not match the four package-selected files and digests"
+        )
+    return issues
+
+
 def _check_artifact_digests(current: list[dict], recorded: list[dict], label: str) -> list[str]:
     filenames = [entry.get("file") for entry in recorded if isinstance(entry, dict)]
     duplicates = sorted(
@@ -438,9 +448,19 @@ def main(argv: list[str] | None = None) -> int:
     group.add_argument("--check", action="store_true", help="fail if any pack drifted")
     args = ap.parse_args(argv)
 
-    current = build()
+    try:
+        current = build()
+    except (OSError, ValueError) as exc:
+        print(f"error: could not rebuild manifest from existing metadata: {exc}",
+              file=sys.stderr)
+        return 2
 
     if args.write:
+        role_issues = _manifest_metadata_issues(current)
+        if role_issues:
+            print("invalid manifest metadata:\n  " + "\n  ".join(role_issues),
+                  file=sys.stderr)
+            return 1
         MANIFEST.write_text(json.dumps(current, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(
             f"wrote {MANIFEST} ({len(current['packs'])} packs, "
@@ -467,12 +487,7 @@ def main(argv: list[str] | None = None) -> int:
               "commit message; consumers pin this hash.", file=sys.stderr)
         return 1
 
-    role_issues = _validate_roles(recorded, _runtime_default_versions())
-    role_issues.extend(_validate_kind_defaults(recorded))
-    if recorded.get("DEFAULT-COMBINATION") != _runtime_default_combination():
-        role_issues.append(
-            "DEFAULT-COMBINATION does not match the four package-selected files and digests"
-        )
+    role_issues = _manifest_metadata_issues(recorded)
     if role_issues:
         print("invalid manifest metadata:\n  " + "\n  ".join(role_issues),
               file=sys.stderr)
