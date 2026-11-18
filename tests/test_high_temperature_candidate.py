@@ -51,6 +51,23 @@ def _assert_close(left: float, right: float) -> None:
     assert abs(left - right) <= 1e-6 * max(abs(left), abs(right), 1.0)
 
 
+def test_high_temperature_candidate_rejects_missing_interior_node(tmp_path: Path) -> None:
+    source_rows = ["Synthetic JANAF table", "T(K)\tCp\tS\t-G/T\tH-H(298)\tDfH\tDfG"]
+    for temperature in range(3000, 6001, 100):
+        cp = "?" if temperature == 4000 else "10"
+        source_rows.append(f"{temperature}\t{cp}\t20\t-10\t0\t-1\t-1")
+    (tmp_path / "T-001.txt").write_text("\n".join(source_rows) + "\n")
+    base_row = {
+        "dH298_R": "0",
+        **{f"dG_{letter}": "0" for letter in "ABCDE"},
+    }
+
+    with pytest.raises(ValueError, match="missing.*fit nodes"):
+        build_gas_tables._janaf_anchored_liquid_rows(
+            tmp_path, "T-001", base_row, 3000.0, 4500.0
+        )
+
+
 def test_default_tables_remain_byte_identical_and_candidate_prefixes_match() -> None:
     default_gas = ROOT / "src/openimcc/data/gas/gas-shomate.csv"
     default_oxide = ROOT / "src/openimcc/data/gas/condensate.csv"

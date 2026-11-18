@@ -370,10 +370,21 @@ def liquid_from_solid(
     species: str, crystal_table: Mapping[str, Any], inputs: Mapping[str, Any]
 ) -> LiquidConstruction:
     """Build a liquid Gibbs function from one crystal table and tiered inputs."""
+    tfus = float(inputs["fusion_temperature"]["value"])
+    table = crystal_table.get("table", crystal_table)
+    for source in table["values"]:
+        if _number(source.get("temperature")) != tfus:
+            continue
+        if any(
+            _number(source.get(field)) is None
+            for field in ("heat_capacity", "entropy", "enthalpy_increment")
+        ):
+            raise ValueError(
+                f"{species}: incomplete thermal row at {tfus:g} K"
+            )
     rows = _crystal_rows(crystal_table)
     if not rows:
         raise ValueError(f"{species}: crystal table has no usable thermal rows")
-    tfus = float(inputs["fusion_temperature"]["value"])
     h_cr, s_cr, cp_cr = _crystal_state(rows, tfus)
     reference = next(
         row.get("formation_enthalpy")

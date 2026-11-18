@@ -575,6 +575,34 @@ def test_extrapolated_liquidus_band_propagates_synthetic_temperature_bounds():
     assert fallback["hematite_reference_example"]["first_hand_verified"] is False
 
 
+def test_liquid_from_solid_rejects_incomplete_fusion_thermal_node():
+    table = {
+        "values": [
+            {
+                "temperature": temperature,
+                "heat_capacity": cp,
+                "entropy": entropy,
+                "enthalpy_increment": enthalpy,
+                **({"formation_enthalpy": -825.0} if temperature == 298.15 else {}),
+            }
+            for temperature, cp, entropy, enthalpy in (
+                (298.15, 50.0, 55.0, 0.0),
+                (3900.0, 80.0, 105.0, 120.0),
+                (4000.0, None, 110.0, 128.0),
+                (4100.0, 80.0, 115.0, 136.0),
+            )
+        ]
+    }
+    inputs = {
+        "fusion_temperature": {"value": 4000.0},
+        "fusion_entropy": {"value": 30.0},
+        "liquid_heat_capacity": {"value": 60.0},
+    }
+
+    with pytest.raises(ValueError, match="incomplete thermal row at 4000 K"):
+        liquid_from_solid("Fe2O3", table, inputs)
+
+
 def test_k2o_fusion_temperature_provenance_and_asymmetric_bounds():
     temperature = INPUTS["rows"]["K2O"]["inputs"]["fusion_temperature"]
     assert temperature["value"] == 1013.0

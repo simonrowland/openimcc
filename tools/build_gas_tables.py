@@ -8480,6 +8480,22 @@ def _candidate_ref(
     return f"{ref}|tier={tier};dg={dg:.6g};band={band:.6g};limit={limit:g}{suffix}"
 
 
+def _require_janaf_fit_nodes(
+    nodes: dict[float, dict[str, float]],
+    table_id: str,
+    fit_t_min: float,
+    fit_t_max: float,
+) -> None:
+    required = np.arange(
+        fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K
+    )
+    missing = [float(T) for T in required if float(T) not in nodes]
+    if missing:
+        raise ValueError(
+            f"{table_id}: missing required 100 K fit nodes {missing!r}"
+        )
+
+
 def _candidate_janaf_rows(source_dir: Path, table_id: str) -> dict[float, dict[str, float]]:
     """Read Cp/H/S nodes from either vendored text or normalized JANAF YAML."""
     text_path = source_dir / f"{table_id}.txt"
@@ -8783,9 +8799,8 @@ def _janaf_anchored_liquid_rows(
     source-switch endpoints for the constrained condensate fit.
     """
     nodes = _candidate_janaf_rows(source_dir, table_id)
+    _require_janaf_fit_nodes(nodes, table_id, start, end)
     temps = np.asarray(sorted(T for T in nodes if start <= T <= end), dtype=float)
-    if len(temps) < 2 or temps[0] != start or temps[-1] != end:
-        raise ValueError(f"{table_id}: JANAF Cp does not cover {start:g}-{end:g} K")
     grid = np.arange(start, end + 1.0, 1.0)
     if grid[-1] != end:
         grid = np.append(grid, end)
@@ -8824,9 +8839,8 @@ def build_high_temperature_candidates_v2(
         if species in HIGH_TEMP_V2_GAS_JANAF:
             table_id = HIGH_TEMP_V2_GAS_JANAF[species]
             points = _candidate_janaf_rows(janaf_dir, table_id)
+            _require_janaf_fit_nodes(points, table_id, 3000.0, 6000.0)
             temperatures = np.asarray(sorted(T for T in points if 3000.0 <= T <= 6000.0))
-            if temperatures[0] != 3000.0 or temperatures[-1] != 6000.0:
-                raise ValueError(f"{table_id}: JANAF gas Cp does not cover 3000-6000 K")
             if species in HIGH_TEMP_V2_GAS_RECHECK:
                 dg, band = _candidate_gas_shape_comparison(
                     points, cards[gas_card_names[species].upper()]
@@ -8870,9 +8884,8 @@ def build_high_temperature_candidates_v2(
             base[key] = float(base[key])
         if table_id is not None:
             points = _candidate_janaf_rows(janaf_dir, table_id)
+            _require_janaf_fit_nodes(points, table_id, 3000.0, 6000.0)
             temperatures = np.asarray(sorted(T for T in points if 3000.0 <= T <= 6000.0))
-            if temperatures[0] != 3000.0 or temperatures[-1] != 6000.0:
-                raise ValueError(f"{table_id}: JANAF ion Cp does not cover 3000-6000 K")
             cp = np.asarray([points[float(T)]["heat_capacity"] for T in temperatures])
         else:
             temperatures = np.arange(3000.0, 6000.0 + 1.0, 100.0)
