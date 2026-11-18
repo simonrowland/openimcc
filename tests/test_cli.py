@@ -245,29 +245,6 @@ def test_json_composition_large_integer_is_a_typed_refusal(tmp_path, capsys):
     assert "too large to represent as a float" in payload["reason"]
 
 
-# The package these modules live in, used to resolve relative imports. A
-# relative import records only the tail -- `from ...accounting.formulas import X`
-# has node.module == "accounting.formulas" -- so a scanner that tests
-# `startswith("simulator")` on the raw value sees nothing at all. Resolving
-# against the package first is what makes the relative and absolute spellings
-# compare equal, which is the whole point of these guards.
-_PKG_PARTS = ("simulator", "melt_backend", "imcc_sf04")
-
-
-def _resolve(module: str | None, level: int) -> str:
-    """Absolute dotted name for one import, relative or not.
-
-    level 0 is already absolute. level 1 is this package, level 2 its parent,
-    and so on -- the same arithmetic importlib does:
-        from .backend        (level 1) -> simulator.melt_backend.imcc_sf04.backend
-        from ...accounting.x (level 3) -> simulator.accounting.x
-    """
-    if level == 0:
-        return module or ""
-    base = ".".join(_PKG_PARTS[: len(_PKG_PARTS) - (level - 1)])
-    return f"{base}.{module}" if module else base
-
-
 def _import_statements(tree: ast.AST, *, import_time_only: bool):
     """Yield import nodes, optionally only those that RUN on import.
 
@@ -289,18 +266,67 @@ def _import_statements(tree: ast.AST, *, import_time_only: bool):
 
 
 def _imported_modules(module_path: Path, *, import_time_only: bool = False) -> set[str]:
-    """Resolved absolute module names imported by this file."""
+    """Simulator modules imported by this file, statically or dynamically."""
     tree = ast.parse(module_path.read_text(encoding="utf-8"))
     found: set[str] = set()
+    importlib_names = {"importlib"}
+    import_module_names = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            importlib_names.update(
+                alias.asname or "importlib"
+                for alias in node.names
+                if alias.name == "importlib"
+            )
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module == "importlib"
+            and node.level == 0
+        ):
+            import_module_names.update(
+                alias.asname or alias.name
+                for alias in node.names
+                if alias.name == "import_module"
+            )
     for node in _import_statements(tree, import_time_only=import_time_only):
         if isinstance(node, ast.ImportFrom):
-            resolved = _resolve(node.module, node.level)
-            if resolved.startswith("simulator"):
+            if node.level:
+                continue
+            resolved = node.module or ""
+            if resolved == "simulator" or resolved.startswith("simulator."):
                 found.add(resolved)
         else:
             for alias in node.names:
-                if alias.name.startswith("simulator"):
+                if alias.name == "simulator" or alias.name.startswith("simulator."):
                     found.add(alias.name)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        function = node.func
+        dynamic_import = (
+            isinstance(function, ast.Name)
+            and (function.id == "__import__" or function.id in import_module_names)
+        ) or (
+            isinstance(function, ast.Attribute)
+            and function.attr == "import_module"
+            and isinstance(function.value, ast.Name)
+            and function.value.id in importlib_names
+        )
+        if not dynamic_import:
+            continue
+        name = node.args[0] if node.args else next(
+            (keyword.value for keyword in node.keywords if keyword.arg == "name"),
+            None,
+        )
+        if (
+            isinstance(name, ast.Constant)
+            and isinstance(name.value, str)
+            and (
+                name.value == "simulator"
+                or name.value.startswith("simulator.")
+            )
+        ):
+            found.add(name.value)
     return found
 
 
@@ -310,8 +336,7 @@ def _simulator_imports(module_path: Path) -> set[str]:
 
 
 _PKG = Path("src/openimcc")
-_MODULES = ("kernel.py", "model.py", "gas.py", "cli.py", "bench.py", "scalar_boundary.py",
-            "__init__.py")
+_MODULES = tuple(sorted(path.name for path in _PKG.glob("*.py")))
 
 # Upstream, these guards policed a MODEL/GLUE split: the model half had to stay
 # free of the simulator's policy modules so the package could be lifted out.
@@ -343,12 +368,51 @@ def test_nothing_reaches_back_into_the_simulator(module):
     here -- it would fail for USERS, at import time, with ModuleNotFoundError.
     """
     offending = sorted(
-        name for name in _third_party_imports(_PKG / module) if name == "simulator"
+        _simulator_imports(_PKG / module)
     )
     assert not offending, (
         f"{module} imports the simulator this package was extracted from. "
         "Port the helper or refuse cleanly; do not reach upstream."
     )
+
+
+def test_simulator_guard_scans_every_package_module() -> None:
+    expected_modules = {path.name for path in _PKG.glob("*.py")}
+    assert set(_MODULES) == expected_modules
+
+
+def test_simulator_guard_detects_literal_dynamic_imports(tmp_path) -> None:
+    probes = {
+        "importlib": (
+            "import importlib\n"
+            "importlib.import_module('simulator.accounting')\n"
+        ),
+        "aliased importlib": (
+            "import importlib as loader\n"
+            "loader.import_module('simulator.policy')\n"
+        ),
+        "import_module alias": (
+            "from importlib import import_module as load\n"
+            "load('simulator.backend')\n"
+        ),
+        "__import__": "__import__('simulator.policy')\n",
+    }
+    missing = []
+    for label, source in probes.items():
+        probe = tmp_path / "probe.py"
+        probe.write_text(source, encoding="utf-8")
+        if not _simulator_imports(probe):
+            missing.append(label)
+    assert not missing, f"dynamic simulator imports were missed: {missing}"
+
+    for source in (
+        "importlib.import_module('simulator_utils')\n",
+        "__import__('openimcc.kernel')\n",
+        "from .gas import evaluate_gas\n",
+    ):
+        probe = tmp_path / "benign.py"
+        probe.write_text(source, encoding="utf-8")
+        assert not _simulator_imports(probe)
 
 
 @pytest.mark.parametrize("module", ["kernel.py", "model.py", "cli.py", "scalar_boundary.py"])
