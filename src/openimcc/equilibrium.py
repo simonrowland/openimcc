@@ -2666,7 +2666,9 @@ def _positive_branch(
             # makes it less supersaturated than the stable polymorph.
             if abs(phase_affinities.get(rejected, math.inf)) <= affinity_tol_ln:
                 saturated = tuple(sorted((*saturated, rejected)))
-        authorities_missing = bool(missing) or explicit_candidates
+        authorities_missing = bool(missing) or (
+            explicit_candidates and not candidates_all
+        )
         range_refusal_axes = (
             "phase_amount_ranges",
             *(f"crystal.{phase}" for phase in missing),
@@ -2681,7 +2683,8 @@ def _positive_branch(
             if not ranges_certified else
             EquilibriumRefusal(
                 "missing_phase_data",
-                "The candidate set is restricted or has crystal functions outside their source range.",
+                "The explicit candidate set is empty or has crystal functions "
+                "outside their source range.",
                 tuple(f"crystal.{phase}" for phase in missing),
             )
             if authorities_missing else None
@@ -3044,10 +3047,11 @@ def _solid_result(
         )
         validity = "DEPENDS"
         axes = ("activity_ranges_ln",)
-    elif missing or explicit_candidates:
+    elif missing or (explicit_candidates and not all_states):
         refusal = EquilibriumRefusal(
             "missing_phase_data",
-            "The candidate set is restricted or contains crystal functions outside their source range.",
+            "The explicit candidate set is empty or has crystal functions "
+            "outside their source range.",
             tuple(f"crystal.{phase}" for phase in missing),
         )
         validity = "DEPENDS"

@@ -1049,6 +1049,9 @@ def test_phase_amount_ranges_are_invariant_to_bulk_scale(ideal_pack, gas_pack):
     assert base.phase_amounts_unique and tiny.phase_amounts_unique
     assert base.phase_amount_ranges_mol["CaO-solid"][0] == pytest.approx(0.75, abs=1e-8)
     assert tiny.phase_amount_ranges_mol["CaO-solid"][0] == pytest.approx(0.75e-8, rel=1e-8)
+    assert base.labels.validity == "IN"
+    assert base.refusal is None
+    assert "restricted_candidate_set" in base.labels.notices
 
 
 def test_default_anorthite_case_excludes_zero_bulk_phases():
@@ -1521,6 +1524,9 @@ def test_fully_solid_branch_certifies_logq_below_zero(ideal_pack, gas_pack):
     assert result.logQ_interval[1] < 0.0
     assert result.phase_presence["solid-SiO2"] == "present"
     assert result.kkt_recheck["absent_affinity_violation_inf_ln"] <= 1.0e-8
+    assert result.labels.validity == "IN"
+    assert result.refusal is None
+    assert "restricted_candidate_set" in result.labels.notices
 
 
 def test_default_pack_positive_liquid_state_passes_independent_kkt(gas_pack):
