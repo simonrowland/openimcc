@@ -7,6 +7,15 @@ the active parent-liquid standard. It can pass those activities to
 `evaluate_gas()` or, with `oxygen_balance=True`, to the gas layer's oxygen
 balance solver. Gas pressures use a fixed 1 bar standard state.
 
+If the requested gas temperature is outside the gas species' domain,
+`result.gas` is `None`; the condensed `oxide_activities` and
+`oxide_chemical_potentials_J_mol` remain available. The result has
+`labels.validity="OUT_OF_DOMAIN"`, refusal code
+`phase_temperature_out_of_range`, and
+`labels.out_of_domain_axes=("gas_species.temperature_K",)`. This refusal code
+predates the gas temperature handling and is also used for declared
+condensed-phase temperature misses.
+
 The supplied phases are treated as coexisting. This calculation does not
 minimize over phase amounts, choose a phase assemblage, prove that the supplied
 phases are stable, or test stability against an absent phase or liquid. Its

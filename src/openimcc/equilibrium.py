@@ -2696,8 +2696,9 @@ def _positive_branch(
             if not ranges_certified else
             EquilibriumRefusal(
                 "missing_phase_data",
-                "The explicit candidate set is empty or has crystal functions "
-                "outside their source range.",
+                "The candidate set is empty, a required crystal has no shipped "
+                "Gibbs function, or a crystal Gibbs function is outside its "
+                "source range.",
                 tuple(f"crystal.{phase}" for phase in missing),
             )
             if authorities_missing else None
@@ -3062,8 +3063,9 @@ def _solid_result(
     elif missing or (explicit_candidates and not all_states):
         refusal = EquilibriumRefusal(
             "missing_phase_data",
-            "The explicit candidate set is empty or has crystal functions "
-            "outside their source range.",
+            "The candidate set is empty, a required crystal has no shipped "
+            "Gibbs function, or a crystal Gibbs function is outside its "
+            "source range.",
             tuple(f"crystal.{phase}" for phase in missing),
         )
         validity = "DEPENDS"

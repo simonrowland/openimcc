@@ -37,8 +37,10 @@
   tokens and early refusals with incomplete source sets. The restored
   `compilation_assessed` authority rank keeps ordinary compiled-crystal
   results ranked.
-- MnO coverage labels now use the selected redox species' source lineage
-  instead of the melt-wide evidence fallback.
+- The MnO-triggered stage fills previously unlabelled entries across the
+  redox result, including FeO1.5(l) and Li2O, with the selected redox species'
+  source lineage while retaining existing melt coverage entries. Labels for
+  inputs without MnO are unchanged.
 - Duplicate-candidate refusals retain the validated bulk composition, and the
   certified K2O label reports its 25–40 wt% scope.
 

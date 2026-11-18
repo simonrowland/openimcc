@@ -60,17 +60,22 @@ C12A7, whose table ends at 1700 K, so it remains missing above that range.
 NaAlO2's printed SOL-A to SOL-B change at 740 K is a solid transition, not a
 melting point (p. 1132).
 
-CA6 (CaAl12O19) and beta-alumina are not in the candidate data. When the bulk
-contains the parent oxides needed to form either missing phase, the solver
-keeps the phase-set result labelled `DEPENDS` on missing phase data, even if
-its numerical equilibrium checks pass. A table that ends without a printed
-melting or decomposition point also remains missing above its last Gibbs
-node. `IN` means the state is certified among the candidates available at the
-requested temperature; crystals excluded above their source-printed melting
-or decomposition point are listed in the `crystals_above_source_melting_point`
-notice. Pass candidates= to restrict the set or to supply CrystalCandidate
-values for a synthetic system. Restricted sets are explicitly labelled and
-cannot support an unrestricted stability claim.
+CA6 (CaAl12O19) and beta-alumina are not in the candidate data. A
+`missing_phase_data` refusal means the candidate set is empty, a required
+crystal has no shipped Gibbs function, or a crystal function is outside its
+source range. At 1800 K, for example, the default CAS case lists C12A7 as
+missing because its table ends at 1700 K, and CA6 because it has no shipped
+Gibbs function. When the bulk contains the parent oxides needed to form either
+missing phase, the solver keeps the phase-set result labelled `DEPENDS` on
+missing phase data, even if its numerical equilibrium checks pass. A table
+that ends without a printed melting or decomposition point also remains
+missing above its last Gibbs node. `IN` means the state is certified among the
+candidates available at the requested temperature; crystals excluded above
+their source-printed melting or decomposition point are listed in the
+`crystals_above_source_melting_point` notice. Pass candidates= to restrict the
+set or to supply CrystalCandidate values for a synthetic system. Restricted
+sets are explicitly labelled and cannot support an unrestricted stability
+claim.
 
 For MgAl2O4, the sources remain separate on the shared 1323–2408 K range.
 The existing Berman fusion function is 5.677–9.326 kJ/mol above the Barin

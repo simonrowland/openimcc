@@ -1081,6 +1081,11 @@ def test_default_anorthite_case_excludes_zero_bulk_phases():
     assert result.kkt_recheck["independent_kkt_passed"] == 1.0
     assert result.refusal is not None
     assert result.refusal.code == "missing_phase_data"
+    assert result.refusal.detail == (
+        "The candidate set is empty, a required crystal has no shipped "
+        "Gibbs function, or a crystal Gibbs function is outside its "
+        "source range."
+    )
     assert result.labels.validity == "DEPENDS"
     missing = result.receipt.solver["missing_candidate_phase_ids"]
     assert set(missing) == {"C12A7", "CA6"}
