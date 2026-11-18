@@ -1068,6 +1068,14 @@ def default_gas_channels(
 
 
 
+def _least_gas_authority(authorities: Sequence[str]) -> str:
+    if not authorities or any(
+        authority not in _PROVENANCE_AUTHORITY_RANK for authority in authorities
+    ):
+        return "unresolved"
+    return min(authorities, key=_PROVENANCE_AUTHORITY_RANK.__getitem__)
+
+
 def gas_species_provenance(species: str) -> dict[str, str | None]:
     """Return the row authorities feeding one retained gas channel.
 
@@ -1108,7 +1116,7 @@ def gas_species_provenance(species: str) -> dict[str, str | None]:
     mixed_side = _MIXED_GAS_REACTION_SIDE_PARENTS.get(species)
     if mixed_side is not None:
         authorities.append(_GAS_PROVENANCE_AUTHORITY[mixed_side[0]])
-    authority = min(authorities, key=_PROVENANCE_AUTHORITY_RANK.__getitem__)
+    authority = _least_gas_authority(authorities)
     return {
         "species_name": species,
         "authority": authority,
@@ -1133,9 +1141,8 @@ def _result_provenance_authority(
         ):
             row_authorities.append(row_authority)
     if row_authorities:
-        return min(
-            (str(provenance["gas_authority"]), *row_authorities),
-            key=_PROVENANCE_AUTHORITY_RANK.__getitem__,
+        return _least_gas_authority(
+            (str(provenance["gas_authority"]), *row_authorities)
         )
     return str(provenance["authority"])
 
@@ -2686,7 +2693,7 @@ def _add_ion_channels(
         ]
         if not rows_match:
             authorities.append(_EXTERNAL_DATAPACK_CLASS)
-        return min(authorities, key=_PROVENANCE_AUTHORITY_RANK.__getitem__)
+        return _least_gas_authority(authorities)
 
     electron_authorities = [_GAS_PROVENANCE_AUTHORITY["e-"]]
     if not _gas_rows_match_packaged(datapack, (electron_row,)):
@@ -2698,10 +2705,7 @@ def _add_ion_channels(
         if equilibrium * values[neutral] == 0.0:
             continue
         electron_authorities.append(ion_authority(neutral, ion, rows_match))
-    provenance_class["e-"] = min(
-        electron_authorities,
-        key=_PROVENANCE_AUTHORITY_RANK.__getitem__,
-    )
+    provenance_class["e-"] = _least_gas_authority(electron_authorities)
 
     for neutral, ion, equilibrium, flags, rows_match in positive:
         values[ion] = (

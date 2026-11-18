@@ -302,3 +302,16 @@ def test_gas_module_keeps_every_base_name() -> None:
 def test_gas_reexports_identical_moved_data_objects() -> None:
     for name in _MOVED_GAS_DATA_NAMES:
         assert getattr(gas, name) is getattr(gas_data, name), name
+
+
+def test_all_shipped_gas_authority_tokens_are_ranked() -> None:
+    authorities = set(gas_data._GAS_PROVENANCE_AUTHORITY.values())
+    authorities.update(gas_data._OXIDE_PROVENANCE_AUTHORITY.values())
+    assert authorities <= set(gas_data._PROVENANCE_AUTHORITY_RANK)
+
+
+def test_unrecognized_gas_authority_is_unresolved(monkeypatch) -> None:
+    monkeypatch.setitem(
+        gas_data._GAS_PROVENANCE_AUTHORITY, "O2", "future-authority"
+    )
+    assert gas.gas_species_provenance("O2")["authority"] == "unresolved"
