@@ -672,6 +672,7 @@ def evaluate_declared_assemblage(
     }
     gas_depends: dict[str, str] = {}
     gas_result = None
+    gas_temperature_refusal: EquilibriumRefusal | None = None
     balance_pO2 = None
     balance_diagnostics: Mapping[str, Any] = {}
     available_activities = activities
@@ -698,20 +699,8 @@ def evaluate_declared_assemblage(
                 balance_diagnostics = diagnostics_map
             except gas_module.ImccGasTemperatureOutsideDomainError as exc:
                 axes = ("gas_species.temperature_K",)
-                refusal = EquilibriumRefusal("missing_phase_data", str(exc), axes)
-                return _empty_result(
-                    phases=declared, temperature_K=temperature, fO2=None,
-                    gas_species=requested_gas, parent_oxides=requested_oxides,
-                    include_ions=include_ions, oxygen_balance=oxygen_balance,
-                    allow_extrapolation=allow_extrapolation,
-                    crystal_digest=crystal_digest, pure_digest=pure_digest,
-                    gas_pack=active_pack, validity="OUT_OF_DOMAIN",
-                    evidence_class=_least_authority(
-                        (*phase_authorities, *active_authorities)
-                    ), flags=("gas_species_out_of_range",),
-                    notices=("declared_assemblage_not_minimized",),
-                    refusal=refusal, axes=axes,
-                    crystal_function_continued=tuple(continued_notices),
+                gas_temperature_refusal = EquilibriumRefusal(
+                    "phase_temperature_out_of_range", str(exc), axes,
                 )
     elif fO2 is not None:
         try:
@@ -725,23 +714,13 @@ def evaluate_declared_assemblage(
             )
         except gas_module.ImccGasTemperatureOutsideDomainError as exc:
             axes = ("gas_species.temperature_K",)
-            refusal = EquilibriumRefusal("missing_phase_data", str(exc), axes)
-            return _empty_result(
-                phases=declared, temperature_K=temperature, fO2=fO2,
-                gas_species=requested_gas, parent_oxides=requested_oxides,
-                include_ions=include_ions, oxygen_balance=oxygen_balance,
-                allow_extrapolation=allow_extrapolation,
-                crystal_digest=crystal_digest, pure_digest=pure_digest,
-                gas_pack=active_pack, validity="OUT_OF_DOMAIN",
-                evidence_class=_least_authority(
-                    (*phase_authorities, *active_authorities)
-                ), flags=("gas_species_out_of_range",),
-                notices=("declared_assemblage_not_minimized",),
-                refusal=refusal, axes=axes,
-                crystal_function_continued=tuple(continued_notices),
+            gas_temperature_refusal = EquilibriumRefusal(
+                "phase_temperature_out_of_range", str(exc), axes,
             )
 
     flags = ["fixed_pressure_1_bar", "gas_is_post_processing"]
+    if gas_temperature_refusal is not None:
+        flags.append("gas_species_out_of_range")
     notices = [
         "declared_assemblage_assumed",
         "declared_assemblage_not_minimized",
@@ -768,7 +747,10 @@ def evaluate_declared_assemblage(
     if gas_result is not None:
         authorities.extend(gas_result.provenance_class.values())
     evidence_class = _least_authority(authorities)
-    if gas_result is not None and gas_result.domain_flags and any(
+    if gas_temperature_refusal is not None:
+        validity: Literal["IN", "OUT_OF_DOMAIN", "DEPENDS"] = "OUT_OF_DOMAIN"
+        domain_axes = gas_temperature_refusal.axes
+    elif gas_result is not None and gas_result.domain_flags and any(
         detail is not None for detail in gas_result.domain_flags.values()
     ):
         validity: Literal["IN", "OUT_OF_DOMAIN", "DEPENDS"] = "OUT_OF_DOMAIN"
@@ -783,14 +765,14 @@ def evaluate_declared_assemblage(
         validity = "IN"
         domain_axes = ()
 
-    refusal = None
-    if non_identifiable:
+    refusal = gas_temperature_refusal
+    if refusal is None and non_identifiable:
         refusal = EquilibriumRefusal(
             "activity_not_identifiable",
             "The stated phases do not uniquely determine every requested parent-oxide activity.",
             tuple(f"activity.{oxide}" for oxide in non_identifiable),
         )
-    elif gas_depends:
+    elif refusal is None and gas_depends:
         refusal = EquilibriumRefusal(
             "gas_activity_not_identifiable",
             "Some requested gas channels need parent activities not fixed by the stated phases.",

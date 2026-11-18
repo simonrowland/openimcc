@@ -370,3 +370,23 @@ def test_oxygen_balance_uses_determined_solid_buffer_activities(gas_pack):
     assert result.oxygen_balance_pO2_bar is not None
     assert result.fO2 == result.oxygen_balance_pO2_bar
     assert result.gas is not None
+
+
+@pytest.mark.parametrize("oxygen_balance", (False, True))
+def test_gas_temperature_miss_preserves_condensed_activities(oxygen_balance):
+    options = (
+        {"oxygen_balance": True}
+        if oxygen_balance else {"fO2": 1e-8}
+    )
+    result = evaluate_declared_assemblage(
+        ("Na2O",), 1100.0, include_ions=True, **options,
+    )
+
+    assert result.labels.validity == "OUT_OF_DOMAIN"
+    assert result.refusal is not None
+    assert result.refusal.code == "phase_temperature_out_of_range"
+    assert result.labels.out_of_domain_axes == ("gas_species.temperature_K",)
+    assert result.gas is None
+    assert set(result.oxide_activities) == {"Na2O"}
+    assert result.oxide_activities["Na2O"] > 0.0
+    assert set(result.oxide_chemical_potentials_J_mol) == {"Na2O"}
