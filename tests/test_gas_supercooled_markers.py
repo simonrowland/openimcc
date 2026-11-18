@@ -18,6 +18,7 @@ from openimcc.gas import (
     _supercooled_liquid_from_solid_flag,
     load_gas_datapack,
     evaluate_gas,
+    evaluate_gas_oxygen_balance,
 )
 from openimcc.profiles import load_profile
 from openimcc.redox_pack import canonical_redox_digest
@@ -153,6 +154,17 @@ def test_feo_redox_fit_flag_uses_selected_profile_redox_pack(tmp_path) -> None:
         "D&G/Masson correction extrapolated"
         not in (result.domain_flags[channel] or "")
         for channel in ("Fe", "FeO")
+    )
+
+    _, balanced_result, _ = evaluate_gas_oxygen_balance(
+        {"FeO": 1.0e-3},
+        1200.0,
+        parent_oxides=("FeO",),
+        profile=selected_profile,
+    )
+    assert balanced_result.profile == "openimcc"
+    assert "D&G/Masson correction extrapolated" not in (
+        balanced_result.domain_flags["Fe"] or ""
     )
 
 

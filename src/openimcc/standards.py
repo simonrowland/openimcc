@@ -140,7 +140,11 @@ def _standard_table_identity(
     if isinstance(profile, Profile):
         profile_name = profile.name
         active_gas_pack = profile.gas_datapack if gas_pack is None else gas_pack
-        redox_identity = ("digest", profile.redox_pack.canonical_digest)
+        redox_identity = (
+            ("digest", profile.redox_pack.canonical_digest)
+            if profile.redox_pack_path is not None
+            else ("no-redox",)
+        )
     else:
         profile_name = "openimcc" if profile is None else profile
         active_gas_pack = gas_pack
@@ -546,8 +550,9 @@ def active_liquid_standards(
     ``reference-unknown(Ref=<printed Ref>)`` marker. Pass ``gas_pack`` when
     checking the custom datapack used by a gas evaluation; it supplies the
     non-FeO liquid rows. FeO(l) always follows the profile's
-    ``feo_liquid_standard`` declaration, and FeO1.5(l) the profile's redox
-    construction, whatever FeO row the custom datapack carries.
+    ``feo_liquid_standard`` declaration. FeO1.5(l) follows the profile's
+    redox construction when it has a redox pack; otherwise redox-derived
+    entries are omitted.
     """
     from openimcc import gas
     from openimcc.liquid_reference import feo_liquid_standard
@@ -615,6 +620,9 @@ def active_liquid_standards(
 
     # FeO's selected source and authority are owned by liquid_reference.py.
     standards["FeO"] = feo_liquid_standard(selected).standard_id
+
+    if selected.redox_pack_path is None:
+        return standards
 
     # FeO1.5(l) is half a metastable Fe2O3(l) construction. Fe-030 is its
     # hematite crystal basis, not a JANAF liquid table.

@@ -508,8 +508,6 @@ def _gas_pack_standard_notices(
     selected = (
         profile if isinstance(profile, LoadedProfile) else _resolve_profile(profile)
     )
-    if selected.redox_pack_path is None:
-        return ()
     melt_pack = selected.melt_pack
     records = _cached_check_pack_standards(
         melt_pack, profile, gas_pack=datapack
@@ -5164,7 +5162,7 @@ def evaluate_gas_oxygen_balance(
         if imposed_parents is None or isinstance(imposed_parents, str)
         else tuple(imposed_parents)
     )
-    datapack, profile_name, _selected_profile = _select_gas_datapack(
+    datapack, profile_name, selected_profile = _select_gas_datapack(
         datapack, profile
     )
     parent_oxides_explicit = parent_oxides is not None
@@ -5288,12 +5286,16 @@ def evaluate_gas_oxygen_balance(
         token = _SUPPRESS_TRIAL_RECEIPTS.set(True)
         try:
             return evaluate_gas(
-                pressure_activities, T, 10.0**logp, datapack,
+                pressure_activities,
+                T,
+                10.0**logp,
+                datapack if selected_profile is None else None,
                 parent_oxides=(
                     tuple(available_parents) if parent_oxides_explicit else None
                 ),
                 allow_extrapolation=allow_extrapolation,
                 include_ions=include_ions,
+                profile=selected_profile,
             )
         finally:
             _SUPPRESS_TRIAL_RECEIPTS.reset(token)

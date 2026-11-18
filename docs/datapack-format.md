@@ -1048,11 +1048,14 @@ redox entries use the exact pack-file SHA-256, with the loader's
 pack manifests remain unchanged.
 
 `openimcc.active_liquid_standards(profile=None)` reports IDs selected by the
-`openimcc` profile. It reads liquid table IDs from the selected gas table
-metadata and gets FeO(l) from `feo_liquid_standard(profile)`. The `published`
-profile has no redox model; when a redox-associate trace is present,
-`active_liquid_standards`, `check_pack_standards`, and `evaluate` raise
-`ProfileRedoxUnavailableError`. FeO1.5 names its
+active profile, using `openimcc` when no profile is supplied. It reads liquid
+table IDs from the selected gas table metadata and gets FeO(l) from
+`feo_liquid_standard(profile)`. The `published`
+profile reports its melt and gas table standards while omitting redox-derived
+entries such as FeO1.5(l). Gas FeO(l) source flags follow the selected
+profile's redox FeO fit when one is available. `evaluate` raises
+`ProfileRedoxUnavailableError` for the `published` profile when a redox-
+associate trace is present. FeO1.5 names its
 metastable Fe2O3(l) construction from the Fe-030 hematite crystal and Lesher-Spera
 fusion source, rather than treating Fe-030 as a liquid table.
 `pack_liquid_standards(pack)`

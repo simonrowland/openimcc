@@ -308,9 +308,42 @@ def test_published_profile_redox_pack_lookup_refuses() -> None:
         published.redox_pack
 
 
-def test_published_profile_active_standards_refuse_without_redox_pack() -> None:
-    with pytest.raises(ProfileRedoxUnavailableError):
-        active_liquid_standards("published")
+def test_published_profile_standards_omit_redox_without_loading_a_pack(
+    monkeypatch,
+) -> None:
+    import openimcc.redox_pack as redox_pack_module
+
+    def refuse_redox_load(*_args, **_kwargs):
+        raise AssertionError("published standards must not load a redox pack")
+
+    monkeypatch.setattr(redox_pack_module, "load_redox_pack", refuse_redox_load)
+    published = load_profile("published")
+    active = active_liquid_standards(published)
+
+    assert active["SiO2"] == "LAM1987"
+    assert active["MgO"] == "LAM1987"
+    assert active["CaO"] == "LAM1987"
+    assert active["Al2O3"] == "LAM1987"
+    assert active["K2O"] == "LAM1984"
+    assert active["FeO"] == "Fe-019"
+    assert "FeO1.5" not in active
+
+    records = check_pack_standards(published.melt_pack, published)
+    assert {
+        (record.oxide, record.declared, record.active, record.row_key, record.kind)
+        for record in records
+        if record.kind in {"mismatch", "reference-unknown"}
+    } == {
+        ("SiO2", "O-038", "LAM1987", None, "mismatch"),
+        ("MgO", "Mg-009", "LAM1987", None, "mismatch"),
+        ("CaO", "Ca-028", "LAM1987", None, "mismatch"),
+        ("Al2O3", "Al-100", "LAM1987", None, "mismatch"),
+        ("K2O", "FC87-Glushko-K2O", "LAM1984", None, "mismatch"),
+        ("K2O", "reference-unknown", "LAM1984", "K2SiO3", "reference-unknown"),
+        ("K2O", "reference-unknown", "LAM1984", "K2Si2O5", "reference-unknown"),
+        ("K2O", "reference-unknown", "LAM1984", "K2Si4O9", "reference-unknown"),
+        ("K2O", "reference-unknown", "LAM1984", "KCaAlSi2O7", "reference-unknown"),
+    }
 
 
 def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
@@ -494,10 +527,10 @@ def test_d066_mixed_standard_checks_respect_profile_redox_availability() -> None
             if record.kind == "mismatch"
         ], name
 
-    with pytest.raises(ProfileRedoxUnavailableError):
-        check_pack_standards(v1_path, "published")
-    with pytest.raises(ProfileRedoxUnavailableError):
-        check_pack_standards(v4_path, "published")
+    published_v1_records = check_pack_standards(v1_path, "published")
+    published_v4_records = check_pack_standards(v4_path, "published")
+    assert published_v1_records
+    assert published_v4_records
 
 
 def test_gas_evaluators_report_pack_standard_notices_and_strict_refusals() -> None:

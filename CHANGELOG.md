@@ -18,9 +18,12 @@
 
 ### Redox and selected-pack behavior
 
-- The `published` profile now raises `ProfileRedoxUnavailableError` from
-  `active_liquid_standards`, `check_pack_standards`, and `evaluate` when a
-  redox-associate trace is present.
+- `active_liquid_standards` and `check_pack_standards` report the melt and gas
+  standards for `published` without redox-derived entries. `evaluate` raises
+  `ProfileRedoxUnavailableError` for that profile when a redox-associate trace
+  is present.
+- Gas FeO(l) source flags now follow the selected profile's redox FeO fit when
+  one is available.
 - Closed Fe-free redox calculations without an oxygen-changing couple now
   raise `RedoxNoLiveCoupleError`; internal seed range failures now raise
   `RedoxNumericalError`.
