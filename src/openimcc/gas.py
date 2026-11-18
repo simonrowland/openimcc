@@ -508,6 +508,8 @@ def _gas_pack_standard_notices(
     selected = (
         profile if isinstance(profile, LoadedProfile) else _resolve_profile(profile)
     )
+    if selected.redox_pack_path is None:
+        return ()
     melt_pack = selected.melt_pack
     records = _cached_check_pack_standards(
         melt_pack, profile, gas_pack=datapack
@@ -1910,6 +1912,9 @@ def _high_temperature_candidate_notice_flag(
     )
 
 
+_PACKAGED_REDOX_FEO_FIT = object()
+
+
 def _source_model_flag(
     row_name: str,
     T: float,
@@ -1919,7 +1924,7 @@ def _source_model_flag(
     candidate_notices: Mapping[
         tuple[str, str, float], _HighTemperatureNotice
     ] | None = None,
-    redox_pack: Any | None = None,
+    redox_pack: Any = _PACKAGED_REDOX_FEO_FIT,
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
@@ -1934,17 +1939,19 @@ def _source_model_flag(
             return _high_temperature_candidate_notice_flag(notice, T)
     validity = _source_validity_for_row(row_name, row, phase=phase)
     if row_name == "FeO(l)" and phase == "l":
-        fit_range, fit_row = _selected_redox_feo_fit(redox_pack)
-        # Ref is provenance; the coefficients identify whether this fit applies.
-        if all(float(row[column]) == value for column, value in fit_row):
-            status = liquid_reference_authority(row_name, T)
-            if status.authority is LiquidReferenceAuthority.EXTRAPOLATED:
-                low, high = status.certified_T_K or fit_range
-                return (
-                    f"{row_name} uses the D&G/Masson correction extrapolated "
-                    f"outside its {low:g}-{high:g} K fit range "
-                    f"(Ref={source_ref})"
-                )
+        selected_fit = _selected_redox_feo_fit(redox_pack)
+        if selected_fit is not None:
+            fit_range, fit_row = selected_fit
+            # Ref is provenance; the coefficients identify whether this fit applies.
+            if all(float(row[column]) == value for column, value in fit_row):
+                status = liquid_reference_authority(row_name, T)
+                if status.authority is LiquidReferenceAuthority.EXTRAPOLATED:
+                    low, high = status.certified_T_K or fit_range
+                    return (
+                        f"{row_name} uses the D&G/Masson correction extrapolated "
+                        f"outside its {low:g}-{high:g} K fit range "
+                        f"(Ref={source_ref})"
+                    )
     if validity is None:
         return None
     method = str(validity["method"])
@@ -2262,12 +2269,14 @@ def _packaged_redox_feo_fit() -> tuple[
     return _redox_feo_fit(record)
 
 
-def _selected_redox_feo_fit(redox_pack: Any | None = None) -> tuple[
-    tuple[float, float], tuple[tuple[str, float], ...]
-]:
-    """Return FeO(l) fit metadata from the selected pack, or the packaged default."""
-    if redox_pack is None:
+def _selected_redox_feo_fit(
+    redox_pack: Any = _PACKAGED_REDOX_FEO_FIT,
+) -> tuple[tuple[float, float], tuple[tuple[str, float], ...]] | None:
+    """Return selected FeO(l) fit metadata, or packaged default when omitted."""
+    if redox_pack is _PACKAGED_REDOX_FEO_FIT:
         return _packaged_redox_feo_fit()
+    if redox_pack is None:
+        return None
     record = redox_pack.content["thermo_species"]["FeO(l)"]
     return _redox_feo_fit(record)
 
@@ -3182,10 +3191,13 @@ def evaluate_gas(
         datapack, selected_profile, strict_pack_standards
     )
     selected_redox_pack = (
-        selected_profile.redox_pack
-        if selected_profile is not None
-        and selected_profile.redox_pack_path is not None
-        else None
+        _PACKAGED_REDOX_FEO_FIT
+        if selected_profile is None
+        else (
+            selected_profile.redox_pack
+            if selected_profile.redox_pack_path is not None
+            else None
+        )
     )
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
