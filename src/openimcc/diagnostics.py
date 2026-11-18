@@ -24,6 +24,7 @@ from openimcc.model import (
     evaluate,
     load_datapack,
 )
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 _PARENT_CP_BY_PACK = {
     "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2": {
@@ -627,6 +628,14 @@ def _crystal_si(phase, temp, composition, pack, gas_pack, reference_pack,
 
 def saturation_indices(composition, T_K, pack=None, *, condensate=None):
     """Return sourced, range-checked crystal saturation indices for a melt."""
+    if not is_declared_real_scalar(T_K, allow_numeric_str=True):
+        raise ValueError("temperature must be a real number")
+    try:
+        T_K = float(T_K)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError("temperature must be finite") from exc
+    if not math.isfinite(T_K):
+        raise ValueError("temperature must be finite")
     pack, composition, enable_sp_extension, notices = _prepare_crystal_composition(
         composition, pack
     )
@@ -668,6 +677,15 @@ def saturation_indices(composition, T_K, pack=None, *, condensate=None):
 def liquidus_bracket(composition, T_low, T_high, pack=None, *, condensate=None):
     """Bracket the highest supported SI zero, positive on its cooling side."""
     from scipy.optimize import brentq
+    if not all(
+        is_declared_real_scalar(value, allow_numeric_str=True)
+        for value in (T_low, T_high)
+    ):
+        raise ValueError("T_low and T_high must be real numbers")
+    try:
+        T_low, T_high = float(T_low), float(T_high)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError("require finite T_low < T_high") from exc
     if not math.isfinite(T_low) or not math.isfinite(T_high) or T_low >= T_high:
         raise ValueError("require finite T_low < T_high")
     pack, composition, enable_sp_extension, notices = _prepare_crystal_composition(

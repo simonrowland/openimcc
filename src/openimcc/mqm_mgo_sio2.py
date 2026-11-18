@@ -17,6 +17,7 @@ from openimcc.model import (
     ImccCompositionIncompleteError,
     ImccTOutsideDatapackDomainError,
 )
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 _R = R_J_MOL_K
 # Wu 1993, p. 27: b_SiO2=1.3774 and b_MgO=b_SiO2/2; store z=2b so
@@ -255,6 +256,10 @@ def evaluate_mgo_sio2_mqm(
     """
     if not isinstance(composition_moles, Mapping):
         raise ImccCompositionIncompleteError("composition_moles must be a mapping")
+    if not is_declared_real_scalar(T_K, allow_numeric_str=True):
+        raise ImccTOutsideDatapackDomainError(
+            "temperature must be a real number"
+        )
     try:
         temperature = float(T_K)
     except (TypeError, ValueError, OverflowError) as exc:
@@ -270,6 +275,10 @@ def evaluate_mgo_sio2_mqm(
     for name, raw in composition_moles.items():
         if not isinstance(name, str):
             raise ImccCompositionIncompleteError("oxide names must be strings")
+        if not is_declared_real_scalar(raw, allow_numeric_str=True):
+            raise ImccCompositionIncompleteError(
+                f"moles for {name!r} must be finite and nonnegative"
+            )
         try:
             amount = float(raw)
         except (TypeError, ValueError, OverflowError) as exc:

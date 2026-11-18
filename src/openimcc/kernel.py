@@ -28,6 +28,7 @@ from scipy.optimize import least_squares
 
 from openimcc._constants import R_J_MOL_K as _R_J_MOL_K
 from openimcc.receipt import CalculationReceipt
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 
 LOG10 = math.log(10.0)
@@ -2255,6 +2256,10 @@ def _solve_imcc_sf04_with_seed(
                 f"{basis:.12g} within 1e-6 relative"
             )
 
+    if not is_declared_real_scalar(T_K, allow_numeric_str=True):
+        raise ImccTOutsideDatapackDomainError(
+            "temperature must be a real number"
+        )
     try:
         T = float(T_K)
     except OverflowError as exc:
@@ -2292,7 +2297,17 @@ def _solve_imcc_sf04_with_seed(
                 f"component {species} is outside the IMCC-SF04 parent basis"
             )
 
-    if not math.isfinite(float(tol)) or float(tol) <= 0.0:
+    if not is_declared_real_scalar(tol, allow_numeric_str=True):
+        raise ValueError(
+            f"tol must be a positive finite residual tolerance, got {tol!r}"
+        )
+    try:
+        tol = float(tol)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError(
+            f"tol must be a positive finite residual tolerance, got {tol!r}"
+        ) from exc
+    if not math.isfinite(tol) or tol <= 0.0:
         raise ValueError(
             f"tol must be a positive finite residual tolerance, got {tol!r}"
         )

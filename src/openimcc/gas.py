@@ -2768,6 +2768,12 @@ def species_thermo(
     """
     if phase not in {"g", "l", "cr"}:
         raise ValueError("phase must be 'g', 'l', or 'cr'")
+    if not is_declared_real_scalar(T_K, allow_numeric_str=True):
+        raise ValueError("temperature must be a real number")
+    try:
+        T_K = float(T_K)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError("temperature must be finite and positive") from exc
     if not math.isfinite(T_K) or T_K <= 0.0:
         raise ValueError(f"temperature must be finite and positive, got {T_K}")
 
@@ -4576,6 +4582,15 @@ def weighted_oxygen_balance_from_pressure_model(
     conductance: dict[str, float] = {}
     bulk: dict[str, float] = {}
     for name in names:
+        if not all(
+            is_declared_real_scalar(values[name], allow_numeric_str=True)
+            for values in (
+                oxygen_weights,
+                conductance_mol_m2_s_Pa,
+                bulk_pressures_bar,
+            )
+        ):
+            raise ImccGasOxygenBalanceError(f"invalid frozen input for {name!r}")
         try:
             weights[name] = float(oxygen_weights[name])
             conductance[name] = float(conductance_mol_m2_s_Pa[name])
@@ -4588,6 +4603,11 @@ def weighted_oxygen_balance_from_pressure_model(
             raise ImccGasOxygenBalanceError(f"conductance for {name!r} must be finite and nonnegative")
         if not math.isfinite(bulk[name]) or bulk[name] < 0.0:
             raise ImccGasOxygenBalanceError(f"bulk pressure for {name!r} must be finite and nonnegative")
+    if not all(
+        is_declared_real_scalar(value, allow_numeric_str=True)
+        for value in log10_pO2_bracket
+    ):
+        raise ImccGasOxygenBalanceError("invalid weighted oxygen-balance bracket")
     try:
         low, high = map(float, log10_pO2_bracket)
     except (TypeError, ValueError, OverflowError) as exc:
@@ -5178,6 +5198,8 @@ def evaluate_gas_oxygen_balance(
             "imposed_parents must name gas-parent activity keys; unknown: "
             f"{sorted(unknown_imposed)}"
         )
+    if not is_declared_real_scalar(T_K, allow_numeric_str=True):
+        raise ValueError("temperature must be a real number")
     try:
         T = float(T_K)
     except OverflowError as exc:
@@ -5416,6 +5438,12 @@ def evaluate_gas_saturation(
     pack_standard_notices = _gas_pack_standard_notices(
         datapack, selected_profile, strict_pack_standards
     )
+    if not is_declared_real_scalar(temperature_K, allow_numeric_str=True):
+        raise ValueError("temperature must be a real number")
+    try:
+        temperature_K = float(temperature_K)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError("temperature must be finite and positive") from exc
     if parent_oxides is None:
         if isinstance(parent_activities, Mapping):
             parents = tuple(k for k in parent_activities if k in _REACTION_PARENT_OXIDES)
@@ -5578,8 +5606,18 @@ def gas_boiling_temperature(
     )
     if ambient_pressure_bar is None or T_bracket is None:
         raise TypeError("ambient_pressure_bar and T_bracket are required")
+    if not is_declared_real_scalar(
+        ambient_pressure_bar, allow_numeric_str=True
+    ):
+        raise ValueError("ambient_pressure_bar must be finite and positive")
+    ambient_pressure_bar = float(ambient_pressure_bar)
     if not math.isfinite(ambient_pressure_bar) or ambient_pressure_bar <= 0:
         raise ValueError("ambient_pressure_bar must be finite and positive")
+    if not all(
+        is_declared_real_scalar(value, allow_numeric_str=True)
+        for value in T_bracket
+    ):
+        raise ImccGasSaturationError("invalid boiling temperature bracket")
     low, high = map(float, T_bracket)
     if not math.isfinite(low) or not math.isfinite(high) or not (0 < low < high):
         raise ImccGasSaturationError("invalid boiling temperature bracket")
