@@ -817,7 +817,16 @@ def test_mixing_enthalpy_cli_receipt_and_csv(tmp_path):
     with (tmp_path / "mixing-enthalpy.csv").open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
     assert len(rows) == 11
-    assert all(row["standardized_residual"] for row in rows)
+    _, expected_rows = run_mixing_enthalpy()
+    expected_standardized = {
+        row["observation_id"]: row["standardized_residual"]
+        for row in expected_rows
+    }
+    actual_standardized = {
+        row["observation_id"]: float(row["standardized_residual"])
+        for row in rows
+    }
+    assert actual_standardized == pytest.approx(expected_standardized)
     receipt = (tmp_path / "mixing-enthalpy.md").read_text(encoding="utf-8")
     assert "IMCC-SF04-D066" in receipt
     assert "Binding digest:" in receipt
