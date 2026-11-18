@@ -13,13 +13,20 @@ import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 
 import yaml
 
 import pytest
 
 from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
-from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
+from openimcc import (
+    ImccCompositionOutsideValidatedEnvelopeError,
+    ImccMalformedDatapackError,
+    ImccRefusal,
+    evaluate,
+    load_datapack,
+)
 from openimcc.json_utils import DuplicateJsonKeyError
 from openimcc.bench import (
     _PACK_OVERLAY_BY_VERSION,
@@ -490,6 +497,34 @@ def test_refused_point_is_counted_and_excluded_from_rmse(tmp_path: Path) -> None
     assert report.n == report.n_ok + report.status_counts["refused"] + report.status_counts[
         "not_converged"
     ]
+
+
+def test_retry_preserves_refusal_classification_after_envelope_refusal(monkeypatch):
+    calls = 0
+
+    def evaluate_with_retry_failure(
+        *_args, allow_extrapolation, allow_out_of_envelope, **_kwargs,
+    ):
+        nonlocal calls
+        calls += 1
+        if not allow_extrapolation and not allow_out_of_envelope:
+            raise ImccCompositionOutsideValidatedEnvelopeError("outside envelope")
+        if allow_extrapolation and allow_out_of_envelope:
+            raise ImccRefusal("retry refused for a non-domain reason")
+        if allow_extrapolation:
+            raise ImccCompositionOutsideValidatedEnvelopeError("outside envelope")
+        return None
+
+    monkeypatch.setattr("openimcc.bench.evaluate", evaluate_with_retry_failure)
+    result = _evaluate_imcc(
+        SimpleNamespace(pack=None, enable_sp_extension=False),
+        {"SiO2": 50.0, "MgO": 50.0}, 1800.0,
+    )
+
+    assert calls == 4
+    assert result[0] == "refused"
+    assert result[3] == "retry refused for a non-domain reason"
+    assert result[4] is not None and "envelope:" in result[4]
 
 
 def test_unsupported_observable_is_not_coerced(tmp_path: Path) -> None:

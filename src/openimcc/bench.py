@@ -841,10 +841,18 @@ def _evaluate_imcc(
             result = evaluate_with_overrides(
                 allow_extrapolation=True, allow_out_of_envelope=True
             )
+        except (
+            ImccCompositionOutsideValidatedEnvelopeError,
+            ImccTOutsideDatapackDomainError,
+            ImccComponentOutsideDomainError,
+            ImccCompositionIncompleteError,
+            ImccFerricInputUnsupportedError,
+        ) as retry_exc:
+            return "out_of_domain", {}, {}, _reason_line(retry_exc), domain_flag, ()
         except ImccNonconvergenceError as retry_exc:
             return "not_converged", {}, {}, _reason_line(retry_exc), domain_flag, ()
         except ImccRefusal as retry_exc:
-            return "out_of_domain", {}, {}, _reason_line(retry_exc), domain_flag, ()
+            return "refused", {}, {}, _reason_line(retry_exc), domain_flag, ()
         activities, gammas = maps(result)
         return "ok", activities, gammas, "", domain_flag, tuple(result.labels.notices)
     except (
