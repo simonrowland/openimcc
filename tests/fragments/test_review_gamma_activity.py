@@ -10,6 +10,7 @@ import pytest
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
 from openimcc import evaluate, load_datapack, supported_trace_oxides
 from openimcc.activity_fragments import load_activity_fragment
+import openimcc.activity_fragments as activity_fragments
 from openimcc.gas import (
     _janaf_gibbs,
     _lamor_gibbs,
@@ -27,11 +28,51 @@ from openimcc.trace_components import (
     TraceActivityFlag,
     TraceMajorBiasFlag,
     _review_gamma_parent_oxides,
+    _activity_fragment_registered,
     _resolve_trace_activity,
     resolve_trace_activity,
     trace_component_rule,
     trace_fractions_from_wt,
 )
+
+
+def test_every_shipped_activity_fragment_loads() -> None:
+    fragment_root = Path(__file__).resolve().parents[2] / "src/openimcc/data/fragments"
+    for path in sorted(fragment_root.glob("*/rows.json")):
+        element = path.parent.name.capitalize()
+        if _activity_fragment_registered(element):
+            assert load_activity_fragment(element)["rows"]
+
+
+@pytest.mark.parametrize(
+    "closure_rms",
+    [
+        pytest.param("missing", id="missing"),
+        pytest.param(None, id="null"),
+        pytest.param(-0.1, id="negative"),
+        pytest.param(float("nan"), id="nan"),
+        pytest.param(float("inf"), id="infinite"),
+        pytest.param(True, id="boolean"),
+    ],
+)
+def test_composition_terms_closure_rms_is_validated_at_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, closure_rms: object
+) -> None:
+    source = Path(__file__).resolve().parents[2] / "src/openimcc/data/fragments/ce/rows.json"
+    content = json.loads(source.read_text(encoding="utf-8"))
+    law = content["rows"][0]["gamma_law"]
+    if closure_rms == "missing":
+        law.pop("ln_gamma_rms_closure")
+    else:
+        law["ln_gamma_rms_closure"] = closure_rms
+    target = tmp_path / "fragments" / "ce" / "rows.json"
+    target.parent.mkdir(parents=True)
+    target.write_text(json.dumps(content), encoding="utf-8")
+    monkeypatch.setattr(activity_fragments, "files", lambda _package: tmp_path)
+    activity_fragments._cached_activity_fragment.cache_clear()
+
+    with pytest.raises(ValueError, match="ln_gamma_rms_closure"):
+        load_activity_fragment("Ce")
 
 
 _CASES = (

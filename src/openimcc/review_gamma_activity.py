@@ -242,7 +242,7 @@ def _evaluate_review_gamma_activity(
         # enthalpy uncertainties; their derivative is σ_H(1-T/T_tr).
         factor = math.exp(-delta_g / (R_J_MOL_K * temperature))
         gamma *= factor
-        closure_rms = float(row["gamma_law"].get("ln_gamma_rms_closure", 0.0))
+        closure_rms = float(row["gamma_law"]["ln_gamma_rms_closure"])
         transition_log_uncertainty = math.sqrt(transition_variance) / (
             R_J_MOL_K * temperature
         )
@@ -592,7 +592,7 @@ def _gamma_for_row(
             for term in law["terms"]
         )
         gamma = math.exp(ln_gamma)
-        ln_gamma_rms = float(law.get("ln_gamma_rms_closure", 0.0))
+        ln_gamma_rms = float(law["ln_gamma_rms_closure"])
         return gamma, (
             gamma * math.exp(-ln_gamma_rms),
             gamma * math.exp(ln_gamma_rms),
