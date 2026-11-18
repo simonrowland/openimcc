@@ -24,6 +24,7 @@ from openimcc.equilibrium import (
     _load_json,
     _inner_activity_uncertainty,
     _active_residual,
+    _parse_bulk,
     _lp_solid_minimum,
     _minimize_logq_on_dual_face,
     _positive_branch,
@@ -1097,6 +1098,30 @@ def test_result_to_dict_round_trips_through_json(ideal_pack, gas_pack):
     assert decoded["temperature_K"] == 2000.0
     assert decoded["bulk_parent_mol"] == {"SiO2": 1.0}
     assert decoded["phase_saturation_indices"]
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_parse_bulk_rejects_boolean_parent_amount(value: object, ideal_pack) -> None:
+    with pytest.raises(ValueError, match="numeric"):
+        _parse_bulk({"SiO2": value}, ideal_pack.parent_oxides)
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_equilibrate_refuses_boolean_temperature(value: object, ideal_pack) -> None:
+    result = equilibrate({"SiO2": 1.0}, value, candidates=(), pack=ideal_pack)
+    assert result.refusal is not None
+    assert result.refusal.code == "invalid_input"
+
+
+@pytest.mark.parametrize("settings", [{"tol": True}, {"max_iter": True}])
+def test_equilibrate_refuses_boolean_solver_settings(
+    settings: dict[str, object], ideal_pack,
+) -> None:
+    result = equilibrate(
+        {"SiO2": 1.0}, 1990.0, candidates=(), pack=ideal_pack, **settings
+    )
+    assert result.refusal is not None
+    assert result.refusal.code == "invalid_input"
 
 
 def test_fully_liquid_vapour_matches_direct_gas_evaluation(ideal_pack, gas_pack):

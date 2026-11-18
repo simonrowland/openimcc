@@ -13,6 +13,7 @@ from typing import Mapping
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
 from openimcc.activity_fragments import load_activity_fragment
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 _LN10 = math.log(10.0)
 _SUPPORTED_COMPONENTS = frozenset(
@@ -65,6 +66,8 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
     ``3.5 RT ln(1.01325)``. The activity log shift is (G_source-G_pack)/RTln10.
     The pressure correction at 1873 K is about 0.02 dex, a useful sign check.
     """
+    if not is_declared_real_scalar(T_K, allow_numeric_str=True):
+        raise ValueError("temperature must be finite and positive")
     T = float(T_K)
     if not math.isfinite(T) or T <= 0:
         raise ValueError("temperature must be finite and positive")
@@ -77,6 +80,8 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
     for key, amount in composition_moles.items():
         if key not in _SUPPORTED_COMPONENTS:
             raise ValueError(f"unsupported oxide component {key!r}")
+        if not is_declared_real_scalar(amount, allow_numeric_str=True):
+            raise ValueError(f"moles for {key} must be finite and nonnegative")
         value = float(amount)
         if not math.isfinite(value) or value < 0:
             raise ValueError(f"moles for {key} must be finite and nonnegative")

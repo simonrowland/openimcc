@@ -11,7 +11,9 @@ from types import MappingProxyType
 from typing import Any, Literal
 
 from openimcc._constants import MOLAR_MASS_G_MOL
-from openimcc.kernel import ImccRefusal
+from openimcc.gas_data import IMCC_PARENT_OXIDES
+from openimcc.kernel import ImccCompositionIncompleteError, ImccRefusal
+from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.trace_envelope_calibration import (
     CR_CALIBRATED_ENVELOPE_ID,
     ENVELOPE_DELTA_IW_GRID,
@@ -775,8 +777,35 @@ def trace_fractions_from_wt(
         )
         if molar_mass is None:
             continue
-        amount = float(raw_amount)
+        is_major = oxide in IMCC_PARENT_OXIDES
+        if not is_declared_real_scalar(raw_amount, allow_numeric_str=True):
+            if is_major:
+                raise ImccCompositionIncompleteError(
+                    f"composition value for {oxide} must be numeric"
+                )
+            if rule is not None:
+                raise ValueError(
+                    f"composition weight for {oxide} must be finite and nonnegative"
+                )
+            continue
+        try:
+            amount = float(raw_amount)
+        except (TypeError, ValueError, OverflowError) as exc:
+            if is_major:
+                raise ImccCompositionIncompleteError(
+                    f"composition value for {oxide} must be numeric"
+                ) from exc
+            if rule is not None:
+                raise ValueError(
+                    f"composition weight for {oxide} must be finite and nonnegative"
+                ) from exc
+            continue
         if not math.isfinite(amount) or amount < 0.0:
+            if is_major:
+                reason = "negative values" if amount < 0.0 else "non-finite values"
+                raise ImccCompositionIncompleteError(
+                    f"composition contains {reason}"
+                )
             if rule is not None:
                 raise ValueError(
                     f"composition weight for {oxide} must be finite and nonnegative"

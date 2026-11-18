@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Literal, Mapping, Sequence, TypedDict
 
 from openimcc._constants import R_J_MOL_K
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 STANDARD_PRESSURE_PA = 100_000.0
 OXYGEN_INPUT_REL_TOL = 1e-9
@@ -217,7 +218,12 @@ def _reaction_gas_terms_match_algebra(
 
 
 def _activity(value: float | None, name: str) -> float:
-    result = 1.0 if value is None else float(value)
+    if value is None:
+        result = 1.0
+    else:
+        if not is_declared_real_scalar(value, allow_numeric_str=True):
+            raise ValueError(f"activity for {name} must be finite and positive")
+        result = float(value)
     if not math.isfinite(result) or result <= 0:
         raise ValueError(f"activity for {name} must be finite and positive")
     return result
@@ -245,15 +251,26 @@ def evaluate_subsolidus_reactions(
     whose equilibrium pressure is outside the finite positive float range gets
     a ``numeric_out_of_range`` result while later hosts are still evaluated.
     """
+    if not is_declared_real_scalar(temperature_K):
+        raise ValueError("temperature_K must be finite and positive")
+    temperature_K = float(temperature_K)
     if not math.isfinite(temperature_K) or temperature_K <= 0:
         raise ValueError("temperature_K must be finite and positive")
     gas_pressures = dict(gas_partial_pressures_Pa)
     for key, value in gas_pressures.items():
+        if not is_declared_real_scalar(value, allow_numeric_str=True):
+            raise ValueError(
+                f"partial pressure for {key} must be finite and positive"
+            )
         if not math.isfinite(float(value)) or float(value) <= 0:
             raise ValueError(f"partial pressure for {key} must be finite and positive")
 
     gas_o2 = gas_pressures.get("O2")
     if oxygen_fugacity_Pa is not None:
+        if not is_declared_real_scalar(oxygen_fugacity_Pa):
+            raise ValueError(
+                "oxygen_fugacity_Pa must be finite and positive"
+            )
         if not math.isfinite(oxygen_fugacity_Pa) or oxygen_fugacity_Pa <= 0:
             raise ValueError("oxygen_fugacity_Pa must be finite and positive")
         if gas_o2 is not None and not math.isclose(
@@ -420,6 +437,10 @@ def evaluate_subsolidus_reactions(
 
         log10_k = ln_kp / math.log(10.0)
         try:
+            if not is_declared_real_scalar(
+                host["remaining_mol"], allow_numeric_str=True
+            ):
+                raise ValueError("remaining_mol must be finite and nonnegative")
             remaining = float(host["remaining_mol"])
             if not math.isfinite(remaining) or remaining < 0:
                 raise ValueError("remaining_mol must be finite and nonnegative")

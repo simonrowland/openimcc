@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pytest
 
 from openimcc._constants import R_J_MOL_K
@@ -12,6 +13,18 @@ from openimcc import (
     load_datapack,
 )
 from openimcc.gas import evaluate_gas, load_gas_datapack, species_thermo
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_p2o5_activity_rejects_boolean_temperature(value: object) -> None:
+    with pytest.raises(ValueError, match="temperature"):
+        evaluate_p2o5_activity({"P2O5": 1.0}, value)
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_p2o5_activity_rejects_boolean_composition_amount(value: object) -> None:
+    with pytest.raises(ValueError, match="P2O5"):
+        evaluate_p2o5_activity({"P2O5": value, "SiO2": 1.0}, 1873.0)
 
 
 def test_suito_regression_and_explicit_atm_to_bar_standard_conversion() -> None:

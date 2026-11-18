@@ -1,5 +1,6 @@
 import math
 
+import numpy as np
 import pytest
 
 from openimcc.subsolidus import (
@@ -8,6 +9,44 @@ from openimcc.subsolidus import (
     evaluate_subsolidus_reactions,
 )
 from openimcc import subsolidus
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_subsolidus_rejects_boolean_temperature(value: object) -> None:
+    host = _host("FeS_troilite", "FeS", "troilite")
+    with pytest.raises(ValueError, match="temperature"):
+        _evaluate(host, value, {"S2": 1.0e-8})
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_subsolidus_rejects_boolean_activity(value: object) -> None:
+    host = _host("FeS_troilite", "FeS", "troilite", activity=value)
+    result = _evaluate(host, 800.0, {"S2": 1.0e-8})
+    assert result["status"] == "temperature_out_of_range"
+
+
+def test_subsolidus_rejects_boolean_gas_pressure() -> None:
+    host = _host("FeS_troilite", "FeS", "troilite")
+    with pytest.raises(ValueError, match="partial pressure"):
+        _evaluate(host, 800.0, {"S2": True})
+
+
+def test_subsolidus_rejects_boolean_oxygen_fugacity() -> None:
+    host = _host("FeS_troilite", "FeS", "troilite")
+    with pytest.raises(ValueError, match="oxygen_fugacity_Pa"):
+        evaluate_subsolidus_reactions(
+            hosts=[host],
+            temperature_K=800.0,
+            gas_partial_pressures_Pa={"S2": 1.0e-8},
+            condensed_phase_activities={},
+            oxygen_fugacity_Pa=True,
+        )
+
+
+def test_subsolidus_refuses_boolean_remaining_inventory() -> None:
+    host = _host("FeS_troilite", "FeS", "troilite", remaining_mol=True)
+    result = _evaluate(host, 800.0, {"S2": 1.0e-8})
+    assert result["status"] == "unknown_host"
 
 
 def _host(species_id, formula, phase, remaining_mol=2.0, activity=1.0):

@@ -19,6 +19,7 @@ from openimcc.model import (
     evaluate,
     load_datapack,
 )
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 _LN10 = math.log(10.0)
 _LOG10_MAX_FLOAT = math.log10(float.fromhex("0x1.fffffffffffffp+1023"))
@@ -151,6 +152,8 @@ def _normalise_composition(
     for raw_name, raw_value in composition_wt_percent.items():
         if raw_name not in _OXIDES:
             raise ValueError(f"unsupported oxide component {raw_name!r}")
+        if not is_declared_real_scalar(raw_value, allow_numeric_str=True):
+            raise ValueError(f"invalid wt% for {raw_name}")
         try:
             value = float(raw_value)
         except (TypeError, ValueError, OverflowError) as exc:
@@ -430,20 +433,42 @@ def evaluate_sulfur(
     and C mole fractions; it must sum to one. Smythe's FeS activity is
     approximated as Fe/(Fe+Ni+Cu), and metal-rich liquids are flagged.
     """
+    if not is_declared_real_scalar(T_K, allow_numeric_str=True):
+        raise ValueError("temperature must be finite and positive")
     T = float(T_K)
     pressure_assumed = total_pressure_bar is None
+    if pressure_assumed is False and not is_declared_real_scalar(
+        total_pressure_bar, allow_numeric_str=True
+    ):
+        raise ValueError("total pressure must be finite and positive")
     pressure = 1.0 if pressure_assumed else float(total_pressure_bar)
     if not math.isfinite(T) or T <= 0.0:
         raise ValueError("temperature must be finite and positive")
     if not math.isfinite(pressure) or pressure <= 0.0:
         raise ValueError("total pressure must be finite and positive")
     for name, value in (("log10_fO2", log10_fO2), ("log10_fS2", log10_fS2)):
+        if value is not None and not is_declared_real_scalar(
+            value, allow_numeric_str=True
+        ):
+            raise ValueError(f"{name} must be finite and within [-300, 300]")
         if value is not None and (not math.isfinite(float(value)) or abs(float(value)) > 300):
             raise ValueError(f"{name} must be finite and within [-300, 300]")
+    if fe3_fraction is not None and not is_declared_real_scalar(
+        fe3_fraction, allow_numeric_str=True
+    ):
+        raise ValueError("fe3_fraction must be between 0 and 1")
     if fe3_fraction is not None and (
         not math.isfinite(float(fe3_fraction)) or not 0.0 <= float(fe3_fraction) <= 1.0
     ):
         raise ValueError("fe3_fraction must be between 0 and 1")
+    for name, value in (
+        ("total_s_ppm", total_s_ppm),
+        ("total_s_mol_per_mol_melt", total_s_mol_per_mol_melt),
+    ):
+        if value is not None and not is_declared_real_scalar(
+            value, allow_numeric_str=True
+        ):
+            raise ValueError(f"{name} must be numeric")
 
     (
         formula_moles,
@@ -530,11 +555,16 @@ def evaluate_sulfur(
             distance_unit="bar above 24 GPa",
         ))
 
-    active_sulfide_liquid = (
-        {"Fe": 0.5, "S": 0.5}
-        if sulfide_liquid_composition is None
-        else {str(k): float(v) for k, v in sulfide_liquid_composition.items()}
-    )
+    if sulfide_liquid_composition is None:
+        active_sulfide_liquid = {"Fe": 0.5, "S": 0.5}
+    else:
+        active_sulfide_liquid = {}
+        for key, value in sulfide_liquid_composition.items():
+            if not is_declared_real_scalar(value, allow_numeric_str=True):
+                raise ValueError(
+                    "sulfide liquid composition values must be numeric"
+                )
+            active_sulfide_liquid[str(key)] = float(value)
     if sulfide_liquid_composition is None:
         notices.append(_notice(
             "default-pure-FeS-matte", "sulfide-liquid composition defaults to stoichiometric FeS",

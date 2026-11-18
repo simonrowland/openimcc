@@ -84,6 +84,17 @@ def _weight_composition(trace_fractions: dict[str, float]) -> dict[str, float]:
     return composition
 
 
+def test_trace_fractions_reject_negative_major_before_normalizing() -> None:
+    with pytest.raises(ImccCompositionIncompleteError, match="negative"):
+        trace_fractions_from_wt({"SiO2": -10.0, "NiO": 1.0})
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_trace_fractions_reject_boolean_major_weight(value: object) -> None:
+    with pytest.raises(ImccCompositionIncompleteError, match="SiO2"):
+        trace_fractions_from_wt({"SiO2": value, "NiO": 1.0})
+
+
 def _major_activities(result) -> dict[str, float]:
     return dict(zip(result.parent_oxides, result.parent_activity, strict=True))
 

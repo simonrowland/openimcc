@@ -29,6 +29,41 @@ _MORB = {
     "Na2O": 2.83,
     "K2O": 0.14,
 }
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_sulfur_rejects_boolean_temperature(value: object) -> None:
+    with pytest.raises(ValueError, match="temperature"):
+        evaluate_sulfur(_MORB, value, log10_fO2=-8.0, log10_fS2=-10.0)
+
+
+@pytest.mark.parametrize("value", [True, np.bool_(True)])
+def test_sulfur_rejects_boolean_composition_amount(value: object) -> None:
+    composition = {**_MORB, "SiO2": value}
+    with pytest.raises(ValueError, match="SiO2"):
+        evaluate_sulfur(composition, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0)
+
+
+@pytest.mark.parametrize(
+    ("input_values", "message"),
+    [
+        ({"total_pressure_bar": True}, "total pressure"),
+        ({"log10_fO2": True}, "log10_fO2"),
+        ({"fe3_fraction": True}, "fe3_fraction"),
+        ({"total_s_ppm": True}, "total_s_ppm"),
+        ({"total_s_mol_per_mol_melt": True}, "total_s_mol_per_mol_melt"),
+        ({"sulfide_liquid_composition": {"Fe": True, "S": 0.5}}, "sulfide liquid"),
+    ],
+)
+def test_sulfur_rejects_boolean_optional_numeric_inputs(
+    input_values: dict[str, object], message: str,
+) -> None:
+    kwargs: dict[str, object] = {"log10_fO2": -8.0, "log10_fS2": -10.0}
+    kwargs.update(input_values)
+    with pytest.raises(ValueError, match=message):
+        evaluate_sulfur(_MORB, 1673.0, **kwargs)
+
+
 _OXIDES = {
     "SiO2": (MOLAR_MASS_G_MOL["SiO2"], 1, 2, "Si"),
     "TiO2": (MOLAR_MASS_G_MOL["TiO2"], 1, 2, "Ti"),

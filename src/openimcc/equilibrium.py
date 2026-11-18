@@ -11,6 +11,7 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, fields, is_dataclass, replace
 from enum import Enum
+from numbers import Integral
 from types import MappingProxyType
 from typing import Any, Literal
 
@@ -36,6 +37,7 @@ from openimcc.janaf_crystals import (
 from openimcc.kernel import ImccRefusal
 from openimcc.model import ImccLoadedDatapack, evaluate, load_datapack
 from openimcc.receipt import CalculationReceipt, build_calculation_receipt
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 
 _PURE_RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
@@ -607,7 +609,11 @@ def _parse_bulk(
     parents: Sequence[str],
 ) -> tuple[dict[str, float], tuple[str, ...]]:
     if isinstance(bulk, Mapping):
-        values = {str(name): float(value) for name, value in bulk.items()}
+        values: dict[str, float] = {}
+        for name, value in bulk.items():
+            if not is_declared_real_scalar(value, allow_numeric_str=True):
+                raise ValueError(f"bulk amount for {name} must be numeric")
+            values[str(name)] = float(value)
         unknown = set(values) - set(parents)
         if unknown:
             raise KeyError(f"unsupported parent names: {sorted(unknown)}")
@@ -616,7 +622,11 @@ def _parse_bulk(
         raw = np.asarray(bulk, dtype=object)
         if raw.ndim != 1 or raw.size != len(parents):
             raise ValueError(f"bulk sequence must have {len(parents)} parent entries")
-        complete = {name: float(value) for name, value in zip(parents, raw, strict=True)}
+        complete: dict[str, float] = {}
+        for name, value in zip(parents, raw, strict=True):
+            if not is_declared_real_scalar(value, allow_numeric_str=True):
+                raise ValueError(f"bulk amount for {name} must be numeric")
+            complete[name] = float(value)
     if any(not math.isfinite(value) or value < 0.0 for value in complete.values()):
         raise ValueError("bulk amounts must be finite and non-negative")
     if not any(value > 0.0 for value in complete.values()):
@@ -3143,8 +3153,17 @@ def _equilibrate_one(
     """
     selected_pack = _loaded_pack(pack)
     kernel = selected_pack.kernel_datapack if isinstance(selected_pack, ImccLoadedDatapack) else selected_pack
-    temperature = float(T_K)
-    candidate_temperature = temperature if math.isfinite(temperature) and temperature > 0.0 else 2000.0
+    temperature_is_real = is_declared_real_scalar(T_K, allow_numeric_str=True)
+    try:
+        temperature = float(T_K) if temperature_is_real else math.nan
+    except OverflowError:
+        temperature_is_real = False
+        temperature = math.nan
+    candidate_temperature = (
+        temperature
+        if temperature_is_real and math.isfinite(temperature) and temperature > 0.0
+        else 2000.0
+    )
     from openimcc import diagnostics as diagnostic_module
     gas_pack, _ = diagnostic_module._crystal_thermo_context(None)
     try:
@@ -3172,7 +3191,11 @@ def _equilibrate_one(
         )
 
     parent_names = tuple(str(name) for name in kernel.parent_oxides)
-    if not math.isfinite(temperature) or temperature <= 0.0:
+    if (
+        not temperature_is_real
+        or not math.isfinite(temperature)
+        or temperature <= 0.0
+    ):
         return _empty_result(
             bulk={},
             temperature_K=temperature,
@@ -3182,8 +3205,12 @@ def _equilibrate_one(
             pure_digest=pure_digest,
             explicit_candidates=explicit,
             refusal=EquilibriumRefusal(
-                "nonfinite_input" if not math.isfinite(temperature) else "invalid_input",
-                "Temperature must be finite and positive.",
+                (
+                    "invalid_input"
+                    if not temperature_is_real or temperature <= 0.0
+                    else "nonfinite_input"
+                ),
+                "temperature_K must be a real scalar and finite and positive.",
                 ("temperature_K",),
             ),
         )
@@ -3220,10 +3247,22 @@ def _equilibrate_one(
         all_states, unavailable, normalized_bulk, parent_names,
     )
     bulk_vector = np.asarray([normalized_bulk[name] for name in parents], dtype=float)
+    solver_tolerances = (tol, affinity_tol_ln, inner_tol)
+    tolerances_are_real = all(
+        is_declared_real_scalar(value, allow_numeric_str=True)
+        for value in solver_tolerances
+    )
+    try:
+        tolerances_are_valid = tolerances_are_real and all(
+            math.isfinite(float(value)) and float(value) > 0.0
+            for value in solver_tolerances
+        )
+    except (OverflowError, TypeError, ValueError):
+        tolerances_are_valid = False
     if (
-        not math.isfinite(float(tol)) or float(tol) <= 0.0
-        or not math.isfinite(float(affinity_tol_ln)) or float(affinity_tol_ln) <= 0.0
-        or not math.isfinite(float(inner_tol)) or float(inner_tol) <= 0.0
+        not tolerances_are_valid
+        or not isinstance(max_iter, Integral)
+        or isinstance(max_iter, bool)
         or max_iter < 1
     ):
         return _empty_result(
@@ -3511,6 +3550,10 @@ def _attach_phase_state_vapour(
     candidates: Sequence[str | CrystalCandidate] | None,
     fO2: float | None,
 ) -> PhaseEquilibriumResult:
+    if fO2 is not None and not is_declared_real_scalar(
+        fO2, allow_numeric_str=True
+    ):
+        raise ValueError("fO2 must be numeric")
     candidate_ids = (
         None if candidates is None else tuple(
             candidate.phase_id if isinstance(candidate, CrystalCandidate)
@@ -3845,6 +3888,10 @@ def phase_boundary_brackets(
     evaluation reruns equilibrium/domain checks before using its residual.
     Crossings in either transition direction are retained in temperature order.
     """
+    if not is_declared_real_scalar(
+        T_low_K, allow_numeric_str=True
+    ) or not is_declared_real_scalar(T_high_K, allow_numeric_str=True):
+        raise ValueError("temperature bounds must be finite and increasing")
     low = float(T_low_K)
     high = float(T_high_K)
     if (
