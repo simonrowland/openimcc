@@ -16,6 +16,7 @@ import pytest
 
 import openimcc.standards as standards_module
 from openimcc import (
+    ImccMalformedDatapackError,
     ImccLiquidStandardMismatchError,
     LiquidStandardMismatch,
     PackStandardNotice,
@@ -873,6 +874,28 @@ def test_loaded_objects_paths_and_row_overrides_resolve_to_registry() -> None:
     redox_loaded_info = pack_liquid_standards(redox_loaded)
     assert redox_path_info == redox_loaded_info
     assert redox_loaded_info.standards["FeO"] == "Fe-019"
+
+
+@pytest.mark.parametrize("contents", ["{", "[]"])
+def test_pack_liquid_standards_rejects_invalid_pack_files(
+    tmp_path: Path, contents: str
+) -> None:
+    path = tmp_path / "invalid-pack.json"
+    path.write_text(contents, encoding="utf-8")
+
+    with pytest.raises(ImccMalformedDatapackError) as exc:
+        pack_liquid_standards(path)
+
+    assert exc.value.code == "imcc_malformed_datapack"
+
+
+def test_pack_liquid_standards_rejects_unreadable_pack_path(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ImccMalformedDatapackError) as exc:
+        pack_liquid_standards(tmp_path / "missing-pack.json")
+
+    assert exc.value.code == "imcc_malformed_datapack"
 
 
 def test_k2o_one_sided_band_is_exposed_and_does_not_change_evaluate() -> None:

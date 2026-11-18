@@ -405,29 +405,40 @@ def _object_embedded_declaration(pack: Any) -> Mapping[str, Any] | None:
 
 
 def _path_pack(path: Path) -> tuple[dict[str, Any] | None, str, str | None]:
-    raw = path.read_bytes()
-    byte_digest = hashlib.sha256(raw).hexdigest()
+    from openimcc.model import ImccMalformedDatapackError
+
     try:
-        content = json.loads(raw)
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        return None, byte_digest, None
-    if not isinstance(content, dict):
-        return None, byte_digest, None
+        raw = path.read_bytes()
+        byte_digest = hashlib.sha256(raw).hexdigest()
+        try:
+            content = json.loads(raw)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ImccMalformedDatapackError(
+                f"datapack JSON at {path} is not valid JSON"
+            ) from exc
+        if not isinstance(content, dict):
+            raise ImccMalformedDatapackError(
+                f"datapack JSON at {path} must be an object"
+            )
 
-    if isinstance(content.get("schema"), str) and content["schema"].startswith(
-        "openimcc-redox-pack."
-    ):
-        from openimcc.redox_pack import load_redox_pack
+        if isinstance(content.get("schema"), str) and content["schema"].startswith(
+            "openimcc-redox-pack."
+        ):
+            from openimcc.redox_pack import load_redox_pack
 
-        loaded = load_redox_pack(path)
-        return content, byte_digest, loaded.canonical_digest
+            loaded = load_redox_pack(path)
+            return content, byte_digest, loaded.canonical_digest
 
-    if isinstance(content.get("imcc_sf04_datapack_version"), str):
-        from openimcc.model import load_datapack
+        if isinstance(content.get("imcc_sf04_datapack_version"), str):
+            from openimcc.model import load_datapack
 
-        loaded = load_datapack(path)
-        return content, loaded.binding_digest or byte_digest, None
-    return content, byte_digest, None
+            loaded = load_datapack(path)
+            return content, loaded.binding_digest or byte_digest, None
+        return content, byte_digest, None
+    except OSError as exc:
+        raise ImccMalformedDatapackError(
+            f"cannot read datapack at {path}: {exc}"
+        ) from exc
 
 
 def _registry_entry(
@@ -456,10 +467,7 @@ def pack_liquid_standards(pack: Any) -> PackLiquidStandards:
     """
     if isinstance(pack, (str, Path)):
         path = Path(pack)
-        try:
-            content, digest, canonical_digest = _path_pack(path)
-        except OSError:
-            return _from_declaration({}, source="undeclared", digest=None)
+        content, digest, canonical_digest = _path_pack(path)
         embedded = _embedded_declaration(
             content.get("liquid_standards") if content is not None else None
         )
