@@ -5647,13 +5647,11 @@ def test_generic_oxygen_balance_solves_sine_on_k_pressure_model() -> None:
             "O2": 10.0**logp,
         }
 
-    p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+    p_o2, pressures, _diagnostics = oxygen_balance_from_pressure_model(
         pressure_model, metadata
     )
     assert abs(math.log10(p_o2) - power_law_root) > 0.01
-    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
-        diagnostics["root_solver"]["residual_tolerance"]
-    )
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) < 1e-12
 
 
 def test_generic_oxygen_balance_accepts_monotone_piecewise_pressure_model() -> None:
@@ -5676,12 +5674,10 @@ def test_generic_oxygen_balance_accepts_monotone_piecewise_pressure_model() -> N
             "MgO": 10.0 ** (-30.0 - 0.9 * inner - 0.1 * outer),
         }
 
-    _p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+    _p_o2, pressures, _diagnostics = oxygen_balance_from_pressure_model(
         pressure_model, metadata
     )
-    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
-        diagnostics["root_solver"]["residual_tolerance"]
-    )
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) < 1e-12
 
 
 @pytest.mark.parametrize("spacing", [0.2, 0.1, 0.05])
@@ -5709,13 +5705,11 @@ def test_generic_oxygen_balance_accepts_linear_in_pressure_table(
             "MgO": float(np.interp(10.0**logp, pressure_nodes, mgo_pressures)),
         }
 
-    p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+    p_o2, pressures, _diagnostics = oxygen_balance_from_pressure_model(
         pressure_model, metadata
     )
     assert math.log10(p_o2) == pytest.approx(power_law_root, abs=1e-12)
-    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
-        diagnostics["root_solver"]["residual_tolerance"]
-    )
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) < 1e-12
 
 
 def test_generic_oxygen_balance_reports_refinement_cost_for_curved_model() -> None:
@@ -5741,9 +5735,26 @@ def test_generic_oxygen_balance_reports_refinement_cost_for_curved_model() -> No
     assert solver_diagnostics["path"] == "refined"
     assert solver_diagnostics["refinement_evaluations"] > 0
     assert solver_diagnostics["model_evaluations"] == model_evaluations
-    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
-        solver_diagnostics["residual_tolerance"]
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) < 1e-12
+
+
+def test_generic_oxygen_balance_refuses_unacceptable_relative_closure() -> None:
+    metadata = oxygen_balance_species_metadata(
+        {"K": "K2O", "O2": None}, pO2_exponents={"K": 0.0}
     )
+    power_law_root = math.log10(
+        0.25 * 1e-8
+        * math.sqrt(metadata["O2"].molar_mass / metadata["K"].molar_mass)
+    )
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {
+            "K": 1e-8 if logp < power_law_root - 0.1 else 1e-9,
+            "O2": 10.0**logp,
+        }
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="relative residual"):
+        oxygen_balance_from_pressure_model(pressure_model, metadata)
 
 
 @pytest.mark.parametrize(
