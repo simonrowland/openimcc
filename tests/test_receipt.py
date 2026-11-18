@@ -70,6 +70,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
         "melt": redox.melt_pack_binding_digest,
         "redox": redox.redox_pack_digest,
     }
+    assert redox_receipt.request["options"]["strict_pack_standards"] is False
 
     profile = openimcc.load_profile("openimcc")
     activities = {name: melt.activity(name) for name in melt.parent_oxides}
@@ -85,6 +86,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     }
     assert gas_receipt.request["fO2"] == 1e-10
     assert gas_receipt.request["profile"] == "openimcc"
+    assert gas_receipt.request["options"]["strict_pack_standards"] is False
 
     balance_pO2, balanced, _ = evaluate_gas_oxygen_balance(
         activities, 1800.0, profile="openimcc"
@@ -113,6 +115,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
         "gas": saturation.gas_table_digest,
         "condensate": saturation.condensate_table_digest,
     }
+    assert saturation_receipt.request["options"]["strict_pack_standards"] is False
 
     boiling_temperature, boiling = gas_boiling_temperature(
         activities,

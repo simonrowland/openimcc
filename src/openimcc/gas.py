@@ -4203,6 +4203,7 @@ def evaluate_gas(
                         "gas_species": gas_species,
                         "include_ions": include_ions,
                         "composition_wt_pct": composition_wt_pct,
+                        "strict_pack_standards": strict_pack_standards,
                     },
                 },
                 data_digests=(
@@ -5571,6 +5572,7 @@ def evaluate_gas_saturation(
                         "include_ions": include_ions,
                         "allow_extrapolation": allow_extrapolation,
                         "log10_pO2_bracket": log10_pO2_bracket,
+                        "strict_pack_standards": strict_pack_standards,
                     },
                 },
                 data_digests={

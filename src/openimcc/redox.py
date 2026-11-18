@@ -3307,6 +3307,7 @@ def evaluate_redox(
             "options": {
                 "tol": tol,
                 "max_iter": max_iter,
+                "strict_pack_standards": strict_pack_standards,
                 "redox_pack_path": redox_pack_path,
                 "melt_pack_path": melt_pack_path,
             },
