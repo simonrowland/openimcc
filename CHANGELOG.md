@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Gas thermochemistry
+
+- Changed `species_thermo(...).H_app_kJ_mol` to report formation-anchored
+  enthalpy, preserving its documented identity with `G_J_mol` for rows with
+  nonzero Shomate H. Packaged gas-table values are unchanged.
+
 ### Gas saturation oxygen closure
 
 - Corrected saturation weights for gas-parent channels that also consume a

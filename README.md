@@ -1237,10 +1237,12 @@ thermal cells are recovered from the parse-ambiguous line; its formation
 columns remain unused. The supercooled-liquid fit uses 1000–1500 K nodes and
 the high fit uses 1500–3000 K nodes.
 
-For gas rows, `H_app_kJ_mol` includes the formation-enthalpy anchor folded into
-Shomate F (the stored Shomate H is zero); callers needing H−H298 must subtract
-the source record's `dfH298`. Condensate H_app includes the stable-phase
-298.15 K anchor and the analytic temperature-dependent increment.
+Gas `H_app_kJ_mol` is formation-anchored and satisfies
+`G_J_mol = 1000*H_app_kJ_mol - T*S_J_molK`. The packaged gas table folds the
+formation enthalpy into Shomate F and stores H=0; for an explicit row that
+stores `dfH298` in H, the field keeps that anchor. Callers needing only
+H−H298 subtract the source record's `dfH298`. Condensate H_app includes the
+stable-phase 298.15 K anchor and the analytic temperature-dependent increment.
 
 `default_gas_channels(parent_oxides, datapack=None)` returns the ordered
 `(channels, omitted)` pair used by the gas evaluator. Both functions use the

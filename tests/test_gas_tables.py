@@ -10076,6 +10076,44 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell(
     assert len(per_row_max) == checked_rows
 
 
+def test_gas_shomate_h_app_preserves_the_formation_anchor(
+    packaged_gas_pack,
+) -> None:
+    temperature = 2000.0
+    oxygen_row = _nearest_interval_row(
+        packaged_gas_pack.gas_df, "O2(g)", temperature
+    )
+    assert float(oxygen_row["H"]) == 0.0
+    oxygen = species_thermo("O2", "g", temperature, packaged_gas_pack)
+    assert oxygen.G_J_mol == pytest.approx(
+        oxygen.H_app_kJ_mol * 1000.0 - temperature * oxygen.S_J_molK,
+        abs=1.0e-9,
+    )
+
+    sio_row = _nearest_interval_row(
+        packaged_gas_pack.gas_df, "SiO(g)", temperature
+    )
+    gas_df = packaged_gas_pack.gas_df.copy()
+    selected = (
+        (gas_df.index == "SiO(g)")
+        & (gas_df["T_interval"] == sio_row["T_interval"])
+    )
+    gas_df.loc[selected, "H"] = 42.0
+    anchored_pack = replace(packaged_gas_pack, gas_df=gas_df)
+    sio_before = species_thermo("SiO", "g", temperature, packaged_gas_pack)
+    sio = species_thermo("SiO", "g", temperature, anchored_pack)
+    assert sio.G_J_mol == sio_before.G_J_mol
+    assert sio.G_J_mol == pytest.approx(
+        sio.H_app_kJ_mol * 1000.0 - temperature * sio.S_J_molK,
+        abs=1.0e-9,
+    )
+    old_g_from_increment = (
+        (sio.H_app_kJ_mol - 42.0) * 1000.0
+        - temperature * sio.S_J_molK
+    )
+    assert sio.G_J_mol - old_g_from_increment == pytest.approx(42_000.0)
+
+
 def test_public_species_thermo_matches_every_janaf_condensate_interval(
     packaged_gas_pack,
 ) -> None:

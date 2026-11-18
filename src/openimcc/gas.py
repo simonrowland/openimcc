@@ -2710,9 +2710,9 @@ def species_thermo(
     ``Cp = A + B*t + C*t² + D*t³ + E/t²`` (J mol⁻¹ K⁻¹), with enthalpy
     primitive ``I_H = A*t + B*t²/2 + C*t³/3 + D*t⁴/4 − E/t`` (kJ mol⁻¹)
     and ``S = A*ln(t) + B*t + C*t²/2 + D*t³/3 − E/(2*t²) + G``
-    (J mol⁻¹ K⁻¹). The packaged convention has Shomate H=0 and folds
-    ``dfH298`` into F, so ``H_app = I_H + F − H`` includes the formation
-    enthalpy anchor. ``G_J_mol`` is the existing runtime
+    (J mol⁻¹ K⁻¹). The public gas ``H_app`` is formation-anchored:
+    ``H_app = I_H + F``. The packaged convention folds ``dfH298`` into F and
+    stores Shomate H=0. ``G_J_mol`` is the existing runtime
     ``1000*H_app − T*S``; the factor converts H_app from kJ/mol to J/mol.
     A caller needing only H(T)−H(298.15) must subtract the source row's
     ``dfH298`` from ``H_app``; that anchor is in the JANAF source record and
@@ -2768,7 +2768,13 @@ def species_thermo(
             A * math.log(t) + B * t + C * t**2 / 2.0
             + D * t**3 / 3.0 - E / (2.0 * t**2) + float(row["G"])
         )
-        h_app = enthalpy_primitive + float(row["F"]) - float(row["H"])
+        # Premise: H_app includes dfH298 plus H(T)-H(298.15); the stored
+        # Shomate primitive and F already sum to that formation-anchored value.
+        # Algebra: G = 1000*(I_H + F) - T*S, matching _janaf_gibbs; subtracting
+        # column H would break this identity by 1000*H when H carries dfH298.
+        # Units: I_H and F are kJ/mol, H is kJ/mol, and S*T is J/mol. Sanity:
+        # H=0 is unchanged; for H=42 kJ/mol the old subtraction misses 42,000 J/mol.
+        h_app = enthalpy_primitive + float(row["F"])
         apparent_g = _janaf_gibbs(T_K, row)
         interval = int(row["T_interval"])
     else:
