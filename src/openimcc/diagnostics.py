@@ -612,15 +612,26 @@ def _prepare_crystal_composition(composition, pack):
 def _crystal_si(phase, temp, composition, pack, gas_pack, reference_pack,
                 enable_sp_extension=False):
     from openimcc.gas import species_thermo
-    bounds = phase["valid_temperature_K"]
-    if not float(bounds[0]) <= temp <= float(bounds[1]):
-        raise ValueError(f"{phase['id']} crystal function is valid only in {bounds} K")
-    dg_kj = _interpolate_crystal_fusion_nodes(phase, temp)
+    standard = _fusion_node_crystal_standard(phase, temp)
+    if (
+        not standard.window_K[0] <= temp <= standard.window_K[1]
+        or standard.unavailable_reason is not None
+    ):
+        reason = standard.unavailable_reason or "temperature_out_of_range"
+        raise ValueError(
+            f"{phase['id']} crystal function is unavailable at {temp:g} K: "
+            f"{reason}"
+        )
+    dg_kj = standard.fusion_gibbs_kJ_mol
     if gas_pack.condensate_table_digest != reference_pack.condensate_table_digest:
-        dg_kj += sum(float(nu) * (
+        adjustment = sum(float(nu) * (
             species_thermo(oxide, "l", temp, gas_pack).G_J_mol
             - species_thermo(oxide, "l", temp, reference_pack).G_J_mol
         ) / 1000.0 for oxide, nu in phase["oxide_stoichiometry"].items())
+        standard = _fusion_node_crystal_standard(
+            phase, temp, fusion_gibbs_kJ_mol=dg_kj + adjustment,
+        )
+        dg_kj = standard.fusion_gibbs_kJ_mol
     weights = composition or {
         oxide: float(nu) * MOLAR_MASS_G_MOL[oxide]
         for oxide, nu in phase["oxide_stoichiometry"].items()
@@ -665,10 +676,12 @@ def saturation_indices(composition, T_K, pack=None, *, condensate=None):
     has_supported_input = any(value > 0.0 for value in composition.values())
     rows = []
     for phase in load_crystal_dataset()["phases"]:
-        lo, hi = map(float, phase["valid_temperature_K"])
-        source_nodes = sorted(float(node) for node in phase["fusion_gibbs_nodes_kJ_mol"])
-        lo, hi = max(lo, source_nodes[0]), min(hi, source_nodes[-1])
-        in_range = lo <= float(T_K) <= hi
+        standard = _fusion_node_crystal_standard(phase, float(T_K))
+        lo, hi = standard.window_K
+        in_range = (
+            lo <= float(T_K) <= hi
+            and standard.unavailable_reason is None
+        )
         parents_supported = set(phase["oxide_stoichiometry"]).issubset(
             set(pack.parent_oxides) | (set(pack.extension_parents) if enable_sp_extension else set())
         )
@@ -747,9 +760,13 @@ def liquidus_bracket(composition, T_low, T_high, pack=None, *, condensate=None):
     for phase in load_crystal_dataset()["phases"]:
         if not set(phase["oxide_stoichiometry"]).issubset(supported_parents):
             continue
-        lo, hi = map(float, phase["valid_temperature_K"])
-        source_nodes = sorted(float(node) for node in phase["fusion_gibbs_nodes_kJ_mol"])
-        lo, hi = max(lo, source_nodes[0]), min(hi, source_nodes[-1])
+        standard = _fusion_node_crystal_standard(phase, float(T_low))
+        lo, hi = standard.window_K
+        if (
+            len(phase["oxide_stoichiometry"]) > 1
+            and standard.source_solid_limit_K is not None
+        ):
+            hi = min(hi, standard.source_solid_limit_K)
         a, b = max(float(T_low), lo), min(float(T_high), hi)
         if a >= b:
             continue
@@ -846,15 +863,92 @@ def _crystal_continuation_range(
 def _crystal_fusion_domain(
     phase: Mapping[str, Any],
 ) -> tuple[float, float]:
+    return _crystal_fusion_windows(phase)[1]
+
+
+def _crystal_fusion_windows(
+    phase: Mapping[str, Any],
+) -> tuple[tuple[float, float], tuple[float, float]]:
     nodes = sorted(float(value) for value in phase["fusion_gibbs_nodes_kJ_mol"])
-    domain = (
+    window = (
         max(float(phase["valid_temperature_K"][0]), nodes[0]),
         min(float(phase["valid_temperature_K"][1]), nodes[-1]),
     )
+    domain = window
     continuation = _crystal_continuation_range(phase)
-    if continuation is not None and continuation[0] == domain[1]:
-        return domain[0], continuation[1]
-    return domain
+    if continuation is not None and continuation[0] == window[1]:
+        domain = (window[0], continuation[1])
+    return window, domain
+
+
+def _crystal_source_solid_limit_K(phase: Mapping[str, Any]) -> float | None:
+    limit = phase.get("source_solid_limit")
+    if isinstance(limit, Mapping):
+        value = limit.get("temperature_K")
+    else:
+        melting = phase.get("melting_point")
+        value = melting.get("temperature_K") if isinstance(melting, Mapping) else None
+    return None if value is None else float(value)
+
+
+@dataclass(frozen=True)
+class _FusionNodeCrystalStandard:
+    window_K: tuple[float, float]
+    domain_K: tuple[float, float]
+    source_solid_limit_K: float | None
+    fusion_gibbs_kJ_mol: float | None
+    crystal_gibbs_J_mol: float | None
+    unavailable_reason: str | None
+
+
+def _fusion_node_crystal_standard(
+    phase: Mapping[str, Any],
+    temperature_K: float,
+    parent_liquid_gibbs_J_mol: Mapping[str, float] | None = None,
+    *,
+    fusion_gibbs_kJ_mol: float | None = None,
+) -> _FusionNodeCrystalStandard:
+    """Resolve a fusion-node phase window, availability, and crystal standard.
+
+    The source window is valid_temperature_K intersected with the fusion nodes;
+    a sourced continuation extends it only when the existing crystal function
+    supplies one. Stoichiometry is mol oxide/mol formula, so the parent sum is
+    J/mol crystal formula. G_crystal = Σν G_parent,l − 1000·ΔG_fus; fusion is
+    stored in kJ/mol formula and is multiplied by 1000 before subtraction.
+    Sanity: Barin CA at 1000 K uses its +131.430 kJ/mol fusion node. Multioxide
+    source solids are unavailable strictly above source_solid_limit/melting_point.
+    """
+    window, domain = _crystal_fusion_windows(phase)
+    source_limit = _crystal_source_solid_limit_K(phase)
+    stoichiometry = phase["oxide_stoichiometry"]
+    unavailable_reason = None
+    if (
+        len(stoichiometry) > 1
+        and source_limit is not None
+        and temperature_K > source_limit
+    ):
+        unavailable_reason = "above_source_melting_point"
+    elif not domain[0] <= temperature_K <= domain[1]:
+        unavailable_reason = "temperature_out_of_range"
+    if unavailable_reason is not None:
+        return _FusionNodeCrystalStandard(
+            window, domain, source_limit, None, None, unavailable_reason,
+        )
+
+    fusion = (
+        _crystal_fusion_gibbs_kj_mol(phase, temperature_K)
+        if fusion_gibbs_kJ_mol is None
+        else float(fusion_gibbs_kJ_mol)
+    )
+    crystal_gibbs = None
+    if parent_liquid_gibbs_J_mol is not None:
+        crystal_gibbs = math.fsum(
+            float(nu) * parent_liquid_gibbs_J_mol[oxide]
+            for oxide, nu in stoichiometry.items()
+        ) - fusion * 1000.0
+    return _FusionNodeCrystalStandard(
+        window, domain, source_limit, fusion, crystal_gibbs, None,
+    )
 
 
 def _continued_crystal_absolute_g_increment_kj_mol(

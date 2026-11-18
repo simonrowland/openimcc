@@ -242,8 +242,8 @@ def test_competing_polymorphs_switch_and_share_at_crossing(ideal_pack, gas_pack)
     assert results[2100.0].phase_presence["poly-beta"] == "present"
     assert results[2100.0].phase_presence["poly-alpha"] == "absent"
     at_crossing = results[crossing]
-    assert at_crossing.refusal is not None
-    assert at_crossing.refusal.code == "missing_phase_data"
+    assert at_crossing.refusal is None
+    assert at_crossing.labels.validity == "IN"
     assert set(at_crossing.saturated_candidates) == {"poly-alpha", "poly-beta"}
     assert at_crossing.phase_amount_ranges_mol["poly-alpha"] == pytest.approx((0.0, 1.0))
     assert at_crossing.phase_amount_ranges_mol["poly-beta"] == pytest.approx((0.0, 1.0))
@@ -385,7 +385,8 @@ def test_single_parent_no_associate_control_has_q_one_at_unit_activity(ideal_pac
     )
     assert result.logQ == pytest.approx(0.0, abs=1.0e-12)
     assert result.logQ_interval[0] <= 0.0 <= result.logQ_interval[1]
-    assert result.refusal.code == "missing_phase_data"
+    assert result.refusal is None
+    assert result.labels.validity == "IN"
     assert result.solid_mol is None
     assert result.liquid_mass_fraction is None
     assert result.liquid_parent_mol is None

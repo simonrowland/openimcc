@@ -325,13 +325,7 @@ def _has_active_excess(pack: Any) -> bool:
 
 
 def _source_solid_limit_K(row: Mapping[str, Any]) -> float | None:
-    limit = row.get("source_solid_limit")
-    if isinstance(limit, Mapping):
-        value = limit.get("temperature_K")
-    else:
-        melting = row.get("melting_point")
-        value = melting.get("temperature_K") if isinstance(melting, Mapping) else None
-    return None if value is None else float(value)
+    return diagnostics._crystal_source_solid_limit_K(row)
 
 
 def _source_cap_excludes_candidate(
@@ -418,24 +412,29 @@ def _evaluate_fusion_crystal_row(
         )
         return _CandidateState(placeholder, authority, domain, False, reason)
 
-    if _source_cap_excludes_candidate(
-        row["oxide_stoichiometry"], row, temperature_K
-    ):
-        return unavailable_state("above_source_melting_point"), False
-    if not domain[0] <= temperature_K <= domain[1]:
-        return unavailable_state("temperature_out_of_range"), True
+    try:
+        standard = diagnostics._fusion_node_crystal_standard(row, temperature_K)
+    except ValueError:
+        return unavailable_state("standard_out_of_range"), True
+    if standard.unavailable_reason is not None:
+        return (
+            unavailable_state(standard.unavailable_reason),
+            standard.unavailable_reason != "above_source_melting_point",
+        )
     try:
         liquid_gibbs = {
             oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
             for oxide in row["oxide_stoichiometry"]
         }
-        fusion_kJ = diagnostics._crystal_fusion_gibbs_kj_mol(row, temperature_K)
     except (gas.ImccGasTemperatureOutsideDomainError, ValueError):
         return unavailable_state("standard_out_of_range"), True
-    g_crystal = math.fsum(
-        float(nu) * liquid_gibbs[oxide]
-        for oxide, nu in row["oxide_stoichiometry"].items()
-    ) - fusion_kJ * 1000.0
+    standard = diagnostics._fusion_node_crystal_standard(
+        row, temperature_K, liquid_gibbs,
+        fusion_gibbs_kJ_mol=standard.fusion_gibbs_kJ_mol,
+    )
+    g_crystal = standard.crystal_gibbs_J_mol
+    if g_crystal is None:
+        raise ArithmeticError(f"{phase_id} fusion-node standard was not calculated")
     candidate = CrystalCandidate(
         phase_id, row["oxide_stoichiometry"], g_crystal,
         row.get("formula"), authority, domain, row.get("source", {}),
@@ -493,9 +492,6 @@ def _default_candidate_states(
     states: list[_CandidateState] = []
     unavailable: list[str] = []
 
-    # For crystal fusion nodes, the phase standard is G_cr=ΣνG_l−ΔG_fus.
-    # ν is mol oxide/mol formula and the stored fusion node is kJ/mol formula,
-    # so multiplying the latter by 1000 makes both terms J/mol formula.
     for phase_id, row in sorted(crystal_by_id.items()):
         state, missing = _evaluate_fusion_crystal_row(
             phase_id, row, temperature_K, gas_pack,
@@ -504,16 +500,6 @@ def _default_candidate_states(
         if missing:
             unavailable.append(phase_id)
 
-    # Barin Chapter 4.4 defines standard states at 1 bar and Chapter 4.5 sets
-    # elemental reference phases at 1 bar (p. I-36), matching the solver; no
-    # 1 atm-to-1 bar oxygen-reference correction is needed. Barin's crystal
-    # Hf(298), H−H298, and S and the JANAF liquid-parent Hf(298), H−H298, and S
-    # define G_abs=Hf(298)+Hinc−T*S/1000. The balanced v3 Hess cycle is
-    # ΔG_fus,abs=Σν_i G_abs,parent_i,l−G_abs,Barin(cr), so
-    # G_crystal=Σν_i G_parent_i,l−ΔG_fus,abs. Enthalpy and fusion values are
-    # kJ/mol formula; S is J/(mol K), so convert fusion by 1000 before combining
-    # with the J/mol parent standards. Sanity: at 1000 K, CA has
-    # ΔG_fus,abs=+131.430 kJ/mol, matching the v3 stored node.
     for phase_id, row in sorted(barin_by_id.items()):
         state, missing = _evaluate_fusion_crystal_row(
             phase_id, row, temperature_K, gas_pack,
@@ -1138,22 +1124,30 @@ def _independent_thermochemical_standards(
                 oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
                 for oxide in row["oxide_stoichiometry"]
             }
-            fusion = diagnostics._crystal_fusion_gibbs_kj_mol(row, temperature_K)
-            crystal_gibbs[phase] = math.fsum(
-                float(nu) * parent_liquid_g[oxide]
-                for oxide, nu in row["oxide_stoichiometry"].items()
-            ) - fusion * 1000.0
+            standard = diagnostics._fusion_node_crystal_standard(
+                row, temperature_K, parent_liquid_g,
+            )
+            if standard.unavailable_reason is not None:
+                raise ValueError(
+                    f"{phase} verifier standard unavailable: "
+                    f"{standard.unavailable_reason}"
+                )
+            crystal_gibbs[phase] = standard.crystal_gibbs_J_mol
         elif phase in barin_rows:
             row = barin_rows[phase]
             parent_liquid_g = {
                 oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
                 for oxide in row["oxide_stoichiometry"]
             }
-            fusion = diagnostics._crystal_fusion_gibbs_kj_mol(row, temperature_K)
-            crystal_gibbs[phase] = math.fsum(
-                float(nu) * parent_liquid_g[oxide]
-                for oxide, nu in row["oxide_stoichiometry"].items()
-            ) - fusion * 1000.0
+            standard = diagnostics._fusion_node_crystal_standard(
+                row, temperature_K, parent_liquid_g,
+            )
+            if standard.unavailable_reason is not None:
+                raise ValueError(
+                    f"{phase} verifier standard unavailable: "
+                    f"{standard.unavailable_reason}"
+                )
+            crystal_gibbs[phase] = standard.crystal_gibbs_J_mol
         else:
             crystal_gibbs[phase] = float(state.candidate.G_crystal_J_mol)
     return liquid, MappingProxyType(crystal_gibbs)

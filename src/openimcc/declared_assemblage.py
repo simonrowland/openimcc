@@ -439,16 +439,19 @@ def evaluate_declared_assemblage(
     phase_ranges: dict[str, str] = {}
     continued_notices: list[str] = []
     pure_crystal_values = {}
+    fusion_standards = {}
     phase_authorities: list[str] = []
     out_of_domain_axes: list[str] = []
     for phase_id in declared:
         row = pure_by_id.get(phase_id)
         if row is None:
             row = crystal_by_id[phase_id]
-            lo, hi = diagnostics._crystal_fusion_domain(row)
-            if not lo <= temperature <= hi:
+            standard = diagnostics._fusion_node_crystal_standard(row, temperature)
+            lo, hi = standard.domain_K
+            if standard.unavailable_reason is not None:
                 out_of_domain_axes.append(f"crystal.{phase_id}.temperature_K")
                 continue
+            fusion_standards[phase_id] = standard
             phase_ranges[phase_id] = f"{lo:g}-{hi:g} K"
             phase_authorities.append(_phase_authority(row))
             continuation = diagnostics._crystal_continuation_range(row)
@@ -540,9 +543,7 @@ def evaluate_declared_assemblage(
                     active_authorities.append("estimated_systematic")
             else:
                 row = crystal_by_id[phase_id]
-                fusion_kj = diagnostics._crystal_fusion_gibbs_kj_mol(
-                    row, temperature,
-                )
+                fusion_kj = fusion_standards[phase_id].fusion_gibbs_kJ_mol
                 if (
                     active_pack.condensate_table_digest
                     != reference_pack.condensate_table_digest
@@ -553,18 +554,11 @@ def evaluate_declared_assemblage(
                         ) / 1000.0
                         for oxide, nu in row["oxide_stoichiometry"].items()
                     )
-                # Premise: dissolution is crystal -> Σν parent(l), so
-                # ΔG_fus° = ΣνG_l° − G_cr°. Rearranging gives G_cr° in
-                # J/mol formula; ν is mol oxide/mol formula and the stored
-                # fusion nodes are kJ/mol formula, hence the factor 1000.
-                # The same conversion gives a=exp((G_cr°−G_l°)/(RT)); for a
-                # pure JANAF pair below Tm, ΔG_fus>0 and therefore a<1.
-                g_crystal = (
-                    math.fsum(
-                        float(nu) * liquid_gibbs[oxide]
-                        for oxide, nu in row["oxide_stoichiometry"].items()
-                    ) - fusion_kj * 1000.0
+                standard = diagnostics._fusion_node_crystal_standard(
+                    row, temperature, liquid_gibbs,
+                    fusion_gibbs_kJ_mol=fusion_kj,
                 )
+                g_crystal = standard.crystal_gibbs_J_mol
             crystal_gibbs[phase_id] = g_crystal
             stoichiometry = row["oxide_stoichiometry"]
             for oxide, nu in stoichiometry.items():
