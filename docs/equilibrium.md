@@ -106,6 +106,19 @@ the inner melt normalization, mass-action, and parent-inventory checks pass.
 An unavailable crystal above its source-printed melting point is absent by
 source rule, not because its calculated affinity shows thermodynamic undersaturation.
 
+An inner melt arithmetic error is reported as the typed refusal code
+`arithmetic_failure`. The `kkt_residual` code retains its distinct meaning: the
+independent KKT recheck failed. Other typed inner-melt refusals use
+`inner_melt_failed`.
+
+`labels.evidence_class` reports the least-authority source token. Its
+`unresolved` value is reserved for a source token genuinely absent from the
+authority rank table and for early missing-phase or redox refusals where the
+source set is incomplete. All source-authority tokens shipped with the
+default candidate and parent data are ranked, so ordinary default results do
+not emit `unresolved` because of a missing rank. This does not change the
+meaning of any phase-state field; the phase-state contract remains version 1.
+
 When the bulk can be represented by crystals alone, the solver first minimizes
 the crystal Gibbs energy as a linear program. Its dual chemical potentials
 must satisfy every available crystal inequality and agree with the primal

@@ -9,6 +9,7 @@ from openimcc.declared_assemblage import (
     evaluate_declared_assemblage,
 )
 from openimcc.gas import evaluate_gas, load_gas_datapack, species_thermo
+from openimcc.gas_data import _PROVENANCE_AUTHORITY_RANK
 from openimcc._constants import R_J_MOL_K
 from openimcc.janaf_crystals import evaluate_janaf_crystal
 
@@ -284,6 +285,31 @@ def test_missing_phase_refusal_has_unresolved_authority():
 
 def test_unknown_source_authority_is_reported_as_unresolved():
     assert _least_authority(("janaf_fitted", "unknown-source")) == "unresolved"
+
+
+def test_declared_barin_ca_keeps_its_pre_rank_authority():
+    result = evaluate_declared_assemblage(("CA",), 1800.0)
+
+    assert result.labels.evidence_class == "compilation_assessed"
+
+
+def test_shipped_diagnostic_authorities_are_ranked():
+    diagnostic_dir = _REPO_ROOT / "src" / "openimcc" / "data" / "diagnostics"
+    authorities = set()
+    for path in diagnostic_dir.glob("*.json"):
+        pending = [json.loads(path.read_text(encoding="utf-8"))]
+        while pending:
+            value = pending.pop()
+            if isinstance(value, dict):
+                authority = value.get("source_authority")
+                if isinstance(authority, str):
+                    authorities.add(authority)
+                pending.extend(value.values())
+            elif isinstance(value, list):
+                pending.extend(value)
+
+    assert authorities
+    assert authorities <= _PROVENANCE_AUTHORITY_RANK.keys()
 
 
 def test_phase_temperature_outside_source_range_is_refused():

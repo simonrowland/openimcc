@@ -103,12 +103,13 @@ def test_depleted_melt_cold_start_converges(
     solver_path = result.convergence.solver_path
     assert solver_path in {
         "direct",
+        "direct-newton-polish",
         "continuation",
         "composition-continuation",
         "temperature-continuation",
         "relative-log-x",
     }
-    if solver_path == "direct":
+    if solver_path in {"direct", "direct-newton-polish"}:
         assert result.convergence.continuation_stages == 0
     elif solver_path != "relative-log-x":
         assert result.convergence.continuation_stages > 0
@@ -470,7 +471,12 @@ def test_failed_composition_continuation_preserves_original_diagnostics(
     (
         (_cai_mole_vector(1.0e-10), "TiO2", 1.0e-10, "composition-continuation"),
         (_cai_mole_vector(1.0e-12), "TiO2", 1.0e-12, "composition-continuation"),
-        (np.full(8, 1.0 / 8.0), "FeO", 1.0e-12, "direct"),
+        (
+            np.full(8, 1.0 / 8.0),
+            "FeO",
+            1.0e-12,
+            "direct-newton-polish",
+        ),
     ),
 )
 def test_low_temperature_depletions_keep_certified_roots(

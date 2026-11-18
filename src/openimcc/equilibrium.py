@@ -1819,8 +1819,8 @@ def _labels(
     )
     if isinstance(pack, ImccLoadedDatapack):
         authorities.extend(
-            str(term.provenance.get("source_authority", "external_datapack"))
-            if isinstance(term.provenance, Mapping) else "external_datapack"
+            str(term.provenance.get("source_authority", "unresolved"))
+            if isinstance(term.provenance, Mapping) else "unresolved"
             for term in getattr(pack, "excess_gibbs_terms", ())
         )
     continued_notices = tuple(sorted(

@@ -8,6 +8,14 @@
   enthalpy, preserving its documented identity with `G_J_mol` for rows with
   nonzero Shomate H. Packaged gas-table values are unchanged.
 
+### Equilibrium solver labels
+
+- Inner melt arithmetic errors from `equilibrate()` now use the
+  `arithmetic_failure` refusal code. `kkt_residual` continues to mean that
+  the independent KKT recheck failed.
+- A direct root accepted after analytic Newton polishing now reports
+  `solver_path="direct-newton-polish"` instead of `"direct"`.
+
 ### Gas saturation oxygen closure
 
 - Corrected saturation weights for gas-parent channels that also consume a

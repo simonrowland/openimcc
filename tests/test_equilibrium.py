@@ -1057,6 +1057,20 @@ def test_default_anorthite_case_excludes_zero_bulk_phases():
     )
 
 
+def test_default_barin_candidate_keeps_published_fitted_authority():
+    result = equilibrate(
+        {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1800.0,
+    )
+
+    assert result.labels.evidence_class == "published_fitted"
+
+
+def test_k2o_default_bulk_keeps_estimated_authority():
+    result = equilibrate({"K2O": 1.0, "Na2O": 1.0}, 1800.0)
+
+    assert result.labels.evidence_class == "estimated_systematic"
+
+
 def test_feasible_candidate_without_gibbs_still_depends(monkeypatch):
     from openimcc import equilibrium as equilibrium_module
 

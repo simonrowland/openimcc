@@ -52,12 +52,13 @@ def test_corrected_mgal2o4_depleted_feo_trace_root_is_polished(
     solver_path = result.convergence.solver_path
     assert solver_path in {
         "direct",
+        "direct-newton-polish",
         "continuation",
         "composition-continuation",
         "temperature-continuation",
         "relative-log-x",
     }
-    if solver_path == "direct":
+    if solver_path in {"direct", "direct-newton-polish"}:
         assert result.convergence.continuation_stages == 0
     elif solver_path != "relative-log-x":
         assert result.convergence.continuation_stages > 0

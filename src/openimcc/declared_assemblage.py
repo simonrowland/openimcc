@@ -504,7 +504,7 @@ def evaluate_declared_assemblage(
         for oxide in phase_components:
             liquid = gas_module.species_thermo(oxide, "l", temperature, active_pack)
             liquid_gibbs[oxide] = liquid.G_J_mol
-            authority = _OXIDE_PROVENANCE_AUTHORITY.get(oxide, "external_datapack")
+            authority = _OXIDE_PROVENANCE_AUTHORITY.get(oxide, "unresolved")
             if active_pack.condensate_table_digest != reference_pack.condensate_table_digest:
                 authority = "external_datapack"
             active_authorities.append(authority)

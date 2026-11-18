@@ -1144,6 +1144,7 @@ _PROVENANCE_AUTHORITY_RANK = {
     "nasa_glenn_fitted_ionisation": 3,
     "external_datapack": 2,
     "published_fitted": 2,
+    "compilation_assessed": 2,
     "published_fitted_ionisation": 2,
     "liquid_from_solid_estimate": 1,
     "nist_partition_fitted_ionisation": 3,
