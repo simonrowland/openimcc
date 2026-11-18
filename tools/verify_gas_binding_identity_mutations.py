@@ -304,6 +304,17 @@ def _run_unmutated_control(test_file: str = TEST_FILE) -> None:
         print(f"Unmutated control: GREEN ({summary})", flush=True)
 
 
+def _is_expected_red(
+    result: subprocess.CompletedProcess[str], test_file: str, expected_failure: str
+) -> bool:
+    output = result.stdout + result.stderr
+    expected_node = f"{test_file}::{expected_failure}"
+    expected_line = f"FAILED {expected_node} - AssertionError"
+    return result.returncode == 1 and any(
+        line.startswith(expected_line) for line in output.splitlines()
+    )
+
+
 def _run_mutation(
     name: str,
     relative_source: str,
@@ -327,7 +338,7 @@ def _run_mutation(
 
         result = _run_test_file(root, test_file)
         output = result.stdout + result.stderr
-        if result.returncode == 0 or expected_failure not in output:
+        if not _is_expected_red(result, test_file, expected_failure):
             tail = "\n".join(output.splitlines()[-50:])
             raise RuntimeError(
                 f"{name}: expected the full identity test file to fail at "
