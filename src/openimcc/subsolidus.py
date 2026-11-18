@@ -429,9 +429,12 @@ def evaluate_subsolidus_reactions(
                 "activity": activity_by_species.get(species),
             } for species, phase, nu in terms_raw)
         except (ValueError, ImccGasTemperatureOutsideDomainError) as exc:
+            detail = str(exc)
+            if "activity" in detail:
+                detail = f"Invalid activity input: {detail}"
             results.append(_base_result(
                 reaction_id, "temperature_out_of_range", stoich, driver, sources,
-                (_notice("temperature_out_of_range", "unavailable", str(exc), expected["source_id"]),), joint_interval,
+                (_notice("temperature_out_of_range", "unavailable", detail, expected["source_id"]),), joint_interval,
             ))
             continue
 
@@ -445,9 +448,12 @@ def evaluate_subsolidus_reactions(
             if not math.isfinite(remaining) or remaining < 0:
                 raise ValueError("remaining_mol must be finite and nonnegative")
         except (KeyError, TypeError, ValueError) as exc:
+            detail = str(exc)
+            if isinstance(exc, ValueError) and "remaining_mol" in detail:
+                detail = f"Invalid remaining_mol input: {detail}"
             results.append(_base_result(
                 reaction_id, "unknown_host", stoich, driver, sources,
-                (_notice("unknown_host", "unavailable", str(exc), expected["source_id"]),), joint_interval,
+                (_notice("unknown_host", "unavailable", detail, expected["source_id"]),), joint_interval,
             ))
             continue
 

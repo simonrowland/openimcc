@@ -21,8 +21,8 @@ def test_subsolidus_rejects_boolean_temperature(value: object) -> None:
 @pytest.mark.parametrize("value", [True, np.bool_(True)])
 def test_subsolidus_rejects_boolean_activity(value: object) -> None:
     host = _host("FeS_troilite", "FeS", "troilite", activity=value)
-    result = _evaluate(host, 800.0, {"S2": 1.0e-8})
-    assert result["status"] == "temperature_out_of_range"
+    result = _evaluate(host, 1200.0, {"S2": 1.0e-8})
+    assert result["notices"][0]["detail"].startswith("Invalid activity input:")
 
 
 def test_subsolidus_rejects_boolean_gas_pressure() -> None:
@@ -45,8 +45,9 @@ def test_subsolidus_rejects_boolean_oxygen_fugacity() -> None:
 
 def test_subsolidus_refuses_boolean_remaining_inventory() -> None:
     host = _host("FeS_troilite", "FeS", "troilite", remaining_mol=True)
-    result = _evaluate(host, 800.0, {"S2": 1.0e-8})
+    result = _evaluate(host, 1200.0, {"S2": 1.0e-8})
     assert result["status"] == "unknown_host"
+    assert result["notices"][0]["detail"].startswith("Invalid remaining_mol input:")
 
 
 def _host(species_id, formula, phase, remaining_mol=2.0, activity=1.0):
