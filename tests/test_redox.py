@@ -932,6 +932,18 @@ def test_fe_free_cr_couple_still_refuses_closed_mode() -> None:
         evaluate_redox({"Cr": 0.2, "O": 0.3}, 1800.0, "closed")
 
 
+def test_internal_trace_seed_range_refusal_names_parent() -> None:
+    with pytest.raises(
+        RedoxNumericalError,
+        match=r"internal log-fraction seed.*SiO2.*-200",
+    ):
+        evaluate_redox(
+            {"Fe": 1.0, "Si": 1.0e-100, "O": 1.1},
+            2000.0,
+            "closed",
+        )
+
+
 def test_fe_free_inventory_outside_all_models_keeps_typed_refusal() -> None:
     with pytest.raises(ImccComponentOutsideDomainError):
         evaluate_redox({"Xx": 1.0, "O": 1.0}, 1800.0, "closed")

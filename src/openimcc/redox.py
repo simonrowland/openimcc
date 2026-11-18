@@ -767,6 +767,17 @@ def _active_inner_once(
             f"mole fraction (ln fraction={log_fraction:g}); it remains in the "
             "active inventory but is outside the normalized solve range"
         )
+    if y_init is None:
+        internal_log_fractions = np.log(x_target)
+        range_limited = np.flatnonzero(internal_log_fractions < -200.0)
+        if range_limited.size:
+            active_index = int(np.flatnonzero(active_parent)[int(range_limited[0])])
+            raise RedoxNumericalError(
+                "internal log-fraction seed for positive active parent "
+                f"{parent_names[active_index]} has ln fraction "
+                f"{internal_log_fractions[int(range_limited[0])]:g}, below "
+                "the solver lower bound -200"
+            )
     nu = nu_full[active_parent, :][:, active_complex]
     lnK = lnK_full[active_complex]
     S = np.sum(nu, axis=0)
