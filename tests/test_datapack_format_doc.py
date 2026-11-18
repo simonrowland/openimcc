@@ -280,6 +280,15 @@ def test_kernel_docstring_references_the_tracked_model_spec() -> None:
     assert "docs/imcc-sf04-spec.md" not in kernel
 
 
+def test_model_notice_documents_exist() -> None:
+    for path in (
+        "docs/anorthite-disposition.md",
+        "docs/k2si2o5-disposition.md",
+        "docs/feo-liquid-candidate.md",
+    ):
+        assert (ROOT / path).is_file(), path
+
+
 def test_gas_table_validity_columns_are_documented() -> None:
     gas_dir = ROOT / "src/openimcc/data/gas"
     runtime_tables = ("gas-shomate.csv", "condensate.csv")
