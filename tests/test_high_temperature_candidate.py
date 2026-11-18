@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -126,6 +127,8 @@ def test_high_temperature_v2_rebuilds_rows_behind_unprinted_nodes(
         shipped_gas_rows = list(csv.DictReader(stream))
     with OXIDE_CANDIDATE_V2.open(encoding="utf-8", newline="") as stream:
         shipped_oxide_rows = list(csv.DictReader(stream))
+    with oxide_source.open(encoding="utf-8", newline="") as stream:
+        base_oxide_rows = list(csv.DictReader(stream))
 
     target_gas = {"Fe(g)", "Si(g)", "Ti(g)"}
     target_gas_cards = tuple(
@@ -139,6 +142,23 @@ def test_high_temperature_v2_rebuilds_rows_behind_unprinted_nodes(
         )
         for species in target_gas
     }
+    gas_fit_nodes = {
+        species: sorted(
+            build_gas_tables._candidate_janaf_rows(
+                JANAF_DATA, build_gas_tables.HIGH_TEMP_V2_GAS_JANAF[species]
+            )
+        )
+        for species in target_gas
+    }
+    base_mgo = next(
+        row for row in base_oxide_rows
+        if row["species_name"] == "MgO(l)" and row["T_max"] == "3000"
+    )
+    mgo_fit_nodes = sorted(
+        build_gas_tables._janaf_anchored_liquid_rows(
+            JANAF_DATA, "Mg-009", base_mgo, 3000.0, 5000.0
+        )
+    )
     # The CEA comparison is outside this JANAF rebuild check; keep its
     # published metrics so the generated row can be compared in full.
     cards = {
@@ -203,16 +223,65 @@ def test_high_temperature_v2_rebuilds_rows_behind_unprinted_nodes(
     with oxide_output.open(encoding="utf-8", newline="") as stream:
         rebuilt_oxide_rows = list(csv.DictReader(stream))
 
+    def gas_properties(row: dict[str, str], temperature: float) -> dict[str, float]:
+        h_kj, entropy = build_gas_tables._gas_row_h_s(row, temperature)
+        tau = temperature / 1000.0
+        A, B, C, D, E = (float(row[key]) for key in "ABCDE")
+        heat_capacity = A + B * tau + C * tau**2 + D * tau**3 + E / tau**2
+        enthalpy = h_kj * 1000.0
+        return {
+            "G": enthalpy - temperature * entropy,
+            "H": enthalpy,
+            "S": entropy,
+            "Cp": heat_capacity,
+        }
+
+    def assert_fit_row_matches(
+        rebuilt: dict[str, str], expected: dict[str, str],
+        fitted_columns: tuple[str, ...], temperatures: list[float],
+        properties: Callable[[dict[str, str], float], dict[str, float]],
+    ) -> None:
+        assert {
+            column: rebuilt.get(column, "")
+            for column in rebuilt
+            if column not in fitted_columns
+        } == {
+            column: expected.get(column, "")
+            for column in rebuilt
+            if column not in fitted_columns
+        }
+        for column in fitted_columns:
+            assert math.isclose(
+                float(rebuilt[column]), float(expected[column]),
+                rel_tol=1e-6, abs_tol=1e-8,
+            )
+
+        # Premise: coefficients are printed to 15 significant digits; review
+        # found about 9e-10 relative drift in dG_E across BLAS builds. Budget
+        # 2e-9 coefficient-wise; summing absolute polynomial sensitivities
+        # across 3000–6000 K gives at most 0.246 J/mol in G/H, 3.7e-5 J/(mol K)
+        # in S, and 8.2e-5 J/(mol K) in Cp. The limits below round those
+        # bounds up with matching units. Exact anchors and metadata preserve
+        # the published row identity; the 1e-6 coefficient check rejects a
+        # genuinely different fit while these checks allow small fit drift.
+        limits = {"G": 0.3, "H": 0.3, "S": 1e-4, "Cp": 1e-4}
+        for temperature in temperatures:
+            actual = properties(rebuilt, temperature)
+            shipped = properties(expected, temperature)
+            for name, limit in limits.items():
+                assert abs(actual[name] - shipped[name]) <= limit
+
     for species in sorted(target_gas):
         expected = expected_gas[species]
         rebuilt = next(
             row for row in rebuilt_gas_rows
             if row["species_name"] == species and row["T_interval"] == "3"
         )
-        assert {
-            column: rebuilt.get(column, "")
-            for column in build_gas_tables.RUNTIME_COLUMNS
-        } == expected
+        assert_fit_row_matches(
+            rebuilt, expected, tuple("ABCDEFG"),
+            sorted(set(gas_fit_nodes[species]) | {3000.0, 6000.0}),
+            gas_properties,
+        )
 
     expected = next(
         row for row in shipped_oxide_rows
@@ -226,10 +295,23 @@ def test_high_temperature_v2_rebuilds_rows_behind_unprinted_nodes(
         and row["T_min"] == "3000"
         and row["T_max"] == "5000"
     )
-    assert {
-        column: rebuilt.get(column, "")
-        for column in build_gas_tables.CONDENSATE_COLUMNS
-    } == expected
+    def condensate_properties(
+        row: dict[str, str], temperature: float,
+    ) -> dict[str, float]:
+        gibbs, entropy = _condensate_row_g_s(row, temperature)
+        heat_capacity = build_gas_tables._condensate_row_g_cp(row, temperature)[1]
+        return {
+            "G": gibbs,
+            "H": gibbs + temperature * entropy,
+            "S": entropy,
+            "Cp": heat_capacity,
+        }
+
+    assert_fit_row_matches(
+        rebuilt, expected, tuple(f"dG_{key}" for key in "ABCDE"),
+        sorted(set(mgo_fit_nodes) | {3000.0, 5000.0}),
+        condensate_properties,
+    )
 
 
 def test_default_tables_remain_byte_identical_and_candidate_prefixes_match() -> None:
