@@ -37,6 +37,33 @@ def _identity(pack) -> tuple[str, str]:
     return pack.model_id, pack.binding_digest
 
 
+def test_cached_feo_reference_rows_are_nested_immutable():
+    import openimcc.redox as redox_module
+
+    pack = load_datapack()
+    composition = {
+        "SiO2": 46.234, "TiO2": 1.587, "Al2O3": 14.214,
+        "FeO": 16.353, "MgO": 9.463, "CaO": 11.637,
+        "Na2O": 0.182, "MnO": 0.001,
+    }
+    before = evaluate(
+        composition, 1800.0, pack, basis_type="wt", allow_extrapolation=True
+    )
+    reference = redox_module._feo_liquid_reference_rows()["Fe-019"]
+    original = reference["dG_A"]
+    try:
+        with pytest.raises(TypeError):
+            reference["dG_A"] = original + 10.0
+    finally:
+        if reference["dG_A"] != original:
+            reference["dG_A"] = original
+    after = evaluate(
+        composition, 1800.0, pack, basis_type="wt", allow_extrapolation=True
+    )
+
+    assert after.activity("MnO") == before.activity("MnO")
+
+
 def _base_data() -> dict[str, Any]:
     return json.loads(BASE_DATAPACK.read_text())
 

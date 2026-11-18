@@ -1631,7 +1631,7 @@ def _feo_liquid_reference_rows() -> Mapping[str, Mapping[str, float | str]]:
         with source.open("r", encoding="utf-8", newline="") as handle:
             for record in csv.DictReader(handle):
                 if record.get("species_name") == "FeO(l)":
-                    rows[basis_id] = {
+                    rows[basis_id] = MappingProxyType({
                         "species_name": "FeO(l)",
                         **{
                             key: float(record[key])
@@ -1639,7 +1639,7 @@ def _feo_liquid_reference_rows() -> Mapping[str, Mapping[str, float | str]]:
                                 "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"
                             )
                         },
-                    }
+                    })
                     break
     if set(rows) != {"DG46-MASSON65", "Fe-019"}:
         raise RedoxInputError(
