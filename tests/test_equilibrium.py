@@ -293,6 +293,42 @@ def test_active_set_cycle_refuses_deterministically(monkeypatch, ideal_pack, gas
     assert first.active_set_history == second.active_set_history
 
 
+def test_active_set_cycle_uses_scaled_state_tolerance(monkeypatch, gas_pack):
+    from openimcc import equilibrium as equilibrium_module
+
+    temperature = 2000.0
+    pack = load_datapack()
+    bulk = {"CaO": 1.0, "SiO2": 1.0}
+    melt = evaluate(
+        bulk, temperature, pack, basis_type="mol", allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    phase = _candidate_from_log_activities(
+        "CaO-solid", {"CaO": 1.0},
+        {"CaO": math.log(melt.activity("CaO") / 2.0)},
+        temperature, gas_pack,
+    )
+    monkeypatch.setattr(equilibrium_module, "_MAX_ACTIVE_RESTARTS", 3)
+    solve_calls = 0
+
+    def move_state_within_tolerance(amounts, _active, A, b, *_args, **_kwargs):
+        nonlocal solve_calls
+        solve_calls += 1
+        scales = equilibrium_module._scaled_phase_amounts(A, b)
+        return amounts + scales * 8.0e-15, True, "small-state-drift", {}
+
+    monkeypatch.setattr(
+        equilibrium_module, "_solve_active_equalities", move_state_within_tolerance
+    )
+    result = equilibrate(
+        bulk, temperature, candidates=(phase,), pack=pack,
+    )
+
+    assert solve_calls == 1
+    assert result.refusal is not None
+    assert result.refusal.code == "active_set_cycle"
+
+
 def test_replacement_preserves_injected_resolution_error(monkeypatch, ideal_pack, gas_pack):
     from openimcc import equilibrium as equilibrium_module
 

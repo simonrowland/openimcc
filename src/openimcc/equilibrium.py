@@ -2236,7 +2236,7 @@ def _positive_branch(
         active = []
     history: list[tuple[str, ...]] = []
     history_seen: set[tuple[str, ...]] = set()
-    state_history_seen: set[tuple[tuple[str, ...], tuple[float, ...]]] = set()
+    state_history_seen: list[tuple[tuple[str, ...], tuple[float, ...]]] = []
     residual_sign_history: list[tuple[tuple[str, int], ...]] = []
     solver_error_history: list[Mapping[str, float]] = []
     cycle_detected = False
@@ -2266,17 +2266,26 @@ def _positive_branch(
     # positive extent.
     for _restart in range(_MAX_ACTIVE_RESTARTS):
         active_key = tuple(sorted(phase_ids[index] for index in active))
-        scaled_state = tuple(map(float, np.round(n / scales, decimals=14)))
+        scaled_state = tuple(map(float, n / scales))
         state_key = (active_key, scaled_state)
         history.append(active_key)
-        repeated_state = state_key in state_history_seen
+        repeated_state = any(
+            previous_active == active_key
+            and all(
+                abs(previous - current) <= 1.0e-14
+                for previous, current in zip(
+                    previous_state, scaled_state, strict=True
+                )
+            )
+            for previous_active, previous_state in state_history_seen
+        )
         repeated_transition = (
             len(history) > 1
             and history[-2] != active_key
             and active_key in history_seen
         )
         cycle_detected = cycle_detected or repeated_state or repeated_transition
-        state_history_seen.add(state_key)
+        state_history_seen.append(state_key)
         history_seen.add(active_key)
         current_liquid, subtraction_error = _safe_liquid(A, n, b, balance_tol)
         if current_liquid is None:

@@ -14,9 +14,10 @@ from openimcc import diagnostics
 from openimcc.cli import main
 from openimcc.diagnostics import (
     _association_enthalpy, _fusion_enthalpy, implied_heat_capacity,
-    load_mixing_enthalpy_dataset, mixing_enthalpy, run_cp_implied,
+    load_calorimetry_dataset, load_mixing_enthalpy_dataset, mixing_enthalpy, run_cp_implied,
     run_mixing_enthalpy, score_against_calorimetry,
 )
+from openimcc.model import load_datapack
 
 
 def _write_excess_candidate(
@@ -82,6 +83,20 @@ def test_linear_excess_is_absorbed_and_quadratic_is_detected():
     rows, dataset = _score_fixture(8.0)
     quadratic = score_against_calorimetry(rows, dataset)
     assert max(abs(row["residual_J_mol_K"]) for row in quadratic["curvature"]) > 0.1
+
+
+def test_calorimetry_join_tolerates_normalized_composition_drift():
+    pack = load_datapack()
+    dataset = load_calorimetry_dataset()
+    composition = dict(dataset["compositions"][0]["composition_mol"])
+    composition["Na2O"] += 3.0e-12
+    row = implied_heat_capacity(pack, composition, [900.0])[0]
+
+    scored = score_against_calorimetry([row], dataset)
+
+    assert [item["composition"] for item in scored["absolute_total"]] == [
+        "Na2SiO3"
+    ]
 
 
 def test_one_association_finite_difference_matches_closed_form(monkeypatch):

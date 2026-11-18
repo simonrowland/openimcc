@@ -132,20 +132,38 @@ def score_against_calorimetry(
 ) -> dict[str, Any]:
     """Score only absolute total, composition curvature, T-flatness and controls."""
     entries = dataset["compositions"]
-    def composition_key(composition: Mapping[str, float]) -> tuple[tuple[str, float], ...]:
+    def normalized_composition(composition: Mapping[str, float]) -> dict[str, float]:
         total = sum(float(value) for value in composition.values())
-        return tuple(sorted((name, round(float(value) / total, 12))
-                            for name, value in composition.items() if value))
+        if total <= 0.0:
+            return {}
+        return {
+            name: float(value) / total
+            for name, value in composition.items()
+            if value
+        }
 
-    entries_by_composition = {
-        composition_key(entry["composition_mol"]): entry["id"]
+    normalized_entries = [
+        (entry["id"], normalized_composition(entry["composition_mol"]))
         for entry in entries if "composition_mol" in entry
-    }
+    ]
+    composition_tolerance = 1.0e-12
     rows_by_id: dict[str, list[Mapping[str, Any]]] = {}
     for row in results:
         row_id = row.get("dataset_id")
         if row_id is None and "composition" in row:
-            row_id = entries_by_composition.get(composition_key(row["composition"]))
+            normalized = normalized_composition(row["composition"])
+            matches = [
+                entry_id
+                for entry_id, entry_composition in normalized_entries
+                if normalized.keys() == entry_composition.keys()
+                and all(
+                    abs(normalized[name] - entry_composition[name])
+                    <= composition_tolerance
+                    for name in normalized
+                )
+            ]
+            if len(matches) == 1:
+                row_id = matches[0]
         if row_id is not None:
             rows_by_id.setdefault(str(row_id), []).append(row)
     tolerance = float(dataset["envelope"]["relative"])
