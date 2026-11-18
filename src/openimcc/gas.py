@@ -1696,11 +1696,11 @@ def load_gas_datapack(
 
 def _select_gas_datapack(
     datapack: ImccGasDatapack | None, profile: str | Profile | None
-) -> tuple[ImccGasDatapack, str | None]:
+) -> tuple[ImccGasDatapack, str | None, Profile | None]:
     if profile is None:
         if datapack is None:
             raise TypeError("datapack is required unless profile is specified")
-        return datapack, None
+        return datapack, None, None
     from openimcc.profiles import ProfileConflictError, _resolve_profile
 
     if datapack is not None:
@@ -1708,7 +1708,7 @@ def _select_gas_datapack(
             "profile cannot be combined with an explicit gas datapack"
         )
     selected = _resolve_profile(profile)
-    return selected.gas_datapack, selected.name
+    return selected.gas_datapack, selected.name, selected
 
 
 def _gas_result_identity(
@@ -1919,6 +1919,7 @@ def _source_model_flag(
     candidate_notices: Mapping[
         tuple[str, str, float], _HighTemperatureNotice
     ] | None = None,
+    redox_pack: Any | None = None,
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
@@ -1933,7 +1934,7 @@ def _source_model_flag(
             return _high_temperature_candidate_notice_flag(notice, T)
     validity = _source_validity_for_row(row_name, row, phase=phase)
     if row_name == "FeO(l)" and phase == "l":
-        fit_range, fit_row = _selected_redox_feo_fit()
+        fit_range, fit_row = _selected_redox_feo_fit(redox_pack)
         # Ref is provenance; the coefficients identify whether this fit applies.
         if all(float(row[column]) == value for column, value in fit_row):
             status = liquid_reference_authority(row_name, T)
@@ -2251,13 +2252,29 @@ def _source_validity_for_row(
 
 
 @lru_cache(maxsize=1)
-def _selected_redox_feo_fit() -> tuple[
+def _packaged_redox_feo_fit() -> tuple[
     tuple[float, float], tuple[tuple[str, float], ...]
 ]:
-    """Return the selected FeO(l) redox row and its measured fit interval."""
+    """Return the packaged FeO(l) redox row and its measured fit interval."""
     from openimcc.redox_pack import load_redox_pack
 
     record = load_redox_pack().content["thermo_species"]["FeO(l)"]
+    return _redox_feo_fit(record)
+
+
+def _selected_redox_feo_fit(redox_pack: Any | None = None) -> tuple[
+    tuple[float, float], tuple[tuple[str, float], ...]
+]:
+    """Return FeO(l) fit metadata from the selected pack, or the packaged default."""
+    if redox_pack is None:
+        return _packaged_redox_feo_fit()
+    record = redox_pack.content["thermo_species"]["FeO(l)"]
+    return _redox_feo_fit(record)
+
+
+def _redox_feo_fit(
+    record: Mapping[str, Any],
+) -> tuple[tuple[float, float], tuple[tuple[str, float], ...]]:
     fit_range = tuple(
         float(value) for value in record["fit_residual"]["temperature_range"]
     )
@@ -3158,9 +3175,17 @@ def evaluate_gas(
     """
     suppress_receipt = _consume_trial_receipt_suppression()
     requested_parent_oxides = parent_oxides
-    datapack, profile_name = _select_gas_datapack(datapack, profile)
+    datapack, profile_name, selected_profile = _select_gas_datapack(
+        datapack, profile
+    )
     pack_standard_notices = _gas_pack_standard_notices(
-        datapack, profile, strict_pack_standards
+        datapack, selected_profile, strict_pack_standards
+    )
+    selected_redox_pack = (
+        selected_profile.redox_pack
+        if selected_profile is not None
+        and selected_profile.redox_pack_path is not None
+        else None
     )
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
@@ -3795,6 +3820,7 @@ def evaluate_gas(
                     oxide_row,
                     phase=parent_phase,
                     candidate_notices=datapack._high_temperature_candidate_notices,
+                    redox_pack=selected_redox_pack,
                 )
                 if flag is not None:
                     flags.append(flag)
@@ -3871,6 +3897,7 @@ def evaluate_gas(
                     side_row,
                     phase="l",
                     candidate_notices=datapack._high_temperature_candidate_notices,
+                    redox_pack=selected_redox_pack,
                 )
                 source_flags = [flag] if flag is not None else []
                 if side_name in {record.species for record in liquid_reference_records()}:
@@ -5125,7 +5152,9 @@ def evaluate_gas_oxygen_balance(
         if imposed_parents is None or isinstance(imposed_parents, str)
         else tuple(imposed_parents)
     )
-    datapack, profile_name = _select_gas_datapack(datapack, profile)
+    datapack, profile_name, _selected_profile = _select_gas_datapack(
+        datapack, profile
+    )
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
@@ -5367,13 +5396,9 @@ def evaluate_gas_saturation(
     """
     suppress_receipt = _consume_trial_receipt_suppression()
     requested_parent_oxides = parent_oxides
-    datapack, profile_name = _select_gas_datapack(datapack, profile)
-    if profile is None:
-        selected_profile = None
-    else:
-        from openimcc.profiles import _resolve_profile
-
-        selected_profile = _resolve_profile(profile)
+    datapack, profile_name, selected_profile = _select_gas_datapack(
+        datapack, profile
+    )
     pack_standard_notices = _gas_pack_standard_notices(
         datapack, selected_profile, strict_pack_standards
     )
@@ -5534,7 +5559,9 @@ def gas_boiling_temperature(
     profile: str | Profile | None = None,
 ) -> tuple[float, ImccGasSaturationResult]:
     """Find boiling T with caller activities held fixed throughout the bracket."""
-    datapack, profile_name = _select_gas_datapack(datapack, profile)
+    datapack, profile_name, _selected_profile = _select_gas_datapack(
+        datapack, profile
+    )
     if ambient_pressure_bar is None or T_bracket is None:
         raise TypeError("ambient_pressure_bar and T_bracket are required")
     if not math.isfinite(ambient_pressure_bar) or ambient_pressure_bar <= 0:

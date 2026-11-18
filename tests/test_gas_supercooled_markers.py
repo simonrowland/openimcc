@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
 import re
+from dataclasses import replace
+from importlib import resources
+from pathlib import Path
 
 import pytest
 
@@ -15,6 +19,8 @@ from openimcc.gas import (
     load_gas_datapack,
     evaluate_gas,
 )
+from openimcc.profiles import load_profile
+from openimcc.redox_pack import canonical_redox_digest
 
 
 EXPECTED_SOURCE_SUPERCOOLED_LIQUIDS = {
@@ -121,6 +127,33 @@ def test_feo_redox_fit_range_flags_default_without_ref_matching(
     )
     assert in_band.domain_flags["Fe"] is None
     assert in_band.domain_flags["FeO"] is None
+
+
+def test_feo_redox_fit_flag_uses_selected_profile_redox_pack(tmp_path) -> None:
+    source = resources.files("openimcc").joinpath(
+        "data", "packs", "openimcc-redox-v6.json"
+    )
+    content = json.loads(source.read_text(encoding="utf-8"))
+    content["thermo_species"]["FeO(l)"]["row"]["dG_A"] += 0.25
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    redox_path = tmp_path / "selected-redox.json"
+    redox_path.write_text(json.dumps(content), encoding="utf-8")
+    selected_profile = replace(
+        load_profile("openimcc"), redox_pack_path=Path(redox_path)
+    )
+
+    result = evaluate_gas(
+        {"FeO": 1.0e-3}, 1200.0, 1.0e-8,
+        profile=selected_profile,
+        parent_oxides=("FeO",),
+        gas_species=("Fe", "FeO"),
+    )
+
+    assert all(
+        "D&G/Masson correction extrapolated"
+        not in (result.domain_flags[channel] or "")
+        for channel in ("Fe", "FeO")
+    )
 
 
 @pytest.mark.parametrize(

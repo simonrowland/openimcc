@@ -16,6 +16,17 @@
 - A direct root accepted after analytic Newton polishing now reports
   `solver_path="direct-newton-polish"` instead of `"direct"`.
 
+### Redox and selected-pack behavior
+
+- The `published` profile now raises `ProfileRedoxUnavailableError` from
+  `active_liquid_standards`, `check_pack_standards`, and `evaluate` when a
+  redox-associate trace is present.
+- Closed Fe-free redox calculations without an oxygen-changing couple now
+  raise `RedoxNoLiveCoupleError`; internal seed range failures now raise
+  `RedoxNumericalError`.
+- The MnO stage now solves with the selected melt and redox packs, or refuses
+  mixed FeO bases such as melt Fe-019 with redox DG46-MASSON65.
+
 ### Gas saturation oxygen closure
 
 - Corrected saturation weights for gas-parent channels that also consume a
