@@ -48,6 +48,11 @@ Fe saturation condition `a_Fe = 1` at the imposed lambda. If changing metal
 amount leaves that saturation lambda invariant, oxygen is needed to select an
 extent; without it, the solver raises a typed endpoint error.
 
+A Fe-free closed inventory with no active oxygen-changing redox couple raises
+`RedoxNoLiveCoupleError`: its oxygen balance does not identify a fugacity, so
+the solver does not publish a numeric `lambda_ln_f_o2` or `lambda_sat`. Imposed
+mode remains available when the caller supplies `lambda_imposed`.
+
 `RedoxResult.element_moles_by_oxidation_state` reports each present liquid
 element as moles of atoms by integer oxidation state. MELT-pack complexes
 expand through parent stoichiometry, and redox-pack species use their valence

@@ -806,16 +806,23 @@ def test_missing_fe_and_bad_mode_refuse_without_partial_results() -> None:
         evaluate_redox(_fe_only_inventory(), 2200.0, "unknown")  # type: ignore[arg-type]
 
 
-def test_fe_free_single_valence_sr_uses_packaged_associates_without_f_o2() -> None:
+def test_fe_free_single_valence_sr_closed_mode_requires_fo2_couple() -> None:
     redox_pack = load_redox_pack()
     melt_pack = load_datapack()
+    inventory = {"Sr": 1.0, "Al": 2.0, "O": 4.0}
 
+    with pytest.raises(RedoxNoLiveCoupleError, match="oxygen-changing"):
+        evaluate_redox(inventory, 1800.0, "closed")
+
+    lambda_imposed = math.log(1.0e-8)
     result = evaluate_redox(
-        {"Sr": 1.0, "Al": 2.0, "O": 4.0},
+        inventory,
         1800.0,
-        "closed",
+        "imposed",
+        lambda_imposed=lambda_imposed,
     )
 
+    assert result.lambda_ln_f_o2 == lambda_imposed
     assert result.ferric_fe_mol == 0.0
     assert result.ferrous_fe_mol == 0.0
     assert "RED: no_modelled_redox_couple" in result.flags
@@ -836,11 +843,12 @@ def test_fe_free_single_valence_sr_uses_packaged_associates_without_f_o2() -> No
         )
 
 
-def test_fe_free_manganese_associates_do_not_require_fo2() -> None:
+def test_fe_free_manganese_associates_require_fo2_in_closed_mode() -> None:
     inventory = {"Mn": 0.4, "Si": 0.6, "O": 1.6}
     lambda_imposed = math.log(1.0e-8)
 
-    closed = evaluate_redox(inventory, 1800.0, "closed")
+    with pytest.raises(RedoxNoLiveCoupleError, match="oxygen-changing"):
+        evaluate_redox(inventory, 1800.0, "closed")
     imposed = evaluate_redox(
         inventory,
         1800.0,
@@ -848,11 +856,9 @@ def test_fe_free_manganese_associates_do_not_require_fo2() -> None:
         lambda_imposed=lambda_imposed,
     )
 
-    assert closed.parent_activity == imposed.parent_activity
-    assert closed.species_moles == imposed.species_moles
-    assert closed.ferric_fe_mol == imposed.ferric_fe_mol == 0.0
-    assert closed.ferrous_fe_mol == imposed.ferrous_fe_mol == 0.0
-    assert "RED: no_modelled_redox_couple" in closed.flags
+    assert imposed.lambda_ln_f_o2 == lambda_imposed
+    assert imposed.ferric_fe_mol == 0.0
+    assert imposed.ferrous_fe_mol == 0.0
     assert "RED: no_modelled_redox_couple" in imposed.flags
     manganese_flag = next(
         flag for flag in imposed.flags if "Mn(3+) unmodelled" in flag
@@ -875,7 +881,12 @@ def test_fe_free_manganese_associates_do_not_require_fo2() -> None:
         "imposed",
         lambda_imposed=math.log(1.0e-4),
     )
-    cold = evaluate_redox(inventory, 1700.0, "closed")
+    cold = evaluate_redox(
+        inventory,
+        1700.0,
+        "imposed",
+        lambda_imposed=lambda_imposed,
+    )
     assert any(
         "Mn(3+) unmodelled" in flag and "ELEVATED" in flag
         for flag in air.flags
@@ -887,11 +898,12 @@ def test_fe_free_manganese_associates_do_not_require_fo2() -> None:
 
 
 @pytest.mark.parametrize("alkali", ["Na", "K"])
-def test_fe_free_single_alkali_uses_associates(alkali: str) -> None:
+def test_fe_free_single_alkali_requires_fo2_in_closed_mode(alkali: str) -> None:
     inventory = {alkali: 0.1, "Si": 0.5, "Ca": 0.4, "O": 1.45}
     lambda_imposed = math.log(1.0e-8)
 
-    closed = evaluate_redox(inventory, 1800.0, "closed")
+    with pytest.raises(RedoxNoLiveCoupleError, match="oxygen-changing"):
+        evaluate_redox(inventory, 1800.0, "closed")
     imposed = evaluate_redox(
         inventory,
         1800.0,
@@ -899,22 +911,25 @@ def test_fe_free_single_alkali_uses_associates(alkali: str) -> None:
         lambda_imposed=lambda_imposed,
     )
 
-    assert closed.parent_activity == imposed.parent_activity
-    assert closed.species_moles == imposed.species_moles
-    assert closed.ferric_fe_mol == imposed.ferric_fe_mol == 0.0
-    assert closed.ferrous_fe_mol == imposed.ferrous_fe_mol == 0.0
-    assert "RED: no_modelled_redox_couple" in closed.flags
+    assert imposed.lambda_ln_f_o2 == lambda_imposed
+    assert imposed.ferric_fe_mol == 0.0
+    assert imposed.ferrous_fe_mol == 0.0
     assert "RED: no_modelled_redox_couple" in imposed.flags
     assert all(
         math.isfinite(value) and value > 0.0
-        for value in closed.parent_activity.values()
+        for value in imposed.parent_activity.values()
     )
-    assert closed.parent_activity[f"{alkali}2O"] > 0.0
-    assert closed.parent_activity["CaO"] > 0.0
-    assert closed.parent_activity["SiO2"] > 0.0
+    assert imposed.parent_activity[f"{alkali}2O"] > 0.0
+    assert imposed.parent_activity["CaO"] > 0.0
+    assert imposed.parent_activity["SiO2"] > 0.0
     _assert_redox_parent_mass_balance(
-        closed, load_redox_pack(), load_datapack()
+        imposed, load_redox_pack(), load_datapack()
     )
+
+
+def test_fe_free_cr_couple_still_refuses_closed_mode() -> None:
+    with pytest.raises(RedoxInputError, match="oxygen-changing redox reaction"):
+        evaluate_redox({"Cr": 0.2, "O": 0.3}, 1800.0, "closed")
 
 
 def test_fe_free_inventory_outside_all_models_keeps_typed_refusal() -> None:

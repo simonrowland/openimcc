@@ -1264,10 +1264,11 @@ valence metadata. Fe metal is included at state `0` when present.
 
 Fe-free inventories use associate speciation without an Fe saturation solve.
 An imposed fO2 is required only when an oxygen-changing redox row in the
-selected pack can run on the inventory's present parents. Otherwise the melt
-activities do not depend on fO2; closed mode checks oxygen against
-parent-oxide stoichiometry and the result includes
-`RED: no_modelled_redox_couple`. Ferric and ferrous Fe amounts are zero.
+selected pack can run on the inventory's present parents. If no such row is
+active, closed mode checks oxygen against parent-oxide stoichiometry and then
+raises `RedoxNoLiveCoupleError` because the fugacity is undefined; imposed mode
+still returns activities at the caller-supplied fO2. Ferric and ferrous Fe
+amounts are zero.
 Known oxidation states without oxygen-changing rows remain disclosed in
 `unmodelled_redox_couples` and receive per-state `unmodelled` flags. Such a
 flag carries `ln(fO2/bar)` when supplied and is marked `ELEVATED` at

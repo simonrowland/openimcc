@@ -1418,19 +1418,18 @@ def test_fe_free_manganese_associate_path() -> None:
         "Al2O3": 0.1,
         "MnO": 0.1,
     }
-    expected = evaluate_redox(
-        _redox_inventory(composition), 1800.0, "closed"
-    )
-
     result = evaluate(
         composition,
         1800.0,
         basis_type="mol",
         allow_extrapolation=True,
     )
-    assert result.activity("MnO") == pytest.approx(
-        expected.parent_activity["MnO"], rel=1e-12
+    flag = next(
+        item for item in result.labels.notices
+        if isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
     )
+    assert flag.code == "published_gamma_x_assumption"
+    assert result.activity("MnO") == pytest.approx(1.9 * flag.x)
 
 
 def test_manganese_associate_refusal_uses_published_gamma_rung(

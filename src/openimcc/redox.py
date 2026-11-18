@@ -2300,6 +2300,8 @@ def _evaluate_redox_with_packs(
     Input oxygen is ignored except on a genuinely invariant buffered segment,
     where it selects the metal extent. Elsewhere metal extent satisfies Fe
     saturation at the imposed lambda.
+    A Fe-free closed inventory without an active oxygen-changing couple raises
+    ``RedoxNoLiveCoupleError`` because its oxygen fugacity is not identifiable.
     ``lambda_imposed`` is ``ln(fO2 / 1 bar)``. Pressure is not an independent
     input once oxygen fugacity has been supplied through lambda.
     ``tol`` is a positive, dimensionless relative tolerance for each active
@@ -2468,6 +2470,11 @@ def _evaluate_redox_with_packs(
                     endpoint="closed_oxygen_mismatch_without_redox_couple",
                     flags=("closed_oxygen_mismatch_without_redox_couple",),
                     oxygen_residual_mol=oxygen_residual,
+                )
+            if not oxygen_redox_elements:
+                raise RedoxNoLiveCoupleError(
+                    "closed Fe-free inventory cannot determine oxygen fugacity "
+                    "without an active oxygen-changing redox couple"
                 )
         state = _active_inner(
             parent_moles,
@@ -3218,6 +3225,8 @@ def evaluate_redox(
 ) -> RedoxResult:
     """Solve redox using explicit pack paths or one named data profile.
 
+    Fe-free closed inventories without an active oxygen-changing couple raise
+    ``RedoxNoLiveCoupleError`` because their oxygen fugacity is undefined.
     ``strict_pack_standards`` refuses known liquid-standard mismatches and
     missing declarations before solving; unresolved references remain notices.
     """
