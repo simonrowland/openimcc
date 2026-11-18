@@ -25,6 +25,7 @@ GAS_CANDIDATE = ROOT / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv"
 OXIDE_CANDIDATE = ROOT / "src/openimcc/data/gas/condensate-hight-candidate.csv"
 GAS_CANDIDATE_V2 = ROOT / "src/openimcc/data/gas/gas-shomate-hight-candidate-v2.csv"
 OXIDE_CANDIDATE_V2 = ROOT / "src/openimcc/data/gas/condensate-hight-candidate-v2.csv"
+JANAF_DATA = ROOT / "data-src/janaf"
 COMPOSITION = {
     "SiO2": 51.85068,
     "MgO": 4.78527,
@@ -51,7 +52,9 @@ def _assert_close(left: float, right: float) -> None:
     assert abs(left - right) <= 1e-6 * max(abs(left), abs(right), 1.0)
 
 
-def test_high_temperature_candidate_rejects_missing_interior_node(tmp_path: Path) -> None:
+def test_high_temperature_candidate_rejects_present_malformed_thermal_node(
+    tmp_path: Path,
+) -> None:
     source_rows = ["Synthetic JANAF table", "T(K)\tCp\tS\t-G/T\tH-H(298)\tDfH\tDfG"]
     for temperature in range(3000, 6001, 100):
         cp = "?" if temperature == 4000 else "10"
@@ -62,10 +65,171 @@ def test_high_temperature_candidate_rejects_missing_interior_node(tmp_path: Path
         **{f"dG_{letter}": "0" for letter in "ABCDE"},
     }
 
-    with pytest.raises(ValueError, match="missing.*fit nodes"):
+    with pytest.raises(ValueError, match="malformed JANAF thermal cells at 4000 K"):
         build_gas_tables._janaf_anchored_liquid_rows(
             tmp_path, "T-001", base_row, 3000.0, 4500.0
         )
+
+
+def test_high_temperature_candidate_rejects_malformed_yaml_thermal_cell(
+    tmp_path: Path,
+) -> None:
+    value_row = {
+        "temperature": {"value": 3000.0},
+        "heat_capacity": {"value": 10.0},
+        "entropy": {"value": 20.0},
+        "enthalpy_increment": {"value": 0.0},
+    }
+    record = {
+        "table": {
+            "values": [value_row],
+            "parse_ambiguities": [
+                {"raw_line": "4000\t\t20\t-10\t0\t-1\t-1"},
+            ],
+        },
+    }
+    (tmp_path / "T-001.yaml").write_text(json.dumps(record) + "\n")
+
+    with pytest.raises(ValueError, match="malformed JANAF thermal cells at 4000 K"):
+        build_gas_tables._candidate_janaf_rows(tmp_path, "T-001")
+
+
+def test_high_temperature_candidate_interpolates_across_unprinted_node(
+    tmp_path: Path,
+) -> None:
+    source_rows = ["Synthetic JANAF table", "T(K)\tCp\tS\t-G/T\tH-H(298)\tDfH\tDfG"]
+    for temperature in range(3000, 6001, 100):
+        if temperature != 4000:
+            source_rows.append(f"{temperature}\t10\t20\t-10\t0\t-1\t-1")
+    (tmp_path / "T-001.txt").write_text("\n".join(source_rows) + "\n")
+    base_row = {
+        "dH298_R": "0",
+        **{f"dG_{letter}": "0" for letter in "ABCDE"},
+    }
+
+    rows = build_gas_tables._janaf_anchored_liquid_rows(
+        tmp_path, "T-001", base_row, 3000.0, 4500.0
+    )
+
+    assert 4000.0 not in rows
+    assert rows[4500.0]["heat_capacity"] == 10.0
+
+
+def test_high_temperature_v2_rebuilds_rows_behind_unprinted_nodes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gas_source = ROOT / "src/openimcc/data/gas/gas-shomate.csv"
+    oxide_source = ROOT / "src/openimcc/data/gas/condensate.csv"
+    gas_output = tmp_path / "gas.csv"
+    oxide_output = tmp_path / "oxide.csv"
+    with GAS_CANDIDATE_V2.open(encoding="utf-8", newline="") as stream:
+        shipped_gas_rows = list(csv.DictReader(stream))
+    with OXIDE_CANDIDATE_V2.open(encoding="utf-8", newline="") as stream:
+        shipped_oxide_rows = list(csv.DictReader(stream))
+
+    target_gas = {"Fe(g)", "Si(g)", "Ti(g)"}
+    target_gas_cards = tuple(
+        card for card in build_gas_tables.HIGH_TEMP_GAS_CARDS
+        if card[0] in target_gas
+    )
+    expected_gas = {
+        species: next(
+            row for row in shipped_gas_rows
+            if row["species_name"] == species and row["T_interval"] == "3"
+        )
+        for species in target_gas
+    }
+    # The CEA comparison is outside this JANAF rebuild check; keep its
+    # published metrics so the generated row can be compared in full.
+    cards = {
+        item[1].upper(): {} for item in build_gas_tables.HIGH_TEMP_LIQUID_CARDS
+    }
+    gas_card_names = {item[0]: item[1].upper() for item in target_gas_cards}
+    for species, row in expected_gas.items():
+        ref = row["Ref"].split(";dg=", 1)[1]
+        dg, rest = ref.split(";band=", 1)
+        band = rest.split(";", 1)[0]
+        cards[gas_card_names[species]] = {
+            "comparison": (float(dg), float(band)),
+        }
+    monkeypatch.setattr(build_gas_tables, "HIGH_TEMP_GAS_CARDS", target_gas_cards)
+    monkeypatch.setattr(
+        build_gas_tables,
+        "HIGH_TEMP_V2_GAS_JANAF",
+        {
+            species: build_gas_tables.HIGH_TEMP_V2_GAS_JANAF[species]
+            for species in target_gas
+        },
+    )
+    monkeypatch.setattr(build_gas_tables, "HIGH_TEMP_V2_ION_CARDS", ())
+    monkeypatch.setattr(
+        build_gas_tables,
+        "_parse_cea_thermo_cards",
+        lambda _path: cards,
+    )
+    monkeypatch.setattr(
+        build_gas_tables,
+        "_candidate_gas_shape_comparison",
+        lambda _points, card: card["comparison"],
+    )
+
+    def unused_liquid_candidate(
+        species: str, card_name: str, _cation: str, _cat_num: int,
+        _oxy_num: int, _base: dict[str, object], _card: dict[str, object],
+        start: float, end: float,
+    ) -> dict[str, str]:
+        # Other CEA liquid fits are outside this JANAF rebuild comparison.
+        return {
+            "species_name": species,
+            "state": "l",
+            "T_min": str(int(start)),
+            "T_max": str(int(end)),
+            "Ref": card_name,
+        }
+
+    monkeypatch.setattr(
+        build_gas_tables, "_make_liquid_candidate_row", unused_liquid_candidate
+    )
+    build_gas_tables.build_high_temperature_candidates_v2(
+        tmp_path / "unused-thermo.inp",
+        JANAF_DATA,
+        gas_source,
+        oxide_source,
+        gas_output,
+        oxide_output,
+    )
+    with gas_output.open(encoding="utf-8", newline="") as stream:
+        rebuilt_gas_rows = list(csv.DictReader(stream))
+    with oxide_output.open(encoding="utf-8", newline="") as stream:
+        rebuilt_oxide_rows = list(csv.DictReader(stream))
+
+    for species in sorted(target_gas):
+        expected = expected_gas[species]
+        rebuilt = next(
+            row for row in rebuilt_gas_rows
+            if row["species_name"] == species and row["T_interval"] == "3"
+        )
+        assert {
+            column: rebuilt.get(column, "")
+            for column in build_gas_tables.RUNTIME_COLUMNS
+        } == expected
+
+    expected = next(
+        row for row in shipped_oxide_rows
+        if row["species_name"] == "MgO(l)"
+        and row["T_min"] == "3000"
+        and row["T_max"] == "5000"
+    )
+    rebuilt = next(
+        row for row in rebuilt_oxide_rows
+        if row["species_name"] == "MgO(l)"
+        and row["T_min"] == "3000"
+        and row["T_max"] == "5000"
+    )
+    assert {
+        column: rebuilt.get(column, "")
+        for column in build_gas_tables.CONDENSATE_COLUMNS
+    } == expected
 
 
 def test_default_tables_remain_byte_identical_and_candidate_prefixes_match() -> None:

@@ -2839,15 +2839,18 @@ def _fit_row(
 
 
 def _janaf_text_source_rows(
-    source_dir: Path, table_id: str
+    source_dir: Path,
+    table_id: str,
+    *,
+    thermal_fit_range: tuple[float, float] | None = None,
 ) -> dict[float, dict[str, float]]:
     """Read the thermal JANAF cells needed by gas and condensate fits.
 
     A source row is useful when Cp, S, and H-H(298) are intact, even if its
     printed formation columns are blank after an elemental reference-state
     transition. The 298.15 K row separately supplies the formation-enthalpy
-    anchor. Rows with malformed thermal cells are skipped; no field is
-    reconstructed from neighboring temperatures.
+    anchor. Candidate fits reject malformed thermal cells within their fit
+    range; no field is reconstructed from neighboring temperatures.
     """
     path = source_dir / f"{table_id}.txt"
     lines = path.read_text(encoding="utf-8").splitlines()
@@ -2856,13 +2859,33 @@ def _janaf_text_source_rows(
     parsed: dict[float, dict[str, float]] = {}
     for line in lines[2:]:
         cells = line.split("\t")
+        try:
+            temperature = float(cells[0])
+        except (IndexError, ValueError):
+            continue
+        in_fit_range = (
+            thermal_fit_range is not None
+            and thermal_fit_range[0] <= temperature <= thermal_fit_range[1]
+        )
+        is_transition = (
+            "<-->" in cells[-1]
+            or (len(cells) > 5 and cells[5].strip() == "TRANSITION")
+        )
         if len(cells) < 5:
+            if in_fit_range and not is_transition:
+                raise ValueError(
+                    f"{table_id}: malformed JANAF thermal cells at {temperature:g} K"
+                )
             continue
         try:
-            temperature, cp, entropy, _minus_g_over_t, h_increment = (
+            _, cp, entropy, _minus_g_over_t, h_increment = (
                 float(value) for value in cells[:5]
             )
-        except ValueError:
+        except ValueError as exc:
+            if in_fit_range and not is_transition:
+                raise ValueError(
+                    f"{table_id}: malformed JANAF thermal cells at {temperature:g} K"
+                ) from exc
             continue
         row = {
             "temperature": temperature,
@@ -8480,39 +8503,73 @@ def _candidate_ref(
     return f"{ref}|tier={tier};dg={dg:.6g};band={band:.6g};limit={limit:g}{suffix}"
 
 
-def _require_janaf_fit_nodes(
-    nodes: dict[float, dict[str, float]],
+def _candidate_janaf_rows(
+    source_dir: Path,
     table_id: str,
-    fit_t_min: float,
-    fit_t_max: float,
-) -> None:
-    required = np.arange(
-        fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K
-    )
-    missing = [float(T) for T in required if float(T) not in nodes]
-    if missing:
-        raise ValueError(
-            f"{table_id}: missing required 100 K fit nodes {missing!r}"
-        )
-
-
-def _candidate_janaf_rows(source_dir: Path, table_id: str) -> dict[float, dict[str, float]]:
+    *,
+    fit_t_min: float = 3000.0,
+    fit_t_max: float = 6000.0,
+) -> dict[float, dict[str, float]]:
     """Read Cp/H/S nodes from either vendored text or normalized JANAF YAML."""
     text_path = source_dir / f"{table_id}.txt"
     if text_path.is_file():
-        return _janaf_text_source_rows(source_dir, table_id)
+        return _janaf_text_source_rows(
+            source_dir,
+            table_id,
+            thermal_fit_range=(fit_t_min, fit_t_max),
+        )
     record = _load_record(source_dir / f"{table_id}.yaml")
-    return {
-        float(_value(row, "temperature")): {
-            "temperature": float(_value(row, "temperature")),
-            "heat_capacity": float(_value(row, "heat_capacity")),
-            "entropy": float(_value(row, "entropy")),
-            "enthalpy_increment": float(_value(row, "enthalpy_increment")),
+    table = record["table"]
+    points: dict[float, dict[str, float]] = {}
+    for row in table["values"]:
+        temperature_value = _value(row, "temperature")
+        if temperature_value is None:
+            continue
+        temperature = float(temperature_value)
+        if not fit_t_min <= temperature <= fit_t_max:
+            continue
+        try:
+            cp, entropy, enthalpy_increment = (
+                float(_value(row, field))
+                for field in ("heat_capacity", "entropy", "enthalpy_increment")
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(
+                f"{table_id}: malformed JANAF thermal cells at {temperature:g} K"
+            ) from exc
+        points[temperature] = {
+            "temperature": temperature,
+            "heat_capacity": cp,
+            "entropy": entropy,
+            "enthalpy_increment": enthalpy_increment,
         }
-        for row in record["table"]["values"]
-        if _value(row, "temperature") is not None
-        and all(_value(row, field) is not None for field in ("heat_capacity", "entropy", "enthalpy_increment"))
-    }
+
+    for ambiguity in table.get("parse_ambiguities", []):
+        cells = str(ambiguity.get("raw_line", "")).strip().split("\t")
+        try:
+            temperature = float(cells[0])
+        except (IndexError, ValueError):
+            continue
+        if not fit_t_min <= temperature <= fit_t_max:
+            continue
+        if (
+            "<-->" in cells[-1]
+            or (len(cells) > 5 and cells[5].strip() == "TRANSITION")
+        ):
+            continue
+        if len(cells) < 5:
+            raise ValueError(
+                f"{table_id}: malformed JANAF thermal cells at {temperature:g} K"
+            )
+        try:
+            tuple(float(value) for value in cells[:5])
+        except ValueError as exc:
+            raise ValueError(
+                f"{table_id}: malformed JANAF thermal cells at {temperature:g} K"
+            ) from exc
+        # Keep parse-ambiguous source rows out of the fit. The interpolator
+        # bridges their absent temperatures, matching the shipped candidate.
+    return points
 
 
 _V2_GAS_BANDS = {
@@ -8798,8 +8855,9 @@ def _janaf_anchored_liquid_rows(
     A 1 K grid resolves the published 100 K Cp cells and fixes both explicit
     source-switch endpoints for the constrained condensate fit.
     """
-    nodes = _candidate_janaf_rows(source_dir, table_id)
-    _require_janaf_fit_nodes(nodes, table_id, start, end)
+    nodes = _candidate_janaf_rows(
+        source_dir, table_id, fit_t_min=start, fit_t_max=end
+    )
     temps = np.asarray(sorted(T for T in nodes if start <= T <= end), dtype=float)
     grid = np.arange(start, end + 1.0, 1.0)
     if grid[-1] != end:
@@ -8824,7 +8882,8 @@ def build_high_temperature_candidates_v2(
 ) -> None:
     """Build separately versioned high-temperature candidates using JANAF shapes."""
     cards = _parse_cea_thermo_cards(cea_path)
-    gas_rows = list(csv.DictReader(gas_input.open(encoding="utf-8", newline="")))
+    with gas_input.open(encoding="utf-8", newline="") as stream:
+        gas_rows = list(csv.DictReader(stream))
     new_gas = []
     gas_card_names = {item[0]: item[1] for item in HIGH_TEMP_GAS_CARDS}
     for species, table_id, cation, cat_num, oxy_num in HIGH_TEMP_GAS_CARDS:
@@ -8839,7 +8898,6 @@ def build_high_temperature_candidates_v2(
         if species in HIGH_TEMP_V2_GAS_JANAF:
             table_id = HIGH_TEMP_V2_GAS_JANAF[species]
             points = _candidate_janaf_rows(janaf_dir, table_id)
-            _require_janaf_fit_nodes(points, table_id, 3000.0, 6000.0)
             temperatures = np.asarray(sorted(T for T in points if 3000.0 <= T <= 6000.0))
             if species in HIGH_TEMP_V2_GAS_RECHECK:
                 dg, band = _candidate_gas_shape_comparison(
@@ -8884,7 +8942,6 @@ def build_high_temperature_candidates_v2(
             base[key] = float(base[key])
         if table_id is not None:
             points = _candidate_janaf_rows(janaf_dir, table_id)
-            _require_janaf_fit_nodes(points, table_id, 3000.0, 6000.0)
             temperatures = np.asarray(sorted(T for T in points if 3000.0 <= T <= 6000.0))
             cp = np.asarray([points[float(T)]["heat_capacity"] for T in temperatures])
         else:
@@ -8915,7 +8972,8 @@ def build_high_temperature_candidates_v2(
         writer.writeheader()
         writer.writerows(gas_rows + new_gas)
 
-    oxide_rows = list(csv.DictReader(oxide_input.open(encoding="utf-8", newline="")))
+    with oxide_input.open(encoding="utf-8", newline="") as stream:
+        oxide_rows = list(csv.DictReader(stream))
     new_oxide = []
     liquid_band = {
         "SiO2(l)": ("corroborated_calculation", 0.737630, 0.025686, 4500.0),
