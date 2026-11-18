@@ -677,6 +677,26 @@ def test_redox_refuses_active_excess_candidate(tmp_path: Path) -> None:
     assert pair_exc.value.code == "redox_excess_gibbs_unsupported"
 
 
+def test_mno_trace_refuses_active_excess_candidate(tmp_path: Path) -> None:
+    candidate, _path = _candidate(tmp_path, [_term()])
+    composition = {oxide: 1.0 for oxide in candidate.parent_oxides}
+    baseline = evaluate(
+        composition, 1800.0, candidate, allow_out_of_envelope=True
+    )
+    assert baseline.excess_gibbs_J != 0.0
+
+    composition["MnO"] = 0.01
+    with pytest.raises(RedoxExcessGibbsUnsupportedError):
+        evaluate(
+            composition,
+            1800.0,
+            candidate,
+            basis_type="mol",
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+
+
 @pytest.mark.parametrize("terms", [[], [_term()]])
 @pytest.mark.parametrize(
     "composition",

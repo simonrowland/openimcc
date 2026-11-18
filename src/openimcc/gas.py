@@ -3348,6 +3348,15 @@ def evaluate_gas(
                 for item in melt_result.labels.notices
                 if isinstance(item, TraceMajorBiasFlag)
             }
+            trace_melt_pack = None
+            trace_redox_pack = None
+            if profile is not None:
+                from openimcc.profiles import _resolve_profile
+
+                trace_profile = _resolve_profile(profile)
+                trace_melt_pack = trace_profile.melt_pack
+                if trace_profile.redox_pack_path is not None:
+                    trace_redox_pack = trace_profile.redox_pack
             for oxide, x_trace in trace_fractions.items():
                 estimate = resolve_trace_activity(
                     oxide,
@@ -3355,6 +3364,8 @@ def evaluate_gas(
                     composition_moles,
                     T,
                     fO2_bar=p_O2,
+                    melt_pack=trace_melt_pack,
+                    loaded_redox_pack=trace_redox_pack,
                 )
                 trace_rule = trace_component_rule(oxide)
                 carrier = trace_rule.gas_parent_oxide

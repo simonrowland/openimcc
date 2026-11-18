@@ -2200,9 +2200,11 @@ def evaluate(
     """
     requested_basis = basis
     profile_name = None
+    selected_profile = None
     if profile is not None:
         from openimcc.profiles import (
             ProfileConflictError,
+            ProfileRedoxUnavailableError,
             _resolve_profile,
         )
 
@@ -2884,6 +2886,20 @@ def evaluate(
     trace_major_flags: list[TraceMajorBiasFlag] = []
     redox_pack_participation: tuple[PackRowParticipation, ...] | None = None
     if trace_fractions:
+        redox_trace_oxides = tuple(
+            oxide
+            for oxide in trace_fractions
+            if (rule := trace_component_rule(oxide)) is not None
+            and rule.activity_model == "redox_associates"
+        )
+        trace_redox_pack = None
+        if redox_trace_oxides and selected_profile is not None:
+            if selected_profile.redox_pack_path is None:
+                raise ProfileRedoxUnavailableError(
+                    "the SF04 publication has no redox model; use "
+                    "profile='openimcc' or pass explicit packs"
+                )
+            trace_redox_pack = selected_profile.redox_pack
         composition_moles = {
             name: float(amount)
             for name, amount in zip(parent_oxides, vector, strict=True)
@@ -2893,19 +2909,14 @@ def evaluate(
         trace_activity_estimates = {}
         for oxide, x_trace in trace_fractions.items():
             rule = trace_component_rule(oxide)
-            try:
-                estimate, redox_result, redox_state = _resolve_trace_activity(
-                    oxide, x_trace, composition_moles, float(T_K)
-                )
-            except ImccRefusal:
-                if rule is None or not rule.full_component:
-                    raise
-                estimate = TraceActivityEstimate(
-                    oxide, math.nan, x_trace,
-                    "source_grounded_associate_activity_unavailable",
-                )
-                redox_result = None
-                redox_state = None
+            estimate, redox_result, redox_state = _resolve_trace_activity(
+                oxide,
+                x_trace,
+                composition_moles,
+                float(T_K),
+                melt_pack=pack,
+                loaded_redox_pack=trace_redox_pack,
+            )
             if (
                 redox_result is not None
                 and redox_state is not None
@@ -2981,6 +2992,8 @@ def evaluate(
                         result.extrapolated
                         or bool(redox_result.extrapolated_redox_rows)
                     ),
+                    excess_gibbs_J=0.0,
+                    excess_enthalpy_J=0.0,
                 )
                 flags = list(dict.fromkeys((*flags, *redox_result.flags)))
                 redox_pack_participation = redox_result.pack_row_participation

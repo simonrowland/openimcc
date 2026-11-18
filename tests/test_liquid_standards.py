@@ -36,7 +36,11 @@ from openimcc.gas import (
 )
 from openimcc.redox import evaluate_redox
 from openimcc.redox_pack import canonical_redox_digest, load_redox_pack
-from openimcc.profiles import ProfileError, load_profile
+from openimcc.profiles import (
+    ProfileError,
+    ProfileRedoxUnavailableError,
+    load_profile,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -292,38 +296,25 @@ def test_active_standards_include_all_eight_melt_parents_and_other_active_oxides
         "ZnO": "TSIV-1603",
         "ZrO2": "O-053",
     }
-    published = active_liquid_standards("published")
-    assert published == {
-        "Al2O3": "LAM1987",
-        "CaO": "LAM1987",
-        "Cr2O3": "Cr-015",
-        "FeO": "Fe-019",
-        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
-        "K2O": "LAM1984",
-        "Li2O": "Li-015",
-        "MgO": "LAM1987",
-        "Na2O": "Na-013",
-        "NbO2": "Nb-" "013",
-        "PbO": "O-007",
-        "Rb2O": "NG-1841",
-        "S": "S-004",
-        "SiO2": "LAM1987",
-        "TiO2": "O-044",
-        "V2O3": "O-063",
-    }
-    assert active_liquid_standards(load_profile("published")) == published
     with pytest.raises(ProfileError):
         active_liquid_standards("other")
 
 
-@pytest.mark.parametrize(
-    "published_profile_kind",
-    ("named", "object"),
-    ids=("published-name", "published-object"),
-)
+def test_published_profile_redox_pack_lookup_refuses() -> None:
+    published = load_profile("published")
+    assert published.redox_pack_path is None
+
+    with pytest.raises(ProfileRedoxUnavailableError):
+        published.redox_pack
+
+
+def test_published_profile_active_standards_refuse_without_redox_pack() -> None:
+    with pytest.raises(ProfileRedoxUnavailableError):
+        active_liquid_standards("published")
+
+
 def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
     tmp_path: Path,
-    published_profile_kind: str,
 ) -> None:
     gas_dir = ROOT / "src/openimcc/data/gas"
     condensate_path = tmp_path / "condensate.csv"
@@ -386,37 +377,6 @@ def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
     assert unknown_records[0].active == marker
     assert unknown_records[0].row_key is None
     assert not any(record.kind == "mismatch" for record in mg_records)
-
-    if published_profile_kind == "named":
-        published_profile = "published"
-        published_gas_pack = custom_gas_pack
-    else:
-        published_profile = replace(
-            load_profile("published"), gas_datapack=custom_gas_pack
-        )
-        published_gas_pack = None
-    published_active = active_liquid_standards(
-        published_profile, gas_pack=published_gas_pack
-    )
-    published_records = check_pack_standards(
-        PACK_DIR / "imcc-sf04-d066-v4.json",
-        published_profile,
-        gas_pack=published_gas_pack,
-    )
-    published_mg_records = [
-        record for record in published_records if record.oxide == "MgO"
-    ]
-    published_unknown_records = [
-        record
-        for record in published_mg_records
-        if record.kind == "reference-unknown"
-    ]
-    assert (
-        published_active["MgO"],
-        [record.kind for record in published_mg_records],
-        [record.active for record in published_unknown_records],
-    ) == (marker, ["reference-unknown"], [marker])
-
 
 def test_declared_standard_without_an_active_liquid_row_is_not_active(
     tmp_path: Path,
@@ -516,7 +476,7 @@ def test_two_recognized_condensate_tables_for_one_oxide_still_raise(
         active_liquid_standards(gas_pack=custom_gas_pack)
 
 
-def test_d066_v1_mixed_standards_are_caught_and_v4_matches_default() -> None:
+def test_d066_mixed_standard_checks_respect_profile_redox_availability() -> None:
     v1_path = PACK_DIR / "imcc-sf04-d066-v1.json"
     v4_path = PACK_DIR / "imcc-sf04-d066-v4.json"
     v1_default = check_pack_standards(v1_path)
@@ -534,19 +494,10 @@ def test_d066_v1_mixed_standards_are_caught_and_v4_matches_default() -> None:
             if record.kind == "mismatch"
         ], name
 
-    v1_published = check_pack_standards(v1_path, "published")
-    v4_published = check_pack_standards(v4_path, "published")
-    assert not any(
-        record.oxide == "FeO" and record.kind == "mismatch"
-        for record in v1_published
-    )
-    assert any(
-        record.oxide == "FeO"
-        and record.declared == "DG46-MASSON65"
-        and record.active == "Fe-019"
-        and record.kind == "mismatch"
-        for record in v4_published
-    )
+    with pytest.raises(ProfileRedoxUnavailableError):
+        check_pack_standards(v1_path, "published")
+    with pytest.raises(ProfileRedoxUnavailableError):
+        check_pack_standards(v4_path, "published")
 
 
 def test_gas_evaluators_report_pack_standard_notices_and_strict_refusals() -> None:

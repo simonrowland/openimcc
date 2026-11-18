@@ -830,9 +830,17 @@ def resolve_trace_activity(
     T_K: float,
     *,
     fO2_bar: float | None = None,
+    melt_pack: Any | None = None,
+    loaded_redox_pack: Any | None = None,
 ) -> TraceActivityEstimate:
     estimate, _redox_result, _redox_state = _resolve_trace_activity(
-        oxide, x, composition_moles, T_K, fO2_bar=fO2_bar
+        oxide,
+        x,
+        composition_moles,
+        T_K,
+        fO2_bar=fO2_bar,
+        melt_pack=melt_pack,
+        loaded_redox_pack=loaded_redox_pack,
     )
     return estimate
 
@@ -845,6 +853,8 @@ def _resolve_trace_activity(
     *,
     fO2_bar: float | None = None,
     total_pressure_bar: float | None = None,
+    melt_pack: Any | None = None,
+    loaded_redox_pack: Any | None = None,
 ) -> tuple[TraceActivityEstimate, Any | None, Any | None]:
     rule = _TRACE_COMPONENT_RULES[oxide]
     redox_result: Any | None = None
@@ -852,10 +862,19 @@ def _resolve_trace_activity(
     if rule.activity_model == "redox_associates":
         try:
             redox_result, redox_state = _redox_trace_result(
-                oxide, composition_moles, T_K, fO2_bar=fO2_bar
+                oxide,
+                composition_moles,
+                T_K,
+                fO2_bar=fO2_bar,
+                melt_pack=melt_pack,
+                loaded_redox_pack=loaded_redox_pack,
             )
-        except ImccRefusal:
-            if rule.gamma is None:
+        except ImccRefusal as refusal:
+            from openimcc.redox_pack import RedoxInputError
+
+            if rule.gamma is None or (
+                rule.full_component and isinstance(refusal, RedoxInputError)
+            ):
                 raise
         else:
             extrapolated_rows = tuple(redox_result.extrapolated_redox_rows)
@@ -1301,12 +1320,27 @@ def _redox_trace_result(
     T_K: float,
     *,
     fO2_bar: float | None,
+    melt_pack: Any | None = None,
+    loaded_redox_pack: Any | None = None,
 ) -> tuple[Any, Any]:
-    from openimcc.model import load_datapack
+    from openimcc.model import (
+        ImccLoadedDatapack,
+        ImccUnprovenDatapackError,
+        load_datapack,
+    )
     from openimcc.redox import _evaluate_redox_with_packs
-    from openimcc.redox_pack import load_redox_pack
+    from openimcc.redox_pack import RedoxInputError, load_redox_pack
 
-    redox_pack = load_redox_pack()
+    selected_melt_pack = load_datapack() if melt_pack is None else melt_pack
+    if not isinstance(selected_melt_pack, ImccLoadedDatapack):
+        raise ImccUnprovenDatapackError(
+            "redox trace evaluation requires a loaded melt datapack"
+        )
+    redox_pack = (
+        load_redox_pack()
+        if loaded_redox_pack is None
+        else loaded_redox_pack
+    )
     formulas = {
         str(parent["parent_oxide"]).removesuffix("(l)"):
         dict(parent["parent_formula_atoms"])
@@ -1332,9 +1366,9 @@ def _redox_trace_result(
         T_K,
         mode,
         lambda_imposed=lambda_imposed,
-        melt_pack=load_datapack(),
+        melt_pack=selected_melt_pack,
         loaded_redox_pack=redox_pack,
     )
     if oxide not in result.parent_activity:
-        raise ValueError(f"redox result has no modelled {oxide} activity")
+        raise RedoxInputError(f"selected redox pack does not model {oxide}")
     return result, state

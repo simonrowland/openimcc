@@ -50,6 +50,11 @@ class Profile:
     @cached_property
     def redox_pack(self) -> RedoxPack:
         """Return the redox pack selected by this profile, loaded once."""
+        if self.redox_pack_path is None:
+            raise ProfileRedoxUnavailableError(
+                "the SF04 publication has no redox model; use "
+                "profile='openimcc' or pass explicit packs"
+            )
         from openimcc.redox_pack import load_redox_pack
 
         return load_redox_pack(self.redox_pack_path)

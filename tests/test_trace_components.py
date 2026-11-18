@@ -26,7 +26,8 @@ from openimcc.kernel import (
     ImccCompositionIncompleteError,
 )
 from openimcc.redox import evaluate_redox
-from openimcc.redox_pack import load_redox_pack
+from openimcc.redox_pack import RedoxInputError, load_redox_pack
+from openimcc.profiles import ProfileRedoxUnavailableError, load_profile
 from openimcc.trace_envelope_calibration import (
     AMPHOTERIC_ENVELOPE_K,
     BASIC_MONOXIDE_ENVELOPE_K,
@@ -221,6 +222,93 @@ def test_mno_is_returned_as_a_full_component_when_supplied() -> None:
     assert "MnO" in result.parent_oxides
     mno_activity = result.parent_activity[result.parent_oxides.index("MnO")]
     assert math.isfinite(float(mno_activity))
+
+
+def test_mno_redox_uses_profile_selected_melt_and_redox_packs() -> None:
+    selected_profile = load_profile("openimcc")
+    selected_melt = selected_profile.melt_pack
+    composition = {oxide: 1.0 for oxide in selected_melt.parent_oxides}
+    composition["MnO"] = 0.01
+    expected = evaluate_redox(
+        _redox_inventory(composition),
+        1800.0,
+        "closed",
+        profile=selected_profile,
+    )
+    result = evaluate(
+        composition,
+        1800.0,
+        profile=selected_profile,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.receipt.data_digests["melt"] == selected_melt.binding_digest
+    for parent, activity in expected.parent_activity.items():
+        if parent in result.parent_oxides:
+            assert result.activity(parent) == pytest.approx(activity, rel=1e-12)
+
+
+def test_mno_redox_refuses_incompatible_selected_melt_pack() -> None:
+    selected_melt = load_datapack(
+        "src/openimcc/data/packs/imcc-sf04-v1.0.2.json"
+    )
+    composition = {oxide: 1.0 for oxide in selected_melt.parent_oxides}
+    composition["MnO"] = 0.01
+
+    with pytest.raises(RedoxInputError, match="FeO\\(l\\) basis"):
+        evaluate(
+            composition,
+            1800.0,
+            pack=selected_melt,
+            basis_type="mol",
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+
+
+def test_mno_redox_refuses_profile_without_redox_pack() -> None:
+    with pytest.raises(ProfileRedoxUnavailableError):
+        evaluate(
+            {
+                "SiO2": 50.0,
+                "Al2O3": 15.0,
+                "MgO": 10.0,
+                "CaO": 12.0,
+                "FeO": 8.0,
+                "Na2O": 2.0,
+                "K2O": 1.0,
+                "TiO2": 1.0,
+                "MnO": 0.4,
+            },
+            1800.0,
+            profile=load_profile("published"),
+            basis_type="wt",
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+
+
+def test_gas_mno_requires_selected_profile_redox_pack() -> None:
+    with pytest.raises(ProfileRedoxUnavailableError):
+        evaluate_gas(
+            {oxide: 1.0 for oxide in IMCC_PARENT_OXIDES},
+            1800.0,
+            1.0e-8,
+            profile=load_profile("published"),
+            composition_wt_pct={
+                "SiO2": 50.0,
+                "Al2O3": 15.0,
+                "MgO": 10.0,
+                "CaO": 12.0,
+                "FeO": 8.0,
+                "Na2O": 2.0,
+                "K2O": 1.0,
+                "TiO2": 1.0,
+                "MnO": 0.4,
+            },
+        )
 
 
 _OXIDE_ATOMS = {
