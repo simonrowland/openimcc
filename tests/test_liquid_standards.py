@@ -229,6 +229,24 @@ def test_registry_schema_and_every_shipped_pack_has_a_declaration() -> None:
             assert load_redox_pack(path).canonical_digest == entry["canonical_content_digest"]
 
 
+def test_pack_standard_ids_must_be_strings(monkeypatch: pytest.MonkeyPatch) -> None:
+    pack = load_datapack(PACK_DIR / "imcc-sf04-d066-v1.json")
+    monkeypatch.setattr(
+        standards_module,
+        "_read_registry",
+        lambda: {
+            "packs": {
+                pack.binding_digest: {
+                    "row_overrides": {"row-x": {"FeO": None}},
+                }
+            }
+        },
+    )
+
+    with pytest.raises(ImccMalformedDatapackError, match="standard"):
+        pack_liquid_standards(pack)
+
+
 def test_active_standards_include_all_eight_melt_parents_and_other_active_oxides() -> None:
     active = active_liquid_standards()
     assert active == {

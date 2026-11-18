@@ -303,10 +303,12 @@ def _read_registry() -> dict[str, Any]:
 
 
 def _immutable_standards(value: Any) -> Mapping[str, str]:
+    from openimcc.model import ImccMalformedDatapackError
+
     if not isinstance(value, Mapping):
         return MappingProxyType({})
     if any(not isinstance(standard, str) for standard in value.values()):
-        raise ValueError("liquid standard values must be strings")
+        raise ImccMalformedDatapackError("liquid standard values must be strings")
     return MappingProxyType(
         {str(oxide): standard for oxide, standard in value.items()}
     )
