@@ -306,6 +306,14 @@ class _CandidateState:
     continued_range_K: tuple[float, float] | None = None
 
 
+def _proven_absent_crystal_classification(
+    state: _CandidateState,
+) -> tuple[float, tuple[float, float], Literal["absent"]] | None:
+    if state.reason in ("absent_by_construction", "above_source_melting_point"):
+        return 0.0, (0.0, 0.0), "absent"
+    return None
+
+
 @dataclass(frozen=True)
 class _LPState:
     amounts: np.ndarray
@@ -1909,9 +1917,16 @@ def _empty_result(
     )
     phase_ids = tuple(state.candidate.phase_id for state in states)
     result_ranges = dict(solid_ranges or {})
+    phase_presence = {}
     for state in states:
-        if state.reason in ("absent_by_construction", "above_source_melting_point"):
-            result_ranges[state.candidate.phase_id] = (0.0, 0.0)
+        phase = state.candidate.phase_id
+        classified = _proven_absent_crystal_classification(state)
+        if classified is not None:
+            _amount, amount_range, presence = classified
+            result_ranges[phase] = amount_range
+        else:
+            presence = "infeasible" if state.reason == "infeasible" else "unresolved"
+        phase_presence[phase] = presence
     return PhaseEquilibriumResult(
         temperature_K=temperature_K,
         pressure_bar=_PRESSURE_BAR,
@@ -1923,16 +1938,7 @@ def _empty_result(
             result_ranges or {phase: (0.0, 0.0) for phase in phase_ids}
         ),
         phase_amounts_unique=False,
-        phase_presence={
-            state.candidate.phase_id: (
-                "infeasible" if state.reason == "infeasible" else
-                "absent" if state.reason in (
-                    "absent_by_construction", "above_source_melting_point"
-                ) else
-                "unresolved"
-            )
-            for state in states
-        },
+        phase_presence=phase_presence,
         saturated_candidates=(),
         identifiable_activities={},
         activity_ranges_ln={},
@@ -2599,10 +2605,12 @@ def _positive_branch(
         missing_set = set(missing)
         for state in candidates_all:
             phase = state.candidate.phase_id
-            if state.reason in ("absent_by_construction", "above_source_melting_point"):
-                state_ranges[phase] = (0.0, 0.0)
-                state_amounts[phase] = 0.0
-                presence[phase] = "absent"
+            classified = _proven_absent_crystal_classification(state)
+            if classified is not None:
+                amount, amount_range, phase_status = classified
+                state_ranges[phase] = amount_range
+                state_amounts[phase] = amount
+                presence[phase] = phase_status
                 continue
             if state.reason == "infeasible":
                 state_ranges.setdefault(phase, (0.0, 0.0))
@@ -2860,16 +2868,16 @@ def _solid_result(
         solid_ranges[phase] = (0.0, 0.0)
         phase_presence[phase] = "absent"
     missing_set = set(missing)
-    proven_absent = {
-        state.candidate.phase_id for state in all_states
-        if state.reason in ("absent_by_construction", "above_source_melting_point")
-    }
+    proven_absent: set[str] = set()
     for state in all_states:
         phase = state.candidate.phase_id
-        if state.reason in ("absent_by_construction", "above_source_melting_point"):
-            solid_ranges[phase] = (0.0, 0.0)
-            amounts[phase] = 0.0
-            phase_presence[phase] = "absent"
+        classified = _proven_absent_crystal_classification(state)
+        if classified is not None:
+            amount, amount_range, phase_status = classified
+            proven_absent.add(phase)
+            solid_ranges[phase] = amount_range
+            amounts[phase] = amount
+            phase_presence[phase] = phase_status
             continue
         if state.reason == "infeasible":
             solid_ranges[phase] = (0.0, 0.0)
