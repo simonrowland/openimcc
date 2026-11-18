@@ -48,6 +48,10 @@ class PhaseEquilibriumLabels:
     notices: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        if self.validity not in ("IN", "OUT_OF_DOMAIN", "DEPENDS"):
+            raise ValueError(
+                "validity must be one of 'IN', 'OUT_OF_DOMAIN', or 'DEPENDS'"
+            )
         object.__setattr__(self, "identity", MappingProxyType(dict(self.identity)))
         object.__setattr__(self, "coverage", MappingProxyType(dict(self.coverage)))
 

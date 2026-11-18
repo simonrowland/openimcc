@@ -1362,6 +1362,13 @@ def test_equilibrium_authority_excludes_kernel_identity_stamp():
     assert result.labels.evidence_class == "janaf_fitted"
 
 
+def test_phase_labels_reject_unknown_validity():
+    result = equilibrate({"SiO2": 1.0}, 1800.0, candidates=())
+
+    with pytest.raises(ValueError, match="validity must be one of"):
+        replace(result.labels, validity="BAD")
+
+
 def test_inner_activity_uncertainty_covers_trace_residual_and_scale(ideal_pack):
     parents = ("SiO2", "MgO")
     liquid = np.asarray((1.0e-6, 1.0))
