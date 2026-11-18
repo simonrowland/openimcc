@@ -1505,6 +1505,7 @@ def _solve_active(
             },
         )
 
+    polished = False
     if first[4] > tol and not relative_tolerance:
         # A trace-parent root can be numerically close in absolute residual
         # while still failing the relative inventory certificate. If SciPy
@@ -1541,6 +1542,7 @@ def _solve_active(
                         float(np.linalg.norm(polish_y - y0)),
                         f"{first[7]}; analytic Newton polish",
                     )
+                    polished = True
                     break
             try:
                 correction = np.linalg.solve(polish_J, polish_f)
@@ -1557,7 +1559,8 @@ def _solve_active(
             polish_steps += 1
 
     if first[4] <= tol:
-        return (*first[:7], "direct", 0)
+        solver_path = "direct-newton-polish" if polished else "direct"
+        return (*first[:7], solver_path, 0)
 
     total_nfev = first[3]
 
@@ -2163,9 +2166,12 @@ def _solve_imcc_sf04_with_seed(
     max_iter:
         Positive scale used inside ``_solve_active`` to build the SciPy
         ``max_nfev`` budget as ``max(10, max_iter * (n_active + 1))``. The
-        solver is trust-region reflective least-squares, not Newton. The
-        returned ``ImccConvergence.iterations`` field is SciPy ``nfev``,
-        not a Newton step count. Because of the floor of ten,
+        solver uses trust-region reflective least-squares and may apply an
+        analytic Newton polish when the direct result stalls just above
+        tolerance. That success reports ``solver_path="direct-newton-polish"``;
+        its ``ImccConvergence.iterations`` count is SciPy ``nfev`` plus the
+        Newton correction steps. Other direct successes report SciPy ``nfev``.
+        Because of the floor of ten,
         ``max_iter=1`` does not impose a one-evaluation ceiling on the
         paths in ``_solve_active``.
 

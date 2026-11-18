@@ -15,6 +15,7 @@ import warnings
 
 import numpy as np
 import pytest
+import openimcc.kernel as kernel_module
 
 # The simulator this engine was extracted from owns a "fidelity vocabulary"
 # deciding which label strings deny authority. That predicate is deny-by-default
@@ -780,6 +781,24 @@ def test_p2_7_total_displacement() -> None:
     with pytest.raises(ImccNonconvergenceError) as exc:
         solve_imcc_sf04(stiff_parent, 1500.0, stiff_pack, tol=1.0e-12, max_iter=1)
     assert exc.value.diagnostics["total_displacement"] > 0.0
+
+
+def test_direct_newton_polish_has_distinct_solver_path(monkeypatch) -> None:
+    pack = make_ab_datapack(A=1.0, B=0.0)
+    parent = np.array([0.5, 0.5])
+    scipy_least_squares = kernel_module.least_squares
+
+    def stop_above_tolerance(*args, **kwargs):
+        result = scipy_least_squares(*args, **kwargs)
+        result.x = result.x.copy()
+        result.x[0] += 1.0e-7
+        return result
+
+    monkeypatch.setattr(kernel_module, "least_squares", stop_above_tolerance)
+    result = solve_imcc_sf04(parent, 1000.0, pack, tol=1.0e-12)
+
+    assert result.convergence.solver_path == "direct-newton-polish"
+    assert result.convergence.continuation_stages == 0
 
 
 # --------------------------------------------------------------------------- #
