@@ -331,7 +331,7 @@ def test_continued_notice_and_receipt_cover_equilibrium_and_declared_results() -
 
 def test_phases_without_a_printed_limit_remain_missing_above_their_last_node() -> None:
     for phase_id, last_temperature in (("C12A7", 1700.0), ("NaAlO2", 1900.0)):
-        states, _digest, _pure_digest, _gas_pack, missing = (
+        states, _data_identity, _gas_pack, missing = (
             equilibrium_module._default_candidate_states(
                 math.nextafter(last_temperature, math.inf)
             )

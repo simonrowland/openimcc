@@ -146,11 +146,11 @@ def _make_receipt(
     oxygen_balance: bool,
     allow_extrapolation: bool,
     crystal_digest: str,
+    barin_digest: str,
     pure_digest: str,
     gas_pack: Any | None,
     crystal_function_continued: tuple[str, ...] = (),
 ) -> CalculationReceipt:
-    _barin_data, barin_digest = _load_json(_BARIN_RESOURCE)
     return build_calculation_receipt(
         request={
             "declared_phases": phases,
@@ -195,7 +195,9 @@ def _empty_result(
     oxygen_balance: bool,
     allow_extrapolation: bool,
     crystal_digest: str,
+    barin_digest: str,
     pure_digest: str,
+    dataset_schemas: Mapping[str, str],
     gas_pack: Any | None,
     validity: Literal["IN", "OUT_OF_DOMAIN", "DEPENDS"],
     evidence_class: str,
@@ -211,9 +213,7 @@ def _empty_result(
 ) -> DeclaredAssemblageResult:
     labels = PhaseEquilibriumLabels(
         identity={
-            "crystal_phases": "openimcc-crystal-phases-v2",
-            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v3",
-            "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
+            **dataset_schemas,
             "gas_table_digest": getattr(gas_pack, "gas_table_digest", "unresolved"),
             "condensate_table_digest": getattr(
                 gas_pack, "condensate_table_digest", "unresolved"
@@ -229,7 +229,7 @@ def _empty_result(
         gas_species=gas_species, parent_oxides=parent_oxides,
         include_ions=include_ions, oxygen_balance=oxygen_balance,
         allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
-        pure_digest=pure_digest, gas_pack=gas_pack,
+        barin_digest=barin_digest, pure_digest=pure_digest, gas_pack=gas_pack,
         crystal_function_continued=crystal_function_continued,
     )
     return DeclaredAssemblageResult(
@@ -378,7 +378,12 @@ def evaluate_declared_assemblage(
 
     pure_data, pure_digest = _load_json(_PURE_OXIDE_RESOURCE)
     crystal_data, crystal_digest = _load_json(_CRYSTAL_RESOURCE)
-    barin_data, _barin_digest = _load_json(_BARIN_RESOURCE)
+    barin_data, barin_digest = _load_json(_BARIN_RESOURCE)
+    dataset_schemas = {
+        "crystal_phases": str(crystal_data["schema"]),
+        "barin_aluminate_crystals": str(barin_data["schema"]),
+        "janaf_pure_oxide_crystals": str(pure_data["schema"]),
+    }
     pure_by_id = {row["id"]: row for row in pure_data["phases"]}
     crystal_by_id = {
         row["id"]: row for row in (*crystal_data["phases"], *barin_data["phases"])
@@ -398,7 +403,8 @@ def evaluate_declared_assemblage(
             gas_species=requested_gas, parent_oxides=requested_oxides,
             include_ions=include_ions, oxygen_balance=oxygen_balance,
             allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
-            pure_digest=pure_digest, gas_pack=gas_pack, validity="DEPENDS",
+            barin_digest=barin_digest, pure_digest=pure_digest,
+            dataset_schemas=dataset_schemas, gas_pack=gas_pack, validity="DEPENDS",
             evidence_class="unresolved", flags=("redox_phase_refused",),
             notices=("declared_assemblage_not_minimized",), refusal=refusal,
         )
@@ -417,7 +423,8 @@ def evaluate_declared_assemblage(
             gas_species=requested_gas, parent_oxides=requested_oxides,
             include_ions=include_ions, oxygen_balance=oxygen_balance,
             allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
-            pure_digest=pure_digest, gas_pack=gas_pack, validity="DEPENDS",
+            barin_digest=barin_digest, pure_digest=pure_digest,
+            dataset_schemas=dataset_schemas, gas_pack=gas_pack, validity="DEPENDS",
             evidence_class="unresolved", flags=(),
             notices=("declared_assemblage_not_minimized",), refusal=refusal,
             non_identifiable_components=(
@@ -491,7 +498,8 @@ def evaluate_declared_assemblage(
             gas_species=requested_gas, parent_oxides=requested_oxides,
             include_ions=include_ions, oxygen_balance=oxygen_balance,
             allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
-            pure_digest=pure_digest, gas_pack=active_pack, validity="OUT_OF_DOMAIN",
+            barin_digest=barin_digest, pure_digest=pure_digest,
+            dataset_schemas=dataset_schemas, gas_pack=active_pack, validity="OUT_OF_DOMAIN",
             evidence_class=_least_authority(phase_authorities),
             flags=("crystal_phase_out_of_range",),
             notices=("declared_assemblage_not_minimized",), refusal=refusal,
@@ -573,7 +581,8 @@ def evaluate_declared_assemblage(
             gas_species=requested_gas, parent_oxides=requested_oxides,
             include_ions=include_ions, oxygen_balance=oxygen_balance,
             allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
-            pure_digest=pure_digest, gas_pack=active_pack, validity="OUT_OF_DOMAIN",
+            barin_digest=barin_digest, pure_digest=pure_digest,
+            dataset_schemas=dataset_schemas, gas_pack=active_pack, validity="OUT_OF_DOMAIN",
             evidence_class=_least_authority((*phase_authorities, *active_authorities)),
             flags=("parent_liquid_standard_out_of_range",),
             notices=("declared_assemblage_not_minimized",), refusal=refusal, axes=axes,
@@ -618,7 +627,8 @@ def evaluate_declared_assemblage(
             gas_species=requested_gas, parent_oxides=requested_oxides,
             include_ions=include_ions, oxygen_balance=oxygen_balance,
             allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
-            pure_digest=pure_digest, gas_pack=active_pack, validity="DEPENDS",
+            barin_digest=barin_digest, pure_digest=pure_digest,
+            dataset_schemas=dataset_schemas, gas_pack=active_pack, validity="DEPENDS",
             evidence_class=_least_authority((*phase_authorities, *active_authorities)),
             flags=("phase_equations_inconsistent",),
             notices=("declared_assemblage_not_minimized",), refusal=refusal,
@@ -775,9 +785,7 @@ def evaluate_declared_assemblage(
 
     labels = PhaseEquilibriumLabels(
         identity={
-            "crystal_phases": "openimcc-crystal-phases-v2",
-            "barin_aluminate_crystals": str(barin_data["schema"]),
-            "janaf_pure_oxide_crystals": str(pure_data["schema"]),
+            **dataset_schemas,
             "gas_table_digest": active_pack.gas_table_digest,
             "condensate_table_digest": active_pack.condensate_table_digest,
             "standard_pressure_bar": "1.0",
@@ -791,7 +799,7 @@ def evaluate_declared_assemblage(
         gas_species=requested_gas, parent_oxides=requested_oxides,
         include_ions=include_ions, oxygen_balance=oxygen_balance,
         allow_extrapolation=allow_extrapolation, crystal_digest=crystal_digest,
-        pure_digest=pure_digest, gas_pack=active_pack,
+        barin_digest=barin_digest, pure_digest=pure_digest, gas_pack=active_pack,
         crystal_function_continued=tuple(continued_notices),
     )
     return DeclaredAssemblageResult(

@@ -20,6 +20,7 @@ from openimcc.declared_assemblage import EquilibriumRefusal
 from openimcc.equilibrium import (
     CrystalCandidate,
     _CandidateState,
+    _PhaseDataIdentity,
     _PURE_RESOURCE,
     _active_residual,
     _inner_activity_uncertainty,
@@ -100,10 +101,14 @@ def _install_synthetic_default_candidates(monkeypatch, candidates, gas_pack):
         )
         for candidate in candidates
     )
+    data_identity = _PhaseDataIdentity(
+        "synthetic-crystal-data", "synthetic-barin-data", "synthetic-pure-data",
+        "synthetic-crystals", "synthetic-barin", "synthetic-pure",
+    )
 
     def synthetic_defaults(_temperature, selected_gas_pack=None):
         return (
-            states, "synthetic-crystal-data", "synthetic-pure-data",
+            states, data_identity,
             gas_pack if selected_gas_pack is None else selected_gas_pack, (),
         )
 
@@ -362,8 +367,10 @@ def test_replacement_preserves_injected_resolution_error(monkeypatch, ideal_pack
         A=np.asarray([[1.0], [0.0]]), g=np.asarray([candidate.G_crystal_J_mol]),
         liquid_gibbs=liquid_g, temperature_K=temperature,
         pack=ideal_pack, gas_pack=gas_pack, candidates_all=(state,),
-        aliases={}, rejected_polymorphs={}, crystal_digest="synthetic-crystals",
-        pure_digest="synthetic-pure", explicit_candidates=False, missing=(),
+        aliases={}, rejected_polymorphs={}, data_identity=_PhaseDataIdentity(
+            "synthetic-crystals", "synthetic-barin", "synthetic-pure",
+            "synthetic-crystals", "synthetic-barin", "synthetic-pure",
+        ), explicit_candidates=False, missing=(),
         balance_tol=1.0e-10, affinity_tol_ln=1.0e-8,
         inner_tol=1.0e-12, max_iter=100,
     )
@@ -725,7 +732,12 @@ def test_phase_boundaries_refine_cooling_direction_crossing(
             candidate, candidate.source_authority,
             candidate.temperature_range_K, True,
         )
-        return (state,), "synthetic-crystal-data", "synthetic-pure-data", selected_gas_pack, ()
+        return (
+            (state,), _PhaseDataIdentity(
+                "synthetic-crystal-data", "synthetic-barin-data", "synthetic-pure-data",
+                "synthetic-crystals", "synthetic-barin", "synthetic-pure",
+            ), selected_gas_pack, (),
+        )
 
     monkeypatch.setattr(
         equilibrium_module, "_default_candidate_states", temperature_dependent_default
@@ -797,8 +809,10 @@ def test_source_cap_transition_is_not_a_model_boundary_in_either_sweep_order(
             ),
         )
         return (
-            states, "synthetic-crystal-data", "synthetic-pure-data",
-            selected_gas_pack, (),
+            states, _PhaseDataIdentity(
+                "synthetic-crystal-data", "synthetic-barin-data", "synthetic-pure-data",
+                "synthetic-crystals", "synthetic-barin", "synthetic-pure",
+            ), selected_gas_pack, (),
         )
 
     monkeypatch.setattr(
@@ -1118,7 +1132,7 @@ def test_feasible_candidate_without_gibbs_still_depends(monkeypatch):
     original = equilibrium_module._default_candidate_states
 
     def missing_feasible_anorthite(temperature, gas_pack=None):
-        states, crystal_digest, pure_digest, resolved_gas, unavailable = original(
+        states, data_identity, resolved_gas, unavailable = original(
             temperature, gas_pack
         )
         altered = tuple(
@@ -1127,7 +1141,7 @@ def test_feasible_candidate_without_gibbs_still_depends(monkeypatch):
             for state in states
         )
         return (
-            altered, crystal_digest, pure_digest, resolved_gas,
+            altered, data_identity, resolved_gas,
             tuple(sorted((*unavailable, "anorthite"))),
         )
 
@@ -1360,7 +1374,10 @@ def test_absent_by_construction_is_absent_in_solid_result(
     monkeypatch.setattr(
         "openimcc.equilibrium._resolve_candidates",
         lambda *_args, **_kwargs: (
-            states, "control-crystals", "control-pure", gas_pack, (), False,
+            states, _PhaseDataIdentity(
+                "control-crystals", "control-barin", "control-pure",
+                "control-crystals", "control-barin", "control-pure",
+            ), gas_pack, (), False,
         ),
     )
 

@@ -306,6 +306,16 @@ class _CandidateState:
     continued_range_K: tuple[float, float] | None = None
 
 
+@dataclass(frozen=True)
+class _PhaseDataIdentity:
+    crystal_digest: str
+    barin_digest: str
+    pure_digest: str
+    crystal_schema: str
+    barin_schema: str
+    pure_schema: str
+
+
 def _proven_absent_crystal_classification(
     state: _CandidateState,
 ) -> tuple[float, tuple[float, float], Literal["absent"]] | None:
@@ -486,12 +496,16 @@ def _exclude_zero_bulk_infeasible_candidates(
 def _default_candidate_states(
     temperature_K: float,
     gas_pack: Any | None = None,
-) -> tuple[tuple[_CandidateState, ...], str, str, Any, tuple[str, ...]]:
+) -> tuple[tuple[_CandidateState, ...], _PhaseDataIdentity, Any, tuple[str, ...]]:
     from openimcc import gas
 
     pure, pure_digest = _load_json(_PURE_RESOURCE)
     crystals, crystal_digest = _load_json(_CRYSTAL_RESOURCE)
-    barin, _barin_digest = _load_json(_BARIN_RESOURCE)
+    barin, barin_digest = _load_json(_BARIN_RESOURCE)
+    data_identity = _PhaseDataIdentity(
+        crystal_digest, barin_digest, pure_digest,
+        str(crystals["schema"]), str(barin["schema"]), str(pure["schema"]),
+    )
     pure_by_id = {row["id"]: row for row in pure["phases"]}
     crystal_by_id = {row["id"]: row for row in crystals["phases"]}
     barin_by_id = {row["id"]: row for row in barin["phases"]}
@@ -556,19 +570,19 @@ def _default_candidate_states(
             crystal.provenance,
         )
         states.append(_CandidateState(candidate, candidate.source_authority, crystal.domain_K, True))
-    return tuple(states), crystal_digest, pure_digest, gas_pack, tuple(sorted(set(unavailable)))
+    return tuple(states), data_identity, gas_pack, tuple(sorted(set(unavailable)))
 
 
 def _resolve_candidates(
     candidates: Sequence[str | CrystalCandidate] | None,
     temperature_K: float,
     gas_pack: Any | None = None,
-) -> tuple[tuple[_CandidateState, ...], str, str, Any, tuple[str, ...], bool]:
-    defaults, crystal_digest, pure_digest, gas_pack, unavailable = (
+) -> tuple[tuple[_CandidateState, ...], _PhaseDataIdentity, Any, tuple[str, ...], bool]:
+    defaults, data_identity, gas_pack, unavailable = (
         _default_candidate_states(temperature_K, gas_pack)
     )
     if candidates is None:
-        return defaults, crystal_digest, pure_digest, gas_pack, unavailable, False
+        return defaults, data_identity, gas_pack, unavailable, False
     by_id = {state.candidate.phase_id: state for state in defaults}
     selected: list[_CandidateState] = []
     for item in candidates:
@@ -596,7 +610,7 @@ def _resolve_candidates(
     if len(ids) != len(set(ids)):
         raise ValueError("candidate crystal phase IDs must be unique")
     return (
-        tuple(selected), crystal_digest, pure_digest, gas_pack,
+        tuple(selected), data_identity, gas_pack,
         tuple(
             state.candidate.phase_id for state in selected
             if not state.available and state.reason != "above_source_melting_point"
@@ -1749,14 +1763,12 @@ def _result_receipt(
     bulk: Mapping[str, float],
     temperature_K: float,
     pack: Any,
-    crystal_digest: str,
-    pure_digest: str,
+    data_identity: _PhaseDataIdentity,
     candidates: Sequence[_CandidateState],
     solver: Mapping[str, Any],
     gas_pack: Any | None = None,
 ) -> CalculationReceipt:
     kernel = pack.kernel_datapack if isinstance(pack, ImccLoadedDatapack) else pack
-    _barin_data, barin_digest = _load_json(_BARIN_RESOURCE)
     return build_calculation_receipt(
         request={
             "bulk_parent_mol": dict(bulk),
@@ -1766,9 +1778,9 @@ def _result_receipt(
         },
         data_digests={
             "melt_binding": getattr(pack, "binding_digest", getattr(kernel, "binding_digest", None)),
-            "crystal_phases": crystal_digest,
-            "barin_aluminate_crystals": barin_digest,
-            "janaf_pure_oxide_crystals": pure_digest,
+            "crystal_phases": data_identity.crystal_digest,
+            "barin_aluminate_crystals": data_identity.barin_digest,
+            "janaf_pure_oxide_crystals": data_identity.pure_digest,
             "parent_liquid_standards": (
                 gas_pack.condensate_table_digest if gas_pack is not None else
                 diagnostics._crystal_thermo_context(None)[0].condensate_table_digest
@@ -1802,6 +1814,7 @@ def _result_receipt(
 
 def _labels(
     pack: Any,
+    data_identity: _PhaseDataIdentity,
     states: Sequence[_CandidateState],
     missing: Sequence[str],
     explicit_candidates: bool,
@@ -1839,9 +1852,9 @@ def _labels(
         identity={
             "melt_model": str(getattr(kernel, "model_id", "unresolved")),
             "melt_binding_digest": str(getattr(pack, "binding_digest", getattr(kernel, "binding_digest", "unresolved"))),
-            "crystal_phases": "openimcc-crystal-phases-v2",
-            "barin_aluminate_crystals": "openimcc-barin-aluminate-crystals-v3",
-            "janaf_pure_oxide_crystals": "openimcc-janaf-apparent-crystals-v2",
+            "crystal_phases": data_identity.crystal_schema,
+            "barin_aluminate_crystals": data_identity.barin_schema,
+            "janaf_pure_oxide_crystals": data_identity.pure_schema,
             "standard_pressure_bar": "1.0",
         },
         coverage={
@@ -1894,8 +1907,7 @@ def _empty_result(
     temperature_K: float,
     pack: Any,
     states: Sequence[_CandidateState],
-    crystal_digest: str,
-    pure_digest: str,
+    data_identity: _PhaseDataIdentity,
     explicit_candidates: bool,
     refusal: EquilibriumRefusal,
     validity: Literal["IN", "OUT_OF_DOMAIN", "DEPENDS"] = "DEPENDS",
@@ -1907,12 +1919,12 @@ def _empty_result(
     solid_ranges: Mapping[str, tuple[float, float]] | None = None,
 ) -> PhaseEquilibriumResult:
     labels = _labels(
-        pack, states, (), explicit_candidates, (*flags, refusal.code), notices,
+        pack, data_identity, states, (), explicit_candidates, (*flags, refusal.code), notices,
         validity, axes, tuple(bulk),
     )
     receipt = _result_receipt(
         bulk=bulk, temperature_K=temperature_K, pack=pack,
-        crystal_digest=crystal_digest, pure_digest=pure_digest,
+        data_identity=data_identity,
         candidates=states, solver=solver or {},
     )
     phase_ids = tuple(state.candidate.phase_id for state in states)
@@ -2174,8 +2186,7 @@ def _positive_branch(
     candidates_all: Sequence[_CandidateState],
     aliases: Mapping[str, tuple[str, ...]],
     rejected_polymorphs: Mapping[str, str],
-    crystal_digest: str,
-    pure_digest: str,
+    data_identity: _PhaseDataIdentity,
     explicit_candidates: bool,
     missing: Sequence[str],
     balance_tol: float,
@@ -2296,8 +2307,8 @@ def _positive_branch(
         if current_liquid is None:
             return _empty_result(
                 bulk=bulk, temperature_K=temperature_K, pack=pack,
-                states=candidates_all, crystal_digest=crystal_digest,
-                pure_digest=pure_digest, explicit_candidates=explicit_candidates,
+                states=candidates_all, data_identity=data_identity,
+                explicit_candidates=explicit_candidates,
                 refusal=EquilibriumRefusal(
                     "liquid_fraction_unresolved",
                     "Liquid subtraction is not safely positive under its computed error bound.",
@@ -2316,8 +2327,8 @@ def _positive_branch(
         except (ImccRefusal, ArithmeticError) as exc:
             return _empty_result(
                 bulk=bulk, temperature_K=temperature_K, pack=pack,
-                states=candidates_all, crystal_digest=crystal_digest,
-                pure_digest=pure_digest, explicit_candidates=explicit_candidates,
+                states=candidates_all, data_identity=data_identity,
+                explicit_candidates=explicit_candidates,
                 refusal=EquilibriumRefusal(
                     "inner_melt_failed" if isinstance(exc, ImccRefusal) else "arithmetic_failure",
                     str(exc), ("liquid_parent_mol",),
@@ -2407,8 +2418,8 @@ def _positive_branch(
             if not trial_absent:
                 return _empty_result(
                     bulk=bulk, temperature_K=temperature_K, pack=pack,
-                    states=candidates_all, crystal_digest=crystal_digest,
-                    pure_digest=pure_digest, explicit_candidates=explicit_candidates,
+                    states=candidates_all, data_identity=data_identity,
+                    explicit_candidates=explicit_candidates,
                     refusal=EquilibriumRefusal(
                         "active_set_cycle" if cycle_detected else
                         "singular_inconsistent_affinity"
@@ -2517,8 +2528,8 @@ def _positive_branch(
                 continue
             return _empty_result(
                 bulk=bulk, temperature_K=temperature_K, pack=pack,
-                states=candidates_all, crystal_digest=crystal_digest,
-                pure_digest=pure_digest, explicit_candidates=explicit_candidates,
+                states=candidates_all, data_identity=data_identity,
+                explicit_candidates=explicit_candidates,
                 refusal=EquilibriumRefusal(
                     "active_set_cycle" if cycle_detected else
                     "singular_inconsistent_affinity"
@@ -2569,8 +2580,8 @@ def _positive_branch(
         if not passed:
             return _empty_result(
                 bulk=bulk, temperature_K=temperature_K, pack=pack,
-                states=candidates_all, crystal_digest=crystal_digest,
-                pure_digest=pure_digest, explicit_candidates=explicit_candidates,
+                states=candidates_all, data_identity=data_identity,
+                explicit_candidates=explicit_candidates,
                 refusal=EquilibriumRefusal(
                     "kkt_residual",
                     "Independent KKT recheck exceeded a named numerical tolerance.",
@@ -2695,7 +2706,7 @@ def _positive_branch(
             "DEPENDS" if authorities_missing or not ranges_certified else "IN"
         )
         labels = _labels(
-            pack, candidates_all, missing, explicit_candidates,
+            pack, data_identity, candidates_all, missing, explicit_candidates,
             ("restricted_candidate_set",) if explicit_candidates else (),
             tie_breaks,
             validity,
@@ -2707,7 +2718,7 @@ def _positive_branch(
         )
         receipt = _result_receipt(
             bulk=bulk, temperature_K=temperature_K, pack=pack,
-            crystal_digest=crystal_digest, pure_digest=pure_digest,
+            data_identity=data_identity,
             candidates=candidates_all,
             solver={
                 "active_set_history": history,
@@ -2775,8 +2786,8 @@ def _positive_branch(
 
     return _empty_result(
         bulk=bulk, temperature_K=temperature_K, pack=pack,
-        states=candidates_all, crystal_digest=crystal_digest,
-        pure_digest=pure_digest, explicit_candidates=explicit_candidates,
+        states=candidates_all, data_identity=data_identity,
+        explicit_candidates=explicit_candidates,
         refusal=EquilibriumRefusal(
             "active_set_cycle" if cycle_detected else "active_set_incompatibility",
             "The deterministic active-set transition allowance was exhausted.",
@@ -2805,8 +2816,7 @@ def _solid_result(
     temperature_K: float,
     pack: Any,
     gas_pack: Any,
-    crystal_digest: str,
-    pure_digest: str,
+    data_identity: _PhaseDataIdentity,
     explicit_candidates: bool,
     missing: Sequence[str],
     aliases: Mapping[str, tuple[str, ...]],
@@ -3065,6 +3075,7 @@ def _solid_result(
 
     labels = _labels(
         pack,
+        data_identity,
         all_states,
         missing,
         explicit_candidates,
@@ -3078,8 +3089,7 @@ def _solid_result(
         bulk=bulk,
         temperature_K=temperature_K,
         pack=pack,
-        crystal_digest=crystal_digest,
-        pure_digest=pure_digest,
+        data_identity=data_identity,
         candidates=all_states,
         solver={
             "solid_lp_objective_J": lp.objective_J,
@@ -3198,13 +3208,13 @@ def _equilibrate_one(
     from openimcc import diagnostics as diagnostic_module
     gas_pack, _ = diagnostic_module._crystal_thermo_context(None)
     try:
-        all_states, crystal_digest, pure_digest, gas_pack, unavailable, explicit = (
+        all_states, data_identity, gas_pack, unavailable, explicit = (
             _resolve_candidates(candidates, candidate_temperature, gas_pack)
         )
     except Exception as exc:
         # Unknown crystal IDs and malformed candidate input are typed as
         # missing phase data at this API boundary.
-        fallback_states, crystal_digest, pure_digest, gas_pack, _unavailable, _explicit = (
+        fallback_states, data_identity, gas_pack, _unavailable, _explicit = (
             _resolve_candidates(None, candidate_temperature, gas_pack)
         )
         try:
@@ -3216,8 +3226,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             states=fallback_states,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=candidates is not None,
             refusal=EquilibriumRefusal(
                 "missing_phase_data", str(exc), ("crystal_candidates",)
@@ -3234,8 +3243,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             states=all_states,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=explicit,
             refusal=EquilibriumRefusal(
                 (
@@ -3267,8 +3275,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             states=all_states,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=explicit,
             refusal=EquilibriumRefusal(
                 code,
@@ -3303,8 +3310,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             states=all_states,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=explicit,
             refusal=EquilibriumRefusal(
                 "invalid_input", "Solver tolerances and max_iter must be positive and finite.",
@@ -3317,8 +3323,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             states=all_states,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=explicit,
             refusal=EquilibriumRefusal(
                 "unsupported_nonconvex_model",
@@ -3336,8 +3341,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             states=all_states,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=explicit,
             refusal=EquilibriumRefusal(
                 "unsupported_redox_phase",
@@ -3358,8 +3362,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             states=all_states,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=explicit,
             refusal=EquilibriumRefusal(
                 "unsupported_redox_phase", str(exc), ("crystal_candidates",)
@@ -3388,8 +3391,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             states=all_states,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=explicit,
             refusal=EquilibriumRefusal(
                 "missing_phase_data", f"Parent-liquid Gibbs standard unavailable: {exc}",
@@ -3441,8 +3443,7 @@ def _equilibrate_one(
                 temperature_K=temperature,
                 pack=selected_pack,
                 states=all_states,
-                crystal_digest=crystal_digest,
-                pure_digest=pure_digest,
+                data_identity=data_identity,
                 explicit_candidates=explicit,
                 refusal=EquilibriumRefusal(
                     "infeasible_bulk" if lp is None else "kkt_residual",
@@ -3470,8 +3471,7 @@ def _equilibrate_one(
             temperature_K=temperature,
             pack=selected_pack,
             gas_pack=gas_pack,
-            crystal_digest=crystal_digest,
-            pure_digest=pure_digest,
+            data_identity=data_identity,
             explicit_candidates=explicit,
             missing=missing,
             aliases=aliases,
@@ -3499,8 +3499,7 @@ def _equilibrate_one(
                 temperature_K=temperature,
                 pack=selected_pack,
                 states=all_states,
-                crystal_digest=crystal_digest,
-                pure_digest=pure_digest,
+                data_identity=data_identity,
                 explicit_candidates=explicit,
                 refusal=EquilibriumRefusal(
                     "liquid_absence_not_certified",
@@ -3533,8 +3532,7 @@ def _equilibrate_one(
                 temperature_K=temperature,
                 pack=selected_pack,
                 gas_pack=gas_pack,
-                crystal_digest=crystal_digest,
-                pure_digest=pure_digest,
+                data_identity=data_identity,
                 explicit_candidates=explicit,
                 missing=missing,
                 aliases=aliases,
@@ -3560,8 +3558,7 @@ def _equilibrate_one(
         candidates_all=all_states,
         aliases=aliases,
         rejected_polymorphs=rejected_polymorphs,
-        crystal_digest=crystal_digest,
-        pure_digest=pure_digest,
+        data_identity=data_identity,
         explicit_candidates=explicit,
         missing=missing,
         balance_tol=float(tol),
@@ -3752,7 +3749,7 @@ def _boundary_context(
     parent_names = tuple(kernel.parent_oxides)
     normalized_bulk, parents = _parse_bulk(bulk, parent_names)
     gas_pack, _ = diagnostics._crystal_thermo_context(None)
-    all_states, _crystal_digest, _pure_digest, gas_pack, unavailable, _explicit = (
+    all_states, _data_identity, gas_pack, unavailable, _explicit = (
         _resolve_candidates(candidates, temperature_K, gas_pack)
     )
     all_states, unavailable = _exclude_zero_bulk_infeasible_candidates(
