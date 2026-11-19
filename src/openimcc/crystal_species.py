@@ -805,14 +805,25 @@ def evaluate_crystal_species(
 
     named = None
     named_segment = None
+    named_segment_interval = None
     if polymorph is not None:
         folded = polymorph.casefold()
         for candidate in candidates:
-            if candidate.label.casefold() == folded or str(
-                candidate.phase.get("source_title", "")
-            ).casefold() == folded:
+            source_title = str(candidate.phase.get("source_title", ""))
+            if (
+                candidate.label.casefold() == folded
+                or source_title.casefold() == folded
+            ):
                 named = candidate
                 break
+            if candidate.dataset == "Robie-Hemingway 1995 tables":
+                parenthesized_aliases = {
+                    alias.strip().casefold()
+                    for alias in re.findall(r"\(([^()]*)\)", source_title)
+                }
+                if folded.strip("()").strip() in parenthesized_aliases:
+                    named = candidate
+                    break
             matched_segments = [
                 segment
                 for segment in candidate.phase.get("phase_segments", ())
@@ -820,7 +831,10 @@ def evaluate_crystal_species(
             ]
             if matched_segments:
                 named = candidate
-                named_segment = folded
+                named_segment = str(matched_segments[0]["phase_label"])
+                named_segment_interval = tuple(
+                    map(float, matched_segments[0]["temperature_K"])
+                )
                 break
         if named is None:
             raise CrystalSpeciesPolymorphError(
@@ -852,7 +866,11 @@ def evaluate_crystal_species(
                 ),
                 None,
             )
-            if segment is None or str(segment["phase_label"]).casefold() != named_segment:
+            if (
+                segment is None
+                or str(segment["phase_label"]).casefold()
+                != named_segment.casefold()
+            ):
                 continue
         available, continue_from_K, extrapolated = _available_at_temperature(
             candidate,
@@ -879,12 +897,21 @@ def evaluate_crystal_species(
         available_labels = labels
         candidate = named or candidates[0]
         low_K, high_K = candidate.interval_K
+        if named_segment_interval is not None:
+            low_K, high_K = named_segment_interval
         if cap_refusals:
             candidate, limit = cap_refusals[0]
             message = (
                 f"cannot serve {formula}(cr) at T={temperature_K:g} K: "
                 f"above its source solid limit of {limit:g} K; available "
                 f"polymorphs: {', '.join(available_labels)}"
+            )
+        elif named_segment_interval is not None:
+            message = (
+                f"T={temperature_K:g} K is outside the declared G(T) interval "
+                f"({low_K:g}, {high_K:g}) K for phase segment "
+                f"{named_segment!r} of {formula}(cr) from {dataset}; "
+                f"available polymorphs: {', '.join(available_labels)}"
             )
         else:
             message = (
@@ -958,8 +985,11 @@ def evaluate_crystal_species(
         "printed_phase_description"
     )
     if isinstance(source_description, str) and source_description:
+        has_multiple_forms = "; " in source_description or ". " in source_description
         phase_identity["note"] = (
             f"One row spans a transition: {source_description}"
+            if has_multiple_forms
+            else source_description
         )
     limit = _source_solid_limit(candidate)
     source_solid_limit = candidate.phase.get("source_solid_limit")

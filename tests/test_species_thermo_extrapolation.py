@@ -351,6 +351,65 @@ def test_robie_hemingway_al2sio5_selection_and_printed_gibbs() -> None:
         species_thermo("AlO(OH)", "cr", 601.0)
 
 
+def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
+    kalsilite = species_thermo(
+        "KAlSiO4", "cr", 1000.0, polymorph="kAlSiLiTe"
+    )
+    parenthesized_alias = species_thermo(
+        "KAlSiO4", "cr", 1000.0, polymorph="(kAlSiLiTe)"
+    )
+    assert kalsilite.source_row_id == parenthesized_alias.source_row_id
+    assert kalsilite.source_table_id == parenthesized_alias.source_table_id
+    assert kalsilite.phase_identity["polymorph"] == "Kaliophillite (Kalsilite)"
+    assert kalsilite.phase_identity["note"].startswith(
+        "One row spans a transition: "
+    )
+
+    andalusite = species_thermo(
+        "Al2SiO5", "cr", 1000.0, polymorph="Andalusite"
+    )
+    assert andalusite.phase_identity["note"] == (
+        "Al₂SiO₅: Orthorhombic crystals 298.15 to 1800 K."
+    )
+
+    calcium_silicate = species_thermo(
+        "Ca2SiO4", "cr", 500.0, polymorph="Larnite"
+    )
+    assert calcium_silicate.phase_identity["note"].startswith(
+        "One row spans a transition: "
+    )
+
+    source_path = Path(__file__).parents[1] / (
+        "src/openimcc/data/diagnostics/rh-crystal-species.json"
+    )
+    phases = json.loads(source_path.read_text(encoding="utf-8"))["phases"]
+    source_notes = {
+        phase["id"]: phase["source_formula_note"]
+        for phase in phases
+        if "source_formula_note" in phase
+    }
+    assert source_notes["larnite"] == (
+        "The element-stoichiometry formula is printed as α-Ca₂SiO₄."
+    )
+    assert source_notes["calcio-olivine"] == (
+        "The element-stoichiometry formula is printed as γ-Ca₂SiO₄."
+    )
+    assert source_notes["kalsilite"] == (
+        "The element-stoichiometry formula is printed as KAlSiO₄."
+    )
+    assert "engine" not in " ".join(source_notes.values()).casefold()
+    assert "formula weight is 258.160" in source_notes["kaolinite"]
+
+
+def test_named_janaf_segment_refusal_reports_segment_interval() -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("PbO", "cr", 500.0, polymorph="II")
+
+    assert refusal.value.declared_interval_K == (762.0, 1159.0)
+    assert "(762, 1159) K" in str(refusal.value)
+    assert "phase segment 'II'" in str(refusal.value)
+
+
 def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
     with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
         species_thermo("CaTiO3", "cr", 1400.0)

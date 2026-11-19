@@ -334,7 +334,10 @@ def build_crystal_species() -> dict[str, Any]:
                 "formula weight is 258.160; the served formula follows the "
                 "formula weight and requested Al2Si2O5(OH)4 stoichiometry."
                 if source_phase["id"] == "kaolinite"
-                else "The engine formula follows the requested stoichiometry."
+                else (
+                    "The element-stoichiometry formula is printed as "
+                    f"{source_phase['source_formula_as_published']}."
+                )
             )
         phases.append(phase)
 
