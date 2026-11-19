@@ -24,12 +24,15 @@
 - Corrected the Cs2O+ oxygen-balance coefficient; the ion-only oxygen closure
   now counts its actual oxygen stoichiometry.
 - Default-path VapoRock table selection now emits a warning.
+- Side-oxide gas channels, including AlSiO, MgF, and CaCl, now carry the same
+  continuation sentence as their parent oxide in `domain_flags`; pressures
+  are unchanged.
 
 ### Gas thermochemistry
 
 - Added opt-in `species_thermo(..., allow_extrapolation=True)` using the same
-  row selection and continuation as `evaluate_gas`, with interval, continuation,
-  and authority provenance.
+  row selection and continuation as `evaluate_gas`, with `extrapolated`,
+  `declared_interval_K`, `continuation`, and authority provenance.
 - Changed `species_thermo(...).H_app_kJ_mol` to report formation-anchored
   enthalpy, preserving its documented identity with `G_J_mol` for rows with
   nonzero Shomate H. Packaged gas-table values are unchanged.

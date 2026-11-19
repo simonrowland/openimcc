@@ -2146,12 +2146,7 @@ def _continuation_info(
         candidate_notices=candidate_notices,
         redox_pack=redox_pack,
     )
-    if validity and validity.get("cp_extension") and source_flag is not None:
-        label = source_flag
-    elif source_flag is not None:
-        label = source_flag
-    else:
-        label = None
+    label = source_flag
 
     supercooled_flag = (
         _supercooled_liquid_from_solid_flag(row_name, T, row)
