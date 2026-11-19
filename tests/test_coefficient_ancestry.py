@@ -209,6 +209,9 @@ def _expected_row_ids(artifact: dict) -> set[str]:
     if file == "diagnostics/janaf-crystal-species.json":
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"phases:{row['id']}" for row in content["phases"]}
+    if file == "diagnostics/rh-crystal-species.json":
+        content = json.loads(path.read_text(encoding="utf-8"))
+        return {f"phases:{row['id']}" for row in content["phases"]}
     if file == "diagnostics/janaf-pure-oxide-liquid-pairs.json":
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"rows:{row['table_id']}" for row in content["rows"]}
@@ -241,7 +244,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 34
+    assert len(entries) == 36
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]

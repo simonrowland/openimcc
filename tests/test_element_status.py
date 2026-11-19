@@ -48,6 +48,10 @@ SCREEN_SPECIES = {
     "V": ("V", "VO", "VO2"),
     "Nb": ("Nb", "NbO", "NbO2"),
 }
+JANAF_CRYSTAL_TABLE_IDS = frozenset({
+    "B-004", "Fe-004", "Fe-023", "Fe-030", "Hf-005", "Mn-004",
+    "Mo-004", "Nb-004", "V-004", "W-004", "Zr-005",
+})
 
 
 def _record(table_id: str, source_dir: Path = JANAF_DATA) -> dict:
@@ -420,6 +424,12 @@ def test_janaf_b2_and_cs2_neutral_dimers_are_below_the_gas_share_cutoff(
 def test_text_neutral_oxide_source_is_scanned(tmp_path: Path) -> None:
     (tmp_path / "SiO3.txt").write_text(
         "Silicon trioxide\tSiO3(g)\n", encoding="utf-8"
+    )
+    (tmp_path / "B-004.txt").write_text(
+        "Boron\tB1(cr,l)\n", encoding="utf-8"
+    )
+    (tmp_path / "Nb-004.txt").write_text(
+        "Niobium\tNb1(cr,l)\n", encoding="utf-8"
     )
     assert _neutral_oxide_sources(tmp_path) == {"SiO3": ("Si", "SiO3")}
 
@@ -1159,6 +1169,17 @@ def test_halogen_selected_authority_labels_match_provenance() -> None:
 @pytest.mark.slow
 def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     measured = _ion_bound_maxima()
+    ionisation_source_ids = {
+        table_id
+        for status in ELEMENT_STATUS.values()
+        for table_id in (
+            status.get("c3_ion_bound", {})
+            .get("source_tables", {})
+            .values()
+        )
+        if isinstance(table_id, str)
+    }
+    assert not JANAF_CRYSTAL_TABLE_IDS & ionisation_source_ids
     negative_screen = yaml.safe_load(
         GAS_PROVENANCE.read_text(encoding="utf-8")
     )["source_notes"]["negative_ion_screen"]
@@ -1193,7 +1214,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "B-005", "B-006", "B-007", "B-078", "B-079", "B-080",
         "B-093", "B-094", "B-096", "B-098", "Ga-005", "Ga-006", "Ga-007",
         "Hf-006", "Hf-007", "Hf-008", "Hg-004",
-    }
+    } | JANAF_CRYSTAL_TABLE_IDS
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",

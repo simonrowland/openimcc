@@ -1137,6 +1137,7 @@ _PROVENANCE_AUTHORITY_RANK = {
     "lam1984_transcribed": 1,
     "lam1987_transcribed": 1,
     "janaf_transcribed": 2,
+    "published_transcribed": 2,
     "primary_measurement_reanchored": 4,
     "janaf_fitted": 3,
     "janaf_fitted_ionisation": 3,
