@@ -572,6 +572,26 @@ def _gamma_for_row(
                 "x_SiO2_squared": x_sio2 * x_sio2,
                 "x_CaO_times_x_SiO2": x_cao * x_sio2,
             }
+        elif input_basis == "cmas_component_mole_fraction":
+            # Premise: O'Neill and Eggins Table 8 fits γ in a CMAS component
+            # basis; Al2O3 contributes two AlO1.5 units, and TiO2 in the one
+            # quinary Table 7 melt is excluded from the CMAS normalization.
+            # Algebra: X_i = n_i / Σ(n_j * c_j), where c_j counts oxide
+            # cations; the fraction is dimensionless. For AD+TiO2, this gives
+            # γ(MoO3) = 0.3273, matching the Table 7 value 0.325(36).
+            cmas_moles = math.fsum(
+                amount * _oxide_cation_units(component)
+                for component, amount in amounts.items()
+                if component in {"CaO", "MgO", "Al2O3", "SiO2"}
+            )
+            x_cao = amounts.get("CaO", 0.0) / cmas_moles if cmas_moles else 0.0
+            x_mgo = amounts.get("MgO", 0.0) / cmas_moles if cmas_moles else 0.0
+            term_values = {
+                "constant": 1.0,
+                "x_CaO_squared": x_cao * x_cao,
+                "x_MgO_squared": x_mgo * x_mgo,
+                "x_CaO_times_x_MgO": x_cao * x_mgo,
+            }
         elif input_basis == "weight_percent":
             cao_mass = amounts.get("CaO", 0.0) * MOLAR_MASS_G_MOL["CaO"]
             sio2_mass = amounts.get("SiO2", 0.0) * MOLAR_MASS_G_MOL["SiO2"]

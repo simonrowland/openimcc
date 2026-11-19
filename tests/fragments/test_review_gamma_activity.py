@@ -517,6 +517,7 @@ def test_sossi_rb_row_flags_temperature_and_family() -> None:
 def test_new_review_gamma_oxides_are_listed_with_existing_trace_classes() -> None:
     supported = {item.oxide: item for item in supported_trace_oxides()}
     expected = {
+        "MoO3": ("Mo", "acidic"),
         "V2O3": ("V", "basic_oxide"),
         "Ag2O": ("Ag", "basic_oxide"),
         "Sb2O3": ("Sb", "basic_oxide"),
@@ -1941,7 +1942,7 @@ def test_review_gamma_parent_registry_preserves_legacy_screening(monkeypatch) ->
     legacy_parents = frozenset({
         "SnO", "Ga2O3", "In2O3", "Cu2O", "GeO2", "As2O3", "Bi2O3",
         "Ce2O3", "NiO", "CoO", "PbO", "WO3", "La2O3",
-        "V2O3", "Ag2O", "Sb2O3", "Tl2O", "Rb2O",
+        "V2O3", "Ag2O", "Sb2O3", "Tl2O", "Rb2O", "MoO3",
     })
     assert review_gamma_activity._TRACE_PARENTS == legacy_parents
 

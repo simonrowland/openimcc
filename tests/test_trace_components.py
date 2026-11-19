@@ -14,6 +14,7 @@ from openimcc import (
     load_datapack,
     supported_trace_oxides,
 )
+from openimcc.activity_fragments import load_activity_fragment
 from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.gas import (
     TraceActivityFlag,
@@ -98,6 +99,60 @@ def test_trace_fractions_reject_boolean_major_weight(value: object) -> None:
 
 def _major_activities(result) -> dict[str, float]:
     return dict(zip(result.parent_oxides, result.parent_activity, strict=True))
+
+
+def test_moo3_review_gamma_uses_public_evaluate_and_table7_domain() -> None:
+    fragment = load_activity_fragment("Mo")
+    assert fragment["rows"][0]["parent_standard_state"].startswith(
+        "pure liquid MoO3"
+    )
+
+    source_composition = {
+        "CaO": 19.1,
+        "MgO": 8.5,
+        "Al2O3": 12.1,
+        "SiO2": 40.7,
+        "TiO2": 19.6,
+        "MoO3": 0.001,
+    }
+    result = evaluate(
+        source_composition, 1673.15, basis_type="wt", allow_extrapolation=True
+    )
+    notice = next(
+        item for item in result.labels.notices
+        if isinstance(item, TraceComponentsOutsideMeltModelNotice)
+    )
+    estimate = notice.activities["MoO3"]
+    assert estimate.gamma == pytest.approx(0.327281, abs=2.0e-5)
+    assert estimate.x_source is not None
+    assert estimate.activity_range is not None
+    gamma_band = tuple(value / estimate.x_source for value in estimate.activity_range)
+    assert gamma_band[0] <= 0.325 <= gamma_band[1]
+    assert abs(estimate.gamma - 0.325) <= 0.036
+    assert estimate.reference is not None
+    assert "pure liquid MoO3" in estimate.reference
+
+    outside_domain = {
+        **source_composition,
+        "TiO2": 18.6,
+        "Na2O": 1.0,
+    }
+    outside_result = evaluate(
+        outside_domain, 1800.0, basis_type="wt", allow_extrapolation=True
+    )
+    outside_notice = next(
+        item for item in outside_result.labels.notices
+        if isinstance(item, TraceComponentsOutsideMeltModelNotice)
+    )
+    outside_estimate = outside_notice.activities["MoO3"]
+    assert any(
+        "1400 °C (1673.15 K) only" in warning
+        for warning in outside_estimate.violated_axes
+    )
+    assert any(
+        "Na2O is absent" in warning
+        for warning in outside_estimate.violated_axes
+    )
 
 
 def test_shared_oxide_counts_match_previous_logic_for_default_components() -> None:
@@ -716,6 +771,11 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration(
         trace_component_rule(oxide).activity_model == "redox_associates"
         for oxide in ("SrO", "Li2O", "ZnO", "Yb2O3", "MnO", "Cr2O3")
     )
+    moo3_rule = trace_component_rule("MoO3")
+    assert moo3_rule is not None
+    assert moo3_rule.activity_model == "review_gamma"
+    assert moo3_rule.review_gamma_element == "Mo"
+    assert any(item.oxide == "MoO3" for item in supported_trace_oxides())
 
     p2o5_composition = {
         "CaO": 40.0,

@@ -66,7 +66,7 @@ class TraceComponentRule:
     uses_review_gamma_evaluator: bool = False
     review_gamma_element: Literal[
         "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W", "Ce", "La",
-        "V", "Ag", "Sb", "Tl", "Rb",
+        "V", "Ag", "Sb", "Tl", "Rb", "Mo",
     ] | None = None
 
 
@@ -134,6 +134,15 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class_reason="WO3 is a hexavalent trace oxide with a liquid-standard activity estimate",
             gas_parent_oxide="WO3",
             review_gamma_element="W",
+        ),
+        "MoO3": TraceComponentRule(
+            MOLAR_MASS_G_MOL["Mo"] + 3.0 * _O_MASS, 1,
+            "one oxide formula unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="acidic",
+            trace_class_reason="MoO3 is a hexavalent trace oxide with a pure-liquid-standard activity estimate",
+            gas_parent_oxide="MoO3",
+            review_gamma_element="Mo",
         ),
         "SrO": TraceComponentRule(
             MOLAR_MASS_G_MOL["Sr"] + _O_MASS, 1,

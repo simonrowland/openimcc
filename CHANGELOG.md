@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Trace activity coefficients
+
+- Added a source-bounded MoO3 review-γ estimate on the pure-liquid MoO3
+  standard using O'Neill & Eggins (2002), Table 8's CMAS composition law.
+
 ### Input validation
 
 - Boolean values are no longer accepted as numeric inputs by

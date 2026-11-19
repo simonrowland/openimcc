@@ -1,0 +1,68 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Mo",
+  "rows": [
+    {
+      "row": "MoO3-Oneill-Eggins-2002-Table7-CMAS-1400C",
+      "parent_oxide": "MoO3",
+      "gamma_law": {
+        "kind": "composition_terms",
+        "input_basis": "cmas_component_mole_fraction",
+        "terms": [
+          {"name": "x_CaO_squared", "coefficient": -18.259499787443},
+          {"name": "x_MgO_squared", "coefficient": -3.062438173682},
+          {"name": "x_CaO_times_x_MgO", "coefficient": -18.581861700462},
+          {"name": "constant", "coefficient": 0.552620422319}
+        ],
+        "ln_gamma_rms_closure": 0.128143864692
+      },
+      "fusion_conversion": null,
+      "component": "MoO3(l)",
+      "source_mole_fraction_kind": "simple_oxide",
+      "component_basis": "pure-liquid MoO3 formula-unit mole fraction",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid MoO3 at the temperature and pressure of interest; Table 6 gives the standard-state thermochemistry at 1 bar",
+      "composition_screen": {
+        "kind": "supported_component_set",
+        "components": [
+          "CaO", "MgO", "Al2O3", "SiO2", "TiO2",
+          "FeO", "Na2O", "K2O", "MoO3"
+        ]
+      },
+      "temperature_window_K": [1673.15, 1673.15],
+      "log10_fO2_source": null,
+      "composition_windows_wt_pct": {
+        "CaO": {"range": [0.0, 47.4], "outside_flag": "moo3_cao_outside_table1"},
+        "MgO": {"range": [0.0, 25.2], "outside_flag": "moo3_mgo_outside_table1"},
+        "Al2O3": {"range": [5.6, 22.7], "outside_flag": "moo3_al2o3_outside_table1"},
+        "SiO2": {"range": [40.7, 66.8], "outside_flag": "moo3_sio2_outside_table1"},
+        "TiO2": {"range": [0.0, 19.6], "outside_flag": "moo3_tio2_outside_table1"},
+        "FeO": {"range": [0.0, 0.0], "outside_flag": "moo3_feo_outside_table1"},
+        "Na2O": {"range": [0.0, 0.0], "outside_flag": "moo3_na2o_outside_table1"},
+        "K2O": {"range": [0.0, 0.0], "outside_flag": "moo3_k2o_outside_table1"}
+      },
+      "flag_labels": {
+        "temperature_extrapolated": "The source measured this coefficient at 1400 °C (1673.15 K) only.",
+        "oxygen_fugacity_window_unreported": "Table 7 reports the coefficient from a multi-fO2 regression, not a single application window.",
+        "moo3_cao_outside_table1": "CaO is outside the Table 1 mean-composition range for the numeric Table 7 MoO3 points.",
+        "moo3_mgo_outside_table1": "MgO is outside the Table 1 mean-composition range for the numeric Table 7 MoO3 points.",
+        "moo3_al2o3_outside_table1": "Al2O3 is outside the Table 1 mean-composition range for the numeric Table 7 MoO3 points.",
+        "moo3_sio2_outside_table1": "SiO2 is outside the Table 1 mean-composition range for the numeric Table 7 MoO3 points.",
+        "moo3_tio2_outside_table1": "TiO2 is outside the Table 1 range for the numeric Table 7 MoO3 points.",
+        "moo3_feo_outside_table1": "FeO is absent from the Table 1 CMAS compositions used for the numeric Table 7 MoO3 points.",
+        "moo3_na2o_outside_table1": "Na2O is absent from the Table 1 compositions used for the numeric Table 7 MoO3 points.",
+        "moo3_k2o_outside_table1": "K2O is absent from the Table 1 compositions used for the numeric Table 7 MoO3 points."
+      },
+      "source_citation": "O'Neill & Eggins (2002), Chemical Geology 186, 151–181, doi:10.1016/S0009-2541(01)00414-4",
+      "source_locator": "Table 7, p. 164; Table 8 composition law, p. 165; Table 1 mean compositions, p. 157; pure-liquid standard convention, p. 153; standard thermochemistry, Table 6, p. 163",
+      "limitations": [
+        "Table 7 gives 17 numeric gamma(MoO3) values spanning 0.027 (CAS2) to 1.64 (MAS2), with one-sigma errors; Table 8 supplies the composition terms rather than a constant coefficient.",
+        "Table 8 prints log10(gamma) coefficients; the stored natural-log coefficients are multiplied by ln(10). The CMAS mole fractions count two AlO1.5 units per Al2O3 formula and exclude TiO2 from the CMAS denominator.",
+        "The 0.128143864692 ln(gamma) closure RMS is calculated from the 17 Table 7 central values and the Table 8 law evaluated at the corresponding Table 1 mean compositions; Table 1 does not report individual Table 7 sample compositions.",
+        "The composition windows are the marginal Table 1 mean-composition ranges for the melt names with numeric Table 7 MoO3 values; they do not define a jointly sampled continuous CMAS hull.",
+        "The activity coefficient is relative to pure liquid MoO3 as defined by the source; the shipped Mo-015 liquid row supplies the corresponding pure-liquid oxide thermochemistry."
+      ]
+    }
+  ]
+}
