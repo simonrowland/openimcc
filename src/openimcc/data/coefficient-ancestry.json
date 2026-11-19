@@ -1,9 +1,9 @@
 {
   "schema": "openimcc-coefficient-ancestry.v1",
   "vocabulary_snapshot": {
-    "commit": "856c0cf09b",
-    "work_id_count": 16,
-    "sha256": "6aff834e7baf0001a4080c78ec9e6e1e6f3c17bd9c0b080110ef7919245a2afc"
+    "commit": "3645e2c2bb",
+    "work_id_count": 17,
+    "sha256": "b26e2462747acf0ae7ac53920edda60caf094031b0490f8889c1fe3af3c4d273"
   },
   "artifacts": [
     {
@@ -20516,6 +20516,11 @@
           "label": "Fe2SiO4",
           "sources": [
             {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
+            {
               "work_id": "darken-gurry-1946-iron-oxygen-ii",
               "role": "derived",
               "citation": "Darken & Gurry (1946), Tables IIIA, IIIB, VI, selected FeO(l) standard reduced via Masson (1965), Eq. 17"
@@ -20536,6 +20541,11 @@
           "id": "phases:hercynite",
           "label": "FeAl2O4",
           "sources": [
+            {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
             {
               "work_id": "darken-gurry-1946-iron-oxygen-ii",
               "role": "derived",
@@ -20558,6 +20568,11 @@
           "label": "FeTiO3",
           "sources": [
             {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
+            {
               "work_id": "darken-gurry-1946-iron-oxygen-ii",
               "role": "derived",
               "citation": "Darken & Gurry (1946), Tables IIIA, IIIB, VI, selected FeO(l) standard reduced via Masson (1965), Eq. 17"
@@ -20579,6 +20594,11 @@
           "label": "CaTiO3",
           "sources": [
             {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
+            {
               "work_id": "janaf-4th",
               "role": "derived",
               "citation": "Chase (1998), NIST-JANAF Thermochemical Tables"
@@ -20599,6 +20619,11 @@
           "id": "phases:ulvospinel",
           "label": "Fe2TiO4",
           "sources": [
+            {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131"
+            },
             {
               "work_id": "darken-gurry-1946-iron-oxygen-ii",
               "role": "derived",
@@ -20724,46 +20749,16 @@
       "work_ids": [
         "berman-1988-internally-consistent-mineral-thermodynamic-data",
         "darken-gurry-1946-iron-oxygen-ii",
-        "janaf-4th"
+        "janaf-4th",
+        "robie-hemingway-1995-usgs-b2131"
       ],
-      "unmapped": [
-        {
-          "row": "phases:fayalite",
-          "citation": "Robie and Hemingway (1995), USGS Bulletin 2131",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "derived"
-        },
-        {
-          "row": "phases:hercynite",
-          "citation": "Robie and Hemingway (1995), USGS Bulletin 2131",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "derived"
-        },
-        {
-          "row": "phases:ilmenite",
-          "citation": "Robie and Hemingway (1995), USGS Bulletin 2131",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "derived"
-        },
-        {
-          "row": "phases:perovskite",
-          "citation": "Robie and Hemingway (1995), USGS Bulletin 2131",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "derived"
-        },
-        {
-          "row": "phases:ulvospinel",
-          "citation": "Robie and Hemingway (1995), USGS Bulletin 2131",
-          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
-          "role": "derived"
-        }
-      ],
-      "complete": false,
+      "unmapped": [],
+      "complete": true,
       "counts": {
         "rows": 23,
         "mapped_rows": 23,
-        "unmapped_citations": 5,
-        "rows_with_unmapped": 5
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
       }
     }
   ]

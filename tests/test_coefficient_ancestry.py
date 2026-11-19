@@ -186,23 +186,25 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
         "berman-1988-internally-consistent-mineral-thermodynamic-data",
         "darken-gurry-1946-iron-oxygen-ii",
         "janaf-4th",
+        "robie-hemingway-1995-usgs-b2131",
     }
-    assert crystals["complete"] is False
+    # Green 3645e2c2bb indexes Robie–Hemingway, resolving these five citations.
+    assert crystals["complete"] is True
+    assert crystals["counts"]["unmapped_citations"] == 0
     rh_rows = {
         f"phases:{phase}"
         for phase in ("fayalite", "hercynite", "ilmenite", "perovskite", "ulvospinel")
     }
-    rh_citations = [
-        item for item in crystals["unmapped"]
-        if item["citation"] == "Robie and Hemingway (1995), USGS Bulletin 2131"
+    rh_sources = [
+        (row["id"], source)
+        for row in crystals["rows"]
+        for source in row["sources"]
+        if source["citation"] == "Robie and Hemingway (1995), USGS Bulletin 2131"
     ]
-    assert {item["row"] for item in rh_citations} == rh_rows
-    assert all(
-        item["reason"] == (
-            "No curated citation-key mapping resolves to a work ID in the vocabulary."
-        )
-        for item in rh_citations
-    )
+    assert {row_id for row_id, _source in rh_sources} == rh_rows
+    assert {source["work_id"] for _row_id, source in rh_sources} == {
+        "robie-hemingway-1995-usgs-b2131"
+    }
     for phase in ("fayalite", "hercynite", "ilmenite", "ulvospinel"):
         row = next(item for item in crystals["rows"] if item["id"] == f"phases:{phase}")
         assert any(
@@ -240,6 +242,8 @@ def test_manifest_work_ids_match_the_recorded_vocabulary() -> None:
     encoded_ids = json.dumps(
         snapshot["work_ids"], ensure_ascii=False, separators=(",", ":")
     ).encode("utf-8")
+    # Pin the vocabulary to the simulator green that added the cited source ID.
+    assert snapshot["commit"] == "3645e2c2bb"
     assert metadata["commit"] == snapshot["commit"]
     assert metadata["sha256"] == hashlib.sha256(encoded_ids).hexdigest()
 
