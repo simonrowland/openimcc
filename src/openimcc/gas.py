@@ -2106,6 +2106,67 @@ def _source_model_flag(
     return None
 
 
+def _continuation_info(
+    row_name: str,
+    T: float,
+    row: pd.Series,
+    *,
+    phase: str,
+    candidate_notices: Mapping[
+        tuple[str, str, float], _HighTemperatureNotice
+    ] | None = None,
+    redox_pack: Any = _PACKAGED_REDOX_FEO_FIT,
+) -> tuple[str | None, tuple[str, ...]]:
+    """Return the continuation label and flags shared by both public APIs."""
+    validity = _source_validity_for_row(row_name, row, phase=phase)
+    if phase == "l" and validity and validity.get("supercooled_continuation"):
+        source_table = str(validity.get("table_id") or "")
+        source_name = (
+            "NASA Glenn card" if source_table.startswith("NG-") else "JANAF"
+        )
+        hypothetical = row_name in {
+            "CaO(l)", "MgO(l)", "SiO2(l)", "Al2O3(l)"
+        }
+        label = (
+            f"{row_name} uses a labelled constant-Cp supercooled-liquid "
+            f"continuation from {source_name} {source_table}"
+            + (
+                "; this is a hypothetical reference, not a prediction of a "
+                "liquid condensate"
+                if hypothetical else ""
+            )
+        )
+        return label, (label,)
+
+    source_flag = _source_model_flag(
+        row_name,
+        T,
+        row,
+        phase=phase,
+        candidate_notices=candidate_notices,
+        redox_pack=redox_pack,
+    )
+    if validity and validity.get("cp_extension") and source_flag is not None:
+        label = source_flag
+    elif source_flag is not None:
+        label = source_flag
+    else:
+        label = None
+
+    supercooled_flag = (
+        _supercooled_liquid_from_solid_flag(row_name, T, row)
+        if phase == "l" else None
+    )
+    if label is None and supercooled_flag is not None:
+        label = supercooled_flag
+    outside = T < float(row["T_min"]) or T > float(row["T_max"])
+    if label is None and outside:
+        label = "Shomate fit continued" if phase == "g" else "Gibbs fit continued"
+
+    flags = tuple(flag for flag in (source_flag, supercooled_flag) if flag)
+    return label, flags
+
+
 def _liquid_reference_flags(
     species: str,
     T: float,
@@ -2583,21 +2644,20 @@ def _add_ion_channels(
             row = _nearest_interval_row(
                 datapack.gas_df, row_name, T, allow_extrapolation
             )
+            _label, continuation_flags = _continuation_info(
+                row_name,
+                T,
+                row,
+                phase="g",
+                candidate_notices=datapack._high_temperature_candidate_notices,
+            )
+            outside_flag = _outside_interval_flag(row_name, T, row)
             row_cache[row_name] = (
                 _janaf_gibbs(T, row),
                 row,
                 "; ".join(
                     flag
-                    for flag in (
-                        _outside_interval_flag(row_name, T, row),
-                        _source_model_flag(
-                            row_name,
-                            T,
-                            row,
-                            phase="g",
-                            candidate_notices=datapack._high_temperature_candidate_notices,
-                        ),
-                    )
+                    for flag in (outside_flag, *continuation_flags)
                     if flag
                 ) or None,
             )
@@ -2946,28 +3006,13 @@ def species_thermo(
                     authority = status.authority.value
 
     if extrapolated:
-        if phase == "g":
-            continuation = "Shomate fit continued"
-        else:
-            source_flag = _source_model_flag(
-                row_name,
-                T_K,
-                row,
-                phase=phase,
-                candidate_notices=active_pack._high_temperature_candidate_notices,
-            )
-            if source_flag and "constant-Cp continuation" in source_flag:
-                continuation = "constant-Cp continuation"
-            elif source_flag and "supercooled" in source_flag:
-                continuation = "supercooled branch"
-            elif source_flag and "liquid-metal continuation" in source_flag:
-                continuation = "liquid-metal continuation"
-            elif source_flag and "phase continuation" in source_flag:
-                continuation = "phase continuation"
-            elif source_flag and "extension" in source_flag:
-                continuation = "high-temperature extension"
-            else:
-                continuation = "Gibbs fit continued"
+        continuation, _continuation_flags = _continuation_info(
+            row_name,
+            T_K,
+            row,
+            phase=phase,
+            candidate_notices=active_pack._high_temperature_candidate_notices,
+        )
 
     return SpeciesThermo(
         Cp_J_molK=float(cp),
@@ -3837,15 +3882,14 @@ def evaluate_gas(
         flag = _outside_interval_flag(gas_species, T, gas_row)
         if flag is not None:
             flags.append(flag)
-        flag = _source_model_flag(
+        _label, continuation_flags = _continuation_info(
             gas_species,
             T,
             gas_row,
             phase="g",
             candidate_notices=datapack._high_temperature_candidate_notices,
         )
-        if flag is not None:
-            flags.append(flag)
+        flags.extend(continuation_flags)
         # Rows whose G enters this channel. O2 is appended only when its
         # coefficient in ΔG is not zero.
         pressure_rows: list[tuple[str, pd.Series]] = [("gas", gas_row)]
@@ -3857,15 +3901,14 @@ def evaluate_gas(
             flag = _outside_interval_flag("O2(g)", T, O2_row)
             if flag is not None:
                 flags.append(flag)
-            flag = _source_model_flag(
+            _label, continuation_flags = _continuation_info(
                 "O2(g)",
                 T,
                 O2_row,
                 phase="g",
                 candidate_notices=datapack._high_temperature_candidate_notices,
             )
-            if flag is not None:
-                flags.append(flag)
+            flags.extend(continuation_flags)
 
         oxide_row = None
         if oxide:
@@ -3903,38 +3946,9 @@ def evaluate_gas(
             if parent_present and flag is not None:
                 flags.append(flag)
             oxide_flag_start = len(flags)
-            validity = (
-                _source_validity_for_row(
-                    oxide_name, oxide_row, phase=("s" if str(oxide_row["state"]) == "s" else "l")
-                )
-                if oxide_row is not None else None
-            )
-            if (
-                parent_present
-                and oxide_row is not None
-                and validity
-                and validity.get("supercooled_continuation")
-            ):
-                source_table = str(validity.get("table_id") or "")
-                source_name = "NASA Glenn/CEA" if source_table.startswith("NG-") else "JANAF"
-                source_name = (
-                    "NASA Glenn card"
-                    if source_table.startswith("NG-")
-                    else "JANAF"
-                )
-                flags.append(
-                    f"{oxide_name} uses a labelled constant-Cp supercooled-liquid "
-                    f"continuation from {source_name} {source_table}"
-                    + (
-                        "; this is a hypothetical reference, not a prediction of a "
-                        "liquid condensate"
-                        if oxide_name in {"CaO(l)", "MgO(l)", "SiO2(l)", "Al2O3(l)"}
-                        else ""
-                    )
-                )
-            elif parent_present and oxide_row is not None:
+            if parent_present and oxide_row is not None:
                 parent_phase = "s" if str(oxide_row["state"]) == "s" else "l"
-                flag = _source_model_flag(
+                _label, continuation_flags = _continuation_info(
                     oxide_name,
                     T,
                     oxide_row,
@@ -3942,14 +3956,7 @@ def evaluate_gas(
                     candidate_notices=datapack._high_temperature_candidate_notices,
                     redox_pack=selected_redox_pack,
                 )
-                if flag is not None:
-                    flags.append(flag)
-                if parent_phase == "l":
-                    flag = _supercooled_liquid_from_solid_flag(
-                        oxide_name, T, oxide_row
-                    )
-                    if flag is not None:
-                        flags.append(flag)
+                flags.extend(continuation_flags)
             if parent_present and oxide_row is not None and oxide_name in {
                 record.species for record in liquid_reference_records()
             }:
@@ -4011,7 +4018,7 @@ def evaluate_gas(
                 flag = _outside_interval_flag(side_name, T, side_row)
                 if flag is not None:
                     flags.append(flag)
-                flag = _source_model_flag(
+                _label, continuation_flags = _continuation_info(
                     side_name,
                     T,
                     side_row,
@@ -4019,7 +4026,7 @@ def evaluate_gas(
                     candidate_notices=datapack._high_temperature_candidate_notices,
                     redox_pack=selected_redox_pack,
                 )
-                source_flags = [flag] if flag is not None else []
+                source_flags = list(continuation_flags)
                 if side_name in {record.species for record in liquid_reference_records()}:
                     source_flags = _liquid_reference_flags(
                         side_name,

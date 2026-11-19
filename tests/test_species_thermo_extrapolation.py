@@ -13,6 +13,7 @@ from openimcc.gas import (
     _lamor_gibbs,
     _nearest_interval_row,
     _oxide_row_for_T,
+    evaluate_gas,
     load_gas_datapack,
     species_thermo,
 )
@@ -109,3 +110,67 @@ def test_species_thermo_refuses_crystal_extrapolation_without_runtime_path() -> 
         species_thermo(
             "SiO2", "cr", 3000.0, allow_extrapolation=True
         )
+
+
+@pytest.mark.parametrize(
+    ("species", "phase", "temperature", "channel", "activities", "expected"),
+    (
+        (
+            "SiO2", "l", 1199.0, "Si", {"SiO2": 1.0e-3},
+            "SiO2(l) uses a tier-1 liquid_from_solid construction from "
+            "Richet-Bottinga-Tequi-1984",
+        ),
+        (
+            "Al2O3", "l", 999.0, "Al", {"Al2O3": 1.0e-3},
+            "Al2O3(l) uses a labelled constant-Cp supercooled-liquid "
+            "continuation from JANAF Al-100; this is a hypothetical reference, "
+            "not a prediction of a liquid condensate",
+        ),
+        (
+            "UO2", "l", 3001.0, "U", {"UO2": 1.0e-3},
+            "UO2(l) uses a labelled constant-Cp supercooled-liquid "
+            "continuation from NASA Glenn card NG-1977",
+        ),
+        (
+            "ZnO", "l", 3001.0, "Zn", {"ZnO": 1.0e-3},
+            "ZnO(l) uses a tier-4 liquid_from_solid construction from "
+            "TSIV-1603; the central liquid uses the printed 2250 K node, and "
+            "the quadratic crystal-Cp extension is its uncertainty bound",
+        ),
+        (
+            "Re2O7", "g", 499.0, "Re2O7", {"Re": 1.0},
+            "constructed Re2O7(g) from Smith 1952 measured vapor pressure "
+            "and B677 condensed functions over 503.15-598.15 K; maximum "
+            "log-pressure fit scatter propagated as ±1.3 kJ/mol at 499 K",
+        ),
+    ),
+)
+def test_continuation_label_matches_evaluate_gas_flag(
+    packaged_gas_pack,
+    species: str,
+    phase: str,
+    temperature: float,
+    channel: str,
+    activities: dict[str, float],
+    expected: str,
+) -> None:
+    thermo = species_thermo(
+        species,
+        phase,
+        temperature,
+        packaged_gas_pack,
+        allow_extrapolation=True,
+    )
+    result = evaluate_gas(
+        activities,
+        temperature,
+        1.0e-8,
+        packaged_gas_pack,
+        gas_species=(channel,),
+        allow_extrapolation=True,
+    )
+
+    assert thermo.continuation == expected
+    runtime_flag = result.domain_flags[channel]
+    assert runtime_flag is not None
+    assert expected in runtime_flag
