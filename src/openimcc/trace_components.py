@@ -437,8 +437,14 @@ class TraceActivityFlag(str):
         estimates = (estimate,) if isinstance(estimate, TraceActivityEstimate) else estimate
         estimate_text = []
         for item in estimates:
+            if item.oxide == "S":
+                activity_label = (
+                    "S2 gas-standard activity=f(S2)/p° on JANAF 1-bar S2(g)"
+                )
+            else:
+                activity_label = f"{item.oxide} activity"
             message = (
-                f"{item.code}: {item.oxide} activity={item.activity:.12g} "
+                f"{item.code}: {activity_label}={item.activity:.12g} "
                 f"x={item.x:.12g} context={context}"
             )
             if item.gamma is not None:

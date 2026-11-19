@@ -1867,6 +1867,24 @@ def test_gas_trace_parents_use_gas_standards_or_refuse(packaged_gas_pack) -> Non
         )
 
 
+def test_cli_labels_sulfur_activity_gas_standard(capsys) -> None:
+    from openimcc.cli import main
+
+    assert main([
+        "solve",
+        "--temperature", "1800",
+        "--basis-type", "wt",
+        "--oxide", "SiO2=50",
+        "--oxide", "MgO=15",
+        "--oxide", "FeO=10",
+        "--oxide", "CaO=12",
+        "--oxide", "Al2O3=12",
+        "--oxide", "S=0.01",
+    ]) == 0
+    output = capsys.readouterr().out
+    assert "S2 gas-standard activity=f(S2)/p° on JANAF 1-bar S2(g)=" in output
+
+
 def test_review_gamma_gas_parents_refuse_unconverted_reference_standards(
     packaged_gas_pack,
 ) -> None:

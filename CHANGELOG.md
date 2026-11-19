@@ -11,6 +11,8 @@
   channels are refused when the source and gas parent standards differ.
 - Gas P channels refuse S/P extension P2O5 activities on the half-P4O10(cr)
   proxy when the supplied trace composition identifies the source mismatch.
+- Sulfur trace activity notices label the S2 fugacity basis as JANAF 1-bar
+  S2(g), matching the gas reactions' standard state.
 
 ### Trace activity coefficients
 
