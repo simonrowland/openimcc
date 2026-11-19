@@ -3960,7 +3960,7 @@ def evaluate_gas(
                 trace_rule = trace_component_rule(oxide)
                 carrier = trace_rule.gas_parent_oxide
                 element = trace_rule.review_gamma_element
-                if element in {"Ga", "In"}:
+                if element in {"Ga", "In"} and estimate.activity is not None:
                     fragment_row = next(
                         row
                         for row in load_activity_fragment(element)["rows"]
@@ -4124,6 +4124,25 @@ def evaluate_gas(
                 ),
             }
             for carrier, estimates in carrier_estimates.items():
+                refused_estimates = tuple(
+                    item for item in estimates if item.activity is None
+                )
+                if refused_estimates:
+                    if carrier in act:
+                        continue
+                    trace_parent_refusals[carrier] = TraceGasChannelRefusal(
+                        carrier,
+                        "trace refused: " + "; ".join(
+                            item.reference or item.code
+                            for item in refused_estimates
+                        ),
+                        triggers=tuple(dict.fromkeys(
+                            item.oxide for item in refused_estimates
+                        )),
+                    )
+                    if carrier in allowed_trace_parents:
+                        act[carrier] = 0.0
+                    continue
                 if carrier in act:
                     if (
                         carrier == "P2O5"

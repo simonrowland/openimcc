@@ -852,7 +852,13 @@ class ImccResult:
             if getattr(notice, "oxide", None) == name and hasattr(
                 notice, "activity"
             ):
-                activity = float(getattr(notice, "activity"))
+                raw_activity = getattr(notice, "activity")
+                if raw_activity is None:
+                    raise ImccComponentOutsideDomainError(
+                        f"trace activity for {name!r} was refused: "
+                        f"{getattr(notice, 'reference', None) or notice}"
+                    )
+                activity = float(raw_activity)
                 if not math.isfinite(activity) or activity < 0.0:
                     raise ImccComponentOutsideDomainError(
                         f"registered trace activity for {name!r} is unavailable"
@@ -861,6 +867,11 @@ class ImccResult:
             estimates = getattr(notice, "activities", {})
             estimate = estimates.get(name)
             if estimate is not None:
+                if estimate.activity is None:
+                    raise ImccComponentOutsideDomainError(
+                        f"trace activity for {name!r} was refused: "
+                        f"{estimate.reference or estimate.code}"
+                    )
                 activity = float(estimate.activity)
                 if not math.isfinite(activity) or activity < 0.0:
                     raise ImccComponentOutsideDomainError(

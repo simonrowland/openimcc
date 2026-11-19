@@ -20,6 +20,9 @@
 
 ### Trace activity coefficients
 
+- Review-γ composition screens now refuse out-of-domain rows before evaluating
+  their laws, and non-finite or overflowing gamma and activity values become
+  typed trace refusals.
 - Review-γ trace activity estimates now carry the selected fragment row id.
 - Added a source-bounded MoO3 review-γ estimate on the pure-liquid MoO3
   standard using O'Neill & Eggins (2002), Table 8's CMAS composition law.

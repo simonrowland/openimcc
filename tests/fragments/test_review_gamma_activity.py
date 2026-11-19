@@ -343,7 +343,7 @@ def test_family_screen_counts_missing_oxides_and_excludes_nonoxides() -> None:
             "CaO": 1.0,
             "MgO": 1.0,
             "Al2O3": 1.0,
-            "SiO2": 1.0,
+            "SiO2": 1.1,
             "Ce2O3": 0.1,
             "S": 0.5,
         },
@@ -1500,6 +1500,25 @@ def test_ni_and_co_match_b750046_float_hex_outputs_over_domain_grid() -> None:
     )
 
 
+@pytest.mark.parametrize(("element", "trace_oxide", "window_flag"), (
+    ("Ni", "NiO", "FeO_wt_pct_outside_0_to_12"),
+    ("Co", "CoO", "FeO_outside_0_to_12_wt_pct"),
+))
+def test_review_gamma_nico_epsilon_outside_windows_are_served_with_notices(
+    element: str, trace_oxide: str, window_flag: str
+) -> None:
+    composition = _activity_grid_composition(
+        12.000001, 3.999999, trace_oxide
+    )
+    result = evaluate_review_gamma_activity(
+        element, composition, 1700.0, parent_oxide=trace_oxide
+    )
+
+    assert result.activity > 0.0
+    assert window_flag in result.notice.violated_axes
+    assert "MgO" in " ".join(result.notice.violated_axes)
+
+
 _CE_ZHAO_TABLE_IV = (
     (301, 45.0, 50.0, 5.0, 3.29),
     (302, 41.0, 54.0, 5.0, 1.72),
@@ -1704,6 +1723,251 @@ def test_ce_fusion_direction_band_and_oxygen_screen() -> None:
     )
     assert chen.row == "Ce2O3-Chen-2020-CMAS-1873K"
     assert any("Al2O3 is outside" in axis for axis in chen.notice.violated_axes)
+
+
+def test_readme_basalt_ce_and_sno_are_served_with_source_notices() -> None:
+    basalt_wt = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    ce = _ce_source_moles({**basalt_wt, "Ce2O3": 0.01})
+    ce_result = evaluate_review_gamma_activity(
+        "Ce", ce, 1873.0, parent_oxide="Ce2O3",
+        fO2_bar=4.76e-16 * 1.01325,
+    )
+
+    assert ce_result.row == "Ce2O3-Chen-2020-CMAS-1873K"
+    assert ce_result.gamma.hex() == "0x1.400906bf818dap-23"
+    assert ce_result.activity.hex() == "0x1.991e08cd5d610p-39"
+    assert any("outside the source CMAS family" in axis for axis in ce_result.notice.violated_axes)
+    assert any("MgO differs from the 5 wt%" in axis for axis in ce_result.notice.violated_axes)
+    assert any("Ce2O3 differs from the 10 wt%" in axis for axis in ce_result.notice.violated_axes)
+
+    sn_rule = trace_component_rule("SnO")
+    assert sn_rule is not None
+    sn_masses = {**MOLAR_MASS_G_MOL, "SnO": sn_rule.molar_mass_g_mol}
+    sn = {
+        oxide: amount / sn_masses[oxide]
+        for oxide, amount in {**basalt_wt, "SnO": 0.01}.items()
+    }
+    sn_result = evaluate_review_gamma_activity(
+        "Sn", sn, 1573.0, parent_oxide="SnO"
+    )
+    assert sn_result.row == "SnO-FCS-1573K"
+    assert sn_result.gamma.hex() == "0x1.645640568c1c3p+2"
+    assert sn_result.activity.hex() == "0x1.1578cfa262b2dp-12"
+    assert "melt_family_extrapolated" in sn_result.notice.violated_axes
+
+
+def test_ce_gamma_law_refuses_ratio_outside_declared_source_window() -> None:
+    row = load_activity_fragment("Ce")["rows"][0]
+    windows = row["composition_windows_wt_pct"]
+    ca_high = float(windows["CaO"]["range"][1])
+    al_high = float(windows["Al2O3"]["range"][1])
+    si_low = float(windows["SiO2"]["range"][0])
+    ratio_high = (ca_high + 0.72 * al_high) / si_low
+    composition = _ce_source_moles({
+        "CaO": ca_high + 1.0e-6,
+        "Al2O3": al_high,
+        "SiO2": si_low,
+        "MgO": 5.0,
+        "Ce2O3": 10.0,
+    })
+    ratio = (
+        composition["CaO"] * MOLAR_MASS_G_MOL["CaO"]
+        + 0.72 * composition["Al2O3"] * MOLAR_MASS_G_MOL["Al2O3"]
+    ) / (composition["SiO2"] * MOLAR_MASS_G_MOL["SiO2"])
+    assert ratio > ratio_high
+
+    with pytest.raises(review_gamma_activity.ReviewGammaActivityRefusal) as refusal:
+        evaluate_review_gamma_activity(
+            "Ce", composition, 1873.0, parent_oxide="Ce2O3"
+        )
+
+    assert refusal.value.row_id == "Ce2O3-Chen-2020-CMAS-1873K"
+    assert refusal.value.violated_axes == (
+        "gamma_law_input_wt_CaO_plus_0_72_Al2O3_over_SiO2_outside_source_range",
+    )
+
+
+@pytest.mark.parametrize(
+    ("element", "parent", "composition", "row_id", "axis"),
+    (
+        (
+            "Ce",
+            "Ce2O3",
+            {"CaO": 1.0, "SiO2": 1.0e-8, "Ce2O3": 0.001},
+            "Ce2O3-Zhao-2019-CaO-SiO2-1873K",
+            "gamma_law_input_x_CaO_outside_source_range",
+        ),
+        (
+            "Mo",
+            "MoO3",
+            {"CaO": 1.0, "MoO3": 0.001},
+            "MoO3-Oneill-Eggins-2002-Table7-CMAS-1400C",
+            "gamma_law_input_x_CaO_outside_source_range",
+        ),
+    ),
+)
+def test_mole_fraction_gamma_laws_refuse_inputs_outside_source_windows(
+    element: str,
+    parent: str,
+    composition: dict[str, float],
+    row_id: str,
+    axis: str,
+) -> None:
+    with pytest.raises(review_gamma_activity.ReviewGammaActivityRefusal) as refusal:
+        evaluate_review_gamma_activity(
+            element, composition, 1673.15 if element == "Mo" else 1873.0,
+            parent_oxide=parent,
+        )
+
+    assert refusal.value.row_id == row_id
+    assert refusal.value.violated_axes == (axis,)
+
+
+def test_ce_near_zero_silica_trace_paths_refuse_without_aborting() -> None:
+    target_ln_gamma = 17508.97
+    sio2_moles = (
+        MOLAR_MASS_G_MOL["CaO"] + 0.72 * MOLAR_MASS_G_MOL["Al2O3"]
+    ) / (
+        MOLAR_MASS_G_MOL["SiO2"]
+        * ((target_ln_gamma + 14.93) / 3.46)
+    )
+    composition = {
+        "CaO": 1.0,
+        "MgO": 1.0,
+        "Al2O3": 1.0,
+        "FeO": 1.0,
+        "SiO2": sio2_moles,
+        "Ce2O3": 1.0e-8,
+    }
+
+    with pytest.raises(review_gamma_activity.ReviewGammaActivityRefusal) as refusal:
+        evaluate_review_gamma_activity(
+            "Ce", composition, 1873.0, parent_oxide="Ce2O3"
+        )
+
+    assert refusal.value.row_id == "Ce2O3-Chen-2020-CMAS-1873K"
+    assert refusal.value.violated_axes == (
+        "gamma_law_input_wt_CaO_plus_0_72_Al2O3_over_SiO2_outside_source_range",
+    )
+
+    ce_rule = trace_component_rule("Ce2O3")
+    assert ce_rule is not None
+    masses = {**MOLAR_MASS_G_MOL, "Ce2O3": ce_rule.molar_mass_g_mol}
+    composition_wt = {
+        oxide: amount * masses[oxide]
+        for oxide, amount in composition.items()
+    }
+    gas = evaluate_gas(
+        {},
+        1873.0,
+        4.76e-16 * 1.01325,
+        load_gas_datapack(),
+        composition_wt_pct=composition_wt,
+    )
+    for species in ("Ce", "CeO"):
+        trace_refusal = gas.omitted_channels[species]
+        assert "trace_gas_channel_refused" in str(trace_refusal)
+        assert "trace refused" in str(trace_refusal)
+        assert "Ce2O3-Chen-2020-CMAS-1873K" in str(trace_refusal)
+
+    melt = evaluate(composition_wt, 1873.0, basis_type="wt")
+    trace_flag = next(
+        notice for notice in melt.labels.notices
+        if isinstance(notice, TraceActivityFlag) and notice.oxide == "Ce2O3"
+    )
+    assert trace_flag.activity is None
+    assert trace_flag.code == "trace_refused_review_gamma_activity"
+    assert "Ce2O3-Chen-2020-CMAS-1873K" in str(trace_flag)
+
+
+def test_synthetic_overflow_on_another_review_gamma_fragment_is_typed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    row = {
+        "row": "Synthetic-Sn-overflow",
+        "parent_oxide": "SnO",
+        "gamma_law": {"kind": "log10_linear", "A_K": 1.0e9, "B": 0.0},
+        "source_units_per_parent": 1.0,
+        "parent_power": 1.0,
+        "source_mole_fraction_kind": "simple_oxide",
+        "temperature_window_K": [1800.0, 1800.0],
+        "composition_screen": {
+            "kind": "supported_component_set",
+            "components": ["SiO2", "SnO"],
+        },
+        "component": "SnO",
+        "component_basis": "SnO formula-unit mole fraction",
+        "parent_standard_state": "pure liquid SnO, 1 bar",
+        "source_citation": "Synthetic overflow test",
+        "source_locator": "synthetic row",
+        "log10_fO2_source": None,
+        "limitations": [],
+    }
+    monkeypatch.setattr(
+        review_gamma_activity,
+        "load_activity_fragment",
+        lambda _element: {"rows": [row]},
+    )
+
+    with pytest.raises(review_gamma_activity.ReviewGammaActivityRefusal) as refusal:
+        evaluate_review_gamma_activity(
+            "Sn", {"SiO2": 1.0, "SnO": 0.001}, 1800.0, parent_oxide="SnO"
+        )
+
+    assert refusal.value.code == "review_gamma_numeric_failure"
+    assert refusal.value.row_id == "Synthetic-Sn-overflow"
+    assert "gamma_overflow" in refusal.value.violated_axes
+
+
+def test_range_gamma_without_a_point_refuses_when_geometric_center_overflows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    row = {
+        "row": "Synthetic-Sn-range-overflow",
+        "parent_oxide": "SnO",
+        "gamma_law": {
+            "kind": "range",
+            "gamma_endpoints": [1.0e308, 1.0e308],
+            "temperature_K": [1800.0, 1800.0],
+        },
+        "source_units_per_parent": 1.0,
+        "parent_power": 1.0,
+        "source_mole_fraction_kind": "simple_oxide",
+        "temperature_window_K": [1800.0, 1800.0],
+        "composition_screen": {
+            "kind": "supported_component_set",
+            "components": ["SiO2", "SnO"],
+        },
+        "component": "SnO",
+        "component_basis": "SnO formula-unit mole fraction",
+        "parent_standard_state": "pure liquid SnO, 1 bar",
+        "source_citation": "Synthetic range test",
+        "source_locator": "synthetic row",
+        "log10_fO2_source": None,
+        "limitations": [],
+    }
+    monkeypatch.setattr(
+        review_gamma_activity,
+        "load_activity_fragment",
+        lambda _element: {"rows": [row]},
+    )
+
+    with pytest.raises(review_gamma_activity.ReviewGammaActivityRefusal) as refusal:
+        evaluate_review_gamma_activity(
+            "Sn", {"SiO2": 1.0, "SnO": 0.001}, 1800.0, parent_oxide="SnO"
+        )
+
+    assert refusal.value.row_id == "Synthetic-Sn-range-overflow"
+    assert "gamma_point" in refusal.value.violated_axes
 
 
 def test_ce_standard_conversion_tracks_temperature_and_keeps_band_width() -> None:
@@ -1952,6 +2216,29 @@ def test_ce_default_gas_channel_uses_the_new_trace_row() -> None:
     assert any(item in str(melt_flag) for item in estimate.limitations)
 
 
+def test_ce_plus_sulfur_evaluate_path_is_served_with_review_gamma_notices() -> None:
+    composition = {
+        "SiO2": 47.0,
+        "Al2O3": 15.0,
+        "CaO": 18.0,
+        "MgO": 9.0,
+        "FeO": 11.0,
+        "Ce2O3": 0.01,
+        "S": 0.01,
+    }
+    result = evaluate(composition, 1873.0, basis_type="wt")
+    flag = next(
+        notice for notice in result.labels.notices
+        if isinstance(notice, TraceActivityFlag) and notice.oxide == "Ce2O3"
+    )
+
+    assert flag.activity is not None and flag.activity > 0.0
+    assert flag.code != "trace_refused_review_gamma_activity"
+    axes = " ".join(flag.estimates[0].violated_axes)
+    assert "MgO differs from the 5 wt%" in axes
+    assert "Ce2O3 differs from the 10 wt%" in axes
+
+
 def test_trace_activity_flag_pickle_preserves_constructor_fields() -> None:
     estimate = TraceActivityEstimate(
         "Ce2O3", 0.25, 0.01, "review_gamma_provisional",
@@ -1987,10 +2274,14 @@ def test_review_gamma_payloads_pin_changed_and_unchanged_rows() -> None:
     non_ce_payload = []
     ce_payload = []
     unchanged_payload = []
-    changed_wood_wade_rows = {
+    # These Wood & Wade rows retain earlier activity/source-x updates. The
+    # synthetic equimolar CMAS input now also refuses: its Chen law ratio is
+    # outside the source-window range.
+    changed_rows = {
         ("Cu", "CuO0.5-1923K"),
         ("Pb", "PbO-BW1102-1923K"),
         ("W", "WO3-Di-An-Fo-1923K"),
+        ("Ce", "Ce2O3-Chen-2020-CMAS-1873K"),
     }
     for element in elements:
         for row in load_activity_fragment(element)["rows"]:
@@ -2010,56 +2301,73 @@ def test_review_gamma_payloads_pin_changed_and_unchanged_rows() -> None:
             parent = row["parent_oxide"]
             composition[parent] = 0.001
             low, high = map(float, row["temperature_window_K"])
-            result = evaluate_review_gamma_activity(
-                element,
-                composition,
-                (low + high) / 2.0,
-                parent_oxide=parent,
-            )
-            row_payload = [
-                element,
-                row["row"],
-                float(result.activity).hex(),
-                float(result.source_activity).hex(),
-                float(result.gamma).hex(),
-                [float(value).hex() for value in result.gamma_range],
-                float(result.source_mole_fraction).hex(),
-                [float(value).hex() for value in result.activity_range],
-                result.parent_oxide,
-                result.row,
-                list(result.notice.violated_axes),
-                list(result.notice.limitations),
-                str(result.notice),
-                result.reference,
-            ]
+            try:
+                result = evaluate_review_gamma_activity(
+                    element,
+                    composition,
+                    (low + high) / 2.0,
+                    parent_oxide=parent,
+                )
+            except review_gamma_activity.ReviewGammaActivityRefusal as refusal:
+                row_payload = [
+                    element,
+                    row["row"],
+                    "refused",
+                    refusal.row_id,
+                    list(refusal.violated_axes),
+                ]
+            else:
+                row_payload = [
+                    element,
+                    row["row"],
+                    float(result.activity).hex(),
+                    float(result.source_activity).hex(),
+                    float(result.gamma).hex(),
+                    [float(value).hex() for value in result.gamma_range],
+                    float(result.source_mole_fraction).hex(),
+                    [float(value).hex() for value in result.activity_range],
+                    result.parent_oxide,
+                    result.row,
+                    list(result.notice.violated_axes),
+                    list(result.notice.limitations),
+                    str(result.notice),
+                    result.reference,
+                ]
             payload.append(row_payload)
             (ce_payload if element == "Ce" else non_ce_payload).append(row_payload)
-            if (element, row["row"]) not in changed_wood_wade_rows:
+            if (element, row["row"]) not in changed_rows:
                 unchanged_payload.append(row_payload)
 
     encoded = json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
     assert len(payload) == 16
-    # result.reference embeds source_citation, so these hashes also change with
-    # citation metadata, alongside the Wood & Wade activity and source-x updates.
-    # Separate hashes pin the unaffected rows and the unchanged Ce payload.
-    assert hashlib.sha256(encoded).hexdigest() == (
-        "73b21a31c6ae377d53c304ff4f53e0c785ffc31e5c8db7c08b012d726093546f"
-    )
 
     def payload_hash(rows: list[list[object]]) -> str:
         return hashlib.sha256(
             json.dumps(rows, separators=(",", ":"), ensure_ascii=True).encode()
         ).hexdigest()
 
-    assert payload_hash(non_ce_payload) == (
-        "5aed62db57c28b8becaa92438b1e9e94a14f9975327fb8ec75997d8a1be154d9"
+    hashes = {
+        "all": hashlib.sha256(encoded).hexdigest(),
+        "non_ce": payload_hash(non_ce_payload),
+        "unchanged": payload_hash(unchanged_payload),
+        "ce": payload_hash(ce_payload),
+    }
+    chen_payload = next(
+        row for row in ce_payload
+        if row[1] == "Ce2O3-Chen-2020-CMAS-1873K"
     )
-    assert payload_hash(unchanged_payload) == (
-        "e736ce1b850b2f72c1aacffdbb96cfb3c5bca48dbce694596279e2c05b84a1e9"
-    )
-    assert payload_hash(ce_payload) == (
-        "cf1226c0a8fc05611178ac34c4196f784ca909447044cfd8638922b238bff3dc"
-    )
+    assert chen_payload[2:4] == [
+        "refused", "Ce2O3-Chen-2020-CMAS-1873K"
+    ]
+    assert chen_payload[4] == [
+        "gamma_law_input_wt_CaO_plus_0_72_Al2O3_over_SiO2_outside_source_range"
+    ]
+    assert hashes == {
+        "all": "fa4b586936bdecaa0e89af4beb44902e484c1868d06129884679df36d3bf1d13",
+        "non_ce": "5aed62db57c28b8becaa92438b1e9e94a14f9975327fb8ec75997d8a1be154d9",
+        "unchanged": "41d9873a154df9149848dd6a0a461914edad71fcae8fdadf2e1f02d069594515",
+        "ce": "a31b2e345f7f11425357f854f057bbf89d9c94e2613e0d1447a72b97a3e935f6",
+    }
 
 
 def test_review_gamma_parent_registry_preserves_legacy_screening(monkeypatch) -> None:
@@ -2099,21 +2407,33 @@ def test_review_gamma_parent_registry_preserves_legacy_screening(monkeypatch) ->
                 low, high = map(float, row["temperature_window_K"])
                 for index, composition in enumerate(variants):
                     amounts = {**composition, parent: 0.001 * (index + 1)}
-                    result = evaluate_review_gamma_activity(
-                        element, amounts, (low + high) / 2.0, parent_oxide=parent
-                    )
-                    payload.append([
-                        element, row["row"], index,
-                        float(result.activity).hex(), float(result.source_activity).hex(),
-                        float(result.gamma).hex(),
-                        [float(value).hex() for value in result.gamma_range],
-                        float(result.source_mole_fraction).hex(),
-                        [float(value).hex() for value in result.activity_range],
-                        result.notice.violated_axes, result.notice.limitations,
-                    ])
+                    try:
+                        result = evaluate_review_gamma_activity(
+                            element, amounts, (low + high) / 2.0, parent_oxide=parent
+                        )
+                    except review_gamma_activity.ReviewGammaActivityRefusal as refusal:
+                        payload.append([
+                            element, row["row"], index, "refused",
+                            refusal.row_id, refusal.violated_axes,
+                        ])
+                    else:
+                        payload.append([
+                            element, row["row"], index,
+                            float(result.activity).hex(), float(result.source_activity).hex(),
+                            float(result.gamma).hex(),
+                            [float(value).hex() for value in result.gamma_range],
+                            float(result.source_mole_fraction).hex(),
+                            [float(value).hex() for value in result.activity_range],
+                            result.notice.violated_axes, result.notice.limitations,
+                        ])
         return payload
 
     registry_payload = grid_payload()
+    assert any(
+        row[0] == "Ce" and row[1] == "Ce2O3-Chen-2020-CMAS-1873K"
+        and row[3] == "refused"
+        for row in registry_payload
+    )
     monkeypatch.setattr(review_gamma_activity, "_TRACE_PARENTS", legacy_parents)
     legacy_payload = grid_payload()
     assert registry_payload == legacy_payload

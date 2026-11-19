@@ -3039,6 +3039,7 @@ def evaluate(
             p2o5_estimate = trace_activity_estimates.get("P2O5")
             if (
                 p2o5_estimate is not None
+                and p2o5_estimate.activity is not None
                 and "P2O5" in result.parent_oxides
             ):
                 p2o5_index = result.parent_oxides.index("P2O5")

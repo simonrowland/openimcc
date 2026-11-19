@@ -394,7 +394,7 @@ class ParentLiquidStandardOffset:
 @dataclass(frozen=True)
 class TraceActivityEstimate:
     oxide: str
-    activity: float
+    activity: float | None
     x: float
     code: str
     gamma: float | None = None
@@ -413,7 +413,7 @@ class TraceActivityFlag(str):
 
     code: str
     oxide: str
-    activity: float
+    activity: float | None
     x: float
     gamma: float | None
     reference: str | None
@@ -437,16 +437,25 @@ class TraceActivityFlag(str):
         estimates = (estimate,) if isinstance(estimate, TraceActivityEstimate) else estimate
         estimate_text = []
         for item in estimates:
-            if item.oxide == "S":
+            if item.activity is None:
+                message = (
+                    f"trace refused: {item.oxide} code={item.code} "
+                    f"context={context}"
+                )
+            elif item.oxide == "S":
                 activity_label = (
                     "S2 gas-standard activity=f(S2)/p° on JANAF 1-bar S2(g)"
                 )
+                message = (
+                    f"{item.code}: {activity_label}={item.activity:.12g} "
+                    f"x={item.x:.12g} context={context}"
+                )
             else:
                 activity_label = f"{item.oxide} activity"
-            message = (
-                f"{item.code}: {activity_label}={item.activity:.12g} "
-                f"x={item.x:.12g} context={context}"
-            )
+                message = (
+                    f"{item.code}: {activity_label}={item.activity:.12g} "
+                    f"x={item.x:.12g} context={context}"
+                )
             if item.gamma is not None:
                 message += f" gamma={item.gamma:.12g}"
             if item.activity_range is not None:
@@ -988,13 +997,39 @@ def _resolve_trace_activity(
                 redox_state,
             )
     if rule.activity_model == "activity_fragment" and rule.activity_fragment is not None:
-        helper_result = _activity_fragment_result(
-            rule.activity_fragment,
-            composition_moles,
-            T_K,
-            fO2_bar=fO2_bar,
-            total_pressure_bar=total_pressure_bar,
-        )
+        if rule.activity_fragment in {"Ni", "Co"}:
+            from openimcc.review_gamma_activity import ReviewGammaActivityRefusal
+
+            try:
+                helper_result = _activity_fragment_result(
+                    rule.activity_fragment,
+                    composition_moles,
+                    T_K,
+                    fO2_bar=fO2_bar,
+                    total_pressure_bar=total_pressure_bar,
+                )
+            except ReviewGammaActivityRefusal as refusal:
+                return (
+                    TraceActivityEstimate(
+                        oxide,
+                        None,
+                        x,
+                        "trace_refused_review_gamma_activity",
+                        reference=str(refusal),
+                        violated_axes=refusal.violated_axes,
+                        source_row_id=refusal.row_id,
+                    ),
+                    None,
+                    None,
+                )
+        else:
+            helper_result = _activity_fragment_result(
+                rule.activity_fragment,
+                composition_moles,
+                T_K,
+                fO2_bar=fO2_bar,
+                total_pressure_bar=total_pressure_bar,
+            )
         if helper_result is not None:
             (
                 activity,
@@ -1045,15 +1080,33 @@ def _resolve_trace_activity(
                 None,
             )
     if rule.activity_model == "review_gamma" and rule.review_gamma_element is not None:
-        from openimcc.review_gamma_activity import evaluate_review_gamma_activity
-
-        result = evaluate_review_gamma_activity(
-            rule.review_gamma_element,
-            composition_moles,
-            T_K,
-            parent_oxide=rule.gas_parent_oxide or oxide,
-            fO2_bar=fO2_bar,
+        from openimcc.review_gamma_activity import (
+            ReviewGammaActivityRefusal,
+            evaluate_review_gamma_activity,
         )
+
+        try:
+            result = evaluate_review_gamma_activity(
+                rule.review_gamma_element,
+                composition_moles,
+                T_K,
+                parent_oxide=rule.gas_parent_oxide or oxide,
+                fO2_bar=fO2_bar,
+            )
+        except ReviewGammaActivityRefusal as refusal:
+            return (
+                TraceActivityEstimate(
+                    oxide,
+                    None,
+                    x,
+                    "trace_refused_review_gamma_activity",
+                    reference=str(refusal),
+                    violated_axes=refusal.violated_axes,
+                    source_row_id=refusal.row_id,
+                ),
+                None,
+                None,
+            )
         return (
             TraceActivityEstimate(
                 oxide,
