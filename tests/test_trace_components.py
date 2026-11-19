@@ -1867,6 +1867,52 @@ def test_gas_trace_parents_use_gas_standards_or_refuse(packaged_gas_pack) -> Non
         )
 
 
+def test_review_gamma_gas_parents_refuse_unconverted_reference_standards(
+    packaged_gas_pack,
+) -> None:
+    base = {
+        "SiO2": 50.0,
+        "MgO": 15.0,
+        "FeO": 10.0,
+        "CaO": 12.0,
+        "Al2O3": 12.0,
+    }
+    source_markers = {
+        "Ag2O": "Assal et al. (1997)",
+        "Sb2O3": "Barin (1973)",
+        "Tl2O": "Lamoreaux et al. (1987)",
+    }
+    for oxide, source in source_markers.items():
+        rule = trace_component_rule(oxide)
+        assert rule is not None
+        composition = {
+            **base,
+            oxide: 0.001 * rule.molar_mass_g_mol,
+        }
+        melt = evaluate(
+            composition, 1923.0, basis_type="wt", allow_extrapolation=True
+        )
+        activity_flag = next(
+            item for item in melt.labels.notices
+            if isinstance(item, TraceActivityFlag) and item.oxide == oxide
+        )
+        assert source in str(activity_flag)
+
+        gas = evaluate_gas(
+            _major_activities(melt),
+            1923.0,
+            1.0e-8,
+            packaged_gas_pack,
+            composition_wt_pct=composition,
+        )
+        element = rule.review_gamma_element
+        assert element is not None
+        refusal = gas.omitted_channels[element]
+        assert isinstance(refusal, TraceGasChannelRefusal)
+        assert oxide in refusal.triggers
+        assert "no shipped standard conversion is available" in refusal.reason
+
+
 def test_li_bearing_cr_domain_warning_reaches_melt_and_gas_flags(
     packaged_gas_pack,
 ) -> None:

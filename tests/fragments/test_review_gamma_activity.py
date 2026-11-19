@@ -611,6 +611,25 @@ def test_new_review_gamma_rows_give_finite_regolith_gas_pressure_with_domain_fla
         composition, temperature, basis_type="wt", allow_extrapolation=True
     )
     activities = dict(zip(melt.parent_oxides, melt.parent_activity, strict=True))
+    if parent in {"Ag2O", "Sb2O3", "Tl2O"}:
+        gas = evaluate_gas(
+            activities,
+            temperature,
+            1.0e-8,
+            load_gas_datapack(),
+            composition_wt_pct=composition,
+        )
+        refusal = gas.omitted_channels[element]
+        assert "trace_gas_channel_refused" in str(refusal)
+        assert "no shipped standard conversion is available" in str(refusal)
+        flag = next(
+            item for item in melt.labels.notices
+            if isinstance(item, TraceActivityFlag) and item.oxide == parent
+        )
+        assert flag.code == "review_gamma_provisional"
+        assert "liquid" in str(flag)
+        return
+
     gas = evaluate_gas(
         activities,
         temperature,

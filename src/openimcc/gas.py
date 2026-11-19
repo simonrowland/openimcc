@@ -4035,6 +4035,23 @@ def evaluate_gas(
                 carrier = trace_component_rule(oxide).gas_parent_oxide
                 if carrier is not None:
                     carrier_estimates.setdefault(carrier, []).append(estimate)
+            review_gamma_standard_mismatches = {
+                "Ag2O": (
+                    "review-γ uses Assal (1997) liquid AgO0.5, while the gas "
+                    "parent uses P672-Ag2O-LFS; no shipped standard conversion "
+                    "is available"
+                ),
+                "Sb2O3": (
+                    "review-γ uses Barin (1973) liquid Sb2O3, while the gas "
+                    "parent uses P672-Sb2O3-LFS; no shipped standard conversion "
+                    "is available"
+                ),
+                "Tl2O": (
+                    "review-γ uses Lamoreaux (1987) liquid Tl2O, while the gas "
+                    "parent uses the Pankratz P672 Tl2O row; no shipped standard "
+                    "conversion is available"
+                ),
+            }
             for carrier, estimates in carrier_estimates.items():
                 if carrier in act:
                     continue
@@ -4071,6 +4088,16 @@ def evaluate_gas(
                         )
                     trace_parent_refusals[carrier] = TraceGasChannelRefusal(
                         carrier, reason, triggers=triggers
+                    )
+                    if carrier in allowed_trace_parents:
+                        act[carrier] = 0.0
+                    continue
+
+                if carrier in review_gamma_standard_mismatches:
+                    trace_parent_refusals[carrier] = TraceGasChannelRefusal(
+                        carrier,
+                        review_gamma_standard_mismatches[carrier],
+                        triggers=tuple(item.oxide for item in estimates),
                     )
                     if carrier in allowed_trace_parents:
                         act[carrier] = 0.0

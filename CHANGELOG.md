@@ -7,6 +7,8 @@
 - Gas trace filling now uses the sulfur fugacity helper for S2, refuses
   SO3/Cl/F melt fractions on gas-phase parents without a fugacity model, and
   converts elemental Li/Zn to their oxide formula-unit basis.
+- Ag2O, Sb2O3 and Tl2O review-γ estimates remain reportable, while their gas
+  channels are refused when the source and gas parent standards differ.
 
 ### Trace activity coefficients
 
