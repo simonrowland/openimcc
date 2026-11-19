@@ -1098,6 +1098,8 @@ from openimcc import default_gas_channels, species_thermo
 props = species_thermo("FeO", "g", 2000.0)
 # props.Cp_J_molK, props.S_J_molK, props.H_app_kJ_mol, props.G_J_mol
 # props.source_row_id, props.source_table_id, props.T_interval, props.T_min, props.T_max
+# props.phase_identity, props.formation_enthalpy_298_kJ_mol
+# props.formation_enthalpy_source_id
 
 channels, omitted = default_gas_channels(("SiO2", "MgO"))
 ```
@@ -1111,9 +1113,14 @@ allow_extrapolation=False)` selects the same row the runtime selector uses and
 raises `ImccGasTemperatureOutsideDomainError` outside that row's declared
 interval by default. Set `allow_extrapolation=True` to continue the same gas or
 liquid row used by `evaluate_gas(..., allow_extrapolation=True)`; crystal-phase
-extrapolation is refused because `evaluate_gas` has no crystal continuation.
-The frozen `SpeciesThermo` result reports Cp and S in
-J/(mol K), apparent enthalpy in kJ/mol, and apparent Gibbs energy in J/mol.
+extrapolation is permitted only for a source-identified single crystal phase,
+within its documented stability range and below its printed melting point.
+The frozen `SpeciesThermo` result includes `phase_identity` for crystal rows
+and exposes `formation_enthalpy_298_kJ_mol` with its source table id when the
+selected row contains that anchor. Crystal phase records are curated in
+`src/openimcc/data/gas/condensate-phase-identity.json`; source labels that do
+not name a crystallographic subtype say so explicitly. The result reports Cp
+and S in J/(mol K), apparent enthalpy in kJ/mol, and Gibbs energy in J/mol.
 `source_row_id` preserves the row's `Ref` value; `source_table_id` gives the
 source table identifier recorded in `PROVENANCE.yaml`. `derivatives_fit_implied`
 is true for every condensate row because each row's Cp, S, and H_app follow by

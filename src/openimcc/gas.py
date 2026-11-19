@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 from contextvars import ContextVar
+from copy import deepcopy
 import hashlib
 import json
 import math
@@ -374,6 +375,7 @@ _CONDENSATE_TABLE_RELPATH = Path("data") / "condensate-thermo-data.csv"
 _PACKAGED_DATA_PACKAGE = "openimcc.data.gas"
 _PACKAGED_GAS_NAME = "gas-shomate-default-v1.csv"
 _PACKAGED_CONDENSATE_NAME = "condensate-default-v1.csv"
+_CRYSTAL_PHASE_IDENTITY_NAME = "condensate-phase-identity.json"
 _SOURCE_VALIDITY_TEXT_COLUMNS = (
     "validity_kind", "continuation_kind", "cp_extension", "construction_method",
     "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
@@ -744,6 +746,9 @@ class SpeciesThermo:
     declared_interval_K: tuple[float, float] = (0.0, 0.0)
     continuation: str | None = None
     authority: str | None = None
+    phase_identity: Mapping[str, Any] | None = None
+    formation_enthalpy_298_kJ_mol: float | None = None
+    formation_enthalpy_source_id: str | None = None
 
 
 def _pandas():
@@ -818,6 +823,26 @@ def _packaged_resource(name: str):
             f"{_PACKAGED_DATA_PACKAGE}"
         )
     return resource
+
+
+@lru_cache(maxsize=1)
+def _crystal_phase_identity_rows() -> Mapping[str, dict[str, Any]]:
+    resource = _packaged_resource(_CRYSTAL_PHASE_IDENTITY_NAME)
+    with resource.open("r", encoding="utf-8") as handle:
+        return json.load(handle)["rows"]
+
+
+def _crystal_phase_identity_key(
+    species: str,
+    source_ref: str,
+    source_table_id: str | None,
+    T_min: float,
+    T_max: float,
+) -> str:
+    return (
+        f"{species}(cr)|{source_table_id or ''}|{source_ref}|"
+        f"{T_min:g}:{T_max:g}"
+    )
 
 
 def _packaged_database_path(name: str) -> Path:
@@ -2793,9 +2818,10 @@ def species_thermo(
     ``species`` is the bare formula (for example ``"FeO"``); ``phase`` is
     ``"g"``, ``"l"`` or ``"cr"``. The active row follows the runtime interval
     selector and temperatures outside its closed interval are refused unless
-    ``allow_extrapolation=True``. Opt-in extrapolation uses the same selected
-    row and continuation as ``evaluate_gas``; crystal-phase extrapolation is
-    unavailable because ``evaluate_gas`` has no crystal-phase continuation.
+    ``allow_extrapolation=True``. Gas and liquid continuation follows
+    ``evaluate_gas``. Crystal continuation is limited to a source-identified
+    single crystal phase, within its documented stability range and below its
+    printed melting point.
 
     For gas rows, let ``t = T/1000``. Shomate gives
     ``Cp = A + B*t + C*t² + D*t³ + E/t²`` (J mol⁻¹ K⁻¹), with enthalpy
@@ -2844,9 +2870,11 @@ def species_thermo(
     allow_extrapolation:
         If True, continue the same gas or liquid row used by
         ``evaluate_gas(..., allow_extrapolation=True)`` and report its
-        continuation and authority. The default remains a strict refusal
-        outside the selected row's declared interval. Crystal rows have no
-        ``evaluate_gas`` continuation and are refused when out of range.
+        continuation and authority. A crystal row can be continued with
+        constant Cp only when phase-identity metadata identifies one phase
+        and the requested temperature stays within its source-documented
+        stability range and below its printed melting point. The default
+        remains a strict refusal outside the selected row's declared interval.
     """
     if phase not in {"g", "l", "cr"}:
         raise ValueError("phase must be 'g', 'l', or 'cr'")
@@ -2871,68 +2899,6 @@ def species_thermo(
         )
     declared_interval = (float(row["T_min"]), float(row["T_max"]))
     extrapolated = not declared_interval[0] <= T_K <= declared_interval[1]
-    if extrapolated and phase == "cr":
-        raise ImccGasTemperatureOutsideDomainError(
-            f"evaluate_gas has no crystal-phase continuation for {row_name!r} "
-            f"at T={T_K} K"
-        )
-
-    if phase == "g":
-        t = T_K / 1000.0
-        try:
-            t4 = t**4
-        except OverflowError as exc:
-            raise ImccGasEquilibriumRangeError(
-                f"thermochemistry for {row_name} is outside the finite range at T={T_K} K"
-            ) from exc
-        A, B, C, D, E = (float(row[key]) for key in "ABCDE")
-        enthalpy_primitive = (
-            A * t + B * t**2 / 2.0 + C * t**3 / 3.0
-            + D * t4 / 4.0 - E / t
-        )
-        cp = A + B * t + C * t**2 + D * t**3 + E / t**2
-        entropy = (
-            A * math.log(t) + B * t + C * t**2 / 2.0
-            + D * t**3 / 3.0 - E / (2.0 * t**2) + float(row["G"])
-        )
-        # Premise: H_app includes dfH298 plus H(T)-H(298.15); the stored
-        # Shomate primitive and F already sum to that formation-anchored value.
-        # Algebra: G = 1000*(I_H + F) - T*S, matching _janaf_gibbs; subtracting
-        # column H would break this identity by 1000*H when H carries dfH298.
-        # Units: I_H and F are kJ/mol, H is kJ/mol, and S*T is J/mol. Sanity:
-        # H=0 is unchanged; for H=42 kJ/mol the old subtraction misses 42,000 J/mol.
-        h_app = enthalpy_primitive + float(row["F"])
-        apparent_g = _janaf_gibbs(T_K, row)
-        interval = int(row["T_interval"])
-    else:
-        t = T_K / 1000.0
-        A, B, C, D, E = (
-            float(row[key]) for key in ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
-        )
-        try:
-            t4 = t**4
-        except OverflowError as exc:
-            raise ImccGasEquilibriumRangeError(
-                f"thermochemistry for {row_name} is outside the finite range at T={T_K} K"
-            ) from exc
-        h_increment = R_J_MOL_K * t**2 * (
-            B + 2.0 * C * t + 3.0 * D * t**2 + 4.0 * E * t**3
-        )
-        h_app = R_J_MOL_K * float(row["dH298_R"]) + h_increment
-        entropy = R_J_MOL_K * (
-            A + 2.0 * B * t + 3.0 * C * t**2 + 4.0 * D * t**3 + 5.0 * E * t4
-        )
-        cp = R_J_MOL_K * (
-            2.0 * B * t + 6.0 * C * t**2 + 12.0 * D * t**3 + 20.0 * E * t4
-        )
-        apparent_g = _lamor_gibbs(T_K, row)
-        interval = None
-
-    for quantity, value in (
-        ("Cp", cp), ("entropy", entropy), ("enthalpy", h_app),
-        ("Gibbs energy", apparent_g),
-    ):
-        _thermochemistry_value(value, f"{row_name} {quantity}", T_K)
 
     source_ref = str(row["Ref"])
     if phase == "g" and source_ref:
@@ -2964,6 +2930,166 @@ def species_thermo(
         )
     else:
         source_table_id = _OXIDE_SOURCE_TABLE_IDS.get(species)
+
+    phase_identity: Mapping[str, Any] | None = None
+    continuation_edge_K: float | None = None
+    continuation_polymorph: str | None = None
+    if phase == "cr":
+        identity_key = _crystal_phase_identity_key(
+            species,
+            source_ref,
+            source_table_id,
+            declared_interval[0],
+            declared_interval[1],
+        )
+        identity_record = _crystal_phase_identity_rows().get(identity_key)
+        if identity_record is None:
+            identity_record = {
+                "species": species,
+                "phase": "cr",
+                "source_table_id": source_table_id,
+                "source_row_id": source_ref,
+                "T_interval_K": declared_interval,
+                "kind": "unknown",
+                "polymorph": None,
+                "stability_range_K": None,
+                "transition_temperatures_K": [],
+                "melting_temperature_K": None,
+                "source_locators": [],
+                "phase_notes": "No curated source-backed identity matches this row.",
+            }
+        phase_identity = MappingProxyType(deepcopy(identity_record))
+
+        if extrapolated:
+            if (
+                phase_identity.get("kind") != "single_polymorph"
+                or not isinstance(phase_identity.get("polymorph"), str)
+            ):
+                raise ImccGasTemperatureOutsideDomainError(
+                    f"cannot continue {row_name!r} at T={T_K} K: its source phase "
+                    "identity is unknown or composite"
+                )
+            stability_range = phase_identity.get("stability_range_K")
+            melting_temperature = phase_identity.get("melting_temperature_K")
+            if (
+                not isinstance(stability_range, (list, tuple))
+                or len(stability_range) != 2
+                or melting_temperature is None
+            ):
+                raise ImccGasTemperatureOutsideDomainError(
+                    f"cannot continue {row_name!r} at T={T_K} K: the source does "
+                    "not provide both a crystal stability range and a melting point"
+                )
+            stability_min, stability_max = map(float, stability_range)
+            melting_temperature = float(melting_temperature)
+            if T_K >= melting_temperature:
+                raise ImccGasTemperatureOutsideDomainError(
+                    f"cannot continue {row_name!r} at T={T_K} K: this is at or "
+                    f"above its source-printed melting point of {melting_temperature:g} K"
+                )
+            if not stability_min <= T_K <= stability_max:
+                transition_detail = ""
+                if T_K < stability_min:
+                    transition = next(
+                        (
+                            item for item in phase_identity["transition_temperatures_K"]
+                            if T_K < float(item["temperature_K"])
+                        ),
+                        None,
+                    )
+                    if transition is not None:
+                        transition_detail = (
+                            f"; the source prints a {transition.get('from', 'phase')} "
+                            f"to {transition.get('to', 'phase')} transition at "
+                            f"{float(transition['temperature_K']):g} K"
+                        )
+                raise ImccGasTemperatureOutsideDomainError(
+                    f"cannot continue {row_name!r} at T={T_K} K: outside its "
+                    f"source-printed stability range [{stability_min:g}, "
+                    f"{stability_max:g}] K{transition_detail}"
+                )
+            continuation_edge_K = (
+                declared_interval[0]
+                if T_K < declared_interval[0]
+                else declared_interval[1]
+            )
+            continuation_polymorph = str(phase_identity["polymorph"])
+
+    if phase == "g":
+        t = T_K / 1000.0
+        try:
+            t4 = t**4
+        except OverflowError as exc:
+            raise ImccGasEquilibriumRangeError(
+                f"thermochemistry for {row_name} is outside the finite range at T={T_K} K"
+            ) from exc
+        A, B, C, D, E = (float(row[key]) for key in "ABCDE")
+        enthalpy_primitive = (
+            A * t + B * t**2 / 2.0 + C * t**3 / 3.0
+            + D * t4 / 4.0 - E / t
+        )
+        cp = A + B * t + C * t**2 + D * t**3 + E / t**2
+        entropy = (
+            A * math.log(t) + B * t + C * t**2 / 2.0
+            + D * t**3 / 3.0 - E / (2.0 * t**2) + float(row["G"])
+        )
+        # Premise: H_app includes dfH298 plus H(T)-H(298.15); the stored
+        # Shomate primitive and F already sum to that formation-anchored value.
+        # Algebra: G = 1000*(I_H + F) - T*S, matching _janaf_gibbs; subtracting
+        # column H would break this identity by 1000*H when H carries dfH298.
+        # Units: I_H and F are kJ/mol, H is kJ/mol, and S*T is J/mol. Sanity:
+        # H=0 is unchanged; for H=42 kJ/mol the old subtraction misses 42,000 J/mol.
+        h_app = enthalpy_primitive + float(row["F"])
+        apparent_g = _janaf_gibbs(T_K, row)
+        interval = int(row["T_interval"])
+    else:
+        condensate_T = (
+            continuation_edge_K if continuation_edge_K is not None else T_K
+        )
+        t = condensate_T / 1000.0
+        A, B, C, D, E = (
+            float(row[key]) for key in ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
+        )
+        try:
+            t4 = t**4
+        except OverflowError as exc:
+            raise ImccGasEquilibriumRangeError(
+                f"thermochemistry for {row_name} is outside the finite range at T={T_K} K"
+            ) from exc
+        h_increment = R_J_MOL_K * t**2 * (
+            B + 2.0 * C * t + 3.0 * D * t**2 + 4.0 * E * t**3
+        )
+        h_app = R_J_MOL_K * float(row["dH298_R"]) + h_increment
+        entropy = R_J_MOL_K * (
+            A + 2.0 * B * t + 3.0 * C * t**2 + 4.0 * D * t**3 + 5.0 * E * t4
+        )
+        cp = R_J_MOL_K * (
+            2.0 * B * t + 6.0 * C * t**2 + 12.0 * D * t**3 + 20.0 * E * t4
+        )
+        apparent_g = _lamor_gibbs(condensate_T, row)
+        interval = None
+
+        if continuation_edge_K is not None:
+            # Premise: the source Gibbs polynomial fixes H, S, and Cp at the
+            # nearest declared edge; outside it, Cp stays at that edge value
+            # only within this source-identified phase's stability range and
+            # below its printed melting point. Algebra: integrate dH/dT=Cp
+            # and dS/dT=Cp/T to get ΔH=Cp*(T-T_edge)/1000 and
+            # ΔS=Cp*ln(T/T_edge), then set G=1000*H-T*S. Units: Cp is
+            # J/(mol K), ΔH is converted to kJ/mol, S is J/(mol K), and G is
+            # J/mol. At T=T_edge both increments are zero, so H, S, and G
+            # recover their edge values continuously.
+            edge_h_app = h_app
+            edge_entropy = entropy
+            h_app = edge_h_app + cp * (T_K - continuation_edge_K) / 1000.0
+            entropy = edge_entropy + cp * math.log(T_K / continuation_edge_K)
+            apparent_g = 1000.0 * h_app - T_K * entropy
+
+    for quantity, value in (
+        ("Cp", cp), ("entropy", entropy), ("enthalpy", h_app),
+        ("Gibbs energy", apparent_g),
+    ):
+        _thermochemistry_value(value, f"{row_name} {quantity}", T_K)
 
     continuation = None
     if phase == "g":
@@ -3000,7 +3126,12 @@ def species_thermo(
                 if status is not None:
                     authority = status.authority.value
 
-    if extrapolated:
+    if extrapolated and phase == "cr":
+        continuation = (
+            f"constant-Cp crystal continuation within "
+            f"{continuation_polymorph} stability range"
+        )
+    elif extrapolated:
         continuation, _continuation_flags = _continuation_info(
             row_name,
             T_K,
@@ -3008,6 +3139,24 @@ def species_thermo(
             phase=phase,
             candidate_notices=active_pack._high_temperature_candidate_notices,
         )
+
+    if phase == "g":
+        t_298 = 298.15 / 1000.0
+        formation_enthalpy_298 = (
+            float(row["A"]) * t_298
+            + float(row["B"]) * t_298**2 / 2.0
+            + float(row["C"]) * t_298**3 / 3.0
+            + float(row["D"]) * t_298**4 / 4.0
+            - float(row["E"]) / t_298
+            + float(row["F"])
+        )
+        formation_enthalpy_source_id = source_table_id or source_ref or None
+    elif "dH298_R" in row:
+        formation_enthalpy_298 = R_J_MOL_K * float(row["dH298_R"])
+        formation_enthalpy_source_id = source_table_id or source_ref or None
+    else:
+        formation_enthalpy_298 = None
+        formation_enthalpy_source_id = None
 
     return SpeciesThermo(
         Cp_J_molK=float(cp),
@@ -3026,6 +3175,9 @@ def species_thermo(
         declared_interval_K=declared_interval,
         continuation=continuation,
         authority=authority,
+        phase_identity=phase_identity,
+        formation_enthalpy_298_kJ_mol=formation_enthalpy_298,
+        formation_enthalpy_source_id=formation_enthalpy_source_id,
     )
 
 

@@ -30,6 +30,9 @@
 
 ### Gas thermochemistry
 
+- Added curated crystal phase identities for shipped condensate rows, bounded
+  constant-Cp continuation for eligible crystal phases, and 298.15 K formation
+  enthalpy fields on `SpeciesThermo` results.
 - Added opt-in `species_thermo(..., allow_extrapolation=True)` using the same
   row selection and continuation as `evaluate_gas`, with `extrapolated`,
   `declared_interval_K`, `continuation`, and authority provenance.
