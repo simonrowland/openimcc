@@ -13,6 +13,7 @@ from typing import Any, Literal, Mapping, Sequence
 
 
 _RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
+_SPECIES_RESOURCE = "data/diagnostics/janaf-crystal-species.json"
 _LIQUID_RESOURCE = "data/diagnostics/janaf-pure-oxide-liquid-pairs.json"
 _ANCHOR_TEMPERATURE_K = 298.15
 
@@ -110,6 +111,13 @@ def _load_phases() -> tuple[dict[str, Any], str]:
 
 
 @lru_cache(maxsize=1)
+def _load_crystal_species() -> tuple[dict[str, Any], str]:
+    raw = resources.files("openimcc").joinpath(_SPECIES_RESOURCE).read_bytes()
+    data = json.loads(raw.decode("utf-8"))
+    return {row["id"]: row for row in data["phases"]}, hashlib.sha256(raw).hexdigest()
+
+
+@lru_cache(maxsize=1)
 def _load_liquid_rows() -> tuple[dict[str, Any], str]:
     raw = resources.files("openimcc").joinpath(_LIQUID_RESOURCE).read_bytes()
     data = json.loads(raw.decode("utf-8"))
@@ -185,6 +193,8 @@ def evaluate_janaf_crystal(
     """
     rows, resource_digest = _load_phases()
     if phase_id not in rows:
+        rows, resource_digest = _load_crystal_species()
+    if phase_id not in rows:
         raise KeyError(f"no packaged JANAF crystal function for {phase_id!r}")
     row = rows[phase_id]
     temperature = float(temperature_K)
@@ -229,6 +239,8 @@ def evaluate_janaf_crystal(
             transition["source_line_number"] if use_transition else None
         ),
     }
+    if "source_title" in row:
+        provenance["source_title"] = row["source_title"]
     return JanafCrystalGibbs(gibbs, domain, provenance)
 
 

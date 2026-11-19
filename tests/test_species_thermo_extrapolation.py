@@ -180,6 +180,29 @@ def test_shipped_crystal_dataset_fallback_and_polymorph_selection() -> None:
     assert "pseudowollastonite" in str(refusal.value)
 
 
+def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
+    lead_oxide = species_thermo("PbO", "cr", 800.0)
+    assert lead_oxide.source_table_id == "O-006"
+    assert lead_oxide.formation_enthalpy_298_kJ_mol == pytest.approx(-218.062)
+    assert lead_oxide.phase_identity is not None
+    assert lead_oxide.phase_identity["source_title"].startswith(
+        "Lead Oxide, Yellow"
+    )
+    assert lead_oxide.phase_identity["polymorph"] == "II"
+    assert lead_oxide.phase_identity["temperature_segment_K"] == (762.0, 1159.0)
+
+    alpha_tio = species_thermo("TiO", "cr", 1000.0)
+    beta_tio = species_thermo("TiO", "cr", 1500.0)
+    assert alpha_tio.source_table_id == beta_tio.source_table_id == "O-019"
+    assert alpha_tio.phase_identity is not None
+    assert beta_tio.phase_identity is not None
+    assert alpha_tio.phase_identity["polymorph"] == "ALPHA"
+    assert beta_tio.phase_identity["polymorph"] == "BETA"
+
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("PbO", "cr", 1160.0)
+
+
 def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
     with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
         species_thermo("CaTiO3", "cr", 1400.0)

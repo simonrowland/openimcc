@@ -206,6 +206,9 @@ def _expected_row_ids(artifact: dict) -> set[str]:
     if file == "diagnostics/janaf-pure-oxide-crystals.json":
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"phases:{row['id']}" for row in content["phases"]}
+    if file == "diagnostics/janaf-crystal-species.json":
+        content = json.loads(path.read_text(encoding="utf-8"))
+        return {f"phases:{row['id']}" for row in content["phases"]}
     if file == "diagnostics/janaf-pure-oxide-liquid-pairs.json":
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"rows:{row['table_id']}" for row in content["rows"]}
@@ -270,6 +273,15 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     temperature = max(298.15, phase["source_temperature_K"][0])
     result = evaluate_janaf_crystal(phase["id"], temperature)
     assert result.provenance["resource_sha256"] == crystals["runtime_digest"]
+
+    additional_crystals = _artifact(
+        entries, "openimcc-janaf-apparent-crystal-species-v1"
+    )
+    additional_data = _json_resource(additional_crystals["file"])
+    additional_phase = additional_data["phases"][0]
+    temperature = max(298.15, additional_phase["source_temperature_K"][0])
+    result = evaluate_janaf_crystal(additional_phase["id"], temperature)
+    assert result.provenance["resource_sha256"] == additional_crystals["runtime_digest"]
 
     liquid_pairs = _artifact(entries, "openimcc-janaf-apparent-liquid-pairs-v1")
     pair_data = _json_resource(liquid_pairs["file"])

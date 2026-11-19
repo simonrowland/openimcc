@@ -1231,6 +1231,12 @@ def build() -> dict[str, Any]:
             mapper=mapper,
         ),
         _janaf_artifact(
+            relative_file="diagnostics/janaf-crystal-species.json",
+            identity="openimcc-janaf-apparent-crystal-species-v1",
+            collection="phases",
+            mapper=mapper,
+        ),
+        _janaf_artifact(
             relative_file="diagnostics/janaf-pure-oxide-liquid-pairs.json",
             identity="openimcc-janaf-apparent-liquid-pairs-v1",
             collection="rows",

@@ -1,0 +1,1481 @@
+{
+  "schema": "openimcc-janaf-apparent-crystal-species-v1",
+  "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
+  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly. Also retain finite enthalpy-increment/entropy columns from identified transition lines in parse_ambiguities and use the crystal-liquid row at its inclusive cap instead of interpolation.",
+  "source_span_rule": "Finite source enthalpy-increment and entropy nodes; evaluation starts at 298.15 K.",
+  "phase_restriction_rule": "A JANAF crystal is valid through its crystal-to-liquid transition temperature, inclusive; never evaluate it above that transition.",
+  "phases": [
+    {
+      "id": "PbO",
+      "formula": "PbO",
+      "crystal_table_id": "O-006",
+      "source_title": "Lead Oxide, Yellow (PbO)  |  O1Pb1(cr)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "9c53cf11300af2c3be7f32047bce81bdc10f8f4e4493d91666547cc8cc1971c9",
+      "formation_enthalpy_298_kJ_mol": -218.062,
+      "source_temperature_K": [
+        0.0,
+        1500.0
+      ],
+      "crystal_transition_temperature_K": 1159.0,
+      "nodes": [
+        {
+          "T_K": 0.0,
+          "enthalpy_increment_kJ_mol": -9.238,
+          "entropy_J_mol_K": 0.0
+        },
+        {
+          "T_K": 100.0,
+          "enthalpy_increment_kJ_mol": -7.699,
+          "entropy_J_mol_K": 28.284
+        },
+        {
+          "T_K": 200.0,
+          "enthalpy_increment_kJ_mol": -4.289,
+          "entropy_J_mol_K": 51.547
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 68.701
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.085,
+          "entropy_J_mol_K": 68.985
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 4.812,
+          "entropy_J_mol_K": 82.565
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 9.765,
+          "entropy_J_mol_K": 93.609
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 14.895,
+          "entropy_J_mol_K": 102.958
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 20.181,
+          "entropy_J_mol_K": 111.104
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 31.185,
+          "entropy_J_mol_K": 124.917
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 36.894,
+          "entropy_J_mol_K": 130.93
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 42.738,
+          "entropy_J_mol_K": 136.499
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 54.822,
+          "entropy_J_mol_K": 146.586
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 61.061,
+          "entropy_J_mol_K": 151.209
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 67.431,
+          "entropy_J_mol_K": 155.604
+        }
+      ],
+      "transition_rows": [
+        {
+          "T_K": 762.0,
+          "enthalpy_increment_kJ_mol": 23.532,
+          "entropy_J_mol_K": 115.69,
+          "label": "I <--> II",
+          "source_line_number": 12,
+          "raw_line": "762.000\t54.495\t115.690\t84.808\t23.532\tI <--> II"
+        },
+        {
+          "T_K": 1159.0,
+          "enthalpy_increment_kJ_mol": 46.248,
+          "entropy_J_mol_K": 139.607,
+          "label": "II <--> LIQUID",
+          "source_line_number": 17,
+          "raw_line": "1159.000\t59.884\t139.607\t99.704\t46.248\tII <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 1159.0,
+        "enthalpy_increment_kJ_mol": 46.248,
+        "entropy_J_mol_K": 139.607,
+        "label": "II <--> LIQUID",
+        "source_line_number": 17,
+        "raw_line": "1159.000\t59.884\t139.607\t99.704\t46.248\tII <--> LIQUID"
+      },
+      "phase_segments": [
+        {
+          "phase_label": "I",
+          "temperature_K": [
+            298.15,
+            762.0
+          ]
+        },
+        {
+          "phase_label": "II",
+          "temperature_K": [
+            762.0,
+            1159.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ZrO2",
+      "formula": "ZrO2",
+      "crystal_table_id": "O-052",
+      "source_title": "Zirconium Oxide (ZrO2)  |  O2Zr1(cr)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "f042d1354d0aa1b8c3ea439fa98d2eac00a28b61d3633fa518a5112fc7f0204b",
+      "formation_enthalpy_298_kJ_mol": -1097.463,
+      "source_temperature_K": [
+        0.0,
+        3500.0
+      ],
+      "crystal_transition_temperature_K": 2950.0,
+      "nodes": [
+        {
+          "T_K": 0.0,
+          "enthalpy_increment_kJ_mol": -8.749,
+          "entropy_J_mol_K": 0.0
+        },
+        {
+          "T_K": 100.0,
+          "enthalpy_increment_kJ_mol": -8.09,
+          "entropy_J_mol_K": 9.488
+        },
+        {
+          "T_K": 200.0,
+          "enthalpy_increment_kJ_mol": -4.914,
+          "entropy_J_mol_K": 30.546
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 50.359
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.104,
+          "entropy_J_mol_K": 50.707
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 6.155,
+          "entropy_J_mol_K": 68.064
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 12.753,
+          "entropy_J_mol_K": 82.769
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 19.66,
+          "entropy_J_mol_K": 95.356
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 26.777,
+          "entropy_J_mol_K": 106.323
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 34.053,
+          "entropy_J_mol_K": 116.036
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 41.459,
+          "entropy_J_mol_K": 124.759
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 48.981,
+          "entropy_J_mol_K": 132.682
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 56.606,
+          "entropy_J_mol_K": 139.949
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 64.327,
+          "entropy_J_mol_K": 146.667
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 72.141,
+          "entropy_J_mol_K": 152.921
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 80.042,
+          "entropy_J_mol_K": 158.776
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 93.845,
+          "entropy_J_mol_K": 168.222
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 101.293,
+          "entropy_J_mol_K": 173.028
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 108.74,
+          "entropy_J_mol_K": 177.543
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 116.188,
+          "entropy_J_mol_K": 181.8
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 123.635,
+          "entropy_J_mol_K": 185.827
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 131.083,
+          "entropy_J_mol_K": 189.647
+        },
+        {
+          "T_K": 2100.0,
+          "enthalpy_increment_kJ_mol": 138.53,
+          "entropy_J_mol_K": 193.28
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 145.978,
+          "entropy_J_mol_K": 196.745
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 153.425,
+          "entropy_J_mol_K": 200.056
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 160.873,
+          "entropy_J_mol_K": 203.225
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 168.32,
+          "entropy_J_mol_K": 206.265
+        },
+        {
+          "T_K": 2600.0,
+          "enthalpy_increment_kJ_mol": 175.768,
+          "entropy_J_mol_K": 209.186
+        },
+        {
+          "T_K": 2700.0,
+          "enthalpy_increment_kJ_mol": 183.215,
+          "entropy_J_mol_K": 211.997
+        },
+        {
+          "T_K": 2800.0,
+          "enthalpy_increment_kJ_mol": 190.663,
+          "entropy_J_mol_K": 214.706
+        },
+        {
+          "T_K": 2900.0,
+          "enthalpy_increment_kJ_mol": 198.11,
+          "entropy_J_mol_K": 217.319
+        },
+        {
+          "T_K": 3100.0,
+          "enthalpy_increment_kJ_mol": 213.005,
+          "entropy_J_mol_K": 222.286
+        },
+        {
+          "T_K": 3200.0,
+          "enthalpy_increment_kJ_mol": 220.453,
+          "entropy_J_mol_K": 224.65
+        },
+        {
+          "T_K": 3300.0,
+          "enthalpy_increment_kJ_mol": 227.9,
+          "entropy_J_mol_K": 226.942
+        },
+        {
+          "T_K": 3400.0,
+          "enthalpy_increment_kJ_mol": 235.348,
+          "entropy_J_mol_K": 229.165
+        },
+        {
+          "T_K": 3500.0,
+          "enthalpy_increment_kJ_mol": 242.795,
+          "entropy_J_mol_K": 231.324
+        }
+      ],
+      "transition_rows": [
+        {
+          "T_K": 1478.0,
+          "enthalpy_increment_kJ_mol": 86.265,
+          "entropy_J_mol_K": 163.101,
+          "label": "I <--> II",
+          "source_line_number": 19,
+          "raw_line": "1478.000\t80.108\t163.101\t104.735\t86.265\tI <--> II"
+        },
+        {
+          "T_K": 1478.0,
+          "enthalpy_increment_kJ_mol": 92.207,
+          "entropy_J_mol_K": 167.121,
+          "label": "TRANSITION",
+          "source_line_number": 20,
+          "raw_line": "1478.000\t74.475\t167.121\t104.735\t92.207\tTRANSITION"
+        },
+        {
+          "T_K": 2950.0,
+          "enthalpy_increment_kJ_mol": 201.834,
+          "entropy_J_mol_K": 218.592,
+          "label": "II <--> LIQUID",
+          "source_line_number": 36,
+          "raw_line": "2950.000\t74.475\t218.592\t150.174\t201.834\tII <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 2950.0,
+        "enthalpy_increment_kJ_mol": 201.834,
+        "entropy_J_mol_K": 218.592,
+        "label": "II <--> LIQUID",
+        "source_line_number": 36,
+        "raw_line": "2950.000\t74.475\t218.592\t150.174\t201.834\tII <--> LIQUID"
+      },
+      "phase_segments": [
+        {
+          "phase_label": "I",
+          "temperature_K": [
+            298.15,
+            1478.0
+          ]
+        },
+        {
+          "phase_label": "II",
+          "temperature_K": [
+            1478.0,
+            2950.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TiO",
+      "formula": "TiO",
+      "crystal_table_id": "O-019",
+      "source_title": "Titanium Oxide, Beta (TiO)  |  O1Ti1(cr)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "1050909ad55d2e9e7796eb6cc4d353ecdc38f135945c4dbbb3620374eb7bd597",
+      "formation_enthalpy_298_kJ_mol": -538.481,
+      "source_temperature_K": [
+        298.15,
+        2500.0
+      ],
+      "crystal_transition_temperature_K": 2023.0,
+      "nodes": [
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 38.077
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.074,
+          "entropy_J_mol_K": 38.324
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 4.346,
+          "entropy_J_mol_K": 50.582
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 9.015,
+          "entropy_J_mol_K": 60.987
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 13.972,
+          "entropy_J_mol_K": 70.016
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 19.171,
+          "entropy_J_mol_K": 78.026
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 24.586,
+          "entropy_J_mol_K": 85.254
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 30.204,
+          "entropy_J_mol_K": 91.868
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 36.016,
+          "entropy_J_mol_K": 97.99
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 42.018,
+          "entropy_J_mol_K": 103.709
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 48.206,
+          "entropy_J_mol_K": 109.093
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 61.133,
+          "entropy_J_mol_K": 119.048
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 67.867,
+          "entropy_J_mol_K": 123.694
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 74.781,
+          "entropy_J_mol_K": 128.155
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 81.875,
+          "entropy_J_mol_K": 132.456
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 89.147,
+          "entropy_J_mol_K": 136.612
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 96.597,
+          "entropy_J_mol_K": 140.639
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 104.224,
+          "entropy_J_mol_K": 144.551
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 120.006,
+          "entropy_J_mol_K": 152.069
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 128.163,
+          "entropy_J_mol_K": 155.695
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 136.497,
+          "entropy_J_mol_K": 159.242
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 145.008,
+          "entropy_J_mol_K": 162.716
+        }
+      ],
+      "transition_rows": [
+        {
+          "T_K": 1265.0,
+          "enthalpy_increment_kJ_mol": 52.327,
+          "entropy_J_mol_K": 112.436,
+          "label": "ALPHA <--> BETA",
+          "source_line_number": 17,
+          "raw_line": "1265.000\t64.013\t112.436\t71.071\t52.327\tALPHA <--> BETA"
+        },
+        {
+          "T_K": 2023.0,
+          "enthalpy_increment_kJ_mol": 106.003,
+          "entropy_J_mol_K": 145.436,
+          "label": "BETA <--> LIQUID",
+          "source_line_number": 26,
+          "raw_line": "2023.000\t77.551\t145.436\t93.037\t106.003\tBETA <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 2023.0,
+        "enthalpy_increment_kJ_mol": 106.003,
+        "entropy_J_mol_K": 145.436,
+        "label": "BETA <--> LIQUID",
+        "source_line_number": 26,
+        "raw_line": "2023.000\t77.551\t145.436\t93.037\t106.003\tBETA <--> LIQUID"
+      },
+      "phase_segments": [
+        {
+          "phase_label": "ALPHA",
+          "temperature_K": [
+            298.15,
+            1265.0
+          ]
+        },
+        {
+          "phase_label": "BETA",
+          "temperature_K": [
+            1265.0,
+            2023.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Ti3O5",
+      "formula": "Ti3O5",
+      "crystal_table_id": "O-081",
+      "source_title": "Titanium Oxide, Beta (Ti3O5)  |  O5Ti3(cr)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "fc5fd6a33d99dd2d02cf5127335000291a632c3c5271107027e8da2900cf47d6",
+      "formation_enthalpy_298_kJ_mol": -2446.189,
+      "source_temperature_K": [
+        298.15,
+        2500.0
+      ],
+      "crystal_transition_temperature_K": 2500.0,
+      "nodes": [
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 157.617
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.322,
+          "entropy_J_mol_K": 158.694
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 17.978,
+          "entropy_J_mol_K": 209.454
+        },
+        {
+          "T_K": 450.0,
+          "enthalpy_increment_kJ_mol": 26.995,
+          "entropy_J_mol_K": 230.691
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 36.137,
+          "entropy_J_mol_K": 249.952
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 54.798,
+          "entropy_J_mol_K": 283.961
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 73.96,
+          "entropy_J_mol_K": 313.49
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 93.625,
+          "entropy_J_mol_K": 339.742
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 113.792,
+          "entropy_J_mol_K": 363.489
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 134.461,
+          "entropy_J_mol_K": 385.261
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 155.632,
+          "entropy_J_mol_K": 405.436
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 177.305,
+          "entropy_J_mol_K": 424.291
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 199.48,
+          "entropy_J_mol_K": 442.038
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 222.158,
+          "entropy_J_mol_K": 458.841
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 245.337,
+          "entropy_J_mol_K": 474.831
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 269.018,
+          "entropy_J_mol_K": 490.113
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 293.202,
+          "entropy_J_mol_K": 504.773
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 317.888,
+          "entropy_J_mol_K": 518.881
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 343.075,
+          "entropy_J_mol_K": 532.498
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 368.765,
+          "entropy_J_mol_K": 545.674
+        },
+        {
+          "T_K": 2100.0,
+          "enthalpy_increment_kJ_mol": 394.957,
+          "entropy_J_mol_K": 558.452
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 421.651,
+          "entropy_J_mol_K": 570.869
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 448.847,
+          "entropy_J_mol_K": 582.958
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 476.545,
+          "entropy_J_mol_K": 594.745
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 504.745,
+          "entropy_J_mol_K": 606.256
+        }
+      ],
+      "transition_rows": [],
+      "transition_row_at_cap": null,
+      "phase_segments": [
+        {
+          "phase_label": "Titanium Oxide, Beta (Ti3O5)  |  O5Ti3(cr)",
+          "temperature_K": [
+            298.15,
+            2500.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Ti2O3",
+      "formula": "Ti2O3",
+      "crystal_table_id": "O-059",
+      "source_title": "Titanium Oxide (Ti2O3)  |  O3Ti2(cr)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "6ac547e4fc2c4c7bd9b16bdb5e25c8b92bdb2948d9a8ec0c2e5a338b298327bd",
+      "formation_enthalpy_298_kJ_mol": -1520.884,
+      "source_temperature_K": [
+        0.0,
+        3000.0
+      ],
+      "crystal_transition_temperature_K": 2115.0,
+      "nodes": [
+        {
+          "T_K": 0.0,
+          "enthalpy_increment_kJ_mol": -14.088,
+          "entropy_J_mol_K": 0.0
+        },
+        {
+          "T_K": 100.0,
+          "enthalpy_increment_kJ_mol": -13.284,
+          "entropy_J_mol_K": 11.058
+        },
+        {
+          "T_K": 200.0,
+          "enthalpy_increment_kJ_mol": -8.297,
+          "entropy_J_mol_K": 43.832
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 77.253
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.178,
+          "entropy_J_mol_K": 77.847
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 10.805,
+          "entropy_J_mol_K": 108.277
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 24.813,
+          "entropy_J_mol_K": 139.362
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 38.174,
+          "entropy_J_mol_K": 163.704
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 52.027,
+          "entropy_J_mol_K": 185.051
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 66.199,
+          "entropy_J_mol_K": 203.971
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 80.597,
+          "entropy_J_mol_K": 220.928
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 95.162,
+          "entropy_J_mol_K": 236.272
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 109.858,
+          "entropy_J_mol_K": 250.277
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 124.662,
+          "entropy_J_mol_K": 263.158
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 139.558,
+          "entropy_J_mol_K": 275.081
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 154.531,
+          "entropy_J_mol_K": 286.177
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 169.573,
+          "entropy_J_mol_K": 296.554
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 184.68,
+          "entropy_J_mol_K": 306.304
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 199.845,
+          "entropy_J_mol_K": 315.497
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 215.065,
+          "entropy_J_mol_K": 324.197
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 230.334,
+          "entropy_J_mol_K": 332.452
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 245.652,
+          "entropy_J_mol_K": 340.309
+        },
+        {
+          "T_K": 2100.0,
+          "enthalpy_increment_kJ_mol": 261.018,
+          "entropy_J_mol_K": 347.806
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 291.881,
+          "entropy_J_mol_K": 361.844
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 307.379,
+          "entropy_J_mol_K": 368.44
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 322.919,
+          "entropy_J_mol_K": 374.783
+        },
+        {
+          "T_K": 2600.0,
+          "enthalpy_increment_kJ_mol": 338.497,
+          "entropy_J_mol_K": 380.894
+        },
+        {
+          "T_K": 2700.0,
+          "enthalpy_increment_kJ_mol": 354.117,
+          "entropy_J_mol_K": 386.788
+        },
+        {
+          "T_K": 2800.0,
+          "enthalpy_increment_kJ_mol": 369.775,
+          "entropy_J_mol_K": 392.483
+        },
+        {
+          "T_K": 2900.0,
+          "enthalpy_increment_kJ_mol": 385.471,
+          "entropy_J_mol_K": 397.991
+        },
+        {
+          "T_K": 3000.0,
+          "enthalpy_increment_kJ_mol": 401.207,
+          "entropy_J_mol_K": 403.325
+        }
+      ],
+      "transition_rows": [
+        {
+          "T_K": 470.01,
+          "enthalpy_increment_kJ_mol": 19.807,
+          "entropy_J_mol_K": 128.963,
+          "label": "ALPHA <--> BETA",
+          "source_line_number": 9,
+          "raw_line": "470.010\t141.716\t128.963\t86.822\t19.807\tALPHA <--> BETA"
+        },
+        {
+          "T_K": 470.01,
+          "enthalpy_increment_kJ_mol": 20.945,
+          "entropy_J_mol_K": 131.384,
+          "label": "TRANSITION",
+          "source_line_number": 10,
+          "raw_line": "470.010\t127.653\t131.384\t86.822\t20.945\tTRANSITION"
+        },
+        {
+          "T_K": 2115.0,
+          "enthalpy_increment_kJ_mol": 263.327,
+          "entropy_J_mol_K": 348.902,
+          "label": "BETA <--> LIQUID",
+          "source_line_number": 28,
+          "raw_line": "2115.000\t153.953\t348.902\t224.398\t263.327\tBETA <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 2115.0,
+        "enthalpy_increment_kJ_mol": 263.327,
+        "entropy_J_mol_K": 348.902,
+        "label": "BETA <--> LIQUID",
+        "source_line_number": 28,
+        "raw_line": "2115.000\t153.953\t348.902\t224.398\t263.327\tBETA <--> LIQUID"
+      },
+      "phase_segments": [
+        {
+          "phase_label": "ALPHA",
+          "temperature_K": [
+            298.15,
+            470.01
+          ]
+        },
+        {
+          "phase_label": "BETA",
+          "temperature_K": [
+            470.01,
+            2115.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Cr2O3",
+      "formula": "Cr2O3",
+      "crystal_table_id": "Cr-014",
+      "source_title": "Chromium Oxide (Cr2O3)  |  Cr2O3(cr)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "6fac0a9099d3eff72908fb0404993672863ebe8cb41aefc22f8c0a2e512b42a6",
+      "formation_enthalpy_298_kJ_mol": -1134.701,
+      "source_temperature_K": [
+        0.0,
+        3000.0
+      ],
+      "crystal_transition_temperature_K": 2603.0,
+      "nodes": [
+        {
+          "T_K": 0.0,
+          "enthalpy_increment_kJ_mol": -15.282,
+          "entropy_J_mol_K": 0.0
+        },
+        {
+          "T_K": 100.0,
+          "enthalpy_increment_kJ_mol": -14.555,
+          "entropy_J_mol_K": 10.093
+        },
+        {
+          "T_K": 200.0,
+          "enthalpy_increment_kJ_mol": -9.501,
+          "entropy_J_mol_K": 43.065
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 81.154
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.224,
+          "entropy_J_mol_K": 81.904
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 11.281,
+          "entropy_J_mol_K": 113.736
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 22.837,
+          "entropy_J_mol_K": 139.503
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 34.759,
+          "entropy_J_mol_K": 161.232
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 46.922,
+          "entropy_J_mol_K": 179.977
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 59.27,
+          "entropy_J_mol_K": 196.463
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 71.773,
+          "entropy_J_mol_K": 211.187
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 84.41,
+          "entropy_J_mol_K": 224.501
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 97.171,
+          "entropy_J_mol_K": 236.663
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 110.049,
+          "entropy_J_mol_K": 247.867
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 123.036,
+          "entropy_J_mol_K": 258.261
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 136.13,
+          "entropy_J_mol_K": 267.964
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 149.327,
+          "entropy_J_mol_K": 277.069
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 162.625,
+          "entropy_J_mol_K": 285.651
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 176.024,
+          "entropy_J_mol_K": 293.774
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 189.517,
+          "entropy_J_mol_K": 301.486
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 203.135,
+          "entropy_J_mol_K": 308.848
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 216.888,
+          "entropy_J_mol_K": 315.903
+        },
+        {
+          "T_K": 2100.0,
+          "enthalpy_increment_kJ_mol": 230.749,
+          "entropy_J_mol_K": 322.665
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 244.699,
+          "entropy_J_mol_K": 329.155
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 258.739,
+          "entropy_J_mol_K": 335.395
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 272.867,
+          "entropy_J_mol_K": 341.408
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 287.085,
+          "entropy_J_mol_K": 347.212
+        },
+        {
+          "T_K": 2600.0,
+          "enthalpy_increment_kJ_mol": 301.393,
+          "entropy_J_mol_K": 352.824
+        },
+        {
+          "T_K": 2800.0,
+          "enthalpy_increment_kJ_mol": 330.279,
+          "entropy_J_mol_K": 363.526
+        },
+        {
+          "T_K": 2900.0,
+          "enthalpy_increment_kJ_mol": 344.857,
+          "entropy_J_mol_K": 368.642
+        },
+        {
+          "T_K": 3000.0,
+          "enthalpy_increment_kJ_mol": 359.527,
+          "entropy_J_mol_K": 373.615
+        }
+      ],
+      "transition_rows": [
+        {
+          "T_K": 305.0,
+          "enthalpy_increment_kJ_mol": 0.845,
+          "entropy_J_mol_K": 83.958,
+          "label": "TRANSITION",
+          "source_line_number": 10,
+          "raw_line": "305.000\t126.775\t83.958\t81.186\t0.845\tTRANSITION"
+        },
+        {
+          "T_K": 2603.0,
+          "enthalpy_increment_kJ_mol": 301.824,
+          "entropy_J_mol_K": 352.989,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 34,
+          "raw_line": "2603.000\t143.553\t352.989\t237.037\t301.824\tCRYSTAL <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 2603.0,
+        "enthalpy_increment_kJ_mol": 301.824,
+        "entropy_J_mol_K": 352.989,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 34,
+        "raw_line": "2603.000\t143.553\t352.989\t237.037\t301.824\tCRYSTAL <--> LIQUID"
+      },
+      "phase_segments": [
+        {
+          "phase_label": "Chromium Oxide (Cr2O3)  |  Cr2O3(cr)",
+          "temperature_K": [
+            298.15,
+            2603.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LiAlO2",
+      "formula": "LiAlO2",
+      "crystal_table_id": "Al-068",
+      "source_title": "Lithium Aluminum Oxide (LiAlO2)  |  Al1Li1O2(cr)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "d5a2087a65ffb4736708179115f9bce89876552d1a2b4b81b47bd65b2ace84b0",
+      "formation_enthalpy_298_kJ_mol": -1188.674,
+      "source_temperature_K": [
+        0.0,
+        2200.0
+      ],
+      "crystal_transition_temperature_K": 1973.0,
+      "nodes": [
+        {
+          "T_K": 0.0,
+          "enthalpy_increment_kJ_mol": -9.693,
+          "entropy_J_mol_K": 0.0
+        },
+        {
+          "T_K": 100.0,
+          "enthalpy_increment_kJ_mol": -9.121,
+          "entropy_J_mol_K": 8.046
+        },
+        {
+          "T_K": 200.0,
+          "enthalpy_increment_kJ_mol": -5.758,
+          "entropy_J_mol_K": 30.154
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 53.313
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.126,
+          "entropy_J_mol_K": 53.733
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 7.697,
+          "entropy_J_mol_K": 75.421
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 16.226,
+          "entropy_J_mol_K": 94.425
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 25.294,
+          "entropy_J_mol_K": 110.947
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 34.723,
+          "entropy_J_mol_K": 125.475
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 44.423,
+          "entropy_J_mol_K": 138.424
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 54.343,
+          "entropy_J_mol_K": 150.107
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 64.455,
+          "entropy_J_mol_K": 160.759
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 74.74,
+          "entropy_J_mol_K": 170.559
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 85.183,
+          "entropy_J_mol_K": 179.645
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 95.777,
+          "entropy_J_mol_K": 188.124
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 106.515,
+          "entropy_J_mol_K": 196.082
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 117.393,
+          "entropy_J_mol_K": 203.586
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 128.408,
+          "entropy_J_mol_K": 210.694
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 139.556,
+          "entropy_J_mol_K": 217.452
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 150.835,
+          "entropy_J_mol_K": 223.899
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 162.245,
+          "entropy_J_mol_K": 230.068
+        },
+        {
+          "T_K": 2100.0,
+          "enthalpy_increment_kJ_mol": 185.449,
+          "entropy_J_mol_K": 241.678
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 197.242,
+          "entropy_J_mol_K": 247.163
+        }
+      ],
+      "transition_rows": [
+        {
+          "T_K": 1973.0,
+          "enthalpy_increment_kJ_mol": 170.656,
+          "entropy_J_mol_K": 234.411,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 24,
+          "raw_line": "1973.000\t115.679\t234.411\t147.916\t170.656\tCRYSTAL <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 1973.0,
+        "enthalpy_increment_kJ_mol": 170.656,
+        "entropy_J_mol_K": 234.411,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 24,
+        "raw_line": "1973.000\t115.679\t234.411\t147.916\t170.656\tCRYSTAL <--> LIQUID"
+      },
+      "phase_segments": [
+        {
+          "phase_label": "Lithium Aluminum Oxide (LiAlO2)  |  Al1Li1O2(cr)",
+          "temperature_K": [
+            298.15,
+            1973.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Ta2O5",
+      "formula": "Ta2O5",
+      "crystal_table_id": "O-077",
+      "source_title": "Tantalum Oxide (Ta2O5)  |  O5Ta2(cr)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "05a7383d2e71da4bb591a3fc1e7918c8c702d24abd5cd632740beb576b3dac96",
+      "formation_enthalpy_298_kJ_mol": -2045.976,
+      "source_temperature_K": [
+        0.0,
+        2800.0
+      ],
+      "crystal_transition_temperature_K": 2058.0,
+      "nodes": [
+        {
+          "T_K": 0.0,
+          "enthalpy_increment_kJ_mol": -23.041,
+          "entropy_J_mol_K": 0.0
+        },
+        {
+          "T_K": 100.0,
+          "enthalpy_increment_kJ_mol": -20.642,
+          "entropy_J_mol_K": 37.108
+        },
+        {
+          "T_K": 200.0,
+          "enthalpy_increment_kJ_mol": -12.121,
+          "entropy_J_mol_K": 94.161
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 143.114
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.25,
+          "entropy_J_mol_K": 143.95
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 14.437,
+          "entropy_J_mol_K": 184.681
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 29.671,
+          "entropy_J_mol_K": 218.636
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 45.75,
+          "entropy_J_mol_K": 247.93
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 62.505,
+          "entropy_J_mol_K": 273.746
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 79.794,
+          "entropy_J_mol_K": 296.825
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 97.507,
+          "entropy_J_mol_K": 317.683
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 115.61,
+          "entropy_J_mol_K": 336.753
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 133.987,
+          "entropy_J_mol_K": 354.267
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 152.584,
+          "entropy_J_mol_K": 370.448
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 171.391,
+          "entropy_J_mol_K": 385.5
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 190.38,
+          "entropy_J_mol_K": 399.572
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 209.533,
+          "entropy_J_mol_K": 412.785
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 228.831,
+          "entropy_J_mol_K": 425.239
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 248.263,
+          "entropy_J_mol_K": 437.02
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 267.819,
+          "entropy_J_mol_K": 448.197
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 287.488,
+          "entropy_J_mol_K": 458.831
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 307.265,
+          "entropy_J_mol_K": 468.975
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 347.12,
+          "entropy_J_mol_K": 487.967
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 367.188,
+          "entropy_J_mol_K": 496.887
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 387.345,
+          "entropy_J_mol_K": 505.466
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 407.589,
+          "entropy_J_mol_K": 513.73
+        },
+        {
+          "T_K": 2600.0,
+          "enthalpy_increment_kJ_mol": 427.916,
+          "entropy_J_mol_K": 521.702
+        },
+        {
+          "T_K": 2700.0,
+          "enthalpy_increment_kJ_mol": 448.325,
+          "entropy_J_mol_K": 529.404
+        },
+        {
+          "T_K": 2800.0,
+          "enthalpy_increment_kJ_mol": 468.814,
+          "entropy_J_mol_K": 536.855
+        }
+      ],
+      "transition_rows": [
+        {
+          "T_K": 2058.0,
+          "enthalpy_increment_kJ_mol": 318.783,
+          "entropy_J_mol_K": 474.652,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 25,
+          "raw_line": "2058.000\t198.870\t474.652\t319.753\t318.783\tCRYSTAL <--> LIQUID"
+        }
+      ],
+      "transition_row_at_cap": {
+        "T_K": 2058.0,
+        "enthalpy_increment_kJ_mol": 318.783,
+        "entropy_J_mol_K": 474.652,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 25,
+        "raw_line": "2058.000\t198.870\t474.652\t319.753\t318.783\tCRYSTAL <--> LIQUID"
+      },
+      "phase_segments": [
+        {
+          "phase_label": "Tantalum Oxide (Ta2O5)  |  O5Ta2(cr)",
+          "temperature_K": [
+            298.15,
+            2058.0
+          ]
+        }
+      ]
+    }
+  ]
+}

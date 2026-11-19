@@ -52,6 +52,9 @@
   condensate row. Existing condensate selection and refusal behavior stays
   intact; dataset polymorph selection is limited to one source, with intervals
   and solid limits enforced.
+- Crystal fallback now serves PbO, ZrO2, TiO, Ti3O5, Ti2O3, Cr2O3, LiAlO2, and
+  Ta2O5 from generated JANAF tables, retaining source titles, transition rows,
+  and phase identity for each temperature segment.
 - Added curated crystal phase identities for shipped condensate rows, bounded
   constant-Cp continuation for eligible crystal phases, and 298.15 K formation
   enthalpy fields on `SpeciesThermo` results.

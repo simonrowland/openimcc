@@ -11,6 +11,7 @@ import math
 from typing import Any, Mapping, Sequence
 
 from openimcc.janaf_crystals import (
+    _load_crystal_species as _load_janaf_crystal_species,
     _load_phases as _load_janaf_phases,
     evaluate_janaf_crystal,
 )
@@ -431,33 +432,37 @@ def _barin_properties(
 
 
 def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
-    janaf_rows, _ = _load_janaf_phases()
-    janaf = []
-    for row in janaf_rows.values():
-        if row["formula"] != formula:
-            continue
-        source_lo, source_hi = map(float, row["source_temperature_K"])
-        interval = (
-            max(298.15, source_lo),
-            min(source_hi, float(row["crystal_transition_temperature_K"])),
-        )
-        nodes = _unique_janaf_nodes(row)
-        interval = _node_covered_interval(
-            interval, [float(node["T_K"]) for node in nodes]
-        )
-        table_id = str(row["crystal_table_id"])
-        janaf.append(_Candidate(
-            "JANAF pure-oxide crystals",
-            table_id,
-            row,
-            None,
-            interval,
-            table_id,
-            table_id,
-            str(row["source_authority"]),
-        ))
-    if janaf:
-        return [("JANAF pure-oxide crystals", janaf)]
+    janaf_sources = (
+        ("JANAF pure-oxide crystals", _load_janaf_phases()[0]),
+        ("JANAF crystal tables", _load_janaf_crystal_species()[0]),
+    )
+    for dataset, janaf_rows in janaf_sources:
+        janaf = []
+        for row in janaf_rows.values():
+            if row["formula"] != formula:
+                continue
+            source_lo, source_hi = map(float, row["source_temperature_K"])
+            interval = (
+                max(298.15, source_lo),
+                min(source_hi, float(row["crystal_transition_temperature_K"])),
+            )
+            nodes = _unique_janaf_nodes(row)
+            interval = _node_covered_interval(
+                interval, [float(node["T_K"]) for node in nodes]
+            )
+            table_id = str(row["crystal_table_id"])
+            janaf.append(_Candidate(
+                dataset,
+                str(row.get("source_title", table_id)),
+                row,
+                None,
+                interval,
+                table_id,
+                table_id,
+                str(row["source_authority"]),
+            ))
+        if janaf:
+            return [(dataset, janaf)]
 
     barin = []
     for phase in _barin_phases():
@@ -531,7 +536,9 @@ def _source_solid_limit(candidate: _Candidate) -> float | None:
     melting = phase.get("melting_point")
     if isinstance(melting, Mapping):
         return float(melting["temperature_K"])
-    if candidate.dataset == "JANAF pure-oxide crystals":
+    if candidate.dataset in {
+        "JANAF pure-oxide crystals", "JANAF crystal tables",
+    }:
         return float(phase["crystal_transition_temperature_K"])
     return None
 
@@ -545,7 +552,7 @@ def _available_at_temperature(
     lower_K, upper_K = candidate.interval_K
     limit_K = _source_solid_limit(candidate)
     if (
-        len(candidate.phase["oxide_stoichiometry"]) > 1
+        len(candidate.phase.get("oxide_stoichiometry", {})) > 1
         and limit_K is not None
         and temperature_K > limit_K
     ):
@@ -573,7 +580,9 @@ def _evaluate_candidate(
     *,
     continue_from_K: float | None,
 ) -> tuple[float, float, float, float, float | None]:
-    if candidate.dataset == "JANAF pure-oxide crystals":
+    if candidate.dataset in {
+        "JANAF pure-oxide crystals", "JANAF crystal tables",
+    }:
         row = candidate.phase
         nodes = _unique_janaf_nodes(row)
         enthalpy_nodes = [
@@ -678,7 +687,7 @@ def evaluate_crystal_species(
         if not available:
             limit = _source_solid_limit(candidate)
             if (
-                len(candidate.phase["oxide_stoichiometry"]) > 1
+                len(candidate.phase.get("oxide_stoichiometry", {})) > 1
                 and limit is not None
                 and temperature_K > limit
             ):
@@ -738,6 +747,31 @@ def evaluate_crystal_species(
         "selection_rule": rule,
         "declared_interval_K": candidate.interval_K,
     }
+    if candidate.dataset == "JANAF crystal tables":
+        segments = candidate.phase["phase_segments"]
+        segment_index = next(
+            (
+                index for index, segment in enumerate(segments)
+                if float(segment["temperature_K"][0]) <= temperature_K
+                and (
+                    temperature_K < float(segment["temperature_K"][1])
+                    or (
+                        index == len(segments) - 1
+                        and temperature_K == float(segment["temperature_K"][1])
+                    )
+                )
+            ),
+            len(segments) - 1,
+        )
+        segment = segments[segment_index]
+        phase_identity["polymorph"] = segment["phase_label"]
+        phase_identity["source_title"] = candidate.phase["source_title"]
+        phase_identity["temperature_segment_K"] = tuple(
+            map(float, segment["temperature_K"])
+        )
+        phase_identity["selection_rule"] = (
+            "JANAF source title and transition rows identify the active segment"
+        )
     if len(tied_candidates) > 1:
         tied_names = [item[0].label for item in tied_candidates]
         phase_identity["tie_note"] = (
@@ -761,7 +795,9 @@ def evaluate_crystal_species(
         )
     elif isinstance(candidate.phase.get("melting_point"), Mapping):
         phase_identity["melting_temperature_K"] = limit
-    elif candidate.dataset == "JANAF pure-oxide crystals":
+    elif candidate.dataset in {
+        "JANAF pure-oxide crystals", "JANAF crystal tables",
+    }:
         phase_identity["crystal_transition_temperature_K"] = limit
     continuation = None
     if extrapolated:
