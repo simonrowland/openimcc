@@ -55,6 +55,49 @@ def test_coefficient_source_lookup_requires_bounded_citation_match():
     assert source_mapper.resolve("Li (2001)") == ["li-work"]
 
 
+def test_context_checked_citation_mappings_and_rejections():
+    source_mapper = runpy.run_path(
+        str(ROOT / "tools" / "build_coefficient_ancestry.py")
+    )["SourceMapper"]
+    mapping = json.loads(
+        (ROOT / "tools" / "coefficient-ancestry-sources.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    vocabulary = json.loads(
+        (ROOT / "tests" / "data" / "coefficient-ancestry-vocabulary.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    mapper = source_mapper(mapping, set(vocabulary["work_ids"]))
+
+    mapped = {
+        "10.1016/j.jeurceramsoc.2018.03.007": "costa-2015-yb-silicate-silica-activity",
+        "corrected Costa & Jacobson Table 2": "costa-2015-yb-silicate-silica-activity",
+        "corrected Costa & Jacobson thermochemical cycle, Table 2": "costa-2015-yb-silicate-silica-activity",
+        "de Abreu and Fabrichnaya 2024 Table 5": "de-abreu-2024-li2o-sio2-thermochemistry",
+        "de Abreu and Fabrichnaya 2024 Table 5 p. 315": "de-abreu-2024-li2o-sio2-thermochemistry",
+        "Chase (1998).": "janaf-4th",
+        "LH87": "lamoreaux-hildenbrand-hildenbrand-1987",
+        "TSIV-1334": "ivtan-mno-coo-thermo",
+        "TSIV-1334-SC-2090": "ivtan-mno-coo-thermo",
+    }
+    for citation, work_id in mapped.items():
+        assert mapper.resolve(citation) == [work_id]
+
+    for citation in (
+        "Costa et al.",
+        "Robie et al.",
+        "Hemingway rhodonite crystal thermochemistry",
+        "MnSiO3-Robie-1995",
+        "NBS compilation",
+        "IVTAN-264",
+        "TSIV-1603",
+        "TSIV-2026",
+    ):
+        assert mapper.resolve(citation) == []
+
+
 def test_vocabulary_index_accepts_matching_ids_and_dois() -> None:
     check_vocabulary_index = runpy.run_path(
         str(ROOT / "tools" / "build_coefficient_ancestry.py")
