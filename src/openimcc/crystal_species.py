@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from bisect import bisect_left
 from dataclasses import dataclass
+from fractions import Fraction
 from functools import lru_cache
 from importlib import resources
 import json
 import math
+import re
 from typing import Any, Mapping, Sequence
 
 from openimcc.janaf_crystals import (
@@ -15,6 +17,9 @@ from openimcc.janaf_crystals import (
     _load_phases as _load_janaf_phases,
     evaluate_janaf_crystal,
 )
+
+
+_FORMULA_TOKEN = re.compile(r"[A-Z][a-z]?|\(|\)|\d+(?:\.\d+)?")
 
 
 @dataclass(frozen=True)
@@ -83,6 +88,59 @@ def _barin_phases() -> tuple[dict[str, Any], ...]:
     return tuple(
         _read_json("data/diagnostics/barin-aluminate-crystals.json")["phases"]
     )
+
+
+def _formula_element_counts(formula: str) -> dict[str, Fraction] | None:
+    """Parse formula counts for dataset matching without correcting OCR forms."""
+    tokens = _FORMULA_TOKEN.findall(formula)
+    if not tokens or "".join(tokens) != formula:
+        return None
+
+    groups: list[dict[str, Fraction]] = [{}]
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "(":
+            groups.append({})
+            index += 1
+            continue
+        if token == ")":
+            if len(groups) == 1 or not groups[-1]:
+                return None
+            nested = groups.pop()
+            index += 1
+            multiplier = Fraction(1)
+            if index < len(tokens) and tokens[index][0].isdigit():
+                count = tokens[index]
+                if count.startswith("0") and "." not in count:
+                    return None
+                multiplier = Fraction(count)
+                if multiplier <= 0:
+                    return None
+                index += 1
+            for element, count in nested.items():
+                groups[-1][element] = (
+                    groups[-1].get(element, Fraction(0)) + count * multiplier
+                )
+            continue
+        if not token[0].isupper():
+            return None
+
+        index += 1
+        count = Fraction(1)
+        if index < len(tokens) and tokens[index][0].isdigit():
+            count_token = tokens[index]
+            if count_token.startswith("0") and "." not in count_token:
+                return None
+            count = Fraction(count_token)
+            if count <= 0:
+                return None
+            index += 1
+        groups[-1][token] = groups[-1].get(token, Fraction(0)) + count
+
+    if len(groups) != 1:
+        return None
+    return groups[0] or None
 
 
 def _linear_value_and_slope(
@@ -432,6 +490,10 @@ def _barin_properties(
 
 
 def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
+    formula_counts = _formula_element_counts(formula)
+    if formula_counts is None:
+        return []
+
     janaf_sources = (
         ("JANAF pure-oxide crystals", _load_janaf_phases()[0]),
         ("JANAF crystal tables", _load_janaf_crystal_species()[0]),
@@ -439,7 +501,7 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
     for dataset, janaf_rows in janaf_sources:
         janaf = []
         for row in janaf_rows.values():
-            if row["formula"] != formula:
+            if _formula_element_counts(row["formula"]) != formula_counts:
                 continue
             source_lo, source_hi = map(float, row["source_temperature_K"])
             interval = (
@@ -466,7 +528,7 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
 
     barin = []
     for phase in _barin_phases():
-        if phase["formula"] != formula:
+        if _formula_element_counts(phase["formula"]) != formula_counts:
             continue
         for polymorph in phase["polymorphs"]:
             interval = tuple(map(float, polymorph["valid_temperature_K"]))
@@ -492,7 +554,7 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
 
     minerals = []
     for phase in _berman_phases():
-        if phase["formula"] != formula:
+        if _formula_element_counts(phase["formula"]) != formula_counts:
             continue
         interval = tuple(map(float, phase["valid_temperature_K"]))
         if phase.get("berman_parameters") is None:

@@ -180,6 +180,14 @@ def test_shipped_crystal_dataset_fallback_and_polymorph_selection() -> None:
     assert "pseudowollastonite" in str(refusal.value)
 
 
+def test_parenthesized_formula_matches_canonical_dataset_formula() -> None:
+    diopside = species_thermo("CaMgSi2O6", "cr", 1500.0)
+    grouped_formula = species_thermo("CaMg(SiO3)2", "cr", 1500.0)
+
+    assert grouped_formula == diopside
+    assert grouped_formula.source_row_id == "diopside"
+
+
 def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
     lead_oxide = species_thermo("PbO", "cr", 800.0)
     assert lead_oxide.source_table_id == "O-006"

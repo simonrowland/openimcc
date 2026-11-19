@@ -55,6 +55,7 @@
 - Crystal fallback now uses generated JANAF tables for PbO, ZrO2, Mg2SiO4,
   MgSiO3, TiO, Ti3O5, Ti2O3, Cr2O3, LiAlO2, and Ta2O5, retaining source titles,
   transition rows, and phase identity for each temperature segment.
+- Crystal dataset fallback now matches formula aliases by canonical element counts.
 - Added curated crystal phase identities for shipped condensate rows, bounded
   constant-Cp continuation for eligible crystal phases, and 298.15 K formation
   enthalpy fields on `SpeciesThermo` results.
