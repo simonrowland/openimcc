@@ -40,6 +40,12 @@ from openimcc._constants import (
     R_PUBLISHED_GAS_J_MOL_K as R_J_MOL_K,
 )
 from openimcc.activity_fragments import load_activity_fragment
+from openimcc.crystal_species import (
+    CrystalSpeciesPolymorphError,
+    CrystalSpeciesTemperatureError,
+    continue_constant_cp,
+    evaluate_crystal_species,
+)
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
     ImccCompositionIncompleteError,
@@ -321,6 +327,18 @@ class ImccGasTemperatureOutsideDomainError(ImccRefusal):
         self.declared_interval_K = declared_interval_K
         self.species = species
         self.source_row_id = source_row_id
+
+
+class ImccGasCrystalPolymorphError(ImccRefusal):
+    """Raised when a requested crystal polymorph is unavailable."""
+
+    code = "imcc_gas_crystal_polymorph_unavailable"
+
+    def __init__(
+        self, message: str, *, available_polymorphs: Sequence[str] = ()
+    ) -> None:
+        super().__init__(message)
+        self.available_polymorphs = tuple(available_polymorphs)
 
 
 class ImccGasInvalidFugacityError(ImccRefusal):
@@ -2848,6 +2866,7 @@ def species_thermo(
     T_K: float,
     datapack: ImccGasDatapack | None = None,
     allow_extrapolation: bool = False,
+    polymorph: str | None = None,
 ) -> SpeciesThermo:
     """Return row-level Cp, S, apparent enthalpy, and runtime apparent G.
 
@@ -2855,11 +2874,12 @@ def species_thermo(
     ``"g"``, ``"l"`` or ``"cr"``. The active row follows the runtime interval
     selector and temperatures outside its closed interval are refused unless
     ``allow_extrapolation=True``. Gas and liquid continuation follows
-    ``evaluate_gas``. Crystal continuation is limited to a source-identified
-    single crystal phase, within its documented stability range and below its
-    printed melting point.
-    Opt-in continuation can stand in for source segments not shipped in the
-    runtime tables.
+    ``evaluate_gas``. For ``(cr)``, condensate rows retain their existing
+    selection and refusal behavior; the shipped crystal datasets are a fallback
+    only when no condensate row exists for the formula. Crystal continuations
+    require source-defined phase identity, stability range, and solid limit.
+    For Berman rows, the 298.15 K H/S identity is a helper-level check only;
+    public service starts at each row's fusion-node lower bound.
 
     For gas rows, let ``t = T/1000``. Shomate gives
     ``Cp = A + B*t + C*t² + D*t³ + E/t²`` (J mol⁻¹ K⁻¹), with enthalpy
@@ -2907,11 +2927,14 @@ def species_thermo(
     allow_extrapolation:
         If True, continue the same gas or liquid row used by
         ``evaluate_gas(..., allow_extrapolation=True)`` and report its
-        continuation and authority. A crystal row can be continued with
-        constant Cp only when phase-identity metadata identifies one phase
-        and the requested temperature stays within its source-documented
-        stability range and below its printed melting point. The default
-        remains a strict refusal outside the selected row's declared interval.
+        continuation and authority. A crystal row can be continued only when
+        source data define its phase, stability range, and solid limit; Barin
+        constant-Cp continuations also require a printed Cp at the edge. The
+        default remains a strict refusal outside the selected row's interval.
+    polymorph:
+        Selects a named polymorph when a shipped crystal dataset supplies the
+        ``(cr)`` fallback. It is ignored when a condensate row exists, which
+        retains precedence.
     """
     if phase not in {"g", "l", "cr"}:
         raise ValueError("phase must be 'g', 'l', or 'cr'")
@@ -2926,10 +2949,71 @@ def species_thermo(
 
     active_pack = load_gas_datapack() if datapack is None else datapack
     row_name = f"{species}({phase})"
+
+    def crystal_dataset_result() -> SpeciesThermo | None:
+        try:
+            crystal = evaluate_crystal_species(
+                species,
+                T_K,
+                polymorph=polymorph,
+                allow_extrapolation=allow_extrapolation,
+            )
+        except CrystalSpeciesPolymorphError as exc:
+            raise ImccGasCrystalPolymorphError(
+                str(exc), available_polymorphs=exc.available_polymorphs
+            ) from exc
+        except CrystalSpeciesTemperatureError as exc:
+            raise ImccGasTemperatureOutsideDomainError(
+                str(exc),
+                declared_interval_K=exc.declared_interval_K,
+                species=row_name,
+                source_row_id=exc.source_row_id,
+            ) from exc
+        if crystal is None:
+            return None
+        for quantity, value in (
+            ("Cp", crystal.Cp_J_molK),
+            ("entropy", crystal.S_J_molK),
+            ("enthalpy", crystal.H_app_kJ_mol),
+            ("Gibbs energy", crystal.G_J_mol),
+        ):
+            _thermochemistry_value(value, f"{row_name} {quantity}", T_K)
+        return SpeciesThermo(
+            Cp_J_molK=crystal.Cp_J_molK,
+            S_J_molK=crystal.S_J_molK,
+            H_app_kJ_mol=crystal.H_app_kJ_mol,
+            G_J_mol=crystal.G_J_mol,
+            source_row_id=crystal.source_row_id,
+            source_table_id=crystal.source_table_id,
+            T_interval=None,
+            T_min=crystal.T_min,
+            T_max=crystal.T_max,
+            derivatives_fit_implied=False,
+            extrapolated=crystal.extrapolated,
+            declared_interval_K=(crystal.T_min, crystal.T_max),
+            continuation=crystal.continuation,
+            authority=crystal.authority,
+            phase_identity=MappingProxyType(dict(crystal.phase_identity)),
+            formation_enthalpy_298_kJ_mol=(
+                crystal.formation_enthalpy_298_kJ_mol
+            ),
+            formation_enthalpy_source_id=crystal.formation_enthalpy_source_id,
+        )
+
     if phase == "g":
         row = _nearest_interval_row(
             active_pack.gas_df, row_name, T_K, allow_extrapolation
         )
+    elif phase == "cr":
+        try:
+            row = _oxide_row_for_T(
+                active_pack.oxide_df, row_name, T_K, allow_extrapolation
+            )
+        except ImccGasSpeciesNotFoundError:
+            crystal = crystal_dataset_result()
+            if crystal is not None:
+                return crystal
+            raise
     else:
         row = _oxide_row_for_T(
             active_pack.oxide_df, row_name, T_K, allow_extrapolation
@@ -3114,11 +3198,9 @@ def species_thermo(
             # J/(mol K), ΔH is converted to kJ/mol, S is J/(mol K), and G is
             # J/mol. At T=T_edge both increments are zero, so H, S, and G
             # recover their edge values continuously.
-            edge_h_app = h_app
-            edge_entropy = entropy
-            h_app = edge_h_app + cp * (T_K - continuation_edge_K) / 1000.0
-            entropy = edge_entropy + cp * math.log(T_K / continuation_edge_K)
-            apparent_g = 1000.0 * h_app - T_K * entropy
+            h_app, entropy, apparent_g = continue_constant_cp(
+                h_app, entropy, cp, T_K, continuation_edge_K
+            )
 
     for quantity, value in (
         ("Cp", cp), ("entropy", entropy), ("enthalpy", h_app),

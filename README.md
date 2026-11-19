@@ -1119,7 +1119,8 @@ magnesium sulfate decomposition, see
 [`evaluate_subsolidus_reactions`](docs/subsolidus-reactions.md).
 
 `species_thermo(species, phase, T_K, datapack=None,
-allow_extrapolation=False)` selects the same row the runtime selector uses and
+allow_extrapolation=False, polymorph=None)` selects the same row the runtime
+selector uses and
 raises `ImccGasTemperatureOutsideDomainError` outside that row's declared
 interval by default. Set `allow_extrapolation=True` to continue the same gas or
 liquid row used by `evaluate_gas(..., allow_extrapolation=True)`; crystal-phase
@@ -1147,6 +1148,20 @@ and `authority`. The interval is the selected row's declared range; continuation
 is `None` within that range and names the continued fit or source continuation
 outside it. Authority reports the liquid-reference authority when one applies,
 or the selected source's authority class.
+
+For `(cr)`, existing condensate rows keep their historical selection and
+refusal behavior, including eligible opt-in continuation. Only formulas without
+a condensate row use the shipped crystal datasets in a fixed
+order: JANAF pure-oxide crystals for pure oxides, Barin aluminates for its
+aluminate formulas (including MgAl2O4), then Berman/Robie–Hemingway mineral
+rows. This gives each directly tabulated source class precedence over the
+broader mineral compilation. Within the selected dataset, `polymorph=` selects
+a named row; without it, the lowest apparent G is chosen among that dataset's
+polymorphs whose intervals cover T. Sources are never mixed in this comparison.
+An invalid polymorph raises `ImccGasCrystalPolymorphError`; an uncovered
+interval raises `ImccGasTemperatureOutsideDomainError` and lists the available
+polymorphs. Barin's printed constant-Cp continuation is opt-in and stops at its
+printed melting or decomposition limit.
 
 | Condensate interval | Cp (J/mol K) | S (J/mol K) | H_app (kJ/mol) | G_app (kJ/mol) |
 |---|---:|---:|---:|---:|

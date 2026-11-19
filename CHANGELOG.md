@@ -31,6 +31,11 @@
 
 ### Gas thermochemistry
 
+- `species_thermo(..., phase="cr")` now falls back to shipped JANAF pure-oxide,
+  Barin aluminate, and Berman/Robie–Hemingway crystal data when a formula has no
+  condensate row. Existing condensate selection and refusal behavior stays
+  intact; dataset polymorph selection is limited to one source, with intervals
+  and solid limits enforced.
 - Added curated crystal phase identities for shipped condensate rows, bounded
   constant-Cp continuation for eligible crystal phases, and 298.15 K formation
   enthalpy fields on `SpeciesThermo` results.
