@@ -3473,7 +3473,10 @@ def evaluate_gas(
     composition_wt_pct:
         Optional melt composition keyed by oxide, in weight percent. This is
         used to resolve composition-scoped liquid-reference authority such as
-        the K2O(l) measured-pressure window.
+        the K2O(l) measured-pressure window. Registered trace components also
+        activate the melt-side major-bias gate: channels using a major whose
+        strict trace bound exceeds its cap are omitted with the parent, bound,
+        and cap recorded in the refusal.
     strict_pack_standards:
         If True, refuse when the selected melt pack has a known liquid-standard
         mismatch or missing declaration for the active tables.
@@ -3991,9 +3994,15 @@ def evaluate_gas(
                 and not major_bias_flags[parent].scoreable
             )
             if refused:
+                bound_reasons = "; ".join(
+                    f"{flag.major_oxide} bound {flag.bias_bound_dex:.6g} dex "
+                    f"exceeds {flag.limiting_cap_dex:.6g} dex"
+                    for flag in refused
+                )
                 return TraceGasChannelRefusal(
                     species,
-                    "major gas row exceeds the applicable trace bias limit",
+                    "major gas row exceeds the trace bias limit: "
+                    + bound_reasons,
                     major_flags=refused,
                 )
         return None

@@ -3642,6 +3642,66 @@ def test_overflowing_equilibrium_constant_is_a_typed_refusal(
     assert math.isfinite(pressure) and pressure > 0.0
 
 
+def test_lunar_low_ti_trace_composition_reports_major_gas_bias_gate(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    composition = {
+        "SiO2": 45.8,
+        "TiO2": 1.54,
+        "Al2O3": 13.9,
+        "MgO": 9.26,
+        "CaO": 11.3,
+        "Na2O": 0.41,
+        "K2O": 0.103,
+        "Cr2O3": 0.36,
+        "MnO": 0.206,
+        "P2O5": 0.103,
+        "FeO": 17.0,
+    }
+    melt = evaluate(
+        composition,
+        1800.0,
+        basis_type="wt",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    activities = {
+        oxide: float(melt.parent_activity[melt.parent_oxides.index(oxide)])
+        for oxide in composition
+        if oxide in melt.parent_oxides
+    }
+
+    without_composition = evaluate_gas(activities, 1800.0, 1.0e-3, gas_pack)
+    with_composition = evaluate_gas(
+        activities,
+        1800.0,
+        1.0e-3,
+        gas_pack,
+        composition_wt_pct=composition,
+    )
+
+    assert len(without_composition) == 45
+    assert len(with_composition) == 21
+    assert len(with_composition.omitted_channels) == 24
+    omitted_majors = {
+        flag.major_oxide
+        for refusal in with_composition.omitted_channels.values()
+        for flag in refusal.major_flags
+    }
+    assert omitted_majors == {
+        "Al2O3", "CaO", "FeO", "K2O", "MgO", "Na2O", "TiO2",
+    }
+    for species, refusal in with_composition.omitted_channels.items():
+        assert refusal.major_flags
+        assert "exceeds 0.01 dex" in refusal
+        assert any(flag.major_oxide in refusal for flag in refusal.major_flags)
+
+    # The composition decides channel eligibility; it does not alter the same
+    # caller-supplied SiO2 activity or the pinned-fO2 silicon pressures.
+    assert with_composition["SiO"] == without_composition["SiO"]
+    assert with_composition["SiO2"] == without_composition["SiO2"]
+
+
 def test_unknown_activity_key_names_itself_and_omitted_parent_stays_zero(
     gas_pack: ImccGasDatapack,
 ) -> None:

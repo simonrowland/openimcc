@@ -77,6 +77,11 @@ The shared registration table is in `openimcc.trace_components`.
 In `evaluate_gas()`, Cl, F, S, or SO3 above 0.1 mol% causes Na/K vapor
 channels and sulfur-bearing channels to be refused with typed channel notices;
 at or below that amount they follow the activity ladder like other traces.
+When `composition_wt_pct` includes registered traces, gas channels that use a
+major oxide with a strict trace `bias_bound_dex` above 0.01 are also omitted.
+Each omission names the affected major, its bound, and the 0.01 dex cap. This
+is a deliberate validity gate for trace-bearing compositions; it does not
+change the caller-supplied major activities or the retained silicon channels.
 
 The reported derived-property checks are documented in [Diagnostics](docs/diagnostics.md).
 
