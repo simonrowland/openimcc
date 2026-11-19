@@ -90,8 +90,8 @@ def _barin_phases() -> tuple[dict[str, Any], ...]:
     )
 
 
-def _formula_element_counts(formula: str) -> dict[str, Fraction] | None:
-    """Parse formula counts for dataset matching without correcting OCR forms."""
+def _formula_unit_element_counts(formula: str) -> dict[str, Fraction] | None:
+    """Parse one formula unit without correcting OCR forms."""
     tokens = _FORMULA_TOKEN.findall(formula)
     if not tokens or "".join(tokens) != formula:
         return None
@@ -141,6 +141,46 @@ def _formula_element_counts(formula: str) -> dict[str, Fraction] | None:
     if len(groups) != 1:
         return None
     return groups[0] or None
+
+
+def _formula_element_counts(formula: str) -> dict[str, Fraction] | None:
+    """Parse formula units, including common dot-separated hydrate notation."""
+    def component_counts(component: str) -> dict[str, Fraction] | None:
+        multiplier = Fraction(1)
+        prefix = re.match(r"^(\d+)(?=[A-Z(])", component)
+        if prefix:
+            multiplier = Fraction(prefix.group(1))
+            component = component[prefix.end():]
+        counts = _formula_unit_element_counts(component)
+        if counts is None or multiplier <= 0:
+            return None
+        return {element: count * multiplier for element, count in counts.items()}
+
+    sections = []
+    for explicit_section in re.split(r"[·*]", formula):
+        dotted = re.split(r"\.(?=[1-9]\d*[A-Z(])", explicit_section)
+        if len(dotted) > 1:
+            distinct = []
+            for index, section in enumerate(dotted):
+                unit = re.sub(r"^\d+(?=[A-Z(])", "", section) if index else section
+                distinct.append(set(re.findall(r"[A-Z][a-z]?", unit)))
+            if all(len(elements) >= 2 for elements in distinct):
+                sections.extend(dotted)
+                continue
+        sections.append(explicit_section)
+
+    total: dict[str, Fraction] = {}
+    for index, section in enumerate(sections):
+        counts = (
+            component_counts(section)
+            if index > 0
+            else _formula_unit_element_counts(section)
+        )
+        if counts is None:
+            return None
+        for element, count in counts.items():
+            total[element] = total.get(element, Fraction(0)) + count
+    return total or None
 
 
 def _linear_value_and_slope(
@@ -723,12 +763,24 @@ def evaluate_crystal_species(
     labels = tuple(f"{candidate.label} [{candidate.interval_K[0]:g}-{candidate.interval_K[1]:g} K]" for candidate in candidates)
 
     named = None
+    named_segment = None
     if polymorph is not None:
         folded = polymorph.casefold()
-        named = next(
-            (candidate for candidate in candidates if candidate.label.casefold() == folded),
-            None,
-        )
+        for candidate in candidates:
+            if candidate.label.casefold() == folded or str(
+                candidate.phase.get("source_title", "")
+            ).casefold() == folded:
+                named = candidate
+                break
+            matched_segments = [
+                segment
+                for segment in candidate.phase.get("phase_segments", ())
+                if str(segment.get("phase_label", "")).casefold() == folded
+            ]
+            if matched_segments:
+                named = candidate
+                named_segment = folded
+                break
         if named is None:
             raise CrystalSpeciesPolymorphError(
                 f"polymorph {polymorph!r} is not available for {formula}(cr) "
@@ -741,6 +793,26 @@ def evaluate_crystal_species(
     for candidate in candidates:
         if named is not None and candidate != named:
             continue
+        if named_segment is not None:
+            segment = next(
+                (
+                    item for index, item in enumerate(
+                        candidate.phase["phase_segments"]
+                    )
+                    if float(item["temperature_K"][0]) <= temperature_K
+                    and (
+                        temperature_K < float(item["temperature_K"][1])
+                        or (
+                            index == len(candidate.phase["phase_segments"]) - 1
+                            and temperature_K
+                            == float(item["temperature_K"][1])
+                        )
+                    )
+                ),
+                None,
+            )
+            if segment is None or str(segment["phase_label"]).casefold() != named_segment:
+                continue
         available, continue_from_K, extrapolated = _available_at_temperature(
             candidate,
             temperature_K,

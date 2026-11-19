@@ -36,8 +36,6 @@ CRYSTAL_SPECIES_TARGET = (
 ADDITIONAL_CRYSTALS = {
     "PbO": "O-006",
     "ZrO2": "O-052",
-    "Mg2SiO4": "Mg-028",
-    "MgSiO3": "Mg-012",
     "TiO": "O-019",
     "Ti3O5": "O-081",
     "Ti2O3": "O-059",
@@ -61,14 +59,15 @@ def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
         and row["entropy"]["value"] is not None
     ]
     nodes.sort(key=lambda node: node["T_K"])
-    # JANAF's text parser records phase-transition lines as ambiguities
-    # because their formation columns contain labels. Preserve their first
-    # five tab-separated thermochemical columns for package-backed evaluation.
+    # Preserve finite thermochemical columns from ambiguities. Some rows have
+    # only spacing defects in the formation columns; transition rows carry a
+    # phase label after the first five numeric columns.
     transition_rows = []
+    recovered_nodes = []
     for ambiguity in table.get("parse_ambiguities", []):
         raw_line = ambiguity.get("raw_line", "")
-        fields = raw_line.split("\t")
-        if len(fields) < 6:
+        fields = raw_line.split()
+        if len(fields) < 5:
             continue
         try:
             temperature_K, _cp, entropy, _gibbs_function, h_increment = map(
@@ -76,19 +75,47 @@ def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
             )
         except ValueError:
             continue
-        label = fields[5].strip()
-        if not ("<-->" in label or "TRANSITION" in label.upper()):
-            continue
-        transition_rows.append(
-            {
+        label = " ".join(fields[5:]).strip()
+        if "<-->" in label or "TRANSITION" in label.upper():
+            transition_rows.append({
                 "T_K": temperature_K,
                 "enthalpy_increment_kJ_mol": h_increment,
                 "entropy_J_mol_K": entropy,
                 "label": label,
                 "source_line_number": ambiguity.get("line_number"),
                 "raw_line": raw_line,
-            }
+            })
+        else:
+            recovered_nodes.append(
+                {
+                    "T_K": temperature_K,
+                    "enthalpy_increment_kJ_mol": h_increment,
+                    "entropy_J_mol_K": entropy,
+                    "source_line_number": ambiguity.get("line_number"),
+                }
+            )
+    fusion_rows = [
+        row for row in transition_rows
+        if "<-->" in row["label"] and "LIQUID" in row["label"].upper()
+    ]
+    cap_K = (
+        max(float(row["T_K"]) for row in fusion_rows)
+        if fusion_rows
+        else max(
+            [float(node["T_K"]) for node in nodes]
+            + [float(row["T_K"]) for row in transition_rows]
+            + [float(row["T_K"]) for row in recovered_nodes]
         )
+    )
+    node_temperatures = {float(node["T_K"]) for node in nodes}
+    nodes.extend(
+        node
+        for node in recovered_nodes
+        if float(node["T_K"]) <= cap_K
+        and float(node["T_K"]) not in node_temperatures
+    )
+    by_temperature = {float(node["T_K"]): node for node in nodes}
+    nodes = [by_temperature[t] for t in sorted(by_temperature)]
     transition_rows.sort(key=lambda row: (row["T_K"], row["label"]))
     return nodes, transition_rows
 
@@ -267,16 +294,17 @@ def build() -> dict[Path, str]:
             "- T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. "
             "Interpolate source enthalpy increment and entropy separately, linearly. "
             "Also retain finite enthalpy-increment/entropy columns from identified "
-            "transition lines in parse_ambiguities and use the crystal-liquid row "
-            "at its inclusive cap instead of interpolation."
+            "transition lines in parse_ambiguities; use the crystal-liquid row "
+            "at its inclusive cap when one is printed."
         ),
         "source_span_rule": (
             "Finite source enthalpy-increment and entropy nodes; evaluation starts "
             "at 298.15 K."
         ),
         "phase_restriction_rule": (
-            "A JANAF crystal is valid through its crystal-to-liquid transition "
-            "temperature, inclusive; never evaluate it above that transition."
+            "A JANAF crystal is valid through its declared source cap, inclusive. "
+            "A crystal-to-liquid transition sets the cap when printed; otherwise "
+            "the last tabulated crystal node sets it. Never evaluate above the cap."
         ),
         "construction_uncertainty_rule": (
             f"K2O's {k2o_uncertainty[0]:g}-{k2o_uncertainty[1]:g} K range is "

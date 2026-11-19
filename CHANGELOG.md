@@ -52,9 +52,13 @@
   condensate row. Existing condensate selection and refusal behavior stays
   intact; dataset polymorph selection is limited to one source, with intervals
   and solid limits enforced.
-- Crystal fallback now uses generated JANAF tables for PbO, ZrO2, Mg2SiO4,
-  MgSiO3, TiO, Ti3O5, Ti2O3, Cr2O3, LiAlO2, and Ta2O5, retaining source titles,
+- Crystal fallback now uses generated JANAF tables for PbO, ZrO2, TiO, Ti3O5,
+  Ti2O3, Cr2O3, LiAlO2, and Ta2O5, retaining source titles,
   transition rows, and phase identity for each temperature segment.
+- Crystal fallback keeps forsterite and enstatite on the Berman source, accepts
+  source phase labels as polymorph selectors, parses dotted hydrates, and
+  recovers finite JANAF rows previously marked as ambiguities. Focused tests
+  now check the generator's packaged output.
 - Crystal dataset fallback now matches formula aliases by canonical element counts.
 - Added curated crystal phase identities for shipped condensate rows, bounded
   constant-Cp continuation for eligible crystal phases, and 298.15 K formation

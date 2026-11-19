@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 import math
 import re
+import subprocess
+import sys
 from dataclasses import FrozenInstanceError
+from fractions import Fraction
 from functools import lru_cache
 from pathlib import Path
 
@@ -28,6 +31,7 @@ from openimcc.crystal_species import (
     _berman_phases,
     _cp_primitive,
     _berman_properties,
+    _formula_element_counts,
     evaluate_crystal_species,
 )
 from openimcc.janaf_crystals import evaluate_janaf_crystal
@@ -188,6 +192,34 @@ def test_parenthesized_formula_matches_canonical_dataset_formula() -> None:
     assert grouped_formula.source_row_id == "diopside"
 
 
+def test_formula_parser_accepts_dotted_hydrates() -> None:
+    expected = _formula_element_counts("MgSO4·7H2O")
+
+    assert expected == {"Mg": 1, "S": 1, "O": 11, "H": 14}
+    assert _formula_element_counts("MgSO4.7H2O") == expected
+    assert _formula_element_counts("MgSO4*7H2O") == expected
+    assert _formula_element_counts("Fe2.5O") == {
+        "Fe": Fraction(5, 2), "O": 1
+    }
+
+
+def test_janaf_crystal_generator_check_matches_packaged_data() -> None:
+    root = Path(__file__).parents[1]
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(root / "tools/generate_declared_assemblage_janaf.py"),
+            "--check",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
     lead_oxide = species_thermo("PbO", "cr", 800.0)
     assert lead_oxide.source_table_id == "O-006"
@@ -198,6 +230,15 @@ def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
     )
     assert lead_oxide.phase_identity["polymorph"] == "II"
     assert lead_oxide.phase_identity["temperature_segment_K"] == (762.0, 1159.0)
+    selected_lead_oxide = species_thermo("PbO", "cr", 800.0, polymorph="II")
+    assert selected_lead_oxide == lead_oxide
+    selected_by_title = species_thermo(
+        "PbO", "cr", 800.0, polymorph=lead_oxide.phase_identity["source_title"]
+    )
+    assert selected_by_title == lead_oxide
+    assert lead_oxide.S_J_molK == 118.355
+    assert lead_oxide.H_app_kJ_mol == pytest.approx(-192.449)
+    assert lead_oxide.G_J_mol == pytest.approx(-287133.0)
 
     alpha_tio = species_thermo("TiO", "cr", 1000.0)
     beta_tio = species_thermo("TiO", "cr", 1500.0)
@@ -206,16 +247,44 @@ def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
     assert beta_tio.phase_identity is not None
     assert alpha_tio.phase_identity["polymorph"] == "ALPHA"
     assert beta_tio.phase_identity["polymorph"] == "BETA"
+    recovered_tio = species_thermo("TiO", "cr", 1300.0)
+    assert recovered_tio.S_J_molK == 114.192
+    assert recovered_tio.H_app_kJ_mol == pytest.approx(-483.903)
+    assert recovered_tio.G_J_mol == pytest.approx(-632352.6)
 
     forsterite = species_thermo("Mg2SiO4", "cr", 1500.0)
-    enstatite = species_thermo("MgSiO3", "cr", 1000.0)
-    assert forsterite.source_table_id == "Mg-028"
-    assert enstatite.source_table_id == "Mg-012"
+    enstatite = species_thermo("MgSiO3", "cr", 1500.0)
+    assert forsterite.source_table_id == "Berman-1988"
+    assert enstatite.source_table_id == "Berman-1988"
+    named_forsterite = species_thermo(
+        "Mg2SiO4", "cr", 1500.0, polymorph="forsterite"
+    )
+    named_enstatite = species_thermo(
+        "MgSiO3", "cr", 1500.0, polymorph="enstatite"
+    )
+    assert named_forsterite.source_table_id == "Berman-1988"
+    assert named_enstatite.source_table_id == "Berman-1988"
+    assert named_forsterite.phase_identity["polymorph"] == "forsterite"
+    assert named_enstatite.phase_identity["polymorph"] == "enstatite"
+    assert enstatite.phase_identity["polymorph"] == "enstatite"
     assert enstatite.phase_identity is not None
-    assert enstatite.phase_identity["polymorph"] == "II"
 
     with pytest.raises(ImccGasTemperatureOutsideDomainError):
         species_thermo("PbO", "cr", 1160.0)
+
+    janaf_path = Path(__file__).parents[1] / (
+        "src/openimcc/data/diagnostics/janaf-crystal-species.json"
+    )
+    janaf = json.loads(janaf_path.read_text(encoding="utf-8"))
+    ti3o5 = next(row for row in janaf["phases"] if row["formula"] == "Ti3O5")
+    cap = ti3o5["crystal_transition_temperature_K"]
+    assert ti3o5["transition_row_at_cap"] is None
+    assert cap == ti3o5["source_temperature_K"][1]
+    assert "last tabulated crystal node" in janaf["phase_restriction_rule"]
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("Ti3O5", "cr", cap + 1.0)
+    lead_source = next(row for row in janaf["phases"] if row["formula"] == "PbO")
+    assert all(node["T_K"] != 1200.0 for node in lead_source["nodes"])
 
 
 def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:

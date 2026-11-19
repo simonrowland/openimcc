@@ -1,9 +1,9 @@
 {
   "schema": "openimcc-janaf-apparent-crystals-v2",
   "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
-  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly. Also retain finite enthalpy-increment/entropy columns from identified transition lines in parse_ambiguities and use the crystal-liquid row at its inclusive cap instead of interpolation.",
+  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly. Also retain finite enthalpy-increment/entropy columns from identified transition lines in parse_ambiguities; use the crystal-liquid row at its inclusive cap when one is printed.",
   "source_span_rule": "Finite source enthalpy-increment and entropy nodes; evaluation starts at 298.15 K.",
-  "phase_restriction_rule": "A JANAF crystal is valid through its crystal-to-liquid transition temperature, inclusive; never evaluate it above that transition.",
+  "phase_restriction_rule": "A JANAF crystal is valid through its declared source cap, inclusive. A crystal-to-liquid transition sets the cap when printed; otherwise the last tabulated crystal node sets it. Never evaluate above the cap.",
   "construction_uncertainty_rule": "K2O's 919-1190 K range is uncertainty in the selected fusion-temperature input, not an evaluation-temperature domain.",
   "excluded_fusion_data": {
     "O-038_1700_K": "Prior duplicated fusion node 2.3495 kJ/mol is discarded. The vendored O-038 raw ambiguous 1700 K row gives liquid formation G=-609.059 kJ/mol; O-035 crystal formation G=-610.202 kJ/mol, so direct formation-Gibbs subtraction is 1.143 kJ/mol. O-038 is not used to construct crystal apparent Gibbs; the runtime liquid standard is supplied by species_thermo."

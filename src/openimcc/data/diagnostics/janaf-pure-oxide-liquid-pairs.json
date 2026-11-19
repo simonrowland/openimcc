@@ -1,7 +1,7 @@
 {
   "schema": "openimcc-janaf-apparent-liquid-pairs-v1",
   "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
-  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly. Also retain finite enthalpy-increment/entropy columns from identified transition lines in parse_ambiguities and use the crystal-liquid row at its inclusive cap instead of interpolation.",
+  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly. Also retain finite enthalpy-increment/entropy columns from identified transition lines in parse_ambiguities; use the crystal-liquid row at its inclusive cap when one is printed.",
   "source_span_rule": "Finite source enthalpy-increment and entropy nodes, including printed transition rows; evaluation starts at 298.15 K.",
   "rows": [
     {
