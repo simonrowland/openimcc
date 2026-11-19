@@ -740,6 +740,10 @@ class SpeciesThermo:
     T_min: float
     T_max: float
     derivatives_fit_implied: bool = False
+    extrapolated: bool = False
+    declared_interval_K: tuple[float, float] = (0.0, 0.0)
+    continuation: str | None = None
+    authority: str | None = None
 
 
 def _pandas():
@@ -2727,12 +2731,16 @@ def species_thermo(
     phase: Literal["g", "l", "cr"],
     T_K: float,
     datapack: ImccGasDatapack | None = None,
+    allow_extrapolation: bool = False,
 ) -> SpeciesThermo:
     """Return row-level Cp, S, apparent enthalpy, and runtime apparent G.
 
     ``species`` is the bare formula (for example ``"FeO"``); ``phase`` is
     ``"g"``, ``"l"`` or ``"cr"``. The active row follows the runtime interval
-    selector and temperatures outside its closed interval are refused.
+    selector and temperatures outside its closed interval are refused unless
+    ``allow_extrapolation=True``. Opt-in extrapolation uses the same selected
+    row and continuation as ``evaluate_gas``; crystal-phase extrapolation is
+    unavailable because ``evaluate_gas`` has no crystal-phase continuation.
 
     For gas rows, let ``t = T/1000``. Shomate gives
     ``Cp = A + B*t + C*t² + D*t³ + E/t²`` (J mol⁻¹ K⁻¹), with enthalpy
@@ -2769,6 +2777,21 @@ def species_thermo(
     JANAF Fe-019 remains available through its explicit legacy condensate
     table. Na2O(l) is checked against Na-013. Al2O3(l) is a LAM-source
     exception compared with Al-100.
+
+    ``extrapolated`` identifies temperatures outside the selected row's
+    ``declared_interval_K``. ``continuation`` names the continued fit or
+    source continuation and is ``None`` inside that interval. ``authority``
+    reports the liquid-reference authority where one applies, or the source
+    authority class for the selected row.
+
+    Parameters
+    ----------
+    allow_extrapolation:
+        If True, continue the same gas or liquid row used by
+        ``evaluate_gas(..., allow_extrapolation=True)`` and report its
+        continuation and authority. The default remains a strict refusal
+        outside the selected row's declared interval. Crystal rows have no
+        ``evaluate_gas`` continuation and are refused when out of range.
     """
     if phase not in {"g", "l", "cr"}:
         raise ValueError("phase must be 'g', 'l', or 'cr'")
@@ -2784,7 +2807,22 @@ def species_thermo(
     active_pack = load_gas_datapack() if datapack is None else datapack
     row_name = f"{species}({phase})"
     if phase == "g":
-        row = _nearest_interval_row(active_pack.gas_df, row_name, T_K)
+        row = _nearest_interval_row(
+            active_pack.gas_df, row_name, T_K, allow_extrapolation
+        )
+    else:
+        row = _oxide_row_for_T(
+            active_pack.oxide_df, row_name, T_K, allow_extrapolation
+        )
+    declared_interval = (float(row["T_min"]), float(row["T_max"]))
+    extrapolated = not declared_interval[0] <= T_K <= declared_interval[1]
+    if extrapolated and phase == "cr":
+        raise ImccGasTemperatureOutsideDomainError(
+            f"evaluate_gas has no crystal-phase continuation for {row_name!r} "
+            f"at T={T_K} K"
+        )
+
+    if phase == "g":
         t = T_K / 1000.0
         try:
             t4 = t**4
@@ -2812,7 +2850,6 @@ def species_thermo(
         apparent_g = _janaf_gibbs(T_K, row)
         interval = int(row["T_interval"])
     else:
-        row = _oxide_row_for_T(active_pack.oxide_df, row_name, T_K)
         t = T_K / 1000.0
         A, B, C, D, E = (
             float(row[key]) for key in ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
@@ -2873,6 +2910,65 @@ def species_thermo(
     else:
         source_table_id = _OXIDE_SOURCE_TABLE_IDS.get(species)
 
+    continuation = None
+    if phase == "g":
+        authority = (
+            _GAS_PROVENANCE_AUTHORITY.get(species, "unresolved")
+            if _gas_rows_match_packaged(active_pack, (row,))
+            else _EXTERNAL_DATAPACK_CLASS
+        )
+    else:
+        _, _, _, packaged_oxide_rows, lam_parent_rows = (
+            _packaged_pressure_signatures()
+        )
+        row_signature = _pressure_row_signature(row, _OXIDE_PRESSURE_COLUMNS)
+        packaged_row = (
+            row_signature in packaged_oxide_rows
+            or row_signature in lam_parent_rows
+        )
+        if not packaged_row:
+            authority = _EXTERNAL_DATAPACK_CLASS
+        else:
+            authority = _OXIDE_PROVENANCE_AUTHORITY.get(
+                row_name,
+                _OXIDE_PROVENANCE_AUTHORITY.get(species, "unresolved"),
+            )
+            liquid_authority_species = {
+                record.species for record in liquid_reference_records()
+            }
+            if phase == "l" and row_name in liquid_authority_species:
+                status = liquid_reference_authority(
+                    row_name,
+                    T_K,
+                    selected_source_id=source_table_id or str(row["Ref"]),
+                )
+                if status is not None:
+                    authority = status.authority.value
+
+    if extrapolated:
+        if phase == "g":
+            continuation = "Shomate fit continued"
+        else:
+            source_flag = _source_model_flag(
+                row_name,
+                T_K,
+                row,
+                phase=phase,
+                candidate_notices=active_pack._high_temperature_candidate_notices,
+            )
+            if source_flag and "constant-Cp continuation" in source_flag:
+                continuation = "constant-Cp continuation"
+            elif source_flag and "supercooled" in source_flag:
+                continuation = "supercooled branch"
+            elif source_flag and "liquid-metal continuation" in source_flag:
+                continuation = "liquid-metal continuation"
+            elif source_flag and "phase continuation" in source_flag:
+                continuation = "phase continuation"
+            elif source_flag and "extension" in source_flag:
+                continuation = "high-temperature extension"
+            else:
+                continuation = "Gibbs fit continued"
+
     return SpeciesThermo(
         Cp_J_molK=float(cp),
         S_J_molK=float(entropy),
@@ -2886,6 +2982,10 @@ def species_thermo(
         derivatives_fit_implied=(
             phase != "g"
         ),
+        extrapolated=extrapolated,
+        declared_interval_K=declared_interval,
+        continuation=continuation,
+        authority=authority,
     )
 
 

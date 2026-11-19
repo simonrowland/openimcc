@@ -27,6 +27,9 @@
 
 ### Gas thermochemistry
 
+- Added opt-in `species_thermo(..., allow_extrapolation=True)` using the same
+  row selection and continuation as `evaluate_gas`, with interval, continuation,
+  and authority provenance.
 - Changed `species_thermo(...).H_app_kJ_mol` to report formation-anchored
   enthalpy, preserving its documented identity with `G_J_mol` for rows with
   nonzero Shomate H. Packaged gas-table values are unchanged.

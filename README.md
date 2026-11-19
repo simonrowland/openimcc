@@ -1106,10 +1106,13 @@ For thermodynamic ceilings on troilite, anhydrite, and crystalline anhydrous
 magnesium sulfate decomposition, see
 [`evaluate_subsolidus_reactions`](docs/subsolidus-reactions.md).
 
-`species_thermo(species, phase, T_K, datapack=None)` selects the same row the
-runtime selector uses and raises `ImccGasTemperatureOutsideDomainError` outside
-that row's declared interval. `species` is the bare formula; `phase` is `"g"`,
-`"l"`, or `"cr"`. The frozen `SpeciesThermo` result reports Cp and S in
+`species_thermo(species, phase, T_K, datapack=None,
+allow_extrapolation=False)` selects the same row the runtime selector uses and
+raises `ImccGasTemperatureOutsideDomainError` outside that row's declared
+interval by default. Set `allow_extrapolation=True` to continue the same gas or
+liquid row used by `evaluate_gas(..., allow_extrapolation=True)`; crystal-phase
+extrapolation is refused because `evaluate_gas` has no crystal continuation.
+The frozen `SpeciesThermo` result reports Cp and S in
 J/(mol K), apparent enthalpy in kJ/mol, and apparent Gibbs energy in J/mol.
 `source_row_id` preserves the row's `Ref` value; `source_table_id` gives the
 source table identifier recorded in `PROVENANCE.yaml`. `derivatives_fit_implied`
@@ -1121,6 +1124,12 @@ source gates therefore compare G_app only. Cp, S, and H_app residuals against
 JANAF are fit-implied information, not source-quantity gates. The measured
 maximum absolute derivative residuals are reported here for the JANAF-backed
 condensates:
+
+The result also exposes `extrapolated`, `declared_interval_K`, `continuation`,
+and `authority`. The interval is the selected row's declared range; continuation
+is `None` within that range and names the continued fit or source continuation
+outside it. Authority reports the liquid-reference authority when one applies,
+or the selected source's authority class.
 
 | Condensate interval | Cp (J/mol K) | S (J/mol K) | H_app (kJ/mol) | G_app (kJ/mol) |
 |---|---:|---:|---:|---:|
