@@ -514,6 +514,54 @@ def test_sossi_rb_row_flags_temperature_and_family() -> None:
     assert result.notice.code == "review_gamma_provisional"
 
 
+def test_moo3_table8_closure_reproduces_table7_using_table1_means() -> None:
+    # O'Neill & Eggins (2002), DOI 10.1016/S0009-2541(01)00414-4:
+    # Table 7 centers (p. 164), paired by melt name with Table 1 means (p. 157).
+    table7_and_table1 = (
+        ("AD eutectic", 0.303, {"CaO": 24.1, "MgO": 10.6, "Al2O3": 15.2, "SiO2": 50.1}),
+        ("AD+Fo", 0.290, {"CaO": 20.5, "MgO": 16.9, "Al2O3": 12.9, "SiO2": 49.6}),
+        ("AD+En", 0.433, {"CaO": 15.2, "MgO": 20.6, "Al2O3": 9.3, "SiO2": 54.8}),
+        ("AD+Wo", 0.094, {"CaO": 38.0, "MgO": 4.6, "Al2O3": 6.6, "SiO2": 50.6}),
+        ("AD+Qz", 0.793, {"CaO": 16.2, "MgO": 6.9, "Al2O3": 10.0, "SiO2": 66.8}),
+        (
+            "AD+TiO2", 0.325,
+            {"CaO": 19.1, "MgO": 8.5, "Al2O3": 12.1, "SiO2": 40.7, "TiO2": 19.6},
+        ),
+        ("A", 0.692, {"CaO": 16.4, "MgO": 11.9, "Al2O3": 15.3, "SiO2": 56.3}),
+        ("B", 0.814, {"CaO": 8.8, "MgO": 19.7, "Al2O3": 13.8, "SiO2": 57.5}),
+        ("C", 0.463, {"CaO": 16.5, "MgO": 19.1, "Al2O3": 6.3, "SiO2": 57.8}),
+        ("D", 0.569, {"CaO": 12.7, "MgO": 17.9, "Al2O3": 21.0, "SiO2": 48.2}),
+        ("E", 0.240, {"CaO": 21.6, "MgO": 18.7, "Al2O3": 9.7, "SiO2": 49.7}),
+        ("F", 0.496, {"CaO": 18.6, "MgO": 13.3, "Al2O3": 5.6, "SiO2": 62.3}),
+        ("MAS1", 1.37, {"MgO": 20.2, "Al2O3": 17.2, "SiO2": 62.6}),
+        ("MAS2", 1.64, {"MgO": 25.2, "Al2O3": 22.7, "SiO2": 52.1}),
+        ("CAS1", 0.079, {"CaO": 39.0, "Al2O3": 18.9, "SiO2": 41.9}),
+        ("CAS2", 0.027, {"CaO": 47.4, "Al2O3": 11.3, "SiO2": 41.2}),
+        ("CAS4", 0.201, {"CaO": 33.8, "Al2O3": 12.3, "SiO2": 53.8}),
+    )
+    source_residuals = []
+    for _melt, gamma_source, oxides_wt_pct in table7_and_table1:
+        composition_moles = {
+            oxide: wt_pct / MOLAR_MASS_G_MOL[oxide]
+            for oxide, wt_pct in oxides_wt_pct.items()
+        }
+        composition_moles["MoO3"] = 1.0e-12
+        result = evaluate_review_gamma_activity(
+            "Mo", composition_moles, 1673.15, parent_oxide="MoO3"
+        )
+        source_residuals.append(math.log(result.gamma / gamma_source))
+
+    closure_rms = math.sqrt(
+        math.fsum(residual * residual for residual in source_residuals)
+        / len(source_residuals)
+    )
+    row = load_activity_fragment("Mo")["rows"][0]
+    stored_closure_rms = row["gamma_law"]["ln_gamma_rms_closure"]
+    assert len(table7_and_table1) == 17
+    assert closure_rms == pytest.approx(stored_closure_rms, abs=1e-9)
+    assert stored_closure_rms == pytest.approx(0.127849985460, abs=1e-12)
+
+
 def test_new_review_gamma_oxides_are_listed_with_existing_trace_classes() -> None:
     supported = {item.oxide: item for item in supported_trace_oxides()}
     expected = {
