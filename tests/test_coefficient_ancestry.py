@@ -10,6 +10,9 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+import yaml
+
 from openimcc import coefficient_ancestry
 from openimcc.janaf_crystals import (
     evaluate_janaf_apparent_gibbs,
@@ -50,6 +53,55 @@ def test_coefficient_source_lookup_requires_bounded_citation_match():
 
     assert source_mapper.resolve("alkali (2001)") == []
     assert source_mapper.resolve("Li (2001)") == ["li-work"]
+
+
+def test_vocabulary_index_accepts_matching_ids_and_dois() -> None:
+    check_vocabulary_index = runpy.run_path(
+        str(ROOT / "tools" / "build_coefficient_ancestry.py")
+    )["_check_vocabulary_index"]
+    index = yaml.safe_load(
+        (ROOT / "tests" / "data" / "coefficient-ancestry-index-fixture.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    check_vocabulary_index(
+        {"work_ids": ["work-a", "work-b"], "work_dois": {"work-a": "10.1000/a"}},
+        index,
+    )
+
+
+def test_vocabulary_index_rejects_missing_work_ids() -> None:
+    check_vocabulary_index = runpy.run_path(
+        str(ROOT / "tools" / "build_coefficient_ancestry.py")
+    )["_check_vocabulary_index"]
+    index = yaml.safe_load(
+        (ROOT / "tests" / "data" / "coefficient-ancestry-index-fixture.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    with pytest.raises(ValueError, match="missing from INDEX.yaml: work-missing"):
+        check_vocabulary_index(
+            {"work_ids": ["work-a", "work-missing"], "work_dois": {}}, index
+        )
+
+
+def test_vocabulary_index_rejects_doi_mismatches() -> None:
+    check_vocabulary_index = runpy.run_path(
+        str(ROOT / "tools" / "build_coefficient_ancestry.py")
+    )["_check_vocabulary_index"]
+    index = yaml.safe_load(
+        (ROOT / "tests" / "data" / "coefficient-ancestry-index-fixture.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    with pytest.raises(ValueError, match="DOI mismatch for work ID work-a"):
+        check_vocabulary_index(
+            {"work_ids": ["work-a"], "work_dois": {"work-a": "10.1000/incorrect"}},
+            index,
+        )
 
 
 def _json_resource(path: str) -> dict:

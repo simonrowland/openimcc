@@ -33,3 +33,13 @@ work-ID list referenced by the manifest is in
 `tests/data/coefficient-ancestry-vocabulary.json`. Regenerate the packaged
 manifest with `python tools/build_coefficient_ancestry.py`; pass `--check` to
 verify byte-identical regeneration.
+
+To also verify the snapshot against the simulator's source index, pass its
+repository path with `--vocabulary-from-repo`. The builder reads `INDEX.yaml`
+from the snapshot's recorded commit and checks each work ID and recorded DOI.
+This optional check requires the repository and PyYAML; plain `--check` does
+not.
+
+```sh
+python tools/build_coefficient_ancestry.py --check --vocabulary-from-repo /path/to/simulator
+```
