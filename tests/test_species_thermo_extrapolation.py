@@ -127,6 +127,9 @@ def test_species_thermo_crystal_phase_identity_and_formation_anchors() -> None:
     assert high_cristobalite.phase_identity["transition_temperatures_K"][0][
         "temperature_K"
     ] == 1079
+    assert "metastable below 1079 K" in high_cristobalite.phase_identity[
+        "phase_notes"
+    ]
     assert high_cristobalite.formation_enthalpy_298_kJ_mol == pytest.approx(
         -905.489
     )
@@ -143,10 +146,49 @@ def test_species_thermo_crystal_phase_identity_and_formation_anchors() -> None:
     assert lam_cristobalite.phase_identity["polymorph"] == (
         "cristobalite (low/high subtype not specified)"
     )
+    assert lam_cristobalite.formation_enthalpy_298_kJ_mol == pytest.approx(
+        -910.683
+    )
+    assert lam_cristobalite.phase_identity[
+        "formation_enthalpy_reference_phase"
+    ] == "quartz (SiO2(QU))"
+    assert lam_cristobalite.formation_enthalpy_source_id == "LH87 Table 3"
+
+    carbon = species_thermo("C", "cr", 1500.0, pack)
+    assert carbon.phase_identity is not None
+    assert carbon.phase_identity["polymorph"] == "C1(ref)"
+    assert "graphite" not in carbon.phase_identity["phase_notes"]
 
     gas = species_thermo("H", "g", 2000.0, pack)
     assert gas.formation_enthalpy_298_kJ_mol == pytest.approx(217.999)
     assert gas.formation_enthalpy_source_id == "H-001"
+
+
+def test_gas_formation_enthalpy_uses_source_anchor_across_segments() -> None:
+    pack = load_gas_datapack()
+    expected = (
+        ("O2", 0.0, "O-029"),
+        ("SiO", -100.416, "O-012"),
+        ("Na", 107.3, "Na-005"),
+    )
+    for species, value, source_id in expected:
+        low = species_thermo(species, "g", 1000.0, pack)
+        high = species_thermo(species, "g", 2000.0, pack)
+        assert low.formation_enthalpy_298_kJ_mol == value
+        assert high.formation_enthalpy_298_kJ_mol == value
+        assert low.formation_enthalpy_source_id == source_id
+        assert high.formation_enthalpy_source_id == source_id
+
+
+def test_gas_formation_enthalpy_uses_vendored_text_table_anchors() -> None:
+    pack = load_gas_datapack()
+    for species, value, source_id in (
+        ("B", 560.0, "B-005"),
+        ("Li", 159.3, "Li-005"),
+    ):
+        result = species_thermo(species, "g", 2000.0, pack)
+        assert result.formation_enthalpy_298_kJ_mol == value
+        assert result.formation_enthalpy_source_id == source_id
 
 
 def test_species_thermo_crystal_constant_cp_continuation_is_continuous() -> None:
@@ -191,6 +233,35 @@ def test_species_thermo_refuses_transition_and_melting_crossings() -> None:
         species_thermo(
             "SiO2", "cr", 1997.0, allow_extrapolation=True
         )
+
+    re = species_thermo("Re", "cr", 3452.0, allow_extrapolation=True)
+    assert re.extrapolated is True
+    assert re.phase_identity is not None
+    assert re.phase_identity["melting_temperature_K"] == 3453
+    with pytest.raises(
+        ImccGasTemperatureOutsideDomainError,
+        match="above its source-printed melting point of 3453 K",
+    ):
+        species_thermo("Re", "cr", 3453.0, allow_extrapolation=True)
+
+
+def test_species_thermo_domain_error_reports_selected_interval() -> None:
+    pack = load_gas_datapack()
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("SiO2", "cr", 999.0, pack)
+
+    assert str(refusal.value) == (
+        "T=999.0 K outside declared G(T) interval for 'SiO2(cr)' "
+        "[1000.0, 1996.0] K"
+    )
+    assert refusal.value.declared_interval_K == (1000.0, 1996.0)
+    assert refusal.value.species == "SiO2(cr)"
+    assert refusal.value.source_row_id == "O-035"
+
+    without_row = ImccGasTemperatureOutsideDomainError("outside")
+    assert without_row.declared_interval_K is None
+    assert without_row.species is None
+    assert without_row.source_row_id is None
 
 
 @pytest.mark.parametrize(

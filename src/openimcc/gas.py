@@ -306,9 +306,21 @@ def _high_temperature_candidate_notice_records(
 
 
 class ImccGasTemperatureOutsideDomainError(ImccRefusal):
-    """Raised when T falls outside the declared G(T) interval for a species."""
+    """Raised outside the declared G(T) interval, with selected-row metadata."""
 
     code = "imcc_gas_T_outside_domain"
+
+    def __init__(
+        self,
+        *args: object,
+        declared_interval_K: tuple[float, float] | None = None,
+        species: str | None = None,
+        source_row_id: str | None = None,
+    ) -> None:
+        super().__init__(*args)
+        self.declared_interval_K = declared_interval_K
+        self.species = species
+        self.source_row_id = source_row_id
 
 
 class ImccGasInvalidFugacityError(ImccRefusal):
@@ -376,6 +388,7 @@ _PACKAGED_DATA_PACKAGE = "openimcc.data.gas"
 _PACKAGED_GAS_NAME = "gas-shomate-default-v1.csv"
 _PACKAGED_CONDENSATE_NAME = "condensate-default-v1.csv"
 _CRYSTAL_PHASE_IDENTITY_NAME = "condensate-phase-identity.json"
+_GAS_FORMATION_ENTHALPY_298_NAME = "gas-formation-enthalpy-298.json"
 _SOURCE_VALIDITY_TEXT_COLUMNS = (
     "validity_kind", "continuation_kind", "cp_extension", "construction_method",
     "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
@@ -730,6 +743,17 @@ class SpeciesThermo:
     derivatives of a fitted Gibbs-energy polynomial. JANAF-fitted condensates
     fit Phi (the Gibbs polynomial) only. Gas Shomate rows fit Cp, H, and S,
     so their derivatives are not fit-implied.
+
+    ``phase_identity`` is the curated crystal identity, or ``None`` when no
+    source-backed identity matches the selected row.
+    ``formation_enthalpy_298_kJ_mol`` is the source's 298.15 K formation
+    enthalpy, and ``formation_enthalpy_source_id`` names the table supplying
+    that anchor. It is ``None`` when no JANAF 298.15 K value is vendored for
+    the row's source and no source row spans 298.15 K; non-JANAF source tables
+    are not separately read for an anchor.
+    When a crystal anchor refers to a different phase, ``phase_identity`` may
+    include ``formation_enthalpy_reference_phase`` (for example, quartz for a
+    cristobalite Gibbs fit).
     """
 
     Cp_J_molK: float
@@ -828,6 +852,13 @@ def _packaged_resource(name: str):
 @lru_cache(maxsize=1)
 def _crystal_phase_identity_rows() -> Mapping[str, dict[str, Any]]:
     resource = _packaged_resource(_CRYSTAL_PHASE_IDENTITY_NAME)
+    with resource.open("r", encoding="utf-8") as handle:
+        return json.load(handle)["rows"]
+
+
+@lru_cache(maxsize=1)
+def _gas_formation_enthalpy_298_rows() -> Mapping[str, dict[str, Any]]:
+    resource = _packaged_resource(_GAS_FORMATION_ENTHALPY_298_NAME)
     with resource.open("r", encoding="utf-8") as handle:
         return json.load(handle)["rows"]
 
@@ -2550,7 +2581,12 @@ def _nearest_interval_row(
     if not allow_extrapolation and (T < selected["T_min"] or T > selected["T_max"]):
         raise ImccGasTemperatureOutsideDomainError(
             f"T={T} K outside declared G(T) interval for {species!r} "
-            f"[{selected['T_min']}, {selected['T_max']}] K"
+            f"[{selected['T_min']}, {selected['T_max']}] K",
+            declared_interval_K=(
+                float(selected["T_min"]), float(selected["T_max"])
+            ),
+            species=species,
+            source_row_id=str(selected["Ref"]),
         )
     return selected
 
@@ -2822,18 +2858,19 @@ def species_thermo(
     ``evaluate_gas``. Crystal continuation is limited to a source-identified
     single crystal phase, within its documented stability range and below its
     printed melting point.
+    Opt-in continuation can stand in for source segments not shipped in the
+    runtime tables.
 
     For gas rows, let ``t = T/1000``. Shomate gives
     ``Cp = A + B*t + C*t² + D*t³ + E/t²`` (J mol⁻¹ K⁻¹), with enthalpy
     primitive ``I_H = A*t + B*t²/2 + C*t³/3 + D*t⁴/4 − E/t`` (kJ mol⁻¹)
     and ``S = A*ln(t) + B*t + C*t²/2 + D*t³/3 − E/(2*t²) + G``
-    (J mol⁻¹ K⁻¹). The public gas ``H_app`` is formation-anchored:
-    ``H_app = I_H + F``. The packaged convention folds ``dfH298`` into F and
-    stores Shomate H=0. ``G_J_mol`` is the existing runtime
+    (J mol⁻¹ K⁻¹). The public gas ``H_app`` is ``I_H + F``. F is the selected
+    segment's integration constant and is not generally ``dfH298`` when that
+    segment does not include 298.15 K. ``G_J_mol`` is the existing runtime
     ``1000*H_app − T*S``; the factor converts H_app from kJ/mol to J/mol.
-    A caller needing only H(T)−H(298.15) must subtract the source row's
-    ``dfH298`` from ``H_app``; that anchor is in the JANAF source record and
-    provenance, not separately encoded in the runtime row.
+    ``formation_enthalpy_298_kJ_mol`` uses the source table's tabulated
+    298.15 K anchor, independent of the selected segment.
 
     For condensate rows, ``phi(t) = dG_A + dG_B*t + dG_C*t² + dG_D*t³
     + dG_E*t⁴ = −(G − H298)/(R*T)``. Gibbs–Helmholtz at fixed H298 gives
@@ -2943,31 +2980,20 @@ def species_thermo(
             declared_interval[1],
         )
         identity_record = _crystal_phase_identity_rows().get(identity_key)
-        if identity_record is None:
-            identity_record = {
-                "species": species,
-                "phase": "cr",
-                "source_table_id": source_table_id,
-                "source_row_id": source_ref,
-                "T_interval_K": declared_interval,
-                "kind": "unknown",
-                "polymorph": None,
-                "stability_range_K": None,
-                "transition_temperatures_K": [],
-                "melting_temperature_K": None,
-                "source_locators": [],
-                "phase_notes": "No curated source-backed identity matches this row.",
-            }
-        phase_identity = MappingProxyType(deepcopy(identity_record))
+        if identity_record is not None:
+            phase_identity = MappingProxyType(deepcopy(identity_record))
 
         if extrapolated:
             if (
-                phase_identity.get("kind") != "single_polymorph"
+                phase_identity is None
                 or not isinstance(phase_identity.get("polymorph"), str)
             ):
                 raise ImccGasTemperatureOutsideDomainError(
                     f"cannot continue {row_name!r} at T={T_K} K: its source phase "
-                    "identity is unknown or composite"
+                    "identity is unknown or composite",
+                    declared_interval_K=declared_interval,
+                    species=row_name,
+                    source_row_id=source_ref,
                 )
             stability_range = phase_identity.get("stability_range_K")
             melting_temperature = phase_identity.get("melting_temperature_K")
@@ -2978,14 +3004,20 @@ def species_thermo(
             ):
                 raise ImccGasTemperatureOutsideDomainError(
                     f"cannot continue {row_name!r} at T={T_K} K: the source does "
-                    "not provide both a crystal stability range and a melting point"
+                    "not provide both a crystal stability range and a melting point",
+                    declared_interval_K=declared_interval,
+                    species=row_name,
+                    source_row_id=source_ref,
                 )
             stability_min, stability_max = map(float, stability_range)
             melting_temperature = float(melting_temperature)
             if T_K >= melting_temperature:
                 raise ImccGasTemperatureOutsideDomainError(
                     f"cannot continue {row_name!r} at T={T_K} K: this is at or "
-                    f"above its source-printed melting point of {melting_temperature:g} K"
+                    f"above its source-printed melting point of {melting_temperature:g} K",
+                    declared_interval_K=declared_interval,
+                    species=row_name,
+                    source_row_id=source_ref,
                 )
             if not stability_min <= T_K <= stability_max:
                 transition_detail = ""
@@ -3006,7 +3038,10 @@ def species_thermo(
                 raise ImccGasTemperatureOutsideDomainError(
                     f"cannot continue {row_name!r} at T={T_K} K: outside its "
                     f"source-printed stability range [{stability_min:g}, "
-                    f"{stability_max:g}] K{transition_detail}"
+                    f"{stability_max:g}] K{transition_detail}",
+                    declared_interval_K=declared_interval,
+                    species=row_name,
+                    source_row_id=source_ref,
                 )
             continuation_edge_K = (
                 declared_interval[0]
@@ -3141,19 +3176,53 @@ def species_thermo(
         )
 
     if phase == "g":
-        t_298 = 298.15 / 1000.0
-        formation_enthalpy_298 = (
-            float(row["A"]) * t_298
-            + float(row["B"]) * t_298**2 / 2.0
-            + float(row["C"]) * t_298**3 / 3.0
-            + float(row["D"]) * t_298**4 / 4.0
-            - float(row["E"]) / t_298
-            + float(row["F"])
+        anchor_record = _gas_formation_enthalpy_298_rows().get(
+            source_table_id or ""
         )
-        formation_enthalpy_source_id = source_table_id or source_ref or None
+        if anchor_record is not None:
+            formation_enthalpy_298 = float(
+                anchor_record["formation_enthalpy_298_kJ_mol"]
+            )
+            formation_enthalpy_source_id = source_table_id or None
+        else:
+            source_rows = active_pack.gas_df.loc[
+                active_pack.gas_df.index == row_name
+            ]
+            if source_table_id is not None:
+                source_rows = source_rows.loc[
+                    source_rows["Ref"].map(_source_table_identifier)
+                    == source_table_id
+                ]
+            anchor_rows = source_rows.loc[
+                (source_rows["T_min"] <= 298.15)
+                & (source_rows["T_max"] >= 298.15)
+            ]
+            if anchor_rows.empty:
+                formation_enthalpy_298 = None
+                formation_enthalpy_source_id = None
+            else:
+                anchor_row = anchor_rows.iloc[0]
+                t_298 = 298.15 / 1000.0
+                formation_enthalpy_298 = (
+                    float(anchor_row["A"]) * t_298
+                    + float(anchor_row["B"]) * t_298**2 / 2.0
+                    + float(anchor_row["C"]) * t_298**3 / 3.0
+                    + float(anchor_row["D"]) * t_298**4 / 4.0
+                    - float(anchor_row["E"]) / t_298
+                    + float(anchor_row["F"])
+                )
+                formation_enthalpy_source_id = (
+                    source_table_id
+                    or _source_table_identifier(str(anchor_row["Ref"]))
+                    or None
+                )
     elif "dH298_R" in row:
         formation_enthalpy_298 = R_J_MOL_K * float(row["dH298_R"])
-        formation_enthalpy_source_id = source_table_id or source_ref or None
+        formation_enthalpy_source_id = (
+            phase_identity.get("formation_enthalpy_source_id")
+            if phase_identity is not None
+            else None
+        ) or source_table_id or source_ref or None
     else:
         formation_enthalpy_298 = None
         formation_enthalpy_source_id = None

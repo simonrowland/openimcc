@@ -33,6 +33,12 @@
 - Added curated crystal phase identities for shipped condensate rows, bounded
   constant-Cp continuation for eligible crystal phases, and 298.15 K formation
   enthalpy fields on `SpeciesThermo` results.
+- Gas `formation_enthalpy_298_kJ_mol` now uses the source table's 298.15 K
+  anchor regardless of the selected Shomate segment; the LAM1987 cristobalite
+  anchor identifies its quartz reference phase. Temperature-domain refusals
+  expose the selected row's declared interval.
+- Added JANAF 298.15 K formation enthalpy anchors for 60 gas tables supplied
+  as vendored tab-delimited text.
 - Added opt-in `species_thermo(..., allow_extrapolation=True)` using the same
   row selection and continuation as `evaluate_gas`, with `extrapolated`,
   `declared_interval_K`, `continuation`, and authority provenance.

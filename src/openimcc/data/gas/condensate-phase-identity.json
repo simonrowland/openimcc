@@ -29,23 +29,18 @@
       "source_row_id": "C-002",
       "T_interval_K": [1200, 3000],
       "kind": "single_polymorph",
-      "polymorph": "graphite (Acheson spectroscopic-grade reference state)",
+      "polymorph": "C1(ref)",
       "stability_range_K": null,
       "transition_temperatures_K": [],
       "melting_temperature_K": null,
       "melting_temperature_uncertainty_K": null,
-      "melting_temperature_candidates_K": [4000, 4130],
       "source_locators": [
         {
-          "locator": "JANAF table C-002; reference-state and fusion/phase notes, printed p. 550",
+          "locator": "JANAF table C-002 title: Carbon (C) | C1(ref)",
           "url": "https://janaf.nist.gov/tables/C-002.html"
-        },
-        {
-          "locator": "JANAF Carbon phase notes; graphite-to-liquid transition and phase diagram are stated to be not well established",
-          "url": "https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-Carbon.pdf"
         }
       ],
-      "phase_notes": "JANAF identifies graphite as the reference state. It reports approximate solid-liquid-vapor triple-point values near 4000 K for carbon arc data and 4130 K for pyrolytic graphite, but says the graphite-to-liquid transition and phase diagram are not well established; no single melting temperature is assigned."
+      "phase_notes": "The vendored source identifies this entry only as C1(ref); it does not name a crystallographic polymorph."
     },
     "Ir(cr)|BU-2611|BU-2611|1200:2720": {
       "species": "Ir",
@@ -141,7 +136,7 @@
       "melting_temperature_uncertainty_K": null,
       "source_locators": [
         {
-          "locator": "Pankratz Bulletin 677, Re(cr) elemental metal table, printed p. 76; melting point printed as 3453 K",
+          "locator": "Pankratz Bulletin 677, table-0152 (PDF p. 80, printed p. 76), Re(cr) elemental metal table; melting point printed as 3453 K",
           "url": "https://digital.library.unt.edu/ark:/67531/metadc12819/"
         }
       ],
@@ -161,7 +156,7 @@
       "melting_temperature_uncertainty_K": null,
       "source_locators": [
         {
-          "locator": "Pankratz Bulletin 677, Re(cr) elemental metal table, printed p. 76; melting point printed as 3453 K",
+          "locator": "Pankratz Bulletin 677, table-0152 (PDF p. 80, printed p. 76), Re(cr) elemental metal table; melting point printed as 3453 K",
           "url": "https://digital.library.unt.edu/ark:/67531/metadc12819/"
         }
       ],
@@ -181,7 +176,7 @@
       "melting_temperature_uncertainty_K": null,
       "source_locators": [
         {
-          "locator": "Pankratz Bulletin 677, Re(cr) elemental metal table, printed p. 76; melting point printed as 3453 K",
+          "locator": "Pankratz Bulletin 677, table-0152 (PDF p. 80, printed p. 76), Re(cr) elemental metal table; melting point printed as 3453 K",
           "url": "https://digital.library.unt.edu/ark:/67531/metadc12819/"
         },
         {
@@ -250,9 +245,15 @@
         {
           "locator": "Section 2.2(k), printed p. 435, identifies the compiled SiO2 condensed data as quartz, cristobalite, and liquid",
           "url": "https://srd.nist.gov/jpcrdreprint/1.555799.pdf"
+        },
+        {
+          "locator": "Lamoreaux et al. (1987), Table 3, SiO2(QU) formation-enthalpy anchor",
+          "url": "https://srd.nist.gov/jpcrdreprint/1.555799.pdf"
         }
       ],
-      "phase_notes": "Table 2 distinguishes SiO2(cr.) from SiO2(qu.), and the paper names cristobalite as the corresponding condensed phase; it does not identify a low/high cristobalite subtype or print a lower stability boundary."
+      "phase_notes": "Table 2 distinguishes SiO2(cr.) from SiO2(qu.), and the paper names cristobalite as the corresponding condensed phase; it does not identify a low/high cristobalite subtype or print a lower stability boundary.",
+      "formation_enthalpy_reference_phase": "quartz (SiO2(QU))",
+      "formation_enthalpy_source_id": "LH87 Table 3"
     },
     "SiO2(cr)|O-035|O-035|1000:1996": {
       "species": "SiO2",
@@ -283,7 +284,7 @@
           "url": "https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-Oxygen.pdf"
         }
       ],
-      "phase_notes": "The table fits high cristobalite throughout; the lower end of the shipped interval is below the source's nominal high-quartz/high-cristobalite boundary."
+      "phase_notes": "The table is for high cristobalite; JANAF's phase notes put the high-quartz/high-cristobalite transition at 1079 ± 250 K, so this label is metastable below 1079 K."
     }
   }
 }
