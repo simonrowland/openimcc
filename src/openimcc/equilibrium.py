@@ -351,11 +351,8 @@ def _source_cap_excludes_candidate(
     source: Mapping[str, Any],
     temperature_K: float,
 ) -> bool:
-    limit = _source_solid_limit_K(source)
-    return (
-        len(stoichiometry) > 1
-        and limit is not None
-        and temperature_K > limit
+    return diagnostics._crystal_source_cap_excludes_candidate(
+        stoichiometry, _source_solid_limit_K(source), temperature_K,
     )
 
 
@@ -1131,6 +1128,7 @@ def _independent_thermochemical_standards(
     pure_ids = {row["id"] for row in pure["phases"]}
     crystal_rows = {row["id"]: row for row in crystals["phases"]}
     barin_rows = {row["id"]: row for row in barin["phases"]}
+    fusion_rows = barin_rows | crystal_rows
     crystal_gibbs: dict[str, float] = {}
     for state in states:
         phase = state.candidate.phase_id
@@ -1140,23 +1138,8 @@ def _independent_thermochemical_standards(
             crystal_gibbs[phase] = evaluate_janaf_crystal(
                 phase, temperature_K, apply_phase_cap=True
             ).G_J_mol
-        elif phase in crystal_rows:
-            row = crystal_rows[phase]
-            parent_liquid_g = {
-                oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
-                for oxide in row["oxide_stoichiometry"]
-            }
-            standard = diagnostics._fusion_node_crystal_standard(
-                row, temperature_K, parent_liquid_g,
-            )
-            if standard.unavailable_reason is not None:
-                raise ValueError(
-                    f"{phase} verifier standard unavailable: "
-                    f"{standard.unavailable_reason}"
-                )
-            crystal_gibbs[phase] = standard.crystal_gibbs_J_mol
-        elif phase in barin_rows:
-            row = barin_rows[phase]
+        elif phase in fusion_rows:
+            row = fusion_rows[phase]
             parent_liquid_g = {
                 oxide: gas.species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol
                 for oxide in row["oxide_stoichiometry"]
