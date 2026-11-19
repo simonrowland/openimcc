@@ -199,6 +199,13 @@ def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
     assert alpha_tio.phase_identity["polymorph"] == "ALPHA"
     assert beta_tio.phase_identity["polymorph"] == "BETA"
 
+    forsterite = species_thermo("Mg2SiO4", "cr", 1500.0)
+    enstatite = species_thermo("MgSiO3", "cr", 1000.0)
+    assert forsterite.source_table_id == "Mg-028"
+    assert enstatite.source_table_id == "Mg-012"
+    assert enstatite.phase_identity is not None
+    assert enstatite.phase_identity["polymorph"] == "II"
+
     with pytest.raises(ImccGasTemperatureOutsideDomainError):
         species_thermo("PbO", "cr", 1160.0)
 

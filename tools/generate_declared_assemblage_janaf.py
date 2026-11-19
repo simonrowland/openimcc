@@ -36,6 +36,8 @@ CRYSTAL_SPECIES_TARGET = (
 ADDITIONAL_CRYSTALS = {
     "PbO": "O-006",
     "ZrO2": "O-052",
+    "Mg2SiO4": "Mg-028",
+    "MgSiO3": "Mg-012",
     "TiO": "O-019",
     "Ti3O5": "O-081",
     "Ti2O3": "O-059",
