@@ -3786,6 +3786,15 @@ def evaluate_gas(
         )
         act = {name: float(arr[i]) for i, name in enumerate(parent_oxides)}
 
+    provided_parent_activities = (
+        {
+            name for name in activities
+            if name in _REACTION_PARENT_OXIDES
+        }
+        if isinstance(activities, Mapping)
+        else set(parent_oxides)
+    )
+
     trace_fractions: Mapping[str, float] = {}
     trace_activity_estimates: dict[str, TraceActivityEstimate] = {}
     major_bias_flags: dict[str, TraceMajorBiasFlag] = {}
@@ -4054,6 +4063,25 @@ def evaluate_gas(
             }
             for carrier, estimates in carrier_estimates.items():
                 if carrier in act:
+                    if (
+                        carrier == "P2O5"
+                        and carrier in provided_parent_activities
+                    ):
+                        expected_activity = math.fsum(
+                            item.activity for item in estimates
+                        )
+                        if not math.isclose(
+                            act[carrier], expected_activity,
+                            rel_tol=1.0e-12, abs_tol=1.0e-15,
+                        ):
+                            trace_parent_refusals[carrier] = TraceGasChannelRefusal(
+                                carrier,
+                                "the supplied P2O5 activity differs from the "
+                                "Jung-Hudon P2O5(l) trace estimate; the S/P "
+                                "extension uses the incompatible half-P4O10(cr) "
+                                "standard",
+                                triggers=("P2O5",),
+                            )
                     continue
 
                 if carrier in _GAS_PHASE_PARENT_ROWS:

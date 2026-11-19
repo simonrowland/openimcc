@@ -9,6 +9,8 @@
   converts elemental Li/Zn to their oxide formula-unit basis.
 - Ag2O, Sb2O3 and Tl2O review-γ estimates remain reportable, while their gas
   channels are refused when the source and gas parent standards differ.
+- Gas P channels refuse S/P extension P2O5 activities on the half-P4O10(cr)
+  proxy when the supplied trace composition identifies the source mismatch.
 
 ### Trace activity coefficients
 

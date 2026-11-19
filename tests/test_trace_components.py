@@ -1913,6 +1913,59 @@ def test_review_gamma_gas_parents_refuse_unconverted_reference_standards(
         assert "no shipped standard conversion is available" in refusal.reason
 
 
+def test_sp_extension_p2o5_proxy_is_refused_by_gas(packaged_gas_pack) -> None:
+    composition = {
+        "SiO2": 50.0,
+        "MgO": 15.0,
+        "FeO": 10.0,
+        "CaO": 12.0,
+        "Al2O3": 12.0,
+        "P2O5": 0.1,
+    }
+    extension_pack = load_datapack(
+        "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json"
+    )
+    extension_melt = evaluate(
+        composition,
+        1800.0,
+        extension_pack,
+        basis_type="wt",
+        enable_sp_extension=True,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    assert "P2O5" in extension_melt.parent_oxides
+    with pytest.raises(
+        ImccComponentOutsideDomainError,
+        match="half-P4O10\\(cr\\)",
+    ):
+        evaluate_gas(
+            _major_activities(extension_melt),
+            1800.0,
+            1.0e-8,
+            packaged_gas_pack,
+            gas_species=("P2",),
+            composition_wt_pct=composition,
+        )
+
+    default_melt = evaluate(
+        composition,
+        1800.0,
+        basis_type="wt",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    default_gas = evaluate_gas(
+        _major_activities(default_melt),
+        1800.0,
+        1.0e-8,
+        packaged_gas_pack,
+        gas_species=("P2",),
+        composition_wt_pct=composition,
+    )
+    assert "P2" in default_gas
+
+
 def test_li_bearing_cr_domain_warning_reaches_melt_and_gas_flags(
     packaged_gas_pack,
 ) -> None:
