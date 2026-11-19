@@ -24,6 +24,7 @@ ROLES = {"derived", "fitted", "selected", "anchor", "diagnostic"}
 DOI_RE = re.compile(r"10\.[0-9]{4,9}/[^\s<>\]\[{}\"']+", re.IGNORECASE)
 JANAF_TABLE_RE = re.compile(r"(?<![A-Za-z0-9])(?:[A-Z][a-z]?-[0-9]{3})(?![A-Za-z0-9])")
 PROSE_CITATIONS = ROOT / "tools" / "coefficient-ancestry-prose-citations.json"
+SOSSI_FEGLEY_2018_KEY = "sossi & fegley (2018)"
 
 
 def _json(path: Path) -> Any:
@@ -251,6 +252,15 @@ def _drop_resolved_unmapped(rows: list[dict[str, Any]], mapper: SourceMapper) ->
         resolved = {source["work_id"] for source in row["sources"]}
         retained = []
         for item in row["unmapped"]:
+            if (
+                item["reason"]
+                == "No curated mapping resolves this DOI to a work ID in the vocabulary."
+                and _contains_bounded_citation(
+                    SOSSI_FEGLEY_2018_KEY, item["citation"]
+                )
+            ):
+                retained.append(item)
+                continue
             if resolved.intersection(mapper.resolve(item["citation"])):
                 continue
             retained.append(item)
@@ -286,6 +296,71 @@ def _row(row_id: str, label: str) -> dict[str, Any]:
     return {"id": row_id, "label": label, "sources": [], "unmapped": []}
 
 
+def _add_citation_evidence(
+    row: dict[str, Any],
+    citation: str,
+    role: str,
+    mapper: SourceMapper,
+    *,
+    citation_key: str | None = None,
+    provenance_role: str | None = None,
+    preserve_full_citation: bool = False,
+    resolve_citation_key_with_atoms: bool = False,
+) -> None:
+    atoms = _citation_atoms(citation)
+    atom_work_ids: set[str] = set()
+    for atom in atoms:
+        work_ids = mapper.resolve(atom)
+        atom_work_ids.update(work_ids)
+        for work_id in work_ids:
+            item = {
+                "work_id": work_id,
+                "role": role,
+                "citation": citation if preserve_full_citation else atom,
+            }
+            if provenance_role:
+                item["provenance_role"] = provenance_role
+            if item not in row["sources"]:
+                row["sources"].append(item)
+        if not work_ids:
+            item = {
+                "row": row["id"],
+                "citation": citation if preserve_full_citation else atom,
+                "reason": mapper.unmapped_reason(atom),
+                "role": role,
+            }
+            if provenance_role:
+                item["provenance_role"] = provenance_role
+            if item not in row["unmapped"]:
+                row["unmapped"].append(item)
+
+    text_work_ids = mapper.resolve(citation, citation_key) if not atoms else (
+        mapper.resolve(citation_key)
+        if resolve_citation_key_with_atoms and citation_key
+        else []
+    )
+    for work_id in text_work_ids:
+        if work_id in atom_work_ids:
+            continue
+        item = {"work_id": work_id, "role": role, "citation": citation}
+        if provenance_role:
+            item["provenance_role"] = provenance_role
+        if item not in row["sources"]:
+            row["sources"].append(item)
+
+    if not atoms and not text_work_ids:
+        item = {
+            "row": row["id"],
+            "citation": citation,
+            "reason": mapper.unmapped_reason(citation, citation_key),
+            "role": role,
+        }
+        if provenance_role:
+            item["provenance_role"] = provenance_role
+        if item not in row["unmapped"]:
+            row["unmapped"].append(item)
+
+
 def _add_citation(
     row: dict[str, Any],
     citation: str,
@@ -297,52 +372,15 @@ def _add_citation(
 ) -> None:
     if role not in ROLES:
         raise ValueError(f"invalid ancestry role: {role}")
-    chunks = _segments(citation)
-    if not chunks:
-        return
-    for chunk in chunks:
-        atoms = _citation_atoms(chunk)
-        work_ids = [] if atoms else mapper.resolve(chunk, citation_key)
-        if work_ids:
-            for work_id in work_ids:
-                item = {"work_id": work_id, "role": role, "citation": chunk}
-                if provenance_role:
-                    item["provenance_role"] = provenance_role
-                if item not in row["sources"]:
-                    row["sources"].append(item)
-
-        for atom in atoms:
-            for work_id in mapper.resolve(atom):
-                item = {"work_id": work_id, "role": role, "citation": atom}
-                if provenance_role:
-                    item["provenance_role"] = provenance_role
-                if item not in row["sources"]:
-                    row["sources"].append(item)
-
-        unresolved_atoms = [atom for atom in atoms if not mapper.resolve(atom)]
-        for atom in unresolved_atoms:
-            item = {
-                "row": row["id"],
-                "citation": atom,
-                "reason": mapper.unmapped_reason(atom),
-                "role": role,
-            }
-            if provenance_role:
-                item["provenance_role"] = provenance_role
-            if item not in row["unmapped"]:
-                row["unmapped"].append(item)
-
-        if not work_ids and not atoms:
-            item = {
-                "row": row["id"],
-                "citation": chunk,
-                "reason": mapper.unmapped_reason(chunk, citation_key),
-                "role": role,
-            }
-            if provenance_role:
-                item["provenance_role"] = provenance_role
-            if item not in row["unmapped"]:
-                row["unmapped"].append(item)
+    for chunk in _segments(citation):
+        _add_citation_evidence(
+            row,
+            chunk,
+            role,
+            mapper,
+            citation_key=citation_key,
+            provenance_role=provenance_role,
+        )
 
 
 def _missing_provenance(row: dict[str, Any]) -> None:
@@ -986,43 +1024,23 @@ def _fragment_citation_text(
 
 
 def _add_fragment_citation(
-    row: dict[str, Any], citation: str, role: str, mapper: SourceMapper
+    row: dict[str, Any],
+    citation: str,
+    role: str,
+    mapper: SourceMapper,
+    *,
+    citation_key: str | None = None,
 ) -> None:
-    if not citation.strip():
-        return
-    atoms = _citation_atoms(citation)
-    work_ids: list[str] = []
-    unresolved_atoms: list[str] = []
-    if atoms:
-        for atom in atoms:
-            work_ids.extend(mapper.resolve(atom))
-            if not mapper.resolve(atom):
-                unresolved_atoms.append(atom)
-        work_ids = list(dict.fromkeys(work_ids))
-    else:
-        work_ids = mapper.resolve(citation)
-    for work_id in work_ids:
-        item = {"work_id": work_id, "role": role, "citation": citation}
-        if item not in row["sources"]:
-            row["sources"].append(item)
-    for atom in unresolved_atoms:
-        item = {
-            "row": row["id"],
-            "citation": citation,
-            "reason": mapper.unmapped_reason(atom),
-            "role": role,
-        }
-        if item not in row["unmapped"]:
-            row["unmapped"].append(item)
-    if not atoms and not work_ids:
-        item = {
-            "row": row["id"],
-            "citation": citation,
-            "reason": mapper.unmapped_reason(citation),
-            "role": role,
-        }
-        if item not in row["unmapped"]:
-            row["unmapped"].append(item)
+    if citation.strip():
+        _add_citation_evidence(
+            row,
+            citation,
+            role,
+            mapper,
+            citation_key=citation_key,
+            preserve_full_citation=True,
+            resolve_citation_key_with_atoms=True,
+        )
 
 
 def _fragment_citation_records(content: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -1038,6 +1056,15 @@ def _fragment_citation_records(content: dict[str, Any]) -> dict[str, dict[str, A
             if isinstance(item, dict)
         }
     return {}
+
+
+def _fragment_locator_citation_keys(locator: str, mapper: SourceMapper) -> list[str]:
+    if (
+        SOSSI_FEGLEY_2018_KEY in mapper.citation_keys
+        and _contains_bounded_citation(SOSSI_FEGLEY_2018_KEY, locator)
+    ):
+        return [SOSSI_FEGLEY_2018_KEY]
+    return []
 
 
 def _fragment_artifact(path: Path, mapper: SourceMapper) -> dict[str, Any]:
@@ -1103,17 +1130,35 @@ def _fragment_artifact(path: Path, mapper: SourceMapper) -> dict[str, Any]:
             )
             if "comparison" in str(source_row.get("property", "")).casefold():
                 role = "diagnostic"
-            _add_fragment_citation(record, citation_text, role, mapper)
-        for reference in references:
-            if id(reference) not in matched_reference_ids:
+            locator_keys = [
+                key
+                for matched_locator in matched_locators
+                for key in _fragment_locator_citation_keys(matched_locator, mapper)
+            ]
+            for citation_key in dict.fromkeys(locator_keys) or [None]:
                 _add_fragment_citation(
                     record,
-                    _fragment_citation_text(
-                        reference["citation"], locator=reference["locator"]
-                    ),
-                    reference["role"],
+                    citation_text,
+                    role,
                     mapper,
+                    citation_key=citation_key,
                 )
+        for reference in references:
+            if id(reference) not in matched_reference_ids:
+                citation_text = _fragment_citation_text(
+                    reference["citation"], locator=reference["locator"]
+                )
+                locator_keys = _fragment_locator_citation_keys(
+                    reference["locator"], mapper
+                )
+                for citation_key in locator_keys or [None]:
+                    _add_fragment_citation(
+                        record,
+                        citation_text,
+                        reference["role"],
+                        mapper,
+                        citation_key=citation_key,
+                    )
         for key in citation_keys:
             if key not in citation_records:
                 _add_fragment_citation(record, key, "derived", mapper)

@@ -327,6 +327,47 @@ def test_moo3_fragment_cites_oneill_and_eggins_2002() -> None:
     )
 
 
+def test_sossi_fegley_table_two_is_a_coefficient_source() -> None:
+    manifest = _json_resource("data/coefficient-ancestry.json")
+    rows = (
+        ("as", "AsO1.5-1573K", "10.1007/s11663-010-9430-0"),
+        ("bi", "BiO1.5-1573K", "10.1179/1743285512Y.0000000033"),
+        ("ge", "GeO2-1573K", "10.1007/s11663-016-0759-x"),
+        ("cu", "CuO0.5-1573K", None),
+        ("cu", "CuO0.5-1923K", None),
+    )
+    for element, row_id, primary_doi in rows:
+        artifact = _artifact(
+            manifest["artifacts"],
+            f"openimcc-review-gamma-activity.v1:{element}",
+        )
+        row = next(row for row in artifact["rows"] if row["id"] == row_id)
+        work_ids = {source["work_id"] for source in row["sources"]}
+
+        assert "kems-041-sossi-fegley-2018" in work_ids
+        if primary_doi:
+            assert any(
+                item["row"] == row_id
+                and primary_doi in item["citation"]
+                and item["reason"]
+                == (
+                    "No curated mapping resolves this DOI to a work ID "
+                    "in the vocabulary."
+                )
+                for item in artifact["unmapped"]
+            )
+
+    cu = _artifact(
+        manifest["artifacts"], "openimcc-review-gamma-activity.v1:cu"
+    )
+    cu_sources = {
+        row["id"]: {source["work_id"] for source in row["sources"]}
+        for row in cu["rows"]
+    }
+    assert "holzheid-lodders-2001-copper-solubility" in cu_sources["CuO0.5-1573K"]
+    assert "wood-wade-2013-trace-activities" in cu_sources["CuO0.5-1923K"]
+
+
 def test_manifest_work_ids_match_the_recorded_vocabulary() -> None:
     manifest = _json_resource("data/coefficient-ancestry.json")
     snapshot = json.loads(

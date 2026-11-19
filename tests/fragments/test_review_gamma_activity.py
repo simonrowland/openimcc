@@ -1967,7 +1967,7 @@ def test_review_gamma_payloads_pin_changed_and_unchanged_rows() -> None:
     # activities and source-x references changed. Separate hashes pin the
     # unaffected rows and the unchanged Ce payload.
     assert hashlib.sha256(encoded).hexdigest() == (
-        "73b21a31c6ae377d53c304ff4f53e0c785ffc31e5c8db7c08b012d726093546f"
+        "71bc70d549f7f9b496a98d0c8ccab5dc4497cfc88fdb4e57fef1333b1081d9f6"
     )
 
     def payload_hash(rows: list[list[object]]) -> str:
@@ -1976,10 +1976,10 @@ def test_review_gamma_payloads_pin_changed_and_unchanged_rows() -> None:
         ).hexdigest()
 
     assert payload_hash(non_ce_payload) == (
-        "5aed62db57c28b8becaa92438b1e9e94a14f9975327fb8ec75997d8a1be154d9"
+        "3eb875befaa0f200c60b8133815b3af8816ac459b76aca2a25f0f53490072a58"
     )
     assert payload_hash(unchanged_payload) == (
-        "e736ce1b850b2f72c1aacffdbb96cfb3c5bca48dbce694596279e2c05b84a1e9"
+        "ea02b575eec6251f2a61d0ad0fea7b9a496e93166e720e217d5809334a78a560"
     )
     assert payload_hash(ce_payload) == (
         "cf1226c0a8fc05611178ac34c4196f784ca909447044cfd8638922b238bff3dc"
