@@ -73,8 +73,10 @@ from openimcc.trace_components import (
     TraceGasChannelRefusal,
     TraceMajorBiasFlag,
     _TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION,
+    _single_cation_oxide_counts,
     ParentLiquidStandardOffset,
     resolve_trace_activity,
+    supported_trace_oxides,
     trace_component_rule,
     trace_fractions_from_wt,
 )
@@ -357,6 +359,59 @@ class ImccGasUnrecognizedSourceError(ImccRefusal):
     """Raised when a condensate reference is not a packaged table id."""
 
     code = "imcc_gas_unrecognized_source"
+
+
+def element_to_parent_oxide(
+    element: str, amount_mol: float
+) -> tuple[str, float, int]:
+    """Convert moles of an element to its registered parent-oxide formula units.
+
+    The returned tuple is ``(oxide, oxide_amount_mol, cations_per_formula)``;
+    the oxide amount is ``amount_mol / cations_per_formula``. This returns
+    AMOUNTS on the oxide basis, NOT activities. The caller still needs the melt
+    model to obtain the oxide activity.
+    """
+    if not isinstance(element, str):
+        raise ImccComponentOutsideDomainError(
+            f"element {element!r} has no unique registered parent oxide"
+        )
+
+    parent_oxides = set(IMCC_PARENT_OXIDES)
+    for item in supported_trace_oxides():
+        rule = trace_component_rule(item.oxide)
+        if rule is not None and rule.gas_parent_oxide == item.oxide:
+            parent_oxides.add(item.oxide)
+
+    matches = []
+    for oxide in parent_oxides:
+        if not oxide.startswith(element):
+            continue
+        suffix = oxide[len(element):]
+        if re.fullmatch(r"\d*O\d*", suffix) is None:
+            continue
+        counts = _single_cation_oxide_counts(oxide)
+        if counts is not None:
+            matches.append((oxide, counts[0]))
+    if len(matches) != 1:
+        raise ImccComponentOutsideDomainError(
+            f"element {element!r} has no unique registered parent oxide"
+        )
+    oxide, cations_per_formula = matches[0]
+    if not is_declared_real_scalar(amount_mol):
+        raise ImccCompositionIncompleteError(
+            f"element amount for {element} must be a finite non-negative number"
+        )
+    try:
+        amount = float(amount_mol)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ImccCompositionIncompleteError(
+            f"element amount for {element} must be a finite non-negative number"
+        ) from exc
+    if not math.isfinite(amount) or amount < 0.0:
+        raise ImccCompositionIncompleteError(
+            f"element amount for {element} must be a finite non-negative number"
+        )
+    return oxide, amount / cations_per_formula, cations_per_formula
 
 
 class ImccGasEquilibriumRangeError(ImccRefusal):
@@ -3840,23 +3895,21 @@ def evaluate_gas(
         composition_moles, _ = trace_fractions_from_wt(melt_composition)
         composition_moles = dict(composition_moles)
         # Convert elemental inputs onto the oxide formula-unit basis before
-        # resolving their gas parents: 2 Li + O -> Li2O gives n(Li2O)=n(Li)/2;
-        # Zn + O -> ZnO gives n(ZnO)=n(Zn). When both forms are present, their
+        # resolving their gas parents. When both forms are present, their
         # amounts add on that formula-unit basis. The oxide-equivalent weight
         # adds oxygen mass before formula-mole normalization. The gas parent is
         # the redox free-species activity, not the total formula fraction.
         # Sanity: the reviewer's 0.05 wt% Li hand check gives a(Li2O)=6.10e-7
         # (apparent gamma=2.8e-4) because Li sits in Li2SiO3.
-        for element, oxide, cations_per_oxide in (
-            ("Li", "Li2O", 2),
-            ("Zn", "ZnO", 1),
-        ):
+        for element in ("Li", "Zn"):
             if element not in melt_composition:
                 continue
+            element_moles = composition_moles.pop(element)
+            oxide, oxide_moles, cations_per_oxide = element_to_parent_oxide(
+                element, element_moles
+            )
             oxide_rule = trace_component_rule(oxide)
             assert oxide_rule is not None
-            element_moles = composition_moles.pop(element)
-            oxide_moles = element_moles / cations_per_oxide
             composition_moles[oxide] = (
                 composition_moles.get(oxide, 0.0) + oxide_moles
             )

@@ -10,6 +10,7 @@ import pytest
 from openimcc import (
     ImccTraceLimitExceededError,
     ImccTraceMajorBiasError,
+    element_to_parent_oxide,
     evaluate,
     load_datapack,
     supported_trace_oxides,
@@ -1835,6 +1836,11 @@ def test_gas_trace_parents_use_gas_standards_or_refuse(packaged_gas_pack) -> Non
         oxide_mass = trace_component_rule(oxide).molar_mass_g_mol
         element_amount = 0.05
         oxide_amount = 0.05
+        converted_oxide, oxide_moles, converted_cations = element_to_parent_oxide(
+            element, element_amount / element_mass
+        )
+        assert converted_oxide == oxide
+        assert converted_cations == cations_per_oxide
         combined = evaluate_gas(
             {},
             1800.0,
@@ -1858,6 +1864,22 @@ def test_gas_trace_parents_use_gas_standards_or_refuse(packaged_gas_pack) -> Non
                 / (cations_per_oxide * element_mass),
             },
         )
+        element_only = evaluate_gas(
+            {},
+            1800.0,
+            1.0e-8,
+            packaged_gas_pack,
+            composition_wt_pct={**base, element: element_amount},
+            gas_species=(species,),
+        )
+        baseline_pressure = {
+            "Li": 1.42369622857686e-06,
+            "Zn": 0.022852842899383257,
+        }[element]
+        assert element_only[species] == baseline_pressure
+        assert oxide_moles * oxide_mass == pytest.approx(
+            element_amount * oxide_mass / (cations_per_oxide * element_mass)
+        )
         flag = combined.domain_flags[species]
         assert isinstance(flag, TraceActivityFlag)
         assert flag.estimates[0].oxide == oxide
@@ -1865,6 +1887,25 @@ def test_gas_trace_parents_use_gas_standards_or_refuse(packaged_gas_pack) -> Non
         assert combined[species] == pytest.approx(
             oxide_equivalent[species], rel=1.0e-12
         )
+
+
+@pytest.mark.parametrize(
+    ("element", "amount_mol", "expected"),
+    (
+        ("Li", 6.0, ("Li2O", 3.0, 2)),
+        ("Zn", 6.0, ("ZnO", 6.0, 1)),
+        ("Yb", 6.0, ("Yb2O3", 3.0, 2)),
+    ),
+)
+def test_element_to_parent_oxide_returns_formula_units_and_stoichiometry(
+    element: str, amount_mol: float, expected: tuple[str, float, int]
+) -> None:
+    assert element_to_parent_oxide(element, amount_mol) == expected
+
+
+def test_element_to_parent_oxide_rejects_unknown_element() -> None:
+    with pytest.raises(ImccComponentOutsideDomainError, match="parent oxide"):
+        element_to_parent_oxide("Xx", 1.0)
 
 
 def test_sulfur_fragment_keeps_s2_when_so3_is_also_present(packaged_gas_pack) -> None:

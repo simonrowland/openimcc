@@ -86,6 +86,12 @@ Each omission names the affected major, its bound, and the 0.01 dex cap. This
 is a deliberate validity gate for trace-bearing compositions; it does not
 change the caller-supplied major activities or the retained silicon channels.
 
+`openimcc.element_to_parent_oxide(element, amount_mol)` converts moles of a
+registered element to its parent-oxide formula-unit amount and returns the
+oxide name, amount in moles, and cations per oxide formula unit. The returned
+value is an amount on the oxide basis, not an activity; use the melt model to
+obtain the oxide activity.
+
 The reported derived-property checks are documented in [Diagnostics](docs/diagnostics.md).
 
 ## Reproducibility receipt

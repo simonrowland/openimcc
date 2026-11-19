@@ -196,6 +196,7 @@ _GAS_EXPORTS = frozenset({
     "gas_species_provenance",
     "load_gas_datapack",
     "species_thermo",
+    "element_to_parent_oxide",
 })
 
 if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
@@ -233,6 +234,7 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         R_J_MOL_K,
         SpeciesThermo,
         default_gas_channels,
+        element_to_parent_oxide,
         evaluate_gas,
         evaluate_gas_oxygen_balance,
         evaluate_gas_saturation,
@@ -430,6 +432,7 @@ __all__ = [
     "liquid_reference_authority",
     "liquid_reference_records",
     "default_gas_channels",
+    "element_to_parent_oxide",
     # BAR is exported on purpose. evaluate_gas returns pressures in BAR while
     # the simulator's own vapour layer returns Pa -- exactly 5 dex apart. That
     # difference is invisible in a log-residual table, so the unit belongs at
