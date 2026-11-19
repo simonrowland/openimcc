@@ -405,6 +405,7 @@ class TraceActivityEstimate:
     violated_axes: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
     dependency_axes: tuple[str, ...] = ()
+    source_row_id: str | None = None
 
 
 class TraceActivityFlag(str):
@@ -1059,6 +1060,7 @@ def _resolve_trace_activity(
                 result.source_mole_fraction,
                 violated_axes=result.notice.violated_axes,
                 limitations=result.notice.limitations,
+                source_row_id=result.row,
             ),
             None,
             None,

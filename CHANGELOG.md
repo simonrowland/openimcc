@@ -4,6 +4,7 @@
 
 ### Trace activity coefficients
 
+- Review-γ trace activity estimates now carry the selected fragment row id.
 - Added a source-bounded MoO3 review-γ estimate on the pure-liquid MoO3
   standard using O'Neill & Eggins (2002), Table 8's CMAS composition law.
 

@@ -8,7 +8,12 @@ from pathlib import Path
 import pytest
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
-from openimcc import evaluate, load_datapack, supported_trace_oxides
+from openimcc import (
+    coefficient_ancestry,
+    evaluate,
+    load_datapack,
+    supported_trace_oxides,
+)
 from openimcc.activity_fragments import load_activity_fragment
 import openimcc.activity_fragments as activity_fragments
 from openimcc.gas import (
@@ -662,6 +667,57 @@ def test_temperature_selects_cu_row_and_family_only_appears_as_a_flag() -> None:
     assert "The melt-family label is a screen flag, not the temperature-row selector." in expected.reference
 
 
+@pytest.mark.parametrize(
+    ("temperature", "row_id"),
+    ((1573.0, "CuO0.5-1573K"), (1923.0, "CuO0.5-1923K")),
+)
+def test_cu_trace_estimate_reports_the_selected_ancestry_row(
+    temperature: float, row_id: str
+) -> None:
+    composition = {
+        "FeO": 1.0,
+        "CaO": 1.0,
+        "Al2O3": 1.0,
+        "MgO": 1.0,
+        "SiO2": 2.0,
+        "Cu2O": 0.001,
+    }
+    estimate = resolve_trace_activity("Cu2O", 0.001, composition, temperature)
+    ancestry = coefficient_ancestry("openimcc-review-gamma-activity.v1:cu")
+
+    assert estimate.source_row_id == row_id
+    assert row_id in {row["id"] for row in ancestry["rows"]}
+
+
+def test_sn_trace_estimate_reports_the_selected_ancestry_row() -> None:
+    composition = {
+        "FeO": 1.0,
+        "CaO": 1.0,
+        "SiO2": 2.0,
+        "SnO": 0.001,
+    }
+    estimate = resolve_trace_activity("SnO", 0.001, composition, 1573.0)
+    ancestry = coefficient_ancestry("openimcc-review-gamma-activity.v1:sn")
+
+    assert estimate.source_row_id == "SnO-FCS-1573K"
+    assert estimate.source_row_id in {row["id"] for row in ancestry["rows"]}
+
+
+def test_multirow_review_gamma_fragment_ids_resolve_in_coefficient_ancestry() -> None:
+    prefix = "openimcc-review-gamma-activity.v1:"
+    for artifact in coefficient_ancestry():
+        identity = artifact["identity"]
+        if not identity.startswith(prefix):
+            continue
+        element = identity.removeprefix(prefix).capitalize()
+        source_rows = load_activity_fragment(element)["rows"]
+        if len(source_rows) < 2:
+            continue
+        manifest_row_ids = {row["id"] for row in artifact["rows"]}
+
+        assert {row["row"] for row in source_rows} <= manifest_row_ids
+
+
 def test_gas_estimate_and_flag_expose_source_fraction_and_endpoint_band() -> None:
     composition = {"FeO": 1.0, "CaO": 1.0, "Al2O3": 1.0, "MgO": 1.0, "SiO2": 2.0, "Cu2O": 0.001}
     rule = trace_component_rule("Cu2O")
@@ -675,6 +731,7 @@ def test_gas_estimate_and_flag_expose_source_fraction_and_endpoint_band() -> Non
     flag = TraceActivityFlag(estimate, context="gas")
     assert flag.activity_range == estimate.activity_range
     assert flag.x_source == estimate.x_source
+    assert flag.estimates[0].source_row_id == "CuO0.5-1573K"
     assert f"activity_range=[{estimate.activity_range[0]:.12g}," in str(flag)
     assert f"x_source={estimate.x_source:.12g}" in str(flag)
 
