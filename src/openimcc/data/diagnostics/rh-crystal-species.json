@@ -1,0 +1,1419 @@
+{
+  "schema": "openimcc-rh-crystal-species-v1",
+  "source": {
+    "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+    "doi": "10.3133/b2131",
+    "pdf_url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+    "transcription": "Printed formation tables transcribed from the official PDF. Each row retains its printed page, temperature, and PDF text line locator.",
+    "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+    "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2"
+  },
+  "transformation": "Use the printed (H-H298)/T and S columns to form Hinc=T*(H-H298)/T, then interpolate Hinc and S linearly between source nodes. Runtime Gapp=1000*(ΔfH298+Hinc)-T*S. Printed ΔfG and log Kf are retained for source checks; no fitted Cp polynomial is used.",
+  "selection_rule": "Select the lowest apparent G among phases in this R&H dataset only. Existing condensate, JANAF, Barin, and Berman sources retain precedence.",
+  "phases": [
+    {
+      "id": "kyanite",
+      "formula": "Al2SiO5",
+      "source_formula_as_published": "Al2SiO5",
+      "source_title": "Kyanite",
+      "source_table_id": "USGS-B2131-p304",
+      "source_authority": "published_transcribed",
+      "source_temperature_K": [
+        298.15,
+        1800
+      ],
+      "valid_temperature_K": [
+        298.15,
+        1800
+      ],
+      "formation_enthalpy_298_kJ_mol": -2593.8,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "298.15": 0.0,
+        "300": 0.225,
+        "400": 13.936,
+        "500": 29.72,
+        "600": 46.812,
+        "700": 64.813,
+        "800": 83.488,
+        "900": 102.681,
+        "1000": 122.29,
+        "1100": 142.23,
+        "1200": 162.444,
+        "1300": 182.884,
+        "1400": 203.518,
+        "1500": 224.31,
+        "1600": 245.248,
+        "1700": 266.305,
+        "1800": 287.46
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "298.15": 82.8,
+        "300": 83.55,
+        "400": 122.81,
+        "500": 157.97,
+        "600": 189.1,
+        "700": 216.84,
+        "800": 241.77,
+        "900": 264.37,
+        "1000": 285.02,
+        "1100": 304.02,
+        "1200": 321.61,
+        "1300": 337.97,
+        "1400": 353.26,
+        "1500": 367.61,
+        "1600": 381.12,
+        "1700": 393.88,
+        "1800": 405.97
+      },
+      "source_crystal_formation_enthalpy_nodes_kJ_mol": {
+        "298.15": -2593.8,
+        "300": -2593.8,
+        "400": -2594.7,
+        "500": -2594.1,
+        "600": -2592.7,
+        "700": -2591.0,
+        "800": -2589.2,
+        "900": -2587.3,
+        "1000": -2606.8,
+        "1100": -2604.6,
+        "1200": -2602.3,
+        "1300": -2599.9,
+        "1400": -2597.5,
+        "1500": -2595.0,
+        "1600": -2592.5,
+        "1700": -2640.1,
+        "1800": -2637.3
+      },
+      "source_crystal_gibbs_nodes_kJ_mol": {
+        "298.15": -2443.1,
+        "300": -2442.2,
+        "400": -2391.4,
+        "500": -2340.6,
+        "600": -2290.1,
+        "700": -2239.8,
+        "800": -2189.7,
+        "900": -2139.9,
+        "1000": -2088.8,
+        "1100": -2037.1,
+        "1200": -1985.6,
+        "1300": -1934.2,
+        "1400": -1883.2,
+        "1500": -1832.2,
+        "1600": -1781.5,
+        "1700": -1730.4,
+        "1800": -1677.0
+      },
+      "source_crystal_log10_Kf_nodes": {
+        "298.15": 428.01,
+        "300": 425.21,
+        "400": 312.28,
+        "500": 244.52,
+        "600": 199.36,
+        "700": 167.13,
+        "800": 142.97,
+        "900": 124.19,
+        "1000": 109.11,
+        "1100": 96.73,
+        "1200": 86.43,
+        "1300": 77.72,
+        "1400": 70.26,
+        "1500": 63.8,
+        "1600": 58.16,
+        "1700": 53.17,
+        "1800": 48.66
+      },
+      "source_row_locators": {
+        "298.15": {
+          "page": 304,
+          "row": "298.15 K",
+          "pdf_text_line": 14453
+        },
+        "300": {
+          "page": 304,
+          "row": "300 K",
+          "pdf_text_line": 14456
+        },
+        "400": {
+          "page": 304,
+          "row": "400 K",
+          "pdf_text_line": 14459
+        },
+        "500": {
+          "page": 304,
+          "row": "500 K",
+          "pdf_text_line": 14462
+        },
+        "600": {
+          "page": 304,
+          "row": "600 K",
+          "pdf_text_line": 14465
+        },
+        "700": {
+          "page": 304,
+          "row": "700 K",
+          "pdf_text_line": 14468
+        },
+        "800": {
+          "page": 304,
+          "row": "800 K",
+          "pdf_text_line": 14471
+        },
+        "900": {
+          "page": 304,
+          "row": "900 K",
+          "pdf_text_line": 14474
+        },
+        "1000": {
+          "page": 304,
+          "row": "1000 K",
+          "pdf_text_line": 14477
+        },
+        "1100": {
+          "page": 304,
+          "row": "1100 K",
+          "pdf_text_line": 14480
+        },
+        "1200": {
+          "page": 304,
+          "row": "1200 K",
+          "pdf_text_line": 14483
+        },
+        "1300": {
+          "page": 304,
+          "row": "1300 K",
+          "pdf_text_line": 14486
+        },
+        "1400": {
+          "page": 304,
+          "row": "1400 K",
+          "pdf_text_line": 14489
+        },
+        "1500": {
+          "page": 304,
+          "row": "1500 K",
+          "pdf_text_line": 14492
+        },
+        "1600": {
+          "page": 304,
+          "row": "1600 K",
+          "pdf_text_line": 14495
+        },
+        "1700": {
+          "page": 304,
+          "row": "1700 K",
+          "pdf_text_line": 14498
+        },
+        "1800": {
+          "page": 304,
+          "row": "1800 K",
+          "pdf_text_line": 14501
+        }
+      },
+      "source": {
+        "authors": "Robie and Hemingway",
+        "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+        "doi": "10.3133/b2131",
+        "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+        "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+        "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2",
+        "printed_page": 304,
+        "printed_phase_description": "Al₂SiO₅: Triclinic crystals 298.15 to 1800 K.",
+        "source_locator": "USGS Bulletin 2131, p. 304, Kyanite, Formation from the Elements table"
+      }
+    },
+    {
+      "id": "andalusite",
+      "formula": "Al2SiO5",
+      "source_formula_as_published": "Al2SiO5",
+      "source_title": "Andalusite",
+      "source_table_id": "USGS-B2131-p305",
+      "source_authority": "published_transcribed",
+      "source_temperature_K": [
+        298.15,
+        1800
+      ],
+      "valid_temperature_K": [
+        298.15,
+        1800
+      ],
+      "formation_enthalpy_298_kJ_mol": -2589.9,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "298.15": 0.0,
+        "300": 0.228,
+        "400": 13.992,
+        "500": 29.77,
+        "600": 46.83,
+        "700": 64.785,
+        "800": 83.4,
+        "900": 102.528,
+        "1000": 122.07,
+        "1100": 141.944,
+        "1200": 162.084,
+        "1300": 182.468,
+        "1400": 203.028,
+        "1500": 223.77,
+        "1600": 244.64,
+        "1700": 265.642,
+        "1800": 286.74
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "298.15": 91.39,
+        "300": 92.15,
+        "400": 131.57,
+        "500": 166.71,
+        "600": 197.79,
+        "700": 225.45,
+        "800": 250.3,
+        "900": 272.83,
+        "1000": 293.41,
+        "1100": 312.35,
+        "1200": 329.88,
+        "1300": 346.18,
+        "1400": 361.43,
+        "1500": 375.73,
+        "1600": 389.2,
+        "1700": 401.93,
+        "1800": 413.99
+      },
+      "source_crystal_formation_enthalpy_nodes_kJ_mol": {
+        "298.15": -2589.9,
+        "300": -2589.9,
+        "400": -2590.7,
+        "500": -2590.1,
+        "600": -2588.8,
+        "700": -2587.2,
+        "800": -2585.4,
+        "900": -2583.6,
+        "1000": -2603.1,
+        "1100": -2601.0,
+        "1200": -2598.8,
+        "1300": -2596.4,
+        "1400": -2594.1,
+        "1500": -2591.6,
+        "1600": -2589.2,
+        "1700": -2636.8,
+        "1800": -2634.1
+      },
+      "source_crystal_gibbs_nodes_kJ_mol": {
+        "298.15": -2441.8,
+        "300": -2440.8,
+        "400": -2391.0,
+        "500": -2341.1,
+        "600": -2291.4,
+        "700": -2241.9,
+        "800": -2192.7,
+        "900": -2143.8,
+        "1000": -2093.5,
+        "1100": -2042.6,
+        "1200": -1992.0,
+        "1300": -1941.4,
+        "1400": -1891.2,
+        "1500": -1841.1,
+        "1600": -1791.1,
+        "1700": -1740.8,
+        "1800": -1688.2
+      },
+      "source_crystal_log10_Kf_nodes": {
+        "298.15": 427.77,
+        "300": 424.98,
+        "400": 312.22,
+        "500": 244.56,
+        "600": 199.48,
+        "700": 167.29,
+        "800": 143.17,
+        "900": 124.42,
+        "1000": 109.35,
+        "1100": 96.99,
+        "1200": 86.71,
+        "1300": 78.01,
+        "1400": 70.56,
+        "1500": 64.11,
+        "1600": 58.47,
+        "1700": 53.49,
+        "1800": 48.99
+      },
+      "source_row_locators": {
+        "298.15": {
+          "page": 305,
+          "row": "298.15 K",
+          "pdf_text_line": 14543
+        },
+        "300": {
+          "page": 305,
+          "row": "300 K",
+          "pdf_text_line": 14544
+        },
+        "400": {
+          "page": 305,
+          "row": "400 K",
+          "pdf_text_line": 14545
+        },
+        "500": {
+          "page": 305,
+          "row": "500 K",
+          "pdf_text_line": 14546
+        },
+        "600": {
+          "page": 305,
+          "row": "600 K",
+          "pdf_text_line": 14547
+        },
+        "700": {
+          "page": 305,
+          "row": "700 K",
+          "pdf_text_line": 14548
+        },
+        "800": {
+          "page": 305,
+          "row": "800 K",
+          "pdf_text_line": 14549
+        },
+        "900": {
+          "page": 305,
+          "row": "900 K",
+          "pdf_text_line": 14550
+        },
+        "1000": {
+          "page": 305,
+          "row": "1000 K",
+          "pdf_text_line": 14551
+        },
+        "1100": {
+          "page": 305,
+          "row": "1100 K",
+          "pdf_text_line": 14552
+        },
+        "1200": {
+          "page": 305,
+          "row": "1200 K",
+          "pdf_text_line": 14553
+        },
+        "1300": {
+          "page": 305,
+          "row": "1300 K",
+          "pdf_text_line": 14554
+        },
+        "1400": {
+          "page": 305,
+          "row": "1400 K",
+          "pdf_text_line": 14555
+        },
+        "1500": {
+          "page": 305,
+          "row": "1500 K",
+          "pdf_text_line": 14556
+        },
+        "1600": {
+          "page": 305,
+          "row": "1600 K",
+          "pdf_text_line": 14557
+        },
+        "1700": {
+          "page": 305,
+          "row": "1700 K",
+          "pdf_text_line": 14558
+        },
+        "1800": {
+          "page": 305,
+          "row": "1800 K",
+          "pdf_text_line": 14559
+        }
+      },
+      "source": {
+        "authors": "Robie and Hemingway",
+        "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+        "doi": "10.3133/b2131",
+        "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+        "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+        "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2",
+        "printed_page": 305,
+        "printed_phase_description": "Al₂SiO₅: Orthorhombic crystals 298.15 to 1800 K.",
+        "source_locator": "USGS Bulletin 2131, p. 305, Andalusite, Formation from the Elements table"
+      }
+    },
+    {
+      "id": "sillimanite",
+      "formula": "Al2SiO5",
+      "source_formula_as_published": "Al2SiO5",
+      "source_title": "Sillimanite",
+      "source_table_id": "USGS-B2131-p306",
+      "source_authority": "published_transcribed",
+      "source_temperature_K": [
+        298.15,
+        1800
+      ],
+      "valid_temperature_K": [
+        298.15,
+        1800
+      ],
+      "formation_enthalpy_298_kJ_mol": -2586.1,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "298.15": 0.0,
+        "300": 0.228,
+        "400": 14.004,
+        "500": 29.7,
+        "600": 46.638,
+        "700": 64.463,
+        "800": 82.96,
+        "900": 101.961,
+        "1000": 121.39,
+        "1100": 141.152,
+        "1200": 161.196,
+        "1300": 181.48,
+        "1400": 201.964,
+        "1500": 222.615,
+        "1600": 243.408,
+        "1700": 264.333,
+        "1800": 285.372
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "298.15": 95.4,
+        "300": 96.17,
+        "400": 135.63,
+        "500": 170.58,
+        "600": 201.44,
+        "700": 228.91,
+        "800": 253.59,
+        "900": 275.97,
+        "1000": 296.44,
+        "1100": 315.27,
+        "1200": 332.71,
+        "1300": 348.94,
+        "1400": 364.12,
+        "1500": 378.37,
+        "1600": 391.79,
+        "1700": 404.47,
+        "1800": 416.5
+      },
+      "source_crystal_formation_enthalpy_nodes_kJ_mol": {
+        "298.15": -2586.1,
+        "300": -2586.1,
+        "400": -2586.9,
+        "500": -2586.4,
+        "600": -2585.2,
+        "700": -2583.7,
+        "800": -2582.0,
+        "900": -2580.4,
+        "1000": -2598.0,
+        "1100": -2598.0,
+        "1200": -2595.9,
+        "1300": -2593.6,
+        "1400": -2591.4,
+        "1500": -2589.0,
+        "1600": -2586.6,
+        "1700": -2634.3,
+        "1800": -2631.7
+      },
+      "source_crystal_gibbs_nodes_kJ_mol": {
+        "298.15": -2439.1,
+        "300": -2438.2,
+        "400": -2388.8,
+        "500": -2339.3,
+        "600": -2289.9,
+        "700": -2240.9,
+        "800": -2192.0,
+        "900": -2143.4,
+        "1000": -2093.4,
+        "1100": -2042.8,
+        "1200": -1992.5,
+        "1300": -1942.2,
+        "1400": -1892.3,
+        "1500": -1842.3,
+        "1600": -1792.7,
+        "1700": -1742.6,
+        "1800": -1690.3
+      },
+      "source_crystal_log10_Kf_nodes": {
+        "298.15": 427.32,
+        "300": 424.52,
+        "400": 311.93,
+        "500": 244.38,
+        "600": 199.35,
+        "700": 167.21,
+        "800": 143.12,
+        "900": 124.39,
+        "1000": 109.35,
+        "1100": 97.0,
+        "1200": 86.73,
+        "1300": 78.04,
+        "1400": 70.6,
+        "1500": 64.16,
+        "1600": 58.52,
+        "1700": 53.54,
+        "1800": 49.05
+      },
+      "source_row_locators": {
+        "298.15": {
+          "page": 306,
+          "row": "298.15 K",
+          "pdf_text_line": 14606
+        },
+        "300": {
+          "page": 306,
+          "row": "300 K",
+          "pdf_text_line": 14607
+        },
+        "400": {
+          "page": 306,
+          "row": "400 K",
+          "pdf_text_line": 14608
+        },
+        "500": {
+          "page": 306,
+          "row": "500 K",
+          "pdf_text_line": 14609
+        },
+        "600": {
+          "page": 306,
+          "row": "600 K",
+          "pdf_text_line": 14610
+        },
+        "700": {
+          "page": 306,
+          "row": "700 K",
+          "pdf_text_line": 14611
+        },
+        "800": {
+          "page": 306,
+          "row": "800 K",
+          "pdf_text_line": 14612
+        },
+        "900": {
+          "page": 306,
+          "row": "900 K",
+          "pdf_text_line": 14613
+        },
+        "1000": {
+          "page": 306,
+          "row": "1000 K",
+          "pdf_text_line": 14614
+        },
+        "1100": {
+          "page": 306,
+          "row": "1100 K",
+          "pdf_text_line": 14615
+        },
+        "1200": {
+          "page": 306,
+          "row": "1200 K",
+          "pdf_text_line": 14616
+        },
+        "1300": {
+          "page": 306,
+          "row": "1300 K",
+          "pdf_text_line": 14617
+        },
+        "1400": {
+          "page": 306,
+          "row": "1400 K",
+          "pdf_text_line": 14618
+        },
+        "1500": {
+          "page": 306,
+          "row": "1500 K",
+          "pdf_text_line": 14619
+        },
+        "1600": {
+          "page": 306,
+          "row": "1600 K",
+          "pdf_text_line": 14620
+        },
+        "1700": {
+          "page": 306,
+          "row": "1700 K",
+          "pdf_text_line": 14621
+        },
+        "1800": {
+          "page": 306,
+          "row": "1800 K",
+          "pdf_text_line": 14622
+        }
+      },
+      "source": {
+        "authors": "Robie and Hemingway",
+        "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+        "doi": "10.3133/b2131",
+        "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+        "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+        "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2",
+        "printed_page": 306,
+        "printed_phase_description": "Al₂SiO₅: Orthorhombic crystals 298.15 to 1800 K.",
+        "source_locator": "USGS Bulletin 2131, p. 306, Sillimanite, Formation from the Elements table"
+      }
+    },
+    {
+      "id": "larnite",
+      "formula": "Ca2SiO4",
+      "source_formula_as_published": "α-Ca₂SiO₄",
+      "source_title": "Larnite",
+      "source_table_id": "USGS-B2131-p324",
+      "source_authority": "published_transcribed",
+      "source_temperature_K": [
+        298.15,
+        1800
+      ],
+      "valid_temperature_K": [
+        298.15,
+        1800
+      ],
+      "formation_enthalpy_298_kJ_mol": -2306.7,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "298.15": 0.0,
+        "300": 0.237,
+        "400": 14.008,
+        "500": 29.105,
+        "600": 45.144,
+        "700": 61.88,
+        "800": 79.176,
+        "900": 96.921,
+        "1000": 115.05,
+        "1100": 133.485,
+        "1200": 152.208,
+        "1300": 171.158,
+        "1400": 190.33,
+        "1500": 209.685,
+        "1600": 229.216,
+        "1700": 248.897,
+        "1800": 289.08
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "298.15": 127.6,
+        "300": 128.4,
+        "400": 167.89,
+        "500": 201.54,
+        "600": 230.76,
+        "700": 256.55,
+        "800": 279.63,
+        "900": 300.53,
+        "1000": 319.64,
+        "1100": 337.21,
+        "1200": 353.5,
+        "1300": 368.67,
+        "1400": 382.87,
+        "1500": 396.23,
+        "1600": 408.83,
+        "1700": 420.76,
+        "1800": 444.84
+      },
+      "source_crystal_formation_enthalpy_nodes_kJ_mol": {
+        "298.15": -2306.7,
+        "300": -2306.7,
+        "400": -2306.3,
+        "500": -2305.1,
+        "600": -2303.6,
+        "700": -2302.1,
+        "800": -2302.4,
+        "900": -2301.1,
+        "1000": -2300.1,
+        "1100": -2299.6,
+        "1200": -2315.0,
+        "1300": -2313.0,
+        "1400": -2310.8,
+        "1500": -2308.6,
+        "1600": -2306.3,
+        "1700": -2354.1,
+        "1800": -2628.4
+      },
+      "source_crystal_gibbs_nodes_kJ_mol": {
+        "298.15": -2191.2,
+        "300": -2190.5,
+        "400": -2151.8,
+        "500": -2113.3,
+        "600": -2075.1,
+        "700": -2037.1,
+        "800": -1999.2,
+        "900": -1961.4,
+        "1000": -1923.7,
+        "1100": -1886.1,
+        "1200": -1847.2,
+        "1300": -1808.3,
+        "1400": -1769.6,
+        "1500": -1731.0,
+        "1600": -1692.6,
+        "1700": -1653.8,
+        "1800": -1610.9
+      },
+      "source_crystal_log10_Kf_nodes": {
+        "298.15": 383.88,
+        "300": 381.39,
+        "400": 280.99,
+        "500": 220.77,
+        "600": 180.65,
+        "700": 152.01,
+        "800": 130.53,
+        "900": 113.83,
+        "1000": 100.48,
+        "1100": 89.56,
+        "1200": 80.41,
+        "1300": 72.66,
+        "1400": 66.02,
+        "1500": 60.28,
+        "1600": 55.26,
+        "1700": 50.81,
+        "1800": 46.75
+      },
+      "source_row_locators": {
+        "298.15": {
+          "page": 324,
+          "row": "298.15 K",
+          "pdf_text_line": 15625
+        },
+        "300": {
+          "page": 324,
+          "row": "300 K",
+          "pdf_text_line": 15626
+        },
+        "400": {
+          "page": 324,
+          "row": "400 K",
+          "pdf_text_line": 15627
+        },
+        "500": {
+          "page": 324,
+          "row": "500 K",
+          "pdf_text_line": 15628
+        },
+        "600": {
+          "page": 324,
+          "row": "600 K",
+          "pdf_text_line": 15629
+        },
+        "700": {
+          "page": 324,
+          "row": "700 K",
+          "pdf_text_line": 15630
+        },
+        "800": {
+          "page": 324,
+          "row": "800 K",
+          "pdf_text_line": 15631
+        },
+        "900": {
+          "page": 324,
+          "row": "900 K",
+          "pdf_text_line": 15632
+        },
+        "1000": {
+          "page": 324,
+          "row": "1000 K",
+          "pdf_text_line": 15633
+        },
+        "1100": {
+          "page": 324,
+          "row": "1100 K",
+          "pdf_text_line": 15634
+        },
+        "1200": {
+          "page": 324,
+          "row": "1200 K",
+          "pdf_text_line": 15635
+        },
+        "1300": {
+          "page": 324,
+          "row": "1300 K",
+          "pdf_text_line": 15636
+        },
+        "1400": {
+          "page": 324,
+          "row": "1400 K",
+          "pdf_text_line": 15637
+        },
+        "1500": {
+          "page": 324,
+          "row": "1500 K",
+          "pdf_text_line": 15638
+        },
+        "1600": {
+          "page": 324,
+          "row": "1600 K",
+          "pdf_text_line": 15639
+        },
+        "1700": {
+          "page": 324,
+          "row": "1700 K",
+          "pdf_text_line": 15640
+        },
+        "1800": {
+          "page": 324,
+          "row": "1800 K",
+          "pdf_text_line": 15641
+        }
+      },
+      "source": {
+        "authors": "Robie and Hemingway",
+        "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+        "doi": "10.3133/b2131",
+        "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+        "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+        "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2",
+        "printed_page": 324,
+        "printed_phase_description": "α-Ca₂SiO₄: Monoclinic crystals 298.15 to 1000 K. Bredigite (α′) is the stable modification of Ca₂SiO₄ between 970 and 1710 K. α-crystals 1710 to 1800 K.",
+        "source_locator": "USGS Bulletin 2131, p. 324, Larnite, Formation from the Elements table"
+      },
+      "source_formula_note": "The engine formula follows the requested stoichiometry."
+    },
+    {
+      "id": "calcio-olivine",
+      "formula": "Ca2SiO4",
+      "source_formula_as_published": "γ-Ca₂SiO₄",
+      "source_title": "Calcio-olivine",
+      "source_table_id": "USGS-B2131-p325",
+      "source_authority": "published_transcribed",
+      "source_temperature_K": [
+        298.15,
+        1200
+      ],
+      "valid_temperature_K": [
+        298.15,
+        1200
+      ],
+      "formation_enthalpy_298_kJ_mol": -2316.5,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "298.15": 0.0,
+        "300": 0.234,
+        "400": 13.756,
+        "500": 28.435,
+        "600": 43.956,
+        "700": 60.186,
+        "800": 77.056,
+        "900": 94.527,
+        "1000": 112.57,
+        "1100": 131.186,
+        "1200": 150.348
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "298.15": 120.5,
+        "300": 121.29,
+        "400": 160.08,
+        "500": 192.8,
+        "600": 221.08,
+        "700": 246.09,
+        "800": 268.6,
+        "900": 289.17,
+        "1000": 308.18,
+        "1100": 325.91,
+        "1200": 342.58
+      },
+      "source_crystal_formation_enthalpy_nodes_kJ_mol": {
+        "298.15": -2316.5,
+        "300": -2316.5,
+        "400": -2316.3,
+        "500": -2315.5,
+        "600": -2314.6,
+        "700": -2313.6,
+        "800": -2314.3,
+        "900": -2313.3,
+        "1000": -2312.4,
+        "1100": -2311.7,
+        "1200": -2326.7
+      },
+      "source_crystal_gibbs_nodes_kJ_mol": {
+        "298.15": -2198.9,
+        "300": -2198.2,
+        "400": -2158.7,
+        "500": -2119.4,
+        "600": -2080.3,
+        "700": -2041.3,
+        "800": -2002.3,
+        "900": -1963.3,
+        "1000": -1924.5,
+        "1100": -1885.7,
+        "1200": -1845.8
+      },
+      "source_crystal_log10_Kf_nodes": {
+        "298.15": 385.23,
+        "300": 382.73,
+        "400": 281.9,
+        "500": 221.41,
+        "600": 181.1,
+        "700": 152.32,
+        "800": 130.73,
+        "900": 113.95,
+        "1000": 100.52,
+        "1100": 89.54,
+        "1200": 80.34
+      },
+      "source_row_locators": {
+        "298.15": {
+          "page": 325,
+          "row": "298.15 K",
+          "pdf_text_line": 15681
+        },
+        "300": {
+          "page": 325,
+          "row": "300 K",
+          "pdf_text_line": 15682
+        },
+        "400": {
+          "page": 325,
+          "row": "400 K",
+          "pdf_text_line": 15683
+        },
+        "500": {
+          "page": 325,
+          "row": "500 K",
+          "pdf_text_line": 15684
+        },
+        "600": {
+          "page": 325,
+          "row": "600 K",
+          "pdf_text_line": 15685
+        },
+        "700": {
+          "page": 325,
+          "row": "700 K",
+          "pdf_text_line": 15686
+        },
+        "800": {
+          "page": 325,
+          "row": "800 K",
+          "pdf_text_line": 15687
+        },
+        "900": {
+          "page": 325,
+          "row": "900 K",
+          "pdf_text_line": 15688
+        },
+        "1000": {
+          "page": 325,
+          "row": "1000 K",
+          "pdf_text_line": 15689
+        },
+        "1100": {
+          "page": 325,
+          "row": "1100 K",
+          "pdf_text_line": 15690
+        },
+        "1200": {
+          "page": 325,
+          "row": "1200 K",
+          "pdf_text_line": 15691
+        }
+      },
+      "source": {
+        "authors": "Robie and Hemingway",
+        "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+        "doi": "10.3133/b2131",
+        "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+        "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+        "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2",
+        "printed_page": 325,
+        "printed_phase_description": "γ-Ca₂SiO₄: Orthorhombic crystals 298.15 to 1200 K.",
+        "source_locator": "USGS Bulletin 2131, p. 325, Calcio-olivine, Formation from the Elements table"
+      },
+      "source_formula_note": "The engine formula follows the requested stoichiometry."
+    },
+    {
+      "id": "kalsilite",
+      "formula": "KAlSiO4",
+      "source_formula_as_published": "KAlSiO₄",
+      "source_title": "Kaliophillite (Kalsilite)",
+      "source_table_id": "USGS-B2131-p369",
+      "source_authority": "published_transcribed",
+      "source_temperature_K": [
+        298.15,
+        1800
+      ],
+      "valid_temperature_K": [
+        298.15,
+        1800
+      ],
+      "formation_enthalpy_298_kJ_mol": -2124.7,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "298.15": 0.0,
+        "300": 0.222,
+        "400": 13.116,
+        "500": 27.51,
+        "600": 43.122,
+        "700": 59.794,
+        "800": 77.416,
+        "900": 95.634,
+        "1000": 113.39,
+        "1100": 131.153,
+        "1200": 148.92,
+        "1300": 166.686,
+        "1400": 184.45,
+        "1500": 202.215,
+        "1600": 219.984,
+        "1700": 237.745,
+        "1800": 255.51
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "298.15": 133.26,
+        "300": 134.0,
+        "400": 170.98,
+        "500": 203.04,
+        "600": 231.47,
+        "700": 257.15,
+        "800": 280.68,
+        "900": 303.87,
+        "1000": 322.58,
+        "1100": 339.52,
+        "1200": 354.97,
+        "1300": 369.19,
+        "1400": 382.36,
+        "1500": 394.61,
+        "1600": 406.08,
+        "1700": 416.85,
+        "1800": 427.0
+      },
+      "source_crystal_formation_enthalpy_nodes_kJ_mol": {
+        "298.15": -2124.7,
+        "300": -2124.7,
+        "400": -2127.9,
+        "500": -2127.6,
+        "600": -2126.5,
+        "700": -2124.6,
+        "800": -2122.1,
+        "900": -2119.4,
+        "1000": -2128.1,
+        "1100": -2205.2,
+        "1200": -2202.5,
+        "1300": -2199.9,
+        "1400": -2197.4,
+        "1500": -2195.0,
+        "1600": -2192.7,
+        "1700": -2240.7,
+        "1800": -2238.3
+      },
+      "source_crystal_gibbs_nodes_kJ_mol": {
+        "298.15": -2008.8,
+        "300": -2008.1,
+        "400": -1968.6,
+        "500": -1928.8,
+        "600": -1889.1,
+        "700": -1849.7,
+        "800": -1810.5,
+        "900": -1773.3,
+        "1000": -1734.2,
+        "1100": -1690.3,
+        "1200": -1643.6,
+        "1300": -1597.2,
+        "1400": -1550.9,
+        "1500": -1504.8,
+        "1600": -1458.9,
+        "1700": -1412.6,
+        "1800": -1364.0
+      },
+      "source_crystal_log10_Kf_nodes": {
+        "298.15": 351.92,
+        "300": 349.62,
+        "400": 257.06,
+        "500": 201.49,
+        "600": 164.46,
+        "700": 138.02,
+        "800": 118.21,
+        "900": 102.92,
+        "1000": 90.59,
+        "1100": 80.27,
+        "1200": 71.54,
+        "1300": 64.17,
+        "1400": 57.87,
+        "1500": 52.4,
+        "1600": 47.63,
+        "1700": 43.4,
+        "1800": 39.58
+      },
+      "source_row_locators": {
+        "298.15": {
+          "page": 369,
+          "row": "298.15 K",
+          "pdf_text_line": 18290
+        },
+        "300": {
+          "page": 369,
+          "row": "300 K",
+          "pdf_text_line": 18291
+        },
+        "400": {
+          "page": 369,
+          "row": "400 K",
+          "pdf_text_line": 18292
+        },
+        "500": {
+          "page": 369,
+          "row": "500 K",
+          "pdf_text_line": 18293
+        },
+        "600": {
+          "page": 369,
+          "row": "600 K",
+          "pdf_text_line": 18294
+        },
+        "700": {
+          "page": 369,
+          "row": "700 K",
+          "pdf_text_line": 18295
+        },
+        "800": {
+          "page": 369,
+          "row": "800 K",
+          "pdf_text_line": 18296
+        },
+        "900": {
+          "page": 369,
+          "row": "900 K",
+          "pdf_text_line": 18297
+        },
+        "1000": {
+          "page": 369,
+          "row": "1000 K",
+          "pdf_text_line": 18298
+        },
+        "1100": {
+          "page": 369,
+          "row": "1100 K",
+          "pdf_text_line": 18299
+        },
+        "1200": {
+          "page": 369,
+          "row": "1200 K",
+          "pdf_text_line": 18300
+        },
+        "1300": {
+          "page": 369,
+          "row": "1300 K",
+          "pdf_text_line": 18301
+        },
+        "1400": {
+          "page": 369,
+          "row": "1400 K",
+          "pdf_text_line": 18302
+        },
+        "1500": {
+          "page": 369,
+          "row": "1500 K",
+          "pdf_text_line": 18303
+        },
+        "1600": {
+          "page": 369,
+          "row": "1600 K",
+          "pdf_text_line": 18304
+        },
+        "1700": {
+          "page": 369,
+          "row": "1700 K",
+          "pdf_text_line": 18305
+        },
+        "1800": {
+          "page": 369,
+          "row": "1800 K",
+          "pdf_text_line": 18306
+        }
+      },
+      "source": {
+        "authors": "Robie and Hemingway",
+        "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+        "doi": "10.3133/b2131",
+        "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+        "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+        "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2",
+        "printed_page": 369,
+        "printed_phase_description": "KAlSiO₄: Hexagonal crystals 298.15 to 810 K. High kaliophillite 810 to 1800 K.",
+        "source_locator": "USGS Bulletin 2131, p. 369, Kaliophillite (Kalsilite), Formation from the Elements table"
+      },
+      "source_formula_note": "The engine formula follows the requested stoichiometry."
+    },
+    {
+      "id": "kaolinite",
+      "formula": "Al2Si2O5(OH)4",
+      "source_formula_as_published": "Al₂Si₂O₅(OH)₂",
+      "source_title": "Kaolinite",
+      "source_table_id": "USGS-B2131-p382",
+      "source_authority": "published_transcribed",
+      "source_temperature_K": [
+        298.15,
+        800
+      ],
+      "valid_temperature_K": [
+        298.15,
+        800
+      ],
+      "formation_enthalpy_298_kJ_mol": -4119.0,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "298.15": 0.0,
+        "300": 0.45,
+        "400": 27.324,
+        "500": 57.765,
+        "600": 90.36,
+        "700": 124.271,
+        "800": 159.08
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "298.15": 200.4,
+        "300": 201.91,
+        "400": 278.9,
+        "500": 346.72,
+        "600": 406.1,
+        "700": 458.35,
+        "800": 504.82
+      },
+      "source_crystal_formation_enthalpy_nodes_kJ_mol": {
+        "298.15": -4119.0,
+        "300": -4119.1,
+        "400": -4120.6,
+        "500": -4119.6,
+        "600": -4117.3,
+        "700": -4114.5,
+        "800": -4111.6
+      },
+      "source_crystal_gibbs_nodes_kJ_mol": {
+        "298.15": -3797.5,
+        "300": -3795.5,
+        "400": -3687.3,
+        "500": -3579.1,
+        "600": -3471.1,
+        "700": -3363.7,
+        "800": -3256.6
+      },
+      "source_crystal_log10_Kf_nodes": {
+        "298.15": 665.29,
+        "300": 660.84,
+        "400": 481.5,
+        "500": 373.89,
+        "600": 302.18,
+        "700": 251.0,
+        "800": 212.63
+      },
+      "source_row_locators": {
+        "298.15": {
+          "page": 382,
+          "row": "298.15 K",
+          "pdf_text_line": 19099
+        },
+        "300": {
+          "page": 382,
+          "row": "300 K",
+          "pdf_text_line": 19109
+        },
+        "400": {
+          "page": 382,
+          "row": "400 K",
+          "pdf_text_line": 19119
+        },
+        "500": {
+          "page": 382,
+          "row": "500 K",
+          "pdf_text_line": 19129
+        },
+        "600": {
+          "page": 382,
+          "row": "600 K",
+          "pdf_text_line": 19139
+        },
+        "700": {
+          "page": 382,
+          "row": "700 K",
+          "pdf_text_line": 19149
+        },
+        "800": {
+          "page": 382,
+          "row": "800 K",
+          "pdf_text_line": 19159
+        }
+      },
+      "source": {
+        "authors": "Robie and Hemingway",
+        "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+        "doi": "10.3133/b2131",
+        "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+        "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+        "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2",
+        "printed_page": 382,
+        "printed_phase_description": "Al₂Si₂O₅(OH)₂: Triclinic crystals 298.15 to 800 K.",
+        "source_locator": "USGS Bulletin 2131, p. 382, Kaolinite, Formation from the Elements table"
+      },
+      "source_formula_note": "The printed p. 382 formula is Al2Si2O5(OH)2, while its printed formula weight is 258.160; the served formula follows the formula weight and requested Al2Si2O5(OH)4 stoichiometry."
+    },
+    {
+      "id": "boehmite",
+      "formula": "AlO(OH)",
+      "source_formula_as_published": "AlO(OH)",
+      "source_title": "Boehmite",
+      "source_table_id": "USGS-B2131-p175",
+      "source_authority": "published_transcribed",
+      "source_temperature_K": [
+        298.15,
+        600
+      ],
+      "valid_temperature_K": [
+        298.15,
+        600
+      ],
+      "formation_enthalpy_298_kJ_mol": -996.4,
+      "source_crystal_enthalpy_increment_nodes_kJ_mol": {
+        "298.15": 0.0,
+        "300": 0.102,
+        "400": 6.184,
+        "500": 13.255,
+        "600": 21.0
+      },
+      "source_crystal_entropy_nodes_J_mol_K": {
+        "298.15": 37.2,
+        "300": 37.54,
+        "400": 54.95,
+        "500": 70.7,
+        "600": 84.8
+      },
+      "source_crystal_formation_enthalpy_nodes_kJ_mol": {
+        "298.15": -996.4,
+        "300": -996.4,
+        "400": -997.3,
+        "500": -997.3,
+        "600": -997.0
+      },
+      "source_crystal_gibbs_nodes_kJ_mol": {
+        "298.15": -918.4,
+        "300": -917.9,
+        "400": -891.6,
+        "500": -865.2,
+        "600": -838.8
+      },
+      "source_crystal_log10_Kf_nodes": {
+        "298.15": 160.9,
+        "300": 159.82,
+        "400": 116.43,
+        "500": 90.38,
+        "600": 73.02
+      },
+      "source_row_locators": {
+        "298.15": {
+          "page": 175,
+          "row": "298.15 K",
+          "pdf_text_line": 6760
+        },
+        "300": {
+          "page": 175,
+          "row": "300 K",
+          "pdf_text_line": 6761
+        },
+        "400": {
+          "page": 175,
+          "row": "400 K",
+          "pdf_text_line": 6762
+        },
+        "500": {
+          "page": 175,
+          "row": "500 K",
+          "pdf_text_line": 6763
+        },
+        "600": {
+          "page": 175,
+          "row": "600 K",
+          "pdf_text_line": 6764
+        }
+      },
+      "source": {
+        "authors": "Robie and Hemingway",
+        "citation": "Robie, R.A., and Hemingway, B.S. (1995), Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar (10^5 pascals) pressure and at higher temperatures, U.S. Geological Survey Bulletin 2131.",
+        "doi": "10.3133/b2131",
+        "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+        "source_path": "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json",
+        "source_sha256": "92c27a8aa49f95c56bffedec66e91638e62d79630b19d12b70aa75ba45d9d8d2",
+        "printed_page": 175,
+        "printed_phase_description": "AlO(OH): Orthorhombic crystals 298.15 to 600 K.",
+        "source_locator": "USGS Bulletin 2131, p. 175, Boehmite, Formation from the Elements table"
+      }
+    }
+  ]
+}

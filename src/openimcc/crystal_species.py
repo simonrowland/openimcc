@@ -84,6 +84,13 @@ def _berman_phases() -> tuple[dict[str, Any], ...]:
 
 
 @lru_cache(maxsize=1)
+def _rh_crystal_table_phases() -> tuple[dict[str, Any], ...]:
+    return tuple(
+        _read_json("data/diagnostics/rh-crystal-species.json")["phases"]
+    )
+
+
+@lru_cache(maxsize=1)
 def _barin_phases() -> tuple[dict[str, Any], ...]:
     return tuple(
         _read_json("data/diagnostics/barin-aluminate-crystals.json")["phases"]
@@ -627,6 +634,40 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
         ))
     if minerals:
         return [("Berman/Robie-Hemingway minerals", minerals)]
+
+    robie_hemingway = []
+    for phase in _rh_crystal_table_phases():
+        if _formula_element_counts(phase["formula"]) != formula_counts:
+            continue
+        interval = tuple(map(float, phase["valid_temperature_K"]))
+        interval = _node_covered_interval(
+            interval,
+            [
+                float(temperature)
+                for temperature in phase[
+                    "source_crystal_enthalpy_increment_nodes_kJ_mol"
+                ]
+            ],
+            [
+                float(temperature)
+                for temperature in phase[
+                    "source_crystal_entropy_nodes_J_mol_K"
+                ]
+            ],
+        )
+        table_id = str(phase["source_table_id"])
+        robie_hemingway.append(_Candidate(
+            "Robie-Hemingway 1995 tables",
+            str(phase["source_title"]),
+            phase,
+            None,
+            interval,
+            f"{table_id}:{phase['id']}",
+            table_id,
+            str(phase["source_authority"]),
+        ))
+    if robie_hemingway:
+        return [("Robie-Hemingway 1995 tables", robie_hemingway)]
     return []
 
 

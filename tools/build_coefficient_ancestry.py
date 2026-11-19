@@ -723,6 +723,39 @@ def _janaf_artifact(
     )
 
 
+def _rh_crystal_species_artifact(mapper: SourceMapper) -> dict[str, Any]:
+    relative_file = "diagnostics/rh-crystal-species.json"
+    path = DATA / relative_file
+    raw = path.read_bytes()
+    content = json.loads(raw)
+    source = content["source"]
+    rows: list[dict[str, Any]] = []
+    for phase in content["phases"]:
+        record = _row(f"phases:{phase['id']}", phase["formula"])
+        phase_source = phase["source"]
+        citation = (
+            f"{source['citation']} DOI {source['doi']}; "
+            f"{phase_source['source_locator']}"
+        )
+        _add_citation(
+            record,
+            citation,
+            "derived",
+            mapper,
+            citation_key=source["doi"],
+        )
+        _missing_provenance(record)
+        rows.append(record)
+    return _finish_artifact(
+        identity=content["schema"],
+        file="data/" + relative_file,
+        raw=raw,
+        rows=rows,
+        runtime_digest=_sha256(raw),
+        mapper=mapper,
+    )
+
+
 def _barin_artifact(mapper: SourceMapper) -> dict[str, Any]:
     relative_file = "diagnostics/barin-aluminate-crystals.json"
     path = DATA / relative_file
@@ -1243,6 +1276,7 @@ def build() -> dict[str, Any]:
             mapper=mapper,
         ),
         _barin_artifact(mapper),
+        _rh_crystal_species_artifact(mapper),
         _crystal_phase_artifact(mapper),
     ]
     artifacts.extend(

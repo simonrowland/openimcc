@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import subprocess
@@ -14,6 +15,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "src/openimcc/data/diagnostics/crystal-phases.json"
+RH_TABLES_SOURCE = ROOT / "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json"
+RH_TABLES_TARGET = ROOT / "src/openimcc/data/diagnostics/rh-crystal-species.json"
+RH_TABLES_SOURCE_RELATIVE = str(RH_TABLES_SOURCE.relative_to(ROOT))
+RH_GAS_CONSTANT_J_MOL_K = 8.31446261815324
 SOURCE_COMMIT = "9aacc2f6308e49a5a1988c25487518ba346d9ad0"
 RECORD_DIRECTORY = (
     "data/literature/compilations/robie-hemingway-1995-usgs-b2131/records"
@@ -203,6 +208,157 @@ def _node_rows(
     return nodes
 
 
+def build_crystal_species() -> dict[str, Any]:
+    """Build R&H formation-table nodes without fitting their Cp equations."""
+    raw = RH_TABLES_SOURCE.read_bytes()
+    source = json.loads(raw)
+    if source.get("schema") != "openimcc-rh-crystal-tables-v1":
+        raise ValueError("unexpected Robie–Hemingway table source schema")
+    source_info = source["source"]
+    if source_info.get("doi") != "10.3133/b2131":
+        raise ValueError("Robie–Hemingway table source DOI must be 10.3133/b2131")
+
+    digest = hashlib.sha256(raw).hexdigest()
+    phases = []
+    for source_phase in source["phases"]:
+        rows = source_phase["rows"]
+        temperatures = [float(row["T_K"]) for row in rows]
+        if not temperatures or any(
+            left >= right for left, right in zip(temperatures, temperatures[1:])
+        ):
+            raise ValueError(f"{source_phase['id']} rows are not increasing")
+        source_range = list(map(float, source_phase["source_temperature_K"]))
+        if temperatures[0] != source_range[0] or temperatures[-1] != source_range[1]:
+            raise ValueError(f"{source_phase['id']} range differs from its rows")
+
+        anchors = [row for row in rows if float(row["T_K"]) == 298.15]
+        if len(anchors) != 1:
+            raise ValueError(f"{source_phase['id']} needs one 298.15 K anchor")
+        formation_enthalpy = float(anchors[0]["formation_enthalpy_kJ_mol"])
+        enthalpy_nodes = {}
+        entropy_nodes = {}
+        formation_enthalpy_nodes = {}
+        formation_gibbs_nodes = {}
+        log_k_nodes = {}
+        locators = {}
+        for row in rows:
+            temperature = float(row["T_K"])
+            locator = row["locator"]
+            if (
+                int(locator["page"]) != int(source_phase["printed_page"])
+                or int(locator["pdf_text_line"]) < 1
+            ):
+                raise ValueError(f"{source_phase['id']} has an invalid row locator")
+            label = str(int(temperature)) if temperature.is_integer() else str(temperature)
+            if locator["row"] != f"{label} K":
+                raise ValueError(f"{source_phase['id']} locator does not match its row")
+            values = {
+                key: float(row[key])
+                for key in (
+                    "S_J_mol_K",
+                    "H_minus_H298_over_T_J_mol_K",
+                    "formation_enthalpy_kJ_mol",
+                    "formation_gibbs_kJ_mol",
+                    "log10_Kf",
+                )
+            }
+            if not all(math.isfinite(value) for value in values.values()):
+                raise ValueError(
+                    f"{source_phase['id']} has a non-finite row at {temperature:g} K"
+                )
+            log_gibbs = (
+                -RH_GAS_CONSTANT_J_MOL_K
+                * temperature
+                * math.log(10.0)
+                * values["log10_Kf"]
+                / 1000.0
+            )
+            if abs(log_gibbs - values["formation_gibbs_kJ_mol"]) > 0.25:
+                raise ValueError(
+                    f"{source_phase['id']} ΔfG and log Kf disagree at {temperature:g} K"
+                )
+            enthalpy_nodes[label] = round(
+                temperature * values["H_minus_H298_over_T_J_mol_K"] / 1000.0,
+                3,
+            )
+            entropy_nodes[label] = values["S_J_mol_K"]
+            formation_enthalpy_nodes[label] = values[
+                "formation_enthalpy_kJ_mol"
+            ]
+            formation_gibbs_nodes[label] = values["formation_gibbs_kJ_mol"]
+            log_k_nodes[label] = values["log10_Kf"]
+            locators[label] = locator
+
+        page = int(source_phase["printed_page"])
+        source_title = source_phase["name_as_published"]
+        phase = {
+            "id": source_phase["id"],
+            "formula": source_phase["formula"],
+            "source_formula_as_published": source_phase[
+                "source_formula_as_published"
+            ],
+            "source_title": source_title,
+            "source_table_id": f"USGS-B2131-p{page}",
+            "source_authority": "published_transcribed",
+            "source_temperature_K": source_phase["source_temperature_K"],
+            "valid_temperature_K": source_phase["source_temperature_K"],
+            "formation_enthalpy_298_kJ_mol": formation_enthalpy,
+            "source_crystal_enthalpy_increment_nodes_kJ_mol": enthalpy_nodes,
+            "source_crystal_entropy_nodes_J_mol_K": entropy_nodes,
+            "source_crystal_formation_enthalpy_nodes_kJ_mol": (
+                formation_enthalpy_nodes
+            ),
+            "source_crystal_gibbs_nodes_kJ_mol": formation_gibbs_nodes,
+            "source_crystal_log10_Kf_nodes": log_k_nodes,
+            "source_row_locators": locators,
+            "source": {
+                "authors": "Robie and Hemingway",
+                "citation": source_info["citation"],
+                "doi": source_info["doi"],
+                "url": source_info["pdf_url"],
+                "source_path": RH_TABLES_SOURCE_RELATIVE,
+                "source_sha256": digest,
+                "printed_page": page,
+                "printed_phase_description": source_phase[
+                    "printed_phase_description"
+                ],
+                "source_locator": (
+                    f"USGS Bulletin 2131, p. {page}, {source_title}, "
+                    "Formation from the Elements table"
+                ),
+            },
+        }
+        if source_phase["source_formula_as_published"] != source_phase["formula"]:
+            phase["source_formula_note"] = (
+                "The printed p. 382 formula is Al2Si2O5(OH)2, while its printed "
+                "formula weight is 258.160; the served formula follows the "
+                "formula weight and requested Al2Si2O5(OH)4 stoichiometry."
+                if source_phase["id"] == "kaolinite"
+                else "The engine formula follows the requested stoichiometry."
+            )
+        phases.append(phase)
+
+    return {
+        "schema": "openimcc-rh-crystal-species-v1",
+        "source": {
+            **source_info,
+            "source_path": RH_TABLES_SOURCE_RELATIVE,
+            "source_sha256": digest,
+        },
+        "transformation": (
+            "Use the printed (H-H298)/T and S columns to form Hinc=T*(H-H298)/T, "
+            "then interpolate Hinc and S linearly between source nodes. Runtime "
+            "Gapp=1000*(ΔfH298+Hinc)-T*S. Printed ΔfG and log Kf are retained "
+            "for source checks; no fitted Cp polynomial is used."
+        ),
+        "selection_rule": (
+            "Select the lowest apparent G among phases in this R&H dataset only. "
+            "Existing condensate, JANAF, Barin, and Berman sources retain precedence."
+        ),
+        "phases": phases,
+    }
+
+
 def build(data: dict[str, Any], source_repository: Path) -> dict[str, Any]:
     """Return crystal phases v2 using R&H crystal and packaged parent absolute G."""
     sys.path.insert(0, str(ROOT / "src"))
@@ -311,12 +467,44 @@ def main() -> int:
     action.add_argument("--write", action="store_true")
     action.add_argument("--check", action="store_true")
     parser.add_argument(
+        "--species-only",
+        action="store_true",
+        help="build or check the newly transcribed R&H crystal table dataset",
+    )
+    parser.add_argument(
         "source_repository",
         type=Path,
+        nargs="?",
         help="simulator checkout containing the pinned Robie–Hemingway records",
     )
     args = parser.parse_args()
 
+    if args.species_only:
+        if args.source_repository is not None:
+            parser.error("--species-only does not take a source repository")
+        original = (
+            RH_TABLES_TARGET.read_text(encoding="utf-8")
+            if RH_TABLES_TARGET.exists()
+            else ""
+        )
+        rebuilt = json.dumps(
+            build_crystal_species(), indent=2, ensure_ascii=False
+        ) + "\n"
+        if args.check:
+            if original != rebuilt:
+                print(
+                    "Robie–Hemingway crystal table dataset is stale",
+                    file=sys.stderr,
+                )
+                return 1
+            print("Robie–Hemingway crystal table dataset is current")
+            return 0
+        RH_TABLES_TARGET.write_text(rebuilt, encoding="utf-8")
+        print("Rebuilt Robie–Hemingway crystal table dataset")
+        return 0
+
+    if args.source_repository is None:
+        parser.error("source_repository is required unless --species-only is used")
     original = DATA.read_text(encoding="utf-8")
     rebuilt = json.dumps(
         build(json.loads(original), args.source_repository),

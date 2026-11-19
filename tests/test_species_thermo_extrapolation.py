@@ -220,6 +220,24 @@ def test_janaf_crystal_generator_check_matches_packaged_data() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_rh_crystal_generator_check_matches_packaged_data() -> None:
+    root = Path(__file__).parents[1]
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(root / "tools/rebuild_rh_crystal_phases.py"),
+            "--check",
+            "--species-only",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
     lead_oxide = species_thermo("PbO", "cr", 800.0)
     assert lead_oxide.source_table_id == "O-006"
@@ -299,6 +317,38 @@ def test_janaf_iron_reference_state_tracks_alpha_gamma_transition() -> None:
     assert gamma.phase_identity["polymorph"] == "GAMMA"
     assert alpha.phase_identity["temperature_segment_K"] == (298.15, 1184.0)
     assert gamma.phase_identity["temperature_segment_K"] == (1184.0, 1665.0)
+
+
+def test_robie_hemingway_al2sio5_selection_and_printed_gibbs() -> None:
+    expected = {300.0: "Kyanite", 1000.0: "Andalusite", 1800.0: "Sillimanite"}
+    for temperature, polymorph in expected.items():
+        result = species_thermo("Al2SiO5", "cr", temperature)
+        assert result.phase_identity["polymorph"] == polymorph
+
+    selected = species_thermo(
+        "Al2SiO5", "cr", 1300.0, polymorph="kyanite"
+    )
+    assert selected.source_table_id == "USGS-B2131-p304"
+    assert selected.phase_identity["polymorph"] == "Kyanite"
+
+    table_path = Path(__file__).parents[1] / (
+        "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json"
+    )
+    source = json.loads(table_path.read_text(encoding="utf-8"))
+    kyanite = next(phase for phase in source["phases"] if phase["id"] == "kyanite")
+    printed_gibbs = next(
+        row["formation_gibbs_kJ_mol"]
+        for row in kyanite["rows"]
+        if row["T_K"] == 1300.0
+    )
+    element_gibbs = _element_reference_sum_kJ_mol("Al2SiO5", 1300.0)
+    assert element_gibbs is not None
+    assert selected.G_J_mol / 1000.0 - element_gibbs == pytest.approx(
+        printed_gibbs, abs=0.2
+    )
+
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("AlO(OH)", "cr", 601.0)
 
 
 def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
