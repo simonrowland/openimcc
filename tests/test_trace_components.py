@@ -1787,6 +1787,86 @@ def test_gas_trace_activity_flag_uses_the_same_ladder(packaged_gas_pack) -> None
     assert "MgO_saturation" in str(p2o5_gas.domain_flags["P2"])
 
 
+def test_gas_trace_parents_use_gas_standards_or_refuse(packaged_gas_pack) -> None:
+    base = {
+        "SiO2": 50.0,
+        "MgO": 15.0,
+        "FeO": 10.0,
+        "CaO": 12.0,
+        "Al2O3": 12.0,
+    }
+    for component, amount, species in (
+        ("SO3", 0.1, "S"),
+        ("Cl", 0.05, "Cl"),
+        ("F", 0.05, "F"),
+    ):
+        result = evaluate_gas(
+            {},
+            1800.0,
+            1.0e-8,
+            packaged_gas_pack,
+            composition_wt_pct={**base, component: amount},
+        )
+        refusal = result.omitted_channels[species]
+        assert isinstance(refusal, TraceGasChannelRefusal)
+        assert component in refusal.triggers
+        assert "fugacity model is available" in refusal.reason
+        parent_standard = {"SO3": "S2(g)", "Cl": "Cl2(g)", "F": "F2(g)"}
+        assert parent_standard[component] in refusal.reason
+
+    sulfur = evaluate_gas(
+        {},
+        1800.0,
+        1.0e-8,
+        packaged_gas_pack,
+        gas_species=("S",),
+        composition_wt_pct={**base, "S": 0.01},
+    )
+    sulfur_flag = sulfur.domain_flags["S"]
+    assert isinstance(sulfur_flag, TraceActivityFlag)
+    assert sulfur_flag.estimates[0].oxide == "S"
+    assert sulfur_flag.code != "ideal_mixing_assumption"
+
+    for element, oxide, species, cations_per_oxide in (
+        ("Li", "Li2O", "Li", 2),
+        ("Zn", "ZnO", "Zn", 1),
+    ):
+        element_mass = trace_component_rule(element).molar_mass_g_mol
+        oxide_mass = trace_component_rule(oxide).molar_mass_g_mol
+        element_amount = 0.05
+        oxide_amount = 0.05
+        combined = evaluate_gas(
+            {},
+            1800.0,
+            1.0e-8,
+            packaged_gas_pack,
+            composition_wt_pct={
+                **base,
+                element: element_amount,
+                oxide: oxide_amount,
+            },
+        )
+        oxide_equivalent = evaluate_gas(
+            {},
+            1800.0,
+            1.0e-8,
+            packaged_gas_pack,
+            composition_wt_pct={
+                **base,
+                oxide: oxide_amount
+                + element_amount * oxide_mass
+                / (cations_per_oxide * element_mass),
+            },
+        )
+        flag = combined.domain_flags[species]
+        assert isinstance(flag, TraceActivityFlag)
+        assert flag.estimates[0].oxide == oxide
+        assert flag.code != "ideal_mixing_assumption"
+        assert combined[species] == pytest.approx(
+            oxide_equivalent[species], rel=1.0e-12
+        )
+
+
 def test_li_bearing_cr_domain_warning_reaches_melt_and_gas_flags(
     packaged_gas_pack,
 ) -> None:

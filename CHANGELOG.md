@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Trace gas parent standards
+
+- Gas trace filling now uses the sulfur fugacity helper for S2, refuses
+  SO3/Cl/F melt fractions on gas-phase parents without a fugacity model, and
+  converts elemental Li/Zn to their oxide formula-unit basis.
+
 ### Trace activity coefficients
 
 - Review-γ trace activity estimates now carry the selected fragment row id.

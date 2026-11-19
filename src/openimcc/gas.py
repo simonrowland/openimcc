@@ -3789,6 +3789,7 @@ def evaluate_gas(
     trace_fractions: Mapping[str, float] = {}
     trace_activity_estimates: dict[str, TraceActivityEstimate] = {}
     major_bias_flags: dict[str, TraceMajorBiasFlag] = {}
+    trace_parent_refusals: dict[str, TraceGasChannelRefusal] = {}
     allowed_trace_parents = (
         set(parent_oxides)
         if parent_oxides_explicit
@@ -3822,9 +3823,36 @@ def evaluate_gas(
             for name, amount in composition_wt_pct.items()
             if name in IMCC_PARENT_OXIDES or trace_component_rule(name) is not None
         }
-        composition_moles, trace_fractions = trace_fractions_from_wt(
-            melt_composition
-        )
+        composition_moles, _ = trace_fractions_from_wt(melt_composition)
+        composition_moles = dict(composition_moles)
+        # Convert elemental inputs onto the oxide formula-unit basis before
+        # resolving their gas parents: 2 Li + O -> Li2O gives n(Li2O)=n(Li)/2;
+        # Zn + O -> ZnO gives n(ZnO)=n(Zn). The oxide-equivalent weight adds
+        # the oxygen mass so the existing formula-mole normalization applies.
+        for element, oxide, cations_per_oxide in (
+            ("Li", "Li2O", 2),
+            ("Zn", "ZnO", 1),
+        ):
+            if element not in melt_composition:
+                continue
+            oxide_rule = trace_component_rule(oxide)
+            assert oxide_rule is not None
+            element_moles = composition_moles.pop(element)
+            oxide_moles = element_moles / cations_per_oxide
+            composition_moles[oxide] = (
+                composition_moles.get(oxide, 0.0) + oxide_moles
+            )
+            melt_composition[oxide] = (
+                float(melt_composition.get(oxide, 0.0))
+                + oxide_moles * oxide_rule.molar_mass_g_mol
+            )
+            melt_composition.pop(element)
+        total_moles = math.fsum(composition_moles.values())
+        trace_fractions = {
+            name: amount / total_moles
+            for name, amount in composition_moles.items()
+            if amount > 0.0 and trace_component_rule(name) is not None
+        }
         if trace_fractions:
             melt_result = evaluate_melt(
                 melt_composition,
@@ -4008,10 +4036,50 @@ def evaluate_gas(
                 if carrier is not None:
                     carrier_estimates.setdefault(carrier, []).append(estimate)
             for carrier, estimates in carrier_estimates.items():
-                if carrier not in allowed_trace_parents:
+                if carrier in act:
                     continue
-                if carrier not in act:
-                    act[carrier] = math.fsum(item.activity for item in estimates)
+
+                if carrier in _GAS_PHASE_PARENT_ROWS:
+                    gas_ready_estimates = tuple(
+                        item
+                        for item in estimates
+                        if (
+                            item.oxide == "S"
+                            and trace_component_rule(item.oxide).activity_fragment
+                            == "S"
+                        )
+                    )
+                    if gas_ready_estimates:
+                        if carrier in allowed_trace_parents:
+                            act[carrier] = math.fsum(
+                                item.activity for item in gas_ready_estimates
+                            )
+                        continue
+                    triggers = tuple(item.oxide for item in estimates)
+                    source = ", ".join(triggers)
+                    if carrier == "S2":
+                        reason = (
+                            f"{source} supplies a liquid melt fraction, but gas "
+                            "channels require a(S2)=f(S2)/p° on JANAF 1-bar "
+                            "S2(g); no SO3-to-S2 fugacity model is available"
+                        )
+                    else:
+                        reason = (
+                            f"{source} supplies a melt mole fraction, but gas "
+                            f"channels require f({carrier})/p° on JANAF 1-bar "
+                            f"{carrier}(g); no {carrier} fugacity model is available"
+                        )
+                    trace_parent_refusals[carrier] = TraceGasChannelRefusal(
+                        carrier, reason, triggers=triggers
+                    )
+                    if carrier in allowed_trace_parents:
+                        act[carrier] = 0.0
+                    continue
+
+                if carrier in allowed_trace_parents:
+                    act[carrier] = math.fsum(
+                        item.activity for item in estimates
+                    )
 
     if reactions is None or (include_ions and requested_channels):
         reactions, omitted_channels = _default_reactions(tuple(act), datapack, T)
@@ -4069,6 +4137,20 @@ def evaluate_gas(
             mixed = _MIXED_GAS_REACTION_SIDE_PARENTS.get(species)
             if mixed is not None:
                 parents.add(mixed[0])
+            parent_refusal = next(
+                (
+                    trace_parent_refusals[parent]
+                    for parent in parents
+                    if parent in trace_parent_refusals
+                ),
+                None,
+            )
+            if parent_refusal is not None:
+                return TraceGasChannelRefusal(
+                    species,
+                    parent_refusal.reason,
+                    triggers=parent_refusal.triggers,
+                )
             refused = tuple(
                 major_bias_flags[parent]
                 for parent in parents
