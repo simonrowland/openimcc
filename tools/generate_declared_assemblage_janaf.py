@@ -42,6 +42,17 @@ ADDITIONAL_CRYSTALS = {
     "Cr2O3": "Cr-014",
     "LiAlO2": "Al-068",
     "Ta2O5": "O-077",
+    "Zr": "Zr-005",
+    "Hf": "Hf-005",
+    "Fe": "Fe-004",
+    "Fe2O3": "Fe-030",
+    "FeS": "Fe-023",
+    "Mn": "Mn-004",
+    "W": "W-004",
+    "B": "B-004",
+    "V": "V-004",
+    "Mo": "Mo-004",
+    "Nb": "Nb-004",
 }
 
 def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
@@ -160,16 +171,28 @@ def _phase_segments(
 
 
 def _prepare_source_table(table_id: str) -> dict:
-    raw = (SOURCE / f"{table_id}.yaml").read_bytes()
-    try:
-        source = json.loads(raw.decode("utf-8"))
-    except json.JSONDecodeError:
-        # A few vendored JANAF records use YAML syntax; PyYAML is already an
-        # optional project dependency used by the repository's data tools.
-        import yaml
+    source_path = SOURCE / f"{table_id}.yaml"
+    source_locator = None
+    if source_path.exists():
+        raw = source_path.read_bytes()
+        try:
+            source = json.loads(raw.decode("utf-8"))
+        except json.JSONDecodeError:
+            # A few vendored JANAF records use YAML syntax; PyYAML is already an
+            # optional project dependency used by the repository's data tools.
+            import yaml
 
-        source = yaml.safe_load(raw.decode("utf-8"))
-    table = source["table"]
+            source = yaml.safe_load(raw.decode("utf-8"))
+        table = source["table"]
+    else:
+        source_path = SOURCE / f"{table_id}.txt"
+        raw = source_path.read_bytes()
+        table = _parse_janaf_text_table(table_id, raw)
+        source_locator = {
+            "source_url": f"https://janaf.nist.gov/tables/{table_id}.html",
+            "download_url": f"https://janaf.nist.gov/tables/{table_id}.txt",
+            "source_path": str(source_path.relative_to(ROOT)),
+        }
     reference = next(
         row for row in table["values"]
         if float(row["temperature"]["value"]) == 298.15
@@ -181,7 +204,7 @@ def _prepare_source_table(table_id: str) -> dict:
     source_temperatures = [node["T_K"] for node in nodes] + [
         row["T_K"] for row in transition_rows
     ]
-    return {
+    prepared = {
         "formation_enthalpy_298_kJ_mol": float(h298),
         "nodes": nodes,
         "transition_rows": transition_rows,
@@ -190,6 +213,66 @@ def _prepare_source_table(table_id: str) -> dict:
             min(source_temperatures), max(source_temperatures)
         ],
         "title_as_published": table["title_as_published"],
+    }
+    if source_locator is not None:
+        prepared.update(source_locator)
+    return prepared
+
+
+def _parse_janaf_text_table(table_id: str, raw: bytes) -> dict:
+    """Read a vendored NIST text export while preserving row locators."""
+    lines = raw.decode("utf-8").splitlines()
+    if len(lines) < 3 or lines[1].split("\t", 1)[0] != "T(K)":
+        raise ValueError(f"{table_id}: expected a NIST tab-delimited table")
+
+    values = []
+    ambiguities = []
+    for line_number, raw_line in enumerate(lines, start=1):
+        fields = raw_line.split("\t")
+        try:
+            temperature = float(fields[0])
+        except (IndexError, ValueError):
+            continue
+
+        try:
+            entropy = float(fields[2])
+            enthalpy_increment = float(fields[4])
+        except (IndexError, ValueError):
+            continue
+
+        formation_enthalpy = None
+        formation_gibbs_energy = None
+        try:
+            formation_enthalpy = float(fields[5])
+        except (IndexError, ValueError):
+            pass
+        try:
+            formation_gibbs_energy = float(fields[6])
+        except (IndexError, ValueError):
+            pass
+
+        values.append(
+            {
+                "temperature": {"value": temperature},
+                "enthalpy_increment": {"value": enthalpy_increment},
+                "entropy": {"value": entropy},
+                "formation_enthalpy": {"value": formation_enthalpy},
+                "formation_gibbs_energy": {"value": formation_gibbs_energy},
+                "source_line_number": line_number,
+            }
+        )
+        if len(fields) > 5:
+            try:
+                float(fields[5])
+            except ValueError:
+                ambiguities.append(
+                    {"line_number": line_number, "raw_line": raw_line}
+                )
+
+    return {
+        "title_as_published": " | ".join(lines[0].split("\t")),
+        "values": values,
+        "parse_ambiguities": ambiguities,
     }
 
 
@@ -231,6 +314,11 @@ def _extra_crystal_phases() -> list[dict]:
                 "nodes": prepared["nodes"],
                 "transition_rows": transitions,
                 "transition_row_at_cap": cap_row,
+                **{
+                    key: prepared[key]
+                    for key in ("source_url", "download_url", "source_path")
+                    if key in prepared
+                },
                 "phase_segments": _phase_segments(
                     prepared["title_as_published"],
                     prepared["source_temperature_K"],

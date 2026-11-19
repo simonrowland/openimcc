@@ -287,6 +287,20 @@ def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
     assert all(node["T_K"] != 1200.0 for node in lead_source["nodes"])
 
 
+def test_janaf_iron_reference_state_tracks_alpha_gamma_transition() -> None:
+    alpha = species_thermo("Fe", "cr", 1000.0)
+    gamma = species_thermo("Fe", "cr", 1300.0)
+
+    assert alpha.source_table_id == "Fe-004"
+    assert gamma.source_table_id == "Fe-004"
+    assert alpha.formation_enthalpy_298_kJ_mol == 0.0
+    assert gamma.formation_enthalpy_298_kJ_mol == 0.0
+    assert alpha.phase_identity["polymorph"] == "ALPHA"
+    assert gamma.phase_identity["polymorph"] == "GAMMA"
+    assert alpha.phase_identity["temperature_segment_K"] == (298.15, 1184.0)
+    assert gamma.phase_identity["temperature_segment_K"] == (1184.0, 1665.0)
+
+
 def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
     with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
         species_thermo("CaTiO3", "cr", 1400.0)

@@ -59,6 +59,8 @@
   source phase labels as polymorph selectors, parses dotted hydrates, and
   recovers finite JANAF rows previously marked as ambiguities. Focused tests
   now check the generator's packaged output.
+- Crystal fallback adds the indexed Zr, Hf, Fe, Fe2O3, FeS, Mn, W, B, V, Mo,
+  and Nb JANAF tables with source hashes and row locators.
 - Crystal dataset fallback now matches formula aliases by canonical element counts.
 - Added curated crystal phase identities for shipped condensate rows, bounded
   constant-Cp continuation for eligible crystal phases, and 298.15 K formation
