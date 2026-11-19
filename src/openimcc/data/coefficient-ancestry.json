@@ -2,8 +2,8 @@
   "schema": "openimcc-coefficient-ancestry.v1",
   "vocabulary_snapshot": {
     "commit": "3645e2c2bb",
-    "work_id_count": 17,
-    "sha256": "b26e2462747acf0ae7ac53920edda60caf094031b0490f8889c1fe3af3c4d273"
+    "work_id_count": 32,
+    "sha256": "53167244e3a5cedb7cc584a670eba2f967ff04216eebe6905bbb27095f7cbc66"
   },
   "artifacts": [
     {
@@ -20759,6 +20759,1255 @@
         "mapped_rows": 23,
         "unmapped_citations": 0,
         "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:ag",
+      "file": "data/fragments/ag/rows.json",
+      "digest": "43e019ad21b3152d13779c7faf37abeb13fba91a102102fd7dda29c85f400812",
+      "runtime_digest": "43e019ad21b3152d13779c7faf37abeb13fba91a102102fd7dda29c85f400812",
+      "rows": [
+        {
+          "id": "AgO0.5-Norris-2016-1923K",
+          "label": "AgO0.5-Norris-2016-1923K",
+          "sources": [
+            {
+              "work_id": "norris-2016-trace-volatility-thesis",
+              "role": "derived",
+              "citation": "Norris, C. Ashley (2016), \"Volatilities of Trace Elements in Silicate Melts\", DPhil thesis, University of Oxford; locator: Table 4.16 (PDF p. 170, Ch. 4 p. 140), mean 0.080 and range 0.033–0.26 at 1923 K; Table 4.9 (PDF p. 128) gives n/2=0.5 and Ag+; §4.9.1 identifies AgO0.5. The Table 4.16 heading prints AgO1.5, so its oxide label is resolved from Table 4.9 and §4.9.1."
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "norris-2016-trace-volatility-thesis"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:as",
+      "file": "data/fragments/as/rows.json",
+      "digest": "a02e2c03585b718ed1d70803a59197d6589074f2ee21ac553e4e045e013b2e84",
+      "runtime_digest": "a02e2c03585b718ed1d70803a59197d6589074f2ee21ac553e4e045e013b2e84",
+      "rows": [
+        {
+          "id": "AsO1.5-1573K",
+          "label": "AsO1.5-1573K",
+          "sources": []
+        }
+      ],
+      "work_ids": [],
+      "unmapped": [
+        {
+          "row": "AsO1.5-1573K",
+          "citation": "Chen & Jahanshahi (2010), Metallurgical and Materials Transactions B 41, 1166–1174, doi:10.1007/s11663-010-9430-0; locator: AsO1.5 activity estimate at 1573 K, summarized in Sossi & Fegley (2018), Table 2",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 0,
+        "unmapped_citations": 1,
+        "rows_with_unmapped": 1
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:bi",
+      "file": "data/fragments/bi/rows.json",
+      "digest": "74d8ef4ab53daec5f37378160eb6be15fe8b955a34065b6f196a73f3f97d809a",
+      "runtime_digest": "74d8ef4ab53daec5f37378160eb6be15fe8b955a34065b6f196a73f3f97d809a",
+      "rows": [
+        {
+          "id": "BiO1.5-1573K",
+          "label": "BiO1.5-1573K",
+          "sources": []
+        }
+      ],
+      "work_ids": [],
+      "unmapped": [
+        {
+          "row": "BiO1.5-1573K",
+          "citation": "Paulina, Swinbourne & Kho (2013), Transactions of the Institutions of Mining and Metallurgy, Section C 122, 79–86, doi:10.1179/1743285512Y.0000000033; locator: BiO1.5 melt activity estimate at 1573 K, summarized in Sossi & Fegley (2018), Table 2",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 0,
+        "unmapped_citations": 1,
+        "rows_with_unmapped": 1
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:ce",
+      "file": "data/fragments/ce/rows.json",
+      "digest": "71edfd0f9d4ee11af4c06490b467cfb9a12c43db3e12bbee1e0b9c12f59e1dc9",
+      "runtime_digest": "71edfd0f9d4ee11af4c06490b467cfb9a12c43db3e12bbee1e0b9c12f59e1dc9",
+      "rows": [
+        {
+          "id": "Ce2O3-Chen-2020-CMAS-1873K",
+          "label": "Ce2O3-Chen-2020-CMAS-1873K",
+          "sources": [
+            {
+              "work_id": "chen-2020-ce2o3-cmas-activity-phase-equilibria",
+              "role": "derived",
+              "citation": "Chen, Deng, Zhao & Yan (2020), ISIJ International 60(8), 1602–1609, doi:10.2355/isijinternational.ISIJINT-2019-683; locator: Eq. (3), p. 1608; Table 2, p. 1607; 17 unstarred compositions only"
+            }
+          ]
+        },
+        {
+          "id": "Ce2O3-Zhao-2019-CaO-SiO2-1873K",
+          "label": "Ce2O3-Zhao-2019-CaO-SiO2-1873K",
+          "sources": [
+            {
+              "work_id": "zhao-2019-ce2o3-ternary-thermodynamics",
+              "role": "derived",
+              "citation": "Zhao, Chen, Glaser & Yan (2019), Metallurgical and Materials Transactions B 50, 395–406, doi:10.1007/s11663-018-1471-9; locator: Eq. [6] and Table IV, p. 402; Eq. [2], p. 396 gives delta-G°; adjacent text specifies the pure solid Ce2O3 standard"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "chen-2020-ce2o3-cmas-activity-phase-equilibria",
+        "zhao-2019-ce2o3-ternary-thermodynamics"
+      ],
+      "unmapped": [
+        {
+          "row": "Ce2O3-Chen-2020-CMAS-1873K",
+          "citation": "Konings et al. (2014), J. Phys. Chem. Ref. Data 43, 013101, Part 2, Ce2O3 Table 88 A-phase heat capacity",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "Ce2O3-Chen-2020-CMAS-1873K",
+          "citation": "298 K formation and entropy anchors from Konings & Beneš (2010), Part 1, Table 42.",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "Ce2O3-Zhao-2019-CaO-SiO2-1873K",
+          "citation": "Konings et al. (2014), J. Phys. Chem. Ref. Data 43, 013101, Part 2, Ce2O3 Table 88 A-phase heat capacity",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "Ce2O3-Zhao-2019-CaO-SiO2-1873K",
+          "citation": "298 K formation and entropy anchors from Konings & Beneš (2010), Part 1, Table 42.",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 2,
+        "mapped_rows": 2,
+        "unmapped_citations": 4,
+        "rows_with_unmapped": 2
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:co",
+      "file": "data/fragments/co/rows.json",
+      "digest": "7af00d06b39c4c5a96b8e271779d4962c99076da7bcc463e1ebf8b6aa48c345b",
+      "runtime_digest": "7af00d06b39c4c5a96b8e271779d4962c99076da7bcc463e1ebf8b6aa48c345b",
+      "rows": [
+        {
+          "id": "CoO-liquid-dilute-activity",
+          "label": "CoO-liquid-dilute-activity",
+          "sources": [
+            {
+              "work_id": "holzheid-1997-feo-nio-coo-activity-metal-saturated",
+              "role": "derived",
+              "citation": "Holzheid, A., Palme, H., and Chakraborty, S. (1997), The activities of NiO, CoO and FeO in silicate melts, Chemical Geology 139(1-4), 21-38.; DOI 10.1016/S0009-2541(97)00030-2; locator: Abstract; mean gamma_CoO(l), reported spread, 76 experiments, and source-domain limits.; fragment citation: Holzheid, Palme, and Chakraborty (1997), The activities of NiO, CoO and FeO in silicate melts, Chemical Geology 139, 21-38, doi:10.1016/S0009-2541(97)00030-2"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "holzheid-1997-feo-nio-coo-activity-metal-saturated"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:cu",
+      "file": "data/fragments/cu/rows.json",
+      "digest": "dfdab187f2d0cc1dd1120f5fe4dccf542bcdd40b20057496738c7dcf3f24f0c9",
+      "runtime_digest": "dfdab187f2d0cc1dd1120f5fe4dccf542bcdd40b20057496738c7dcf3f24f0c9",
+      "rows": [
+        {
+          "id": "CuO0.5-1573K",
+          "label": "CuO0.5-1573K",
+          "sources": [
+            {
+              "work_id": "holzheid-lodders-2001-copper-solubility",
+              "role": "derived",
+              "citation": "Holzheid & Lodders (2001), Geochimica et Cosmochimica Acta 65, 1933–1951, doi:10.1016/S0016-7037(01)00545-2; locator: KEMS melt activity results, summarized in Sossi & Fegley (2018), Table 2"
+            }
+          ]
+        },
+        {
+          "id": "CuO0.5-1923K",
+          "label": "CuO0.5-1923K",
+          "sources": [
+            {
+              "work_id": "wood-wade-2013-trace-activities",
+              "role": "derived",
+              "citation": "Wood & Wade (2013), Contributions to Mineralogy and Petrology 166, 911–921, doi:10.1007/s00410-013-0896-z; locator: Table 2 value at 1923 K, summarized in Sossi & Fegley (2018)"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "holzheid-lodders-2001-copper-solubility",
+        "wood-wade-2013-trace-activities"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 2,
+        "mapped_rows": 2,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:ga",
+      "file": "data/fragments/ga/rows.json",
+      "digest": "e666e26600375cf16658e714ac8d9ec20ea2b9c96e7e9b317fd994eb517ed436",
+      "runtime_digest": "e666e26600375cf16658e714ac8d9ec20ea2b9c96e7e9b317fd994eb517ed436",
+      "rows": [
+        {
+          "id": "GaO1.5-liquid-KEMS-1700K",
+          "label": "GaO1.5-liquid-KEMS-1700K",
+          "sources": [
+            {
+              "work_id": "kems-137-bischof-2023",
+              "role": "derived",
+              "citation": "Bischof, Sossi, Sergeev, Müller & Schmidt (2023), Geochimica et Cosmochimica Acta 360, 1–15, doi:10.1016/j.gca.2023.08.027; locator: Section 4.4.4, p. 9; gamma(GaO1.5)=0.036(6) at 1700 K; Table 8 note a and source-x anchor"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "kems-137-bischof-2023"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:ge",
+      "file": "data/fragments/ge/rows.json",
+      "digest": "ae3ee3426ac7b72fed9c49aed7b76fed1c5bf8df7e2bd8af6d87a1b9197a055e",
+      "runtime_digest": "ae3ee3426ac7b72fed9c49aed7b76fed1c5bf8df7e2bd8af6d87a1b9197a055e",
+      "rows": [
+        {
+          "id": "GeO2-1573K",
+          "label": "GeO2-1573K",
+          "sources": []
+        }
+      ],
+      "work_ids": [],
+      "unmapped": [
+        {
+          "row": "GeO2-1573K",
+          "citation": "Shuva et al. (2016), Metallurgical and Materials Transactions B 47, 2889–2903, doi:10.1007/s11663-016-0759-x; locator: GeO2 melt activity result at 1573 K, summarized in Sossi & Fegley (2018), Table 2",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 0,
+        "unmapped_citations": 1,
+        "rows_with_unmapped": 1
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:in",
+      "file": "data/fragments/in/rows.json",
+      "digest": "e22c483a86e88b976b8e2c35c8b4ffa47639f9026849b5cb7c4d2895b4300540",
+      "runtime_digest": "e22c483a86e88b976b8e2c35c8b4ffa47639f9026849b5cb7c4d2895b4300540",
+      "rows": [
+        {
+          "id": "InO1.5-liquid-KEMS-1674K",
+          "label": "InO1.5-liquid-KEMS-1674K",
+          "sources": [
+            {
+              "work_id": "kems-137-bischof-2023",
+              "role": "derived",
+              "citation": "Bischof, Sossi, Sergeev, Müller & Schmidt (2023), Geochimica et Cosmochimica Acta 360, 1–15, doi:10.1016/j.gca.2023.08.027; locator: Section 4.4.4, p. 9; gamma(InO1.5)=0.017(12) at 1674 K; Table 8 source-x anchor"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "kems-137-bischof-2023"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:la",
+      "file": "data/fragments/la/rows.json",
+      "digest": "978786f192939ca6e841b84549c4724b903d89949f4313970d8daaa823d995b1",
+      "runtime_digest": "978786f192939ca6e841b84549c4724b903d89949f4313970d8daaa823d995b1",
+      "rows": [
+        {
+          "id": "La2O3-Li-2020-SiO2-infinite-dilution",
+          "label": "La2O3-Li-2020-SiO2-infinite-dilution",
+          "sources": []
+        }
+      ],
+      "work_ids": [],
+      "unmapped": [
+        {
+          "row": "La2O3-Li-2020-SiO2-infinite-dilution",
+          "citation": "Li et al. (2020), Materials 13, 450, doi:10.3390/ma13020450; locator: Eq. (1), p. 2; Eq. (2), p. 4; Table 2 La2O3-SiO2 parameters, p. 6; section 3.1.3, p. 9",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 0,
+        "unmapped_citations": 1,
+        "rows_with_unmapped": 1
+      }
+    },
+    {
+      "identity": "openimcc-redox-fragment.v1:li",
+      "file": "data/fragments/li/rows.json",
+      "digest": "7e22628319ff828ad15b579fe70e70262b8874c2b40d84a50141752302ce9a35",
+      "runtime_digest": "7e22628319ff828ad15b579fe70e70262b8874c2b40d84a50141752302ce9a35",
+      "rows": [
+        {
+          "id": "1",
+          "label": "Li2O(l)",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF Tables Li-020 and Li-021, Li2SiO3 crystal and liquid transition rows at 1474 K.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/Li-021.html; fragment citation: NIST-JANAF Li2O crystal/liquid tables Li-014 and Li-015; fragment citation: https://janaf.nist.gov/tables/Li-015.html"
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "label": "Li2SiO3(l)",
+          "sources": [
+            {
+              "work_id": "de-abreu-2024-li2o-sio2-thermochemistry",
+              "role": "derived",
+              "citation": "de Abreu and Fabrichnaya, Critical Experiments and Thermodynamic Modeling of the Li2O-SiO2 System, Solids 5 (2024), Table 5, p. 315.; DOI 10.3390/solids5020020; URL https://www.mdpi.com/2673-6497/5/2/20; fragment citation: de Abreu and Fabrichnaya 2024 Table 5"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF Li-020 crystal function"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF Li-021 liquid Cp"
+            }
+          ]
+        },
+        {
+          "id": "3",
+          "label": "Li4SiO4(l)",
+          "sources": [
+            {
+              "work_id": "de-abreu-2024-li2o-sio2-thermochemistry",
+              "role": "derived",
+              "citation": "de Abreu and Fabrichnaya, Critical Experiments and Thermodynamic Modeling of the Li2O-SiO2 System, Solids 5 (2024), Table 5, p. 315.; DOI 10.3390/solids5020020; URL https://www.mdpi.com/2673-6497/5/2/20; fragment citation: de Abreu and Fabrichnaya 2024 Table 5 p. 315"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "de-abreu-2024-li2o-sio2-thermochemistry",
+        "janaf-4th"
+      ],
+      "unmapped": [
+        {
+          "row": "2",
+          "citation": "Téqui, Grinspan, and Richet, Thermodynamic Properties of Alkali Silicates: Heat Capacity of Li2SiO3 and Lithium-Bearing Melts, J. Am. Ceram. Soc. 75 (1992), pp. 2601–2604.; DOI 10.1111/j.1151-2916.1992.tb05621.x; URL https://doi.org/10.1111/j.1151-2916.1992.tb05621.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "2",
+          "citation": "Tequi, Grinspan",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "2",
+          "citation": "Richet 1992 fusion measurement",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "3",
+          "citation": "Kleykamp, Enthalpy, heat capacity, second-order transitions and enthalpy of fusion of Li4SiO4 by high-temperature calorimetry, Thermochim. Acta 287 (1996), pp. 191–201.; DOI 10.1016/S0040-6031(96)02996-6; URL https://doi.org/10.1016/S0040-6031(96)02996-6; fragment citation: Kleykamp 1996 pp. 191–201",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "3",
+          "citation": "Ihle, Penzhorn, and Schuster, The thermochemistry of lithium silicates in view of their use as breeder materials, Fusion Eng. Des. 8 (1989), pp. 393–397.; DOI 10.1016/S0920-3796(89)80138-3; URL https://doi.org/10.1016/S0920-3796(89)80138-3; fragment citation: Ihle, Penzhorn, and Schuster, KfK 4677, Table 9 p. 60; Fusion Eng. Des. 8 (1989), pp. 393–397, DOI 10.1016/S0920-3796(89)80138-3",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "diagnostic"
+        },
+        {
+          "row": "3",
+          "citation": "KfK 4677 Table 9 p. 60",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 3,
+        "mapped_rows": 3,
+        "unmapped_citations": 6,
+        "rows_with_unmapped": 2
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:mo",
+      "file": "data/fragments/mo/rows.json",
+      "digest": "b9a4f6c9676f471a6b2515517664836061e33eda52fc7e27ffa16f6504f1a7dd",
+      "runtime_digest": "b9a4f6c9676f471a6b2515517664836061e33eda52fc7e27ffa16f6504f1a7dd",
+      "rows": [
+        {
+          "id": "MoO3-Oneill-Eggins-2002-Table7-CMAS-1400C",
+          "label": "MoO3-Oneill-Eggins-2002-Table7-CMAS-1400C",
+          "sources": [
+            {
+              "work_id": "oneill-2002-feo-activity-coefficients-cmas",
+              "role": "derived",
+              "citation": "O'Neill & Eggins (2002), Chemical Geology 186, 151–181, doi:10.1016/S0009-2541(01)00414-4; locator: Table 7, p. 164; Table 8 composition law, p. 165; Table 1 mean compositions, p. 157; pure-liquid standard convention, p. 153; standard thermochemistry, Table 6, p. 163"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "oneill-2002-feo-activity-coefficients-cmas"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:ni",
+      "file": "data/fragments/ni/rows.json",
+      "digest": "c28bcef86385053618f50fbc0d8fba9b9e5789ba6633e4e05d2b5fbccb90891c",
+      "runtime_digest": "c28bcef86385053618f50fbc0d8fba9b9e5789ba6633e4e05d2b5fbccb90891c",
+      "rows": [
+        {
+          "id": "NiO-liquid-dilute-activity",
+          "label": "NiO-liquid-dilute-activity",
+          "sources": [
+            {
+              "work_id": "holzheid-1997-feo-nio-coo-activity-metal-saturated",
+              "role": "derived",
+              "citation": "Holzheid, A.; Palme, H.; Chakraborty, S. (1997). The activities of NiO, CoO and FeO in silicate melts. Chemical Geology 139, 21-38.; DOI 10.1016/S0009-2541(97)00030-2; locator: Abstract; experiment range and reported mean coefficient.; Abstract; mean gamma_NiO(l), reported spread, 77 experiments, and source-domain limits.; fragment citation: Holzheid, Palme, and Chakraborty (1997), The activities of NiO, CoO and FeO in silicate melts, Chemical Geology 139, 21-38, doi:10.1016/S0009-2541(97)00030-2"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "holzheid-1997-feo-nio-coo-activity-metal-saturated"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-p2o5-activity-fragment.v1:p",
+      "file": "data/fragments/p/rows.json",
+      "digest": "3b8d30388ba172d40fce85d38fb4ab237ff5340935c6d6005dc5b7ea2114b28b",
+      "runtime_digest": "3b8d30388ba172d40fce85d38fb4ab237ff5340935c6d6005dc5b7ea2114b28b",
+      "rows": [
+        {
+          "id": "suito_inoue_1984_eq14_no_mn",
+          "label": "suito_inoue_1984_eq14_no_mn",
+          "sources": []
+        },
+        {
+          "id": "turkdogan_2000_eq13",
+          "label": "turkdogan_2000_eq13",
+          "sources": []
+        },
+        {
+          "id": "turkdogan_2000_eq25",
+          "label": "turkdogan_2000_eq25",
+          "sources": []
+        }
+      ],
+      "work_ids": [],
+      "unmapped": [
+        {
+          "row": "suito_inoue_1984_eq14_no_mn",
+          "citation": "Suito, H. and Inoue, R. (1984), Phosphorus Distribution between MgO-saturated CaO-FetO-SiO2-P2O5-MnO Slags and Liquid Iron, Transactions of the Iron and Steel Institute of Japan 24(1), 40-46.; DOI 10.2355/isijinternational1966.24.40; locator: p. 45, Section IV.2, Eq. 14 (no-Mn form); pp. 45-46, Section IV.2, separate MnO coefficient 13 +/- 9. The synopsis on p. 40 gives the 1550-1650 C experiment range and slag systems.; fragment citation: suito-inoue-1984-high-p",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "suito_inoue_1984_eq14_no_mn",
+          "citation": "Suito, H., Inoue, R. and Takada, M. (1981), Phosphorus Distribution between Liquid Iron and MgO Saturated Slags of the System CaO-MgO-FeOx-SiO2, Transactions of the Iron and Steel Institute of Japan 21(4), 250-259.; DOI 10.2355/isijinternational1966.21.250; locator: Prior low-P dataset used in Suito and Inoue (1984), p. 45, Section IV.2; Turkdogan (2000), Table 1, p. 965 reports its P2O5 interval as 0.2-1.0 wt%.; fragment citation: suito-inoue-1981-low-p",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "suito_inoue_1984_eq14_no_mn",
+          "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.; DOI 10.2355/isijinternational.40.964; locator: p. 964, Eq. 4: earlier approximate hypothetical-liquid P2O5 standard, Delta G degree = -1534480 + 506.26*T J mol^-1.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "suito_inoue_1984_eq14_no_mn",
+          "citation": "Jung, I.-H. and Hudon, P. (2012), Thermodynamic Assessment of P2O5, Journal of the American Ceramic Society 95(11), 3665-3672; equation reproduced in Jung et al. (2013), Thermodynamic Database of P2O5-containing Oxide Systems for the Dephosphorization Process in Steelmaking, High Temperature Materials and Processes 32(3), 247-254.; DOI 10.1111/j.1551-2916.2012.05382.x; locator: Jung et al. (2013), Eq. 3: P2(g) + 5/2 O2(g) = P2O5(l), Delta G degree = -1616372 + 539.0*T J mol^-1; assessment does not quantify numeric uncertainty.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "turkdogan_2000_eq13",
+          "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.; DOI 10.2355/isijinternational.40.964; locator: p. 964, Eq. 4: earlier approximate hypothetical-liquid P2O5 standard, Delta G degree = -1534480 + 506.26*T J mol^-1.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "diagnostic"
+        },
+        {
+          "row": "turkdogan_2000_eq13",
+          "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.; DOI 10.2355/isijinternational.40.964; locator: p. 965, Eq. 13; BO = wt% CaO + 0.33 wt% MgO; the intercept is reported as -11.85 +/- 0.75.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "diagnostic"
+        },
+        {
+          "row": "turkdogan_2000_eq25",
+          "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.; DOI 10.2355/isijinternational.40.964; locator: p. 966, Eq. 23: revised estimated hypothetical-liquid P2O5 standard, Delta G degree = -1655480 + 571.0*T J mol^-1.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "diagnostic"
+        },
+        {
+          "row": "turkdogan_2000_eq25",
+          "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.; DOI 10.2355/isijinternational.40.964; locator: p. 967, Eq. 25; BO = wt% CaO + 0.33 wt% MgO.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "diagnostic"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 3,
+        "mapped_rows": 0,
+        "unmapped_citations": 8,
+        "rows_with_unmapped": 3
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:pb",
+      "file": "data/fragments/pb/rows.json",
+      "digest": "89866c1aa588385242cdae5fb3188a1f64b18432e214d82dd11dec675bd72d3a",
+      "runtime_digest": "89866c1aa588385242cdae5fb3188a1f64b18432e214d82dd11dec675bd72d3a",
+      "rows": [
+        {
+          "id": "PbO-BW1102-1923K",
+          "label": "PbO-BW1102-1923K",
+          "sources": [
+            {
+              "work_id": "wood-wade-2013-trace-activities",
+              "role": "derived",
+              "citation": "Wood & Wade (2013), Contributions to Mineralogy and Petrology 166, 911–921, doi:10.1007/s00410-013-0896-z; locator: p. 918, PbO–Fe exchange result and Table 1 BW1102; p. 920 conclusion. Table 1 reports the analyzed silicate composition as SiO2 59.4, Al2O3 10.7, FeO 11.3, MgO 10.4, CaO 7.2 wt%."
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "wood-wade-2013-trace-activities"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:rb",
+      "file": "data/fragments/rb/rows.json",
+      "digest": "160b331b8a03c13fb702fdad1d42d5a59886cb425450aedeffcfadf1e8a0fca1",
+      "runtime_digest": "160b331b8a03c13fb702fdad1d42d5a59886cb425450aedeffcfadf1e8a0fca1",
+      "rows": [
+        {
+          "id": "RbO0.5-Sossi-2019-1673-1823K",
+          "label": "RbO0.5-Sossi-2019-1673-1823K",
+          "sources": [
+            {
+              "work_id": "kems-012-sossi-2019",
+              "role": "derived",
+              "citation": "Sossi, P. A., Klemme, S., O'Neill, H. St.C., Berndt, J. & Moynier, F. (2019), \"Evaporation of moderately volatile elements from silicate melts: experiments and theory\", Geochimica et Cosmochimica Acta 260, 204–231, doi:10.1016/j.gca.2019.06.021; locator: Table 4 (PDF p. 57), apparent γi(RbO0.5)=1.3×10−4 at 1673.15 K, 7.4×10−5 at 1773.15 K, and 9.0×10−5 at 1823.15 K; reaction RbO0.5(l)=Rb(g)+1/4 O2; αe=1; FCMAS, 1 bar CO–CO2."
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "kems-012-sossi-2019"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc.sulfur-activity-fragment.v1:s",
+      "file": "data/fragments/s/rows.json",
+      "digest": "b2b0d7f4726511bfd6c62bc6b484991bef8dd0775ac1272eb2beb99c0c0cdbf9",
+      "runtime_digest": "b2b0d7f4726511bfd6c62bc6b484991bef8dd0775ac1272eb2beb99c0c0cdbf9",
+      "rows": [
+        {
+          "id": "sulfide_capacity_eq_7",
+          "label": "{'intercept': 0.225, 'terms_K': {'FeO': 25237.0, 'CaO': 5214.0, 'MnO': 12705.0, 'K2O': 19829.0, 'SiO2': -1109.0}, 'constant_K': -8879.0}",
+          "sources": [
+            {
+              "work_id": "boulliung-wood-2023-sulfur-solubility",
+              "role": "derived",
+              "citation": "Boulliung and Wood (2023), Eq. 7 sulfide capacity regression"
+            },
+            {
+              "work_id": "boulliung-wood-2023-sulfur-solubility",
+              "role": "derived",
+              "citation": "Boulliung and Wood (2023), Contributions to Mineralogy and Petrology 178:56; locator: Eq. 7, p. 6; composition ranges in Table 1, p. 3"
+            },
+            {
+              "work_id": "boulliung-wood-2023-sulfur-solubility",
+              "role": "derived",
+              "citation": "10.1007/s00410-023-02033-9; locator: Eq. 7, p. 6; composition ranges in Table 1, p. 3"
+            },
+            {
+              "work_id": "boulliung-wood-2023-sulfur-solubility",
+              "role": "derived",
+              "citation": "https://link.springer.com/article/10.1007/s00410-023-02033-9; locator: Eq. 7, p. 6; composition ranges in Table 1, p. 3"
+            }
+          ]
+        },
+        {
+          "id": "sulfate_capacity_eq_9",
+          "label": "{'intercept': -12.948, 'terms_K': {'Na2O': 28649.0, 'CaO': 15602.0, 'MgO': 9496.0, 'MnO': 16016.0, 'Al2O3': 4194.0}, 'constant_K': 29244.0}",
+          "sources": [
+            {
+              "work_id": "boulliung-wood-2023-sulfur-solubility",
+              "role": "derived",
+              "citation": "Boulliung and Wood (2023), Eq. 9 sulfate capacity regression"
+            },
+            {
+              "work_id": "boulliung-wood-2022-so2-solubility-silicate-melts",
+              "role": "derived",
+              "citation": "Boulliung and Wood (2023), Contributions to Mineralogy and Petrology 178:56; locator: Eq. 9, p. 7; underlying sulfate data and calibration compositions, Table 1, p. 151, Boulliung and Wood (2022)"
+            },
+            {
+              "work_id": "boulliung-wood-2023-sulfur-solubility",
+              "role": "derived",
+              "citation": "Boulliung and Wood (2023), Contributions to Mineralogy and Petrology 178:56; locator: Eq. 9, p. 7; underlying sulfate data and calibration compositions, Table 1, p. 151, Boulliung and Wood (2022)"
+            },
+            {
+              "work_id": "boulliung-wood-2022-so2-solubility-silicate-melts",
+              "role": "derived",
+              "citation": "sulfate data of Boulliung and Wood (2022); locator: Eq. 9, p. 7; underlying sulfate data and calibration compositions, Table 1, p. 151, Boulliung and Wood (2022)"
+            },
+            {
+              "work_id": "boulliung-wood-2023-sulfur-solubility",
+              "role": "derived",
+              "citation": "10.1007/s00410-023-02033-9; locator: Eq. 9, p. 7; underlying sulfate data and calibration compositions, Table 1, p. 151, Boulliung and Wood (2022)"
+            },
+            {
+              "work_id": "boulliung-wood-2023-sulfur-solubility",
+              "role": "derived",
+              "citation": "https://link.springer.com/article/10.1007/s00410-023-02033-9; locator: Eq. 9, p. 7; underlying sulfate data and calibration compositions, Table 1, p. 151, Boulliung and Wood (2022)"
+            },
+            {
+              "work_id": "boulliung-wood-2022-so2-solubility-silicate-melts",
+              "role": "derived",
+              "citation": "10.1016/j.gca.2022.08.032; locator: Eq. 9, p. 7; underlying sulfate data and calibration compositions, Table 1, p. 151, Boulliung and Wood (2022)"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "boulliung-wood-2022-so2-solubility-silicate-melts",
+        "boulliung-wood-2023-sulfur-solubility"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 2,
+        "mapped_rows": 2,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:sb",
+      "file": "data/fragments/sb/rows.json",
+      "digest": "1783b8bc17aaecd4c7716f90b3efc4fe688991bc1593c2c7086b05be9728a353",
+      "runtime_digest": "1783b8bc17aaecd4c7716f90b3efc4fe688991bc1593c2c7086b05be9728a353",
+      "rows": [
+        {
+          "id": "SbO1.5-Norris-2016-1923K",
+          "label": "SbO1.5-Norris-2016-1923K",
+          "sources": [
+            {
+              "work_id": "norris-2016-trace-volatility-thesis",
+              "role": "derived",
+              "citation": "Norris, C. Ashley (2016), \"Volatilities of Trace Elements in Silicate Melts\", DPhil thesis, University of Oxford; locator: Table 4.16 (PDF p. 170, Ch. 4 p. 140), mean 1.9 and range 0.11–8.2 at 1923 K; Table 4.9 (PDF p. 128) gives n/2=1.5 and Sb3+; the data combine sets B+F."
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "norris-2016-trace-volatility-thesis"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:sn",
+      "file": "data/fragments/sn/rows.json",
+      "digest": "20ce4193fb6c80629b9a290ca66d0afb5d6f502a60c4121125b2187683227f15",
+      "runtime_digest": "20ce4193fb6c80629b9a290ca66d0afb5d6f502a60c4121125b2187683227f15",
+      "rows": [
+        {
+          "id": "SnO-FCS-1573K",
+          "label": "SnO-FCS-1573K",
+          "sources": [
+            {
+              "work_id": "kems-041-sossi-fegley-2018",
+              "role": "derived",
+              "citation": "Sossi & Fegley (2018), Reviews in Mineralogy and Geochemistry 84, Table 2, pp. 409–410, doi:10.2138/rmg.2018.84.11; locator: Table 2 row FeO-CaO-SiO2, citing Takeda & Yazawa (1989)"
+            }
+          ]
+        },
+        {
+          "id": "SnO-fayalite-binary-1573K",
+          "label": "SnO-fayalite-binary-1573K",
+          "sources": [
+            {
+              "work_id": "takeda-1990-sn-slag-matertrans",
+              "role": "derived",
+              "citation": "Takeda, Yazawa, Chit & Ujiie (1990), Materials Transactions 31(9), 793–801, doi:10.2320/matertrans1989.31.793; locator: Abstract, p. 793; binary fayalite slag range"
+            }
+          ]
+        },
+        {
+          "id": "SnO-ferrite-binary-1573K",
+          "label": "SnO-ferrite-binary-1573K",
+          "sources": [
+            {
+              "work_id": "takeda-1990-sn-slag-matertrans",
+              "role": "derived",
+              "citation": "Takeda, Yazawa, Chit & Ujiie (1990), Materials Transactions 31(9), 793–801, doi:10.2320/matertrans1989.31.793; locator: Abstract, p. 793; binary ferrite slag range"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "kems-041-sossi-fegley-2018",
+        "takeda-1990-sn-slag-matertrans"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 3,
+        "mapped_rows": 3,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc.redox_fragment.v1:sr",
+      "file": "data/fragments/sr/rows.json",
+      "digest": "60661bd552107b539239125260074b313389ac1da64adfbb58c4653838133634",
+      "runtime_digest": "60661bd552107b539239125260074b313389ac1da64adfbb58c4653838133634",
+      "rows": [
+        {
+          "id": "7",
+          "label": "SrO(l)",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., NIST SRD 13.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/; fragment citation: Chase 1998, DOI 10.18434/T42S31, Tables O-013/O-014 and Sr-004"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, Strontium liquid, Table Sr-004, printed cells at 298.15 and 1800 K.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/Sr-004.html; fragment citation: NIST-JANAF SrO Tables O-013/O-014 and Sr(l) Table Sr-004; fragment citation: https://janaf.nist.gov/tables/O-014.html; fragment citation: Chase 1998, DOI 10.18434/T42S31, Tables O-013/O-014 and Sr-004"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, SrO crystal/liquid, Tables O-013 and O-014; fusion marker and printed functions.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/O-014.html; fragment citation: NIST-JANAF SrO Tables O-013/O-014 and Sr(l) Table Sr-004; fragment citation: Chase 1998, DOI 10.18434/T42S31, Tables O-013/O-014 and Sr-004"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Seventeen measured class-C crystal/liquid pairs from NIST-JANAF, calibrated in the existing liquid-from-solid input census; mean 8.297530569 J mol^-1 K^-1 per formula atom, leave-one-out maximum residual 46.401260148 J mol^-1 K^-1 and RMS 17.845205293 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/; fragment citation: Chase 1998, DOI 10.18434/T42S31, Tables O-013/O-014 and Sr-004"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, alpha-Al2O3 crystal Table Al-096 and liquid Table Al-100, including liquid Cp=192.464 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/Al-100.html; fragment citation: NIST-JANAF SrO Tables O-013/O-014 and Sr(l) Table Sr-004; fragment citation: https://janaf.nist.gov/tables/O-014.html"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, high-cristobalite SiO2 Table O-035 and liquid SiO2 Table O-038, liquid Cp=85.772 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/O-038.html; fragment citation: NIST-JANAF SrO Tables O-013/O-014 and Sr(l) Table Sr-004; fragment citation: https://janaf.nist.gov/tables/O-014.html"
+            }
+          ]
+        },
+        {
+          "id": "8",
+          "label": "SrSiO3(l)",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., NIST SRD 13.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-014/O-038"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, SrO crystal/liquid, Tables O-013 and O-014; fusion marker and printed functions.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/O-014.html; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-014/O-038"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Seventeen measured class-C crystal/liquid pairs from NIST-JANAF, calibrated in the existing liquid-from-solid input census; mean 8.297530569 J mol^-1 K^-1 per formula atom, leave-one-out maximum residual 46.401260148 J mol^-1 K^-1 and RMS 17.845205293 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-014/O-038"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, high-cristobalite SiO2 Table O-035 and liquid SiO2 Table O-038, liquid Cp=85.772 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/O-038.html; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-014/O-038"
+            }
+          ]
+        },
+        {
+          "id": "9",
+          "label": "Sr2SiO4(l)",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., NIST SRD 13.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-014/O-038"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, SrO crystal/liquid, Tables O-013 and O-014; fusion marker and printed functions.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/O-014.html; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-014/O-038"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Seventeen measured class-C crystal/liquid pairs from NIST-JANAF, calibrated in the existing liquid-from-solid input census; mean 8.297530569 J mol^-1 K^-1 per formula atom, leave-one-out maximum residual 46.401260148 J mol^-1 K^-1 and RMS 17.845205293 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-014/O-038"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, high-cristobalite SiO2 Table O-035 and liquid SiO2 Table O-038, liquid Cp=85.772 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/O-038.html; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-014/O-038"
+            }
+          ]
+        },
+        {
+          "id": "10",
+          "label": "SrAl2O4(l)",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., NIST SRD 13.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-013/Al-096/O-014/Al-100"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, SrO crystal/liquid, Tables O-013 and O-014; fusion marker and printed functions.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/O-014.html; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-013/Al-096/O-014/Al-100"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Seventeen measured class-C crystal/liquid pairs from NIST-JANAF, calibrated in the existing liquid-from-solid input census; mean 8.297530569 J mol^-1 K^-1 per formula atom, leave-one-out maximum residual 46.401260148 J mol^-1 K^-1 and RMS 17.845205293 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-013/Al-096/O-014/Al-100"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF, alpha-Al2O3 crystal Table Al-096 and liquid Table Al-100, including liquid Cp=192.464 J mol^-1 K^-1.; DOI 10.18434/T42S31; URL https://janaf.nist.gov/tables/Al-100.html; fragment citation: JANAF DOI 10.18434/T42S31, Tables O-013/Al-096/O-014/Al-100"
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "janaf-4th"
+      ],
+      "unmapped": [
+        {
+          "row": "7",
+          "citation": "Handbook of Inorganic Compounds, 2nd ed., entry 3076",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "8",
+          "citation": "Huntelaar, M. E., Cordfunke, E. H. P., and Ouweltjes, W. (1992), The standard molar enthalpies of formation of SrSiO3(s) and Sr2SiO4(s), Journal of Chemical Thermodynamics 24(2), 139–143.; DOI 10.1016/S0021-9614(05)80042-4; URL https://doi.org/10.1016/S0021-9614(05)80042-4; fragment citation: Huntelaar et al. (1992) and Fields et al. (1972); fragment citation: Huntelaar et al. (1992), DOI 10.1016/S0021-9614(05)80042-4, pp.139–143; fragment citation: Huntelaar et al. (1992), DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp.805–806",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "8",
+          "citation": "Huntelaar, M. E., Cordfunke, E. H. P., and Westrum, E. F. Jr. (1992), The heat capacity and derived thermophysical properties of some alkaline earth silicates and zirconates from 5 to 1000 K—I. Crystalline SrSiO3 and Sr2SiO4, Journal of Physics and Chemistry of Solids 53(6), 801–806; Tables 4–5.; DOI 10.1016/0022-3697(92)90193-H; URL https://doi.org/10.1016/0022-3697(92)90193-H; fragment citation: Huntelaar et al. (1992) and Fields et al. (1972); fragment citation: Huntelaar et al. (1992), DOI 10.1016/S0021-9614(05)80042-4, pp.139–143; fragment citation: Huntelaar et al. (1992), DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp.805–806",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "8",
+          "citation": "Fields, J. M. Jr., Dear, P. S., and Brown, J. J. Jr. (1972), Phase Equilibria in the System BaO-SrO-SiO2, Journal of the American Ceramic Society 55(12), 585–588; congruent melting temperatures in the abstract and phase diagram.; DOI 10.1111/j.1151-2916.1972.tb13448.x; URL https://doi.org/10.1111/j.1151-2916.1972.tb13448.x; fragment citation: Fields et al. (1972); fragment citation: DOI 10.1111/j.1151-2916.1972.tb13448.x, pp.585–588",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "8",
+          "citation": "17-pair class-C calibration",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "9",
+          "citation": "Huntelaar, M. E., Cordfunke, E. H. P., and Ouweltjes, W. (1992), The standard molar enthalpies of formation of SrSiO3(s) and Sr2SiO4(s), Journal of Chemical Thermodynamics 24(2), 139–143.; DOI 10.1016/S0021-9614(05)80042-4; URL https://doi.org/10.1016/S0021-9614(05)80042-4; fragment citation: Huntelaar et al. (1992) and Fields et al. (1972); fragment citation: Huntelaar et al. (1992), DOI 10.1016/S0021-9614(05)80042-4, pp.139–143; fragment citation: Huntelaar et al. (1992), DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp.805–806",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "9",
+          "citation": "Huntelaar, M. E., Cordfunke, E. H. P., and Westrum, E. F. Jr. (1992), The heat capacity and derived thermophysical properties of some alkaline earth silicates and zirconates from 5 to 1000 K—I. Crystalline SrSiO3 and Sr2SiO4, Journal of Physics and Chemistry of Solids 53(6), 801–806; Tables 4–5.; DOI 10.1016/0022-3697(92)90193-H; URL https://doi.org/10.1016/0022-3697(92)90193-H; fragment citation: Huntelaar et al. (1992) and Fields et al. (1972); fragment citation: Huntelaar et al. (1992), DOI 10.1016/S0021-9614(05)80042-4, pp.139–143; fragment citation: Huntelaar et al. (1992), DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp.805–806",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "9",
+          "citation": "Fields, J. M. Jr., Dear, P. S., and Brown, J. J. Jr. (1972), Phase Equilibria in the System BaO-SrO-SiO2, Journal of the American Ceramic Society 55(12), 585–588; congruent melting temperatures in the abstract and phase diagram.; DOI 10.1111/j.1151-2916.1972.tb13448.x; URL https://doi.org/10.1111/j.1151-2916.1972.tb13448.x; fragment citation: Fields et al. (1972); fragment citation: DOI 10.1111/j.1151-2916.1972.tb13448.x, pp.585–588",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "9",
+          "citation": "17-pair class-C calibration",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "10",
+          "citation": "Ye, X., Zhuang, W., Wang, J., Yuan, W., and Qiao, Z. (2007), Thermodynamic Description of SrO-Al2O3 System and Comparison with Similar Systems, Journal of Phase Equilibria and Diffusion 28, 362–368; Tables 1, 3, and 4, pp. 364–365.; DOI 10.1007/s11669-007-9086-x; URL https://doi.org/10.1007/s11669-007-9086-x; fragment citation: Ye et al. (2007); fragment citation: Ye et al. (2007), DOI 10.1007/s11669-007-9086-x, Tables 1, 3–4, pp.364–365",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "10",
+          "citation": "17-pair class-C calibration",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 4,
+        "mapped_rows": 4,
+        "unmapped_citations": 11,
+        "rows_with_unmapped": 4
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:tl",
+      "file": "data/fragments/tl/rows.json",
+      "digest": "efd79d9d7f2e7a8df2a99078280c44d708e3143a1de1719a675212186e7d326a",
+      "runtime_digest": "efd79d9d7f2e7a8df2a99078280c44d708e3143a1de1719a675212186e7d326a",
+      "rows": [
+        {
+          "id": "TlO0.5-Norris-2016-1923K",
+          "label": "TlO0.5-Norris-2016-1923K",
+          "sources": [
+            {
+              "work_id": "norris-2016-trace-volatility-thesis",
+              "role": "derived",
+              "citation": "Norris, C. Ashley (2016), \"Volatilities of Trace Elements in Silicate Melts\", DPhil thesis, University of Oxford; locator: Table 4.16 (PDF p. 170, Ch. 4 p. 140), mean 186 and range 28–1053 at 1923 K; Table 4.9 (PDF p. 128) gives n/2=0.5 and Tl+; §4.11.1 notes the Miedema estimate used for Tl."
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "norris-2016-trace-volatility-thesis"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:v",
+      "file": "data/fragments/v/rows.json",
+      "digest": "0e16f52550c7c2bbf45c0558950c2e0c88b12af6776734afc5839acb038f24fc",
+      "runtime_digest": "0e16f52550c7c2bbf45c0558950c2e0c88b12af6776734afc5839acb038f24fc",
+      "rows": [
+        {
+          "id": "VO1.5-Norris-2016-1923K",
+          "label": "VO1.5-Norris-2016-1923K",
+          "sources": [
+            {
+              "work_id": "norris-2016-trace-volatility-thesis",
+              "role": "derived",
+              "citation": "Norris, C. Ashley (2016), \"Volatilities of Trace Elements in Silicate Melts\", DPhil thesis, University of Oxford; locator: Table 4.16 (PDF p. 170, Ch. 4 p. 140), mean 2.1 and range 0.66–5.4 at 1923 K; Table 4.9 (PDF p. 128) gives n/2=1.5 and V3+; the graphite capsule contained C-saturated Fe."
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "norris-2016-trace-volatility-thesis"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-review-gamma-activity.v1:w",
+      "file": "data/fragments/w/rows.json",
+      "digest": "ebb8f61e6abbab36b6eca9ea11bf8d6c9afd07f8e63b26a5ce41691e608a875e",
+      "runtime_digest": "ebb8f61e6abbab36b6eca9ea11bf8d6c9afd07f8e63b26a5ce41691e608a875e",
+      "rows": [
+        {
+          "id": "WO3-Di-An-Fo-1923K",
+          "label": "WO3-Di-An-Fo-1923K",
+          "sources": [
+            {
+              "work_id": "wood-wade-2013-trace-activities",
+              "role": "derived",
+              "citation": "Wood & Wade (2013), Contributions to Mineralogy and Petrology 166, 911–921, doi:10.1007/s00410-013-0896-z; locator: pp. 916–917, exchange reaction (9), fit, and Fig. 4 contours for Diopside–Anorthite–Forsterite at 1,650 °C."
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "wood-wade-2013-trace-activities"
+      ],
+      "unmapped": [],
+      "complete": true,
+      "counts": {
+        "rows": 1,
+        "mapped_rows": 1,
+        "unmapped_citations": 0,
+        "rows_with_unmapped": 0
+      }
+    },
+    {
+      "identity": "openimcc-redox-fragment.v1:yb",
+      "file": "data/fragments/yb/rows.json",
+      "digest": "11f094ce164b1b057172a603b974a83041702be00fac4415d05ad02fe17e8b85",
+      "runtime_digest": "11f094ce164b1b057172a603b974a83041702be00fac4415d05ad02fe17e8b85",
+      "rows": [
+        {
+          "id": "101",
+          "label": "Yb2SiO5(l)",
+          "sources": [
+            {
+              "work_id": "costa-2015-yb-silicate-silica-activity",
+              "role": "diagnostic",
+              "citation": "Costa and Jacobson, Mass spectrometric measurements of the silica activity in the Yb2O3-SiO2 system and implications to assess the degradation of silicate-based coatings in combustion environments, J. Eur. Ceram. Soc. 35 (2015), 4259-4267; corrigendum (2018).; URL https://doi.org/10.1016/j.jeurceramsoc.2015.07.019; locator: Reported Yb2O3 + Yb2SiO5 and Yb2SiO5 + Yb2Si2O7 two-phase fields; not used as liquid fit data; fragment citation: corrected Costa & Jacobson Table 2"
+            }
+          ]
+        },
+        {
+          "id": "102",
+          "label": "Yb2Si2O7(l)",
+          "sources": []
+        }
+      ],
+      "work_ids": [
+        "costa-2015-yb-silicate-silica-activity"
+      ],
+      "unmapped": [
+        {
+          "row": "101",
+          "citation": "Liang, Navrotsky, Ludwig, Seifert, and Aldinger, Enthalpy of formation of rare-earth silicates Y2SiO5 and Yb2SiO5 and N-containing silicate Y10(SiO4)6N2, J. Mater. Res. 14 (1999), 1181–1185.; URL https://doi.org/10.1557/JMR.1999.0158; locator: pp. 1181–1185; fragment citation: Liang et al. (1999), pp. 1181–1185",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "101",
+          "citation": "Costa and Jacobson, Corrigendum to Mass spectrometric measurements of the silica activity in the Yb2O3–SiO2 system, J. Eur. Ceram. Soc. 35 (2015), 4259–4267; corrigendum (2018).; URL https://doi.org/10.1016/j.jeurceramsoc.2018.03.007; locator: Corrected Table 2; fragment citation: corrected Costa & Jacobson Table 2",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "101",
+          "citation": "Toropov and Bondar, Silicates of the Rare Earth Elements, Bulletin of the Academy of Sciences of the USSR, Division of Chemical Science 10(8) (1961), 1278–1285; phase diagram reproduced in Bakan et al. (2017), Fig. 5.; URL https://juser.fz-juelich.de/record/837846/files/Bakan%20J%20Therm%20Spray%20Tech%20%282017%29.pdf?version=1; locator: Yb2O3–SiO2 phase diagram, Fig. 5; fragment citation: Toropov & Bondar (1961), pp. 1278–1285.",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "102",
+          "citation": "Costa et al., Energetics of Reactions between Ceramic Coating Materials and Molten CMAS, J. Am. Ceram. Soc. 105 (2022), 7795–7805.; URL https://doi.org/10.1111/jace.18715; locator: Table 3; fragment citation: Costa et al. (2022), Table 3",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "102",
+          "citation": "Costa et al., Thermodynamics of Reaction between Gas-Turbine Ceramic Coatings and Ingested CMAS Corrodents, J. Am. Ceram. Soc. 102 (2019), 2948–2964.; URL https://doi.org/10.1111/jace.16113; locator: Table 4; reprinted in Costa et al. (2022), Table 4; fragment citation: Costa et al. (2019), Table 4",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "102",
+          "citation": "Toropov and Bondar, Silicates of the Rare Earth Elements, Bulletin of the Academy of Sciences of the USSR, Division of Chemical Science 10(8) (1961), 1278–1285; phase diagram reproduced in Bakan et al. (2017), Fig. 5.; URL https://juser.fz-juelich.de/record/837846/files/Bakan%20J%20Therm%20Spray%20Tech%20%282017%29.pdf?version=1; locator: Yb2O3–SiO2 phase diagram, Fig. 5; fragment citation: Toropov & Bondar (1961), pp. 1278–1285.",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 2,
+        "mapped_rows": 1,
+        "unmapped_citations": 6,
+        "rows_with_unmapped": 2
+      }
+    },
+    {
+      "identity": "openimcc-redox-fragment.v1:zn",
+      "file": "data/fragments/zn/rows.json",
+      "digest": "c653c05344bbe3390e63506ff8f65005a79d0c463404057b0d2cc4626b6d12b1",
+      "runtime_digest": "c653c05344bbe3390e63506ff8f65005a79d0c463404057b0d2cc4626b6d12b1",
+      "rows": [
+        {
+          "id": "1",
+          "label": "ZnO(l)",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "NIST-JANAF Zn-003 liquid zinc and O-029 oxygen"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "https://janaf.nist.gov/tables/Zn-003.html"
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "label": "Zn2SiO4(l)",
+          "sources": []
+        }
+      ],
+      "work_ids": [
+        "janaf-4th"
+      ],
+      "unmapped": [
+        {
+          "row": "1",
+          "citation": "TSIV Table 1603 ZnO(cr,l).",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "2",
+          "citation": "King, E. G. (1951), Heats of Formation of Crystalline Calcium Orthosilicate, Tricalcium Silicate and Zinc Orthosilicate, JACS 73(2), 656–658.; DOI 10.1021/ja01146a046; URL https://doi.org/10.1021/ja01146a046; locator: Table III, p. 657; reaction 2ZnO(cr)+SiO2(quartz)→Zn2SiO4(cr), −6990±140 cal/mol.; fragment citation: King (1951), Table III, p. 657",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "2",
+          "citation": "Barin, I. (1989), Thermochemical Data of Pure Substances; crystal data and Cp equation transcribed by Jeon, Michallik, and Lindberg (2025), Phase equilibria and thermodynamic optimization of the ZnO–SiO2 and MgO–ZnO–SiO2 systems, Ceramics International 51(25PC), 47003–47013.; DOI 10.1016/j.ceramint.2025.07.405; URL https://doi.org/10.1016/j.ceramint.2025.07.405; locator: Table 2, p. 47006; Barin values for ΔfH298, S298, and crystal Cp over 298–1800 K.; fragment citation: Barin (1989) crystal data as transcribed in Jeon et al. (2025), Table 2, p. 47006",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "2",
+          "citation": "Zaitseva et al. (2019), Synthesis, Crystal and Thermal Properties of Solid Solution Zn2−2xCu2xSiO4 with Willemite Structure, Russian Journal of Inorganic Chemistry 64(1), 1–6.; DOI 10.1134/S0036023619010224; URL https://sciencejournals.ru/view-article/?a=NergKhim1901022Zaitseva&j=nergkhim&n=1&v=64&y=2019; locator: Table 1 and Fig. 4, p. 3; Zn2SiO4 α→β event at 1500°C (0.13 kJ/mol) and melting at 1512°C (106.44 kJ/mol).; fragment citation: Zaitseva et al. (2019), Table 1 and Fig. 4, p. 3",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "2",
+          "citation": "Richet, P., Bottinga, Y., and Tequi, C. (1984), Heat capacity of silicate liquids. I. Sodium, potassium, calcium, aluminum silicate liquids, Journal of the American Ceramic Society.; DOI 10.1111/j.1151-2916.1984.tb19155.x; URL https://doi.org/10.1111/j.1151-2916.1984.tb19155.x; locator: J. Am. Ceram. Soc. 67, C-6–C-8 (1984); measured liquid-silica heat-capacity source used for the 81.39 J mol^-1 K^-1 additive estimate at the willemite fusion anchor.; fragment citation: Richet et al. (1984).",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 2,
+        "mapped_rows": 1,
+        "unmapped_citations": 5,
+        "rows_with_unmapped": 2
       }
     }
   ]

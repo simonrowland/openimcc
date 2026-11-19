@@ -177,6 +177,15 @@ def _expected_row_ids(artifact: dict) -> set[str]:
             for row in content["pure_oxide_controls"]
         }
         return phases | controls
+    if file.startswith("fragments/"):
+        content = json.loads(path.read_text(encoding="utf-8"))
+        rows = content.get("rows", {})
+        if isinstance(rows, dict):
+            return {str(row_id) for row_id in rows}
+        return {
+            str(row.get("row", index))
+            for index, row in enumerate(rows, start=1)
+        }
     raise AssertionError(f"unexpected packaged ancestry artifact: {file}")
 
 
@@ -186,7 +195,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 9
+    assert len(entries) == 34
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -281,6 +290,41 @@ def test_every_default_row_has_mapped_or_unmapped_lineage() -> None:
         assert all(item["row"] in actual for item in entry["unmapped"])
         assert entry["counts"]["rows"] == len(expected)
         assert entry["complete"] is (not entry["unmapped"])
+
+
+def test_every_shipped_fragment_row_appears_in_the_manifest() -> None:
+    entries = coefficient_ancestry()
+    fragment_entries = {
+        entry["file"]: entry
+        for entry in entries
+        if entry["file"].startswith("data/fragments/")
+    }
+    fragment_files = sorted(
+        path.relative_to(ROOT / "src" / "openimcc").as_posix()
+        for path in (ROOT / "src" / "openimcc" / "data" / "fragments").glob(
+            "*/rows.json"
+        )
+    )
+
+    assert set(fragment_entries) == set(fragment_files)
+    for file, entry in fragment_entries.items():
+        assert {row["id"] for row in entry["rows"]} == _expected_row_ids(entry)
+
+
+def test_moo3_fragment_cites_oneill_and_eggins_2002() -> None:
+    manifest = _json_resource("data/coefficient-ancestry.json")
+    molybdenum = _artifact(manifest["artifacts"], "openimcc-review-gamma-activity.v1:mo")
+    row = next(
+        row
+        for row in molybdenum["rows"]
+        if row["id"] == "MoO3-Oneill-Eggins-2002-Table7-CMAS-1400C"
+    )
+
+    assert any(
+        source["work_id"] == "oneill-2002-feo-activity-coefficients-cmas"
+        and "O'Neill" in source["citation"]
+        for source in row["sources"]
+    )
 
 
 def test_manifest_work_ids_match_the_recorded_vocabulary() -> None:

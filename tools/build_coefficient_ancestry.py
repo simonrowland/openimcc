@@ -10,6 +10,7 @@ import json
 import re
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -66,14 +67,20 @@ def _check_vocabulary_index(vocabulary: dict[str, Any], index: dict[str, Any]) -
 
 def _vocabulary_index_from_repo(repo: Path, commit: str) -> dict[str, Any]:
     result = subprocess.run(
-        ["git", "-C", str(repo), "show", f"{commit}:INDEX.yaml"],
+        [
+            "git",
+            "-C",
+            str(repo),
+            "show",
+            f"{commit}:data/literature/INDEX.yaml",
+        ],
         check=False,
         capture_output=True,
         text=True,
     )
     if result.returncode:
         raise ValueError(
-            f"could not read INDEX.yaml at {commit}: {result.stderr.strip()}"
+            f"could not read data/literature/INDEX.yaml at {commit}: {result.stderr.strip()}"
         )
     import yaml
 
@@ -803,6 +810,333 @@ def _crystal_phase_artifact(mapper: SourceMapper) -> dict[str, Any]:
     )
 
 
+_FRAGMENT_SOURCE_KEYS = {
+    "citation",
+    "doi",
+    "primary_source",
+    "source",
+    "source_citation",
+    "source_citations",
+    "source_doi",
+    "source_reference",
+    "source_url",
+    "target_source",
+    "underlying_data_doi",
+    "url",
+}
+_FRAGMENT_LOCATOR_KEYS = {
+    "locator",
+    "location",
+    "source_locator",
+    "source_location",
+}
+
+
+def _fragment_source_refs(
+    value: Any, role: str = "derived"
+) -> tuple[list[dict[str, str]], list[str]]:
+    references: list[dict[str, str]] = []
+    citation_keys: list[str] = []
+
+    def visit(item: Any, item_role: str) -> None:
+        if isinstance(item, dict):
+            locator = "; ".join(
+                str(item[key]).strip()
+                for key in _FRAGMENT_LOCATOR_KEYS
+                if isinstance(item.get(key), str) and item[key].strip()
+            )
+            for key, child in item.items():
+                if key == "citations" and isinstance(child, list):
+                    citation_keys.extend(
+                        entry for entry in child if isinstance(entry, str)
+                    )
+                    continue
+                if key in _FRAGMENT_SOURCE_KEYS:
+                    if (
+                        key == "target_source"
+                        and isinstance(child, str)
+                        and not DOI_RE.search(child)
+                        and not re.search(r"\b(?:19|20)[0-9]{2}\b", child)
+                    ):
+                        continue
+                    values = child if isinstance(child, list) else [child]
+                    for entry in values:
+                        if isinstance(entry, str) and entry.strip():
+                            chunks = (
+                                _segments(entry)
+                                if key in {"source", "source_citations"}
+                                else [entry.strip()]
+                            )
+                            references.extend(
+                                {"citation": chunk, "role": item_role, "locator": locator}
+                                for chunk in chunks
+                            )
+                        elif isinstance(entry, (dict, list)):
+                            visit(entry, item_role)
+                elif isinstance(child, (dict, list)):
+                    visit(child, "diagnostic" if key == "independent_check" else item_role)
+        elif isinstance(item, list):
+            for child in item:
+                visit(child, item_role)
+
+    visit(value, role)
+    unique_refs: list[dict[str, str]] = []
+    for reference in references:
+        if reference not in unique_refs:
+            unique_refs.append(reference)
+    return unique_refs, list(dict.fromkeys(citation_keys))
+
+
+def _fragment_citation_identity(value: str) -> tuple[str, str] | None:
+    year = re.search(r"\b((?:19|20)[0-9]{2})[a-z]?\b", value, re.I)
+    if not year:
+        return None
+    prefix = value[:year.start()].split(";", 1)[0]
+    author = prefix.split(",", 1)[0]
+    normalized = unicodedata.normalize("NFKD", author)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    normalized = re.sub(r"(?<=[a-z])['’](?=[a-z])", "", normalized.casefold())
+    names = re.findall(r"[a-z]+", normalized)
+    names = [name for name in names if name not in {"and", "et", "al", "jr"}]
+    if not names:
+        return None
+    surname = " ".join(names[:2]) if names[0] in {"de", "del", "van", "von"} and len(names) > 1 else names[0]
+    return surname, year.group(1)
+
+
+def _fragment_citation_authors(value: str) -> set[str]:
+    author = value.split(",", 1)[0]
+    normalized = unicodedata.normalize("NFKD", author)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    normalized = re.sub(r"(?<=[a-z])['’](?=[a-z])", "", normalized.casefold())
+    return {
+        name
+        for name in re.findall(r"[a-z]+", normalized)
+        if name not in {"and", "et", "al", "jr"}
+    }
+
+
+def _fragment_citation_matches(
+    citation: dict[str, Any], references: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    citation_text = str(citation.get("citation", ""))
+    citation_metadata = " ".join(str(value) for value in citation.values())
+    citation_dois = {
+        _normalized_doi(match.group(0)) for match in DOI_RE.finditer(citation_metadata)
+    }
+    citation_tables = {
+        match.group(0) for match in JANAF_TABLE_RE.finditer(citation_metadata)
+    }
+    citation_identity = _fragment_citation_identity(citation_text)
+    citation_authors = _fragment_citation_authors(citation_text)
+    matched: list[dict[str, str]] = []
+    for reference in references:
+        reference_text = reference["citation"]
+        reference_dois = {
+            _normalized_doi(match.group(0))
+            for match in DOI_RE.finditer(reference_text)
+        }
+        reference_tables = {
+            match.group(0) for match in JANAF_TABLE_RE.finditer(reference_text)
+        }
+        reference_identity = _fragment_citation_identity(reference_text)
+        same_author_year = bool(
+            citation_identity
+            and reference_identity
+            and citation_identity == reference_identity
+        )
+        normalized_reference = re.sub(r"[^a-z0-9]+", " ", reference_text.casefold())
+        author_match = bool(
+            not reference_identity
+            and len(citation_authors) > 1
+            and citation_authors <= set(normalized_reference.split())
+        )
+        citation_code = re.search(r"\b[A-Z]{2,6}\s*[- ]?\d{3,6}\b", citation_text)
+        code_match = bool(
+            citation_code
+            and re.search(re.escape(citation_code.group(0)), reference_text, re.I)
+        )
+        same_doi = bool(citation_dois.intersection(reference_dois)) and not (
+            citation_tables
+            and reference_tables
+            and not citation_tables.intersection(reference_tables)
+        )
+        if same_doi or same_author_year or author_match or code_match:
+            matched.append(reference)
+    return matched
+
+
+def _fragment_citation_text(
+    citation: str,
+    *,
+    doi: str | None = None,
+    url: str | None = None,
+    locator: str | None = None,
+) -> str:
+    parts = [citation.strip()] if citation.strip() else []
+    if doi and _normalized_doi(doi) not in {
+        _normalized_doi(match.group(0)) for match in DOI_RE.finditer(citation)
+    }:
+        parts.append(f"DOI {doi}")
+    if url and url not in citation:
+        parts.append(f"URL {url}")
+    if locator and locator.casefold() not in citation.casefold():
+        parts.append(f"locator: {locator}")
+    return "; ".join(parts)
+
+
+def _add_fragment_citation(
+    row: dict[str, Any], citation: str, role: str, mapper: SourceMapper
+) -> None:
+    if not citation.strip():
+        return
+    atoms = _citation_atoms(citation)
+    work_ids: list[str] = []
+    unresolved_atoms: list[str] = []
+    if atoms:
+        for atom in atoms:
+            work_ids.extend(mapper.resolve(atom))
+            if not mapper.resolve(atom):
+                unresolved_atoms.append(atom)
+        work_ids = list(dict.fromkeys(work_ids))
+    else:
+        work_ids = mapper.resolve(citation)
+    for work_id in work_ids:
+        item = {"work_id": work_id, "role": role, "citation": citation}
+        if item not in row["sources"]:
+            row["sources"].append(item)
+    for atom in unresolved_atoms:
+        item = {
+            "row": row["id"],
+            "citation": citation,
+            "reason": mapper.unmapped_reason(atom),
+            "role": role,
+        }
+        if item not in row["unmapped"]:
+            row["unmapped"].append(item)
+    if not atoms and not work_ids:
+        item = {
+            "row": row["id"],
+            "citation": citation,
+            "reason": mapper.unmapped_reason(citation),
+            "role": role,
+        }
+        if item not in row["unmapped"]:
+            row["unmapped"].append(item)
+
+
+def _fragment_citation_records(content: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    citations = content.get("citations", {})
+    if isinstance(citations, dict):
+        return {
+            key: value for key, value in citations.items() if isinstance(value, dict)
+        }
+    if isinstance(citations, list):
+        return {
+            str(item.get("id") or item.get("key") or f"citation:{index}"): item
+            for index, item in enumerate(citations, start=1)
+            if isinstance(item, dict)
+        }
+    return {}
+
+
+def _fragment_artifact(path: Path, mapper: SourceMapper) -> dict[str, Any]:
+    raw = path.read_bytes()
+    content = json.loads(raw)
+    element = str(content["element"])
+    source_rows = content.get("rows", {})
+    items = (
+        [(str(row_id), row) for row_id, row in source_rows.items()]
+        if isinstance(source_rows, dict)
+        else [
+            (str(row.get("row", index)), row)
+            for index, row in enumerate(source_rows, start=1)
+        ]
+    )
+    citation_records = _fragment_citation_records(content)
+    rows: list[dict[str, Any]] = []
+    for row_id, source_row in items:
+        label = str(source_row.get("complex") or source_row.get("row") or row_id)
+        record = _row(row_id, label)
+        references, citation_keys = _fragment_source_refs(source_row)
+        matched_reference_ids: set[int] = set()
+        explicit_keys = set(citation_keys)
+        for key, citation in citation_records.items():
+            matches = _fragment_citation_matches(citation, references)
+            if key not in explicit_keys and not matches:
+                continue
+            matched_reference_ids.update(id(reference) for reference in matches)
+            display = str(citation.get("citation", ""))
+            doi = citation.get("doi") or citation.get("equation_doi")
+            url = citation.get("url") or citation.get("source_url")
+            locator = (
+                citation.get("locator")
+                or citation.get("source_locator")
+                or citation.get("location")
+                or citation.get("source_location")
+            )
+            matched_locators = list(
+                dict.fromkeys(ref["locator"] for ref in matches if ref["locator"])
+            )
+            if matched_locators:
+                locator_parts = ([str(locator)] if locator else []) + matched_locators
+                locator = "; ".join(dict.fromkeys(locator_parts))
+            if not display:
+                display = url or doi or key
+            citation_text = _fragment_citation_text(
+                display,
+                doi=str(doi) if doi else None,
+                url=str(url) if url else None,
+                locator=str(locator) if locator else None,
+            )
+            for reference in matches:
+                if (
+                    reference["citation"]
+                    and reference["citation"].casefold() not in citation_text.casefold()
+                ):
+                    citation_text += f"; fragment citation: {reference['citation']}"
+            role = (
+                "diagnostic"
+                if any(ref["role"] == "diagnostic" for ref in matches)
+                or any(term in citation_text.casefold() for term in ("held-out", "held out", "not used"))
+                else "derived"
+            )
+            if "comparison" in str(source_row.get("property", "")).casefold():
+                role = "diagnostic"
+            _add_fragment_citation(record, citation_text, role, mapper)
+        for reference in references:
+            if id(reference) not in matched_reference_ids:
+                _add_fragment_citation(
+                    record,
+                    _fragment_citation_text(
+                        reference["citation"], locator=reference["locator"]
+                    ),
+                    reference["role"],
+                    mapper,
+                )
+        for key in citation_keys:
+            if key not in citation_records:
+                _add_fragment_citation(record, key, "derived", mapper)
+        _missing_provenance(record)
+        rows.append(record)
+
+    schema = (
+        content.get("schema")
+        or content.get("fragment_schema_version")
+        or content.get("fragment_id")
+        or "activity-fragment"
+    )
+    relative_file = path.relative_to(DATA).as_posix()
+    return _finish_artifact(
+        identity=f"{schema}:{element.casefold()}",
+        file="data/" + relative_file,
+        raw=raw,
+        rows=rows,
+        runtime_digest=_sha256(raw),
+        mapper=mapper,
+    )
+
+
 def build() -> dict[str, Any]:
     mapping = _json(MAPPINGS)
     vocabulary = _json(VOCABULARY)
@@ -860,6 +1194,10 @@ def build() -> dict[str, Any]:
         _barin_artifact(mapper),
         _crystal_phase_artifact(mapper),
     ]
+    artifacts.extend(
+        _fragment_artifact(path, mapper)
+        for path in sorted((DATA / "fragments").glob("*/rows.json"))
+    )
     referenced_work_ids = {
         work_id for artifact in artifacts for work_id in artifact["work_ids"]
     }
