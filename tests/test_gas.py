@@ -77,8 +77,23 @@ from openimcc.gas import (
     _nearest_interval_row,
     _SF04_REACTIONS,
 )
+from openimcc.trace_components import TraceActivityFlag
 
 _STANDARD_STATE_ENTROPY_CORRECTION_J_MOL_K = R_J_MOL_K * math.log(1.01325)
+
+_LUNAR_LOW_TI_COMPOSITION = {
+    "SiO2": 45.8,
+    "TiO2": 1.54,
+    "Al2O3": 13.9,
+    "MgO": 9.26,
+    "CaO": 11.3,
+    "Na2O": 0.41,
+    "K2O": 0.103,
+    "Cr2O3": 0.36,
+    "MnO": 0.206,
+    "P2O5": 0.103,
+    "FeO": 17.0,
+}
 
 
 def _standard_state_corrected_gas_species() -> frozenset[str]:
@@ -3645,21 +3660,8 @@ def test_overflowing_equilibrium_constant_is_a_typed_refusal(
 def test_lunar_low_ti_trace_composition_reports_major_gas_bias_gate(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    composition = {
-        "SiO2": 45.8,
-        "TiO2": 1.54,
-        "Al2O3": 13.9,
-        "MgO": 9.26,
-        "CaO": 11.3,
-        "Na2O": 0.41,
-        "K2O": 0.103,
-        "Cr2O3": 0.36,
-        "MnO": 0.206,
-        "P2O5": 0.103,
-        "FeO": 17.0,
-    }
     melt = evaluate(
-        composition,
+        _LUNAR_LOW_TI_COMPOSITION,
         1800.0,
         basis_type="wt",
         allow_extrapolation=True,
@@ -3667,7 +3669,7 @@ def test_lunar_low_ti_trace_composition_reports_major_gas_bias_gate(
     )
     activities = {
         oxide: float(melt.parent_activity[melt.parent_oxides.index(oxide)])
-        for oxide in composition
+        for oxide in _LUNAR_LOW_TI_COMPOSITION
         if oxide in melt.parent_oxides
     }
 
@@ -3677,7 +3679,7 @@ def test_lunar_low_ti_trace_composition_reports_major_gas_bias_gate(
         1800.0,
         1.0e-3,
         gas_pack,
-        composition_wt_pct=composition,
+        composition_wt_pct=_LUNAR_LOW_TI_COMPOSITION,
     )
 
     assert len(without_composition) == 45
@@ -3700,6 +3702,99 @@ def test_lunar_low_ti_trace_composition_reports_major_gas_bias_gate(
     # caller-supplied SiO2 activity or the pinned-fO2 silicon pressures.
     assert with_composition["SiO"] == without_composition["SiO"]
     assert with_composition["SiO2"] == without_composition["SiO2"]
+
+
+def test_lunar_low_ti_phosphorus_uses_trace_activity_and_janaf_anchor(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    temperature = 1800.0
+    oxygen_fugacity = 1.0e-3
+    melt = evaluate(
+        _LUNAR_LOW_TI_COMPOSITION,
+        temperature,
+        basis_type="wt",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    activities = {
+        oxide: float(melt.parent_activity[melt.parent_oxides.index(oxide)])
+        for oxide in _LUNAR_LOW_TI_COMPOSITION
+        if oxide in melt.parent_oxides
+    }
+    p2o5_index = melt.parent_oxides.index("P2O5")
+    p2o5_activity = activities["P2O5"]
+    assert p2o5_activity == pytest.approx(2.3445036367522946e-13, rel=1e-10)
+    assert melt.parent_gamma[p2o5_index] == pytest.approx(
+        p2o5_activity / melt.parent_x[p2o5_index], rel=1e-12
+    )
+    melt_flag = next(
+        item for item in melt.labels.notices
+        if isinstance(item, TraceActivityFlag) and item.oxide == "P2O5"
+    )
+    assert "temperature_outside_1823_1923_K" in (
+        melt_flag.estimates[0].violated_axes
+    )
+
+    without_composition = evaluate_gas(
+        activities,
+        temperature,
+        oxygen_fugacity,
+        gas_pack,
+        gas_species=_P_CHANNELS,
+    )
+    with_composition = evaluate_gas(
+        activities,
+        temperature,
+        oxygen_fugacity,
+        gas_pack,
+        gas_species=_P_CHANNELS,
+        composition_wt_pct=_LUNAR_LOW_TI_COMPOSITION,
+    )
+
+    # Independent 1800 K JANAF anchors (kJ/mol): P 141.448, P2 0,
+    # P4 41.372, PO -115.982, PO2 -277.636, P4O6 -1276.387, and
+    # P4O10 -1340.429. The Jung-Hudon 1-bar P2O5(l) parent is about
+    # -645.481 kJ/mol. For P2O5(l) -> n_gas*X(g) + n_O2*O2(g),
+    # ΔG°=n_gas*Gf°(X)-Gf°(P2O5); K°=exp(-ΔG°/RT), and
+    # p_X=(K°*a(P2O5)/fO2**n_O2)**(1/n_gas). Gibbs energies are J/mol,
+    # RT is J/mol, and p_X is the dimensionless p/p° (numerically bar at
+    # p°=1 bar). This pins the pressure scale independently of the gas solver.
+    gas_gibbs_j_mol = {
+        "P": 141.448e3,
+        "P2": 0.0,
+        "P4": 41.372e3,
+        "PO": -115.982e3,
+        "PO2": -277.636e3,
+        "P4O6": -1276.387e3,
+        "P4O10": -1340.429e3,
+    }
+    reactions = {
+        "P": (2.0, 2.5),
+        "P2": (1.0, 2.5),
+        "P4": (0.5, 2.5),
+        "PO": (2.0, 1.5),
+        "PO2": (2.0, 0.5),
+        "P4O6": (0.5, 1.0),
+        "P4O10": (0.5, 0.0),
+    }
+    parent_gibbs_j_mol = -645.481e3
+    for species, (n_gas, n_o2) in reactions.items():
+        delta_g_j_mol = n_gas * gas_gibbs_j_mol[species] - parent_gibbs_j_mol
+        equilibrium_constant = math.exp(
+            -delta_g_j_mol / (R_J_MOL_K * temperature)
+        )
+        expected = (
+            equilibrium_constant * p2o5_activity / oxygen_fugacity**n_o2
+        ) ** (1.0 / n_gas)
+        assert without_composition[species] == pytest.approx(expected, rel=0.03)
+        assert with_composition[species] == pytest.approx(expected, rel=0.03)
+
+    assert without_composition["P4O6"] == pytest.approx(2.1e-20, rel=0.03)
+    assert without_composition["PO2"] == pytest.approx(1.34e-7, rel=0.03)
+    assert isinstance(with_composition.domain_flags["P4O6"], TraceActivityFlag)
+    assert "temperature_outside_1823_1923_K" in str(
+        with_composition.domain_flags["P4O6"]
+    )
 
 
 def test_unknown_activity_key_names_itself_and_omitted_parent_stays_zero(

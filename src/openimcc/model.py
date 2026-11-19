@@ -3036,6 +3036,37 @@ def evaluate(
                     trace_activity_estimates[oxide] = replace(
                         estimate, reference=None
                     )
+            p2o5_estimate = trace_activity_estimates.get("P2O5")
+            if (
+                p2o5_estimate is not None
+                and "P2O5" in result.parent_oxides
+            ):
+                p2o5_index = result.parent_oxides.index("P2O5")
+                parent_activity = result.parent_activity.copy()
+                parent_activity[p2o5_index] = p2o5_estimate.activity
+                parent_gamma = result.parent_gamma.copy()
+                if result.parent_x[p2o5_index] > 0.0:
+                    parent_gamma[p2o5_index] = (
+                        p2o5_estimate.activity / result.parent_x[p2o5_index]
+                    )
+
+                # Premise: the Mn redox pack's P2O5 parent is on the half-
+                # P4O10(cr) standard, while the trace helper returns the
+                # gas-layer Jung-Hudon P2O5(l), 1-bar activity. Equal chemical
+                # potentials give mu_source + RT ln(a_source) =
+                # mu_target + RT ln(a_target), hence
+                # a_target = a_source * exp((G_source - G_target)/(RT)).
+                # The helper already applies that conversion to its Suito
+                # hypothetical-liquid estimate, so expose that target value
+                # instead of the redox proxy. Gibbs energies are J/mol, R is
+                # J/(mol K), and T is K, so the exponent is dimensionless.
+                # As x(P2O5) -> 0 the helper activity -> 0; the redox proxy
+                # must not leave finite phosphorus pressure in that limit.
+                result = replace(
+                    result,
+                    parent_activity=parent_activity,
+                    parent_gamma=parent_gamma,
+                )
         trace_activity_flags.extend(
             TraceActivityFlag(estimate)
             for estimate in trace_activity_estimates.values()

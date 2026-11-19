@@ -353,12 +353,17 @@ standard. The opt-in `evaluate_p2o5_activity(composition_moles, T_K)` estimates
 dilute-solute P2O5 activity with Suito & Inoue (1984) Eq. 14 and returns typed
 domain notices plus Turkdogan Eq. 13 and Eq. 25 as two comparison regressions,
 not an uncertainty interval around Suito; Suito can lie outside their spread.
+When a trace P2O5 is present with MnO, the redox merge also contains a P2O5
+parent row referenced to half P4O10(cr). `evaluate()` replaces that proxy with
+the trace helper's activity on the Jung-Hudon liquid standard and preserves
+the helper's validity axes in its typed notice.
 P-gas pressures above 1 bar carry a notice that phosphorus would leave
 essentially completely and the fixed-composition dilute equilibrium is not
 physical there. See
-[`docs/p2o5-dilute-solute.md`](docs/p2o5-dilute-solute.md). The default solver
-still does not compute phosphorus melt activity; this opt-in extension does.
-The extension does not model Fe-P alloy partitioning or Fe(III) phosphates.
+[`docs/p2o5-dilute-solute.md`](docs/p2o5-dilute-solute.md). The default
+eight-parent equilibrium does not include phosphorus; the trace helper
+provides the estimate when P2O5 is supplied. The extension does not model
+Fe-P alloy partitioning or Fe(III) phosphates.
 
 The `sp_extension` melt packs keep their existing `P2O5` rows, whose activity
 reference is half `P4O10(cr)`. That crystal-based melt reference is distinct

@@ -67,6 +67,10 @@
 ### Redox and selected-pack behavior
 
 - Malformed liquid-standard declarations with non-string standard ids or citations now raise `ImccMalformedDatapackError`.
+- MnO redox results no longer expose the P2O5 crystal-standard proxy as a
+  gas-ready activity. When P2O5 is a trace component, `evaluate()` returns the
+  trace helper estimate on the Jung-Hudon liquid standard and retains its
+  typed validity axes.
 - `active_liquid_standards` and `check_pack_standards` report the melt, gas,
   and extension-parent standards for `published`, omitting only redox-derived
   entries such as FeO1.5. `evaluate` raises `ProfileRedoxUnavailableError`
