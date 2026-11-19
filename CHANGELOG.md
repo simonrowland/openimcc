@@ -9,8 +9,10 @@
   converts elemental Li/Zn to their oxide formula-unit basis.
 - Ag2O, Sb2O3 and Tl2O review-γ estimates remain reportable, while their gas
   channels are refused when the source and gas parent standards differ.
-- Gas P channels refuse S/P extension P2O5 activities on the half-P4O10(cr)
-  proxy when the supplied trace composition identifies the source mismatch.
+- Gas P channels fail closed when supplied a(P2O5) differs numerically from
+  the Jung-Hudon P2O5(l) helper estimate. Because numeric activities carry no
+  provenance, this can also refuse an already-converted value; a provenance-
+  based identification may refine the check later.
 - Sulfur trace activity notices label the S2 fugacity basis as JANAF 1-bar
   S2(g), matching the gas reactions' standard state.
 

@@ -1867,6 +1867,46 @@ def test_gas_trace_parents_use_gas_standards_or_refuse(packaged_gas_pack) -> Non
         )
 
 
+def test_sulfur_fragment_keeps_s2_when_so3_is_also_present(packaged_gas_pack) -> None:
+    composition = {
+        "SiO2": 50.0,
+        "MgO": 15.0,
+        "FeO": 10.0,
+        "CaO": 12.0,
+        "Al2O3": 12.0,
+        "S": 0.01,
+        "SO3": 0.1,
+    }
+    result = evaluate_gas(
+        {},
+        1800.0,
+        1.0e-8,
+        packaged_gas_pack,
+        composition_wt_pct=composition,
+    )
+
+    assert set(result.omitted_channels) == {
+        "Al",
+        "Al2",
+        "Al2O",
+        "Al2O2",
+        "AlO",
+        "AlO2",
+        "AlSiO",
+        "Ca",
+        "CaO",
+        "Fe",
+        "FeO",
+        "Mg",
+        "MgO",
+    }
+    assert "S" in result
+    assert result["S"] > 0.0
+    sulfur_flag = result.domain_flags["S"]
+    assert isinstance(sulfur_flag, TraceActivityFlag)
+    assert any(estimate.oxide == "S" for estimate in sulfur_flag.estimates)
+
+
 def test_cli_labels_sulfur_activity_gas_standard(capsys) -> None:
     from openimcc.cli import main
 

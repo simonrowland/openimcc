@@ -3522,6 +3522,11 @@ def evaluate_gas(
         ``H2`` and ``N2`` accept ``f(parent)/p°``; ``C`` is
         relative to graphite. HCl, HF, HBr, and HI require both H2 and X2;
         PS requires both ``P2O5`` and ``S2`` activities.
+        Convert every supplied parent activity to this gas model's standard:
+        pure-liquid condensed parents or fugacity ratios on the 1-bar gas
+        standard (and pure-metal standards where specified). Numeric values do
+        not carry their source standard or provenance, so no conversion can be
+        inferred when ``composition_wt_pct`` is omitted.
     T_K:
         Temperature in Kelvin. Must be finite and positive on this path.
     fO2:
@@ -3836,8 +3841,12 @@ def evaluate_gas(
         composition_moles = dict(composition_moles)
         # Convert elemental inputs onto the oxide formula-unit basis before
         # resolving their gas parents: 2 Li + O -> Li2O gives n(Li2O)=n(Li)/2;
-        # Zn + O -> ZnO gives n(ZnO)=n(Zn). The oxide-equivalent weight adds
-        # the oxygen mass so the existing formula-mole normalization applies.
+        # Zn + O -> ZnO gives n(ZnO)=n(Zn). When both forms are present, their
+        # amounts add on that formula-unit basis. The oxide-equivalent weight
+        # adds oxygen mass before formula-mole normalization. The gas parent is
+        # the redox free-species activity, not the total formula fraction.
+        # Sanity: the reviewer's 0.05 wt% Li hand check gives a(Li2O)=6.10e-7
+        # (apparent gamma=2.8e-4) because Li sits in Li2SiO3.
         for element, oxide, cations_per_oxide in (
             ("Li", "Li2O", 2),
             ("Zn", "ZnO", 1),

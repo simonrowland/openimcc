@@ -3240,6 +3240,9 @@ def evaluate_redox(
     ``RedoxNoLiveCoupleError`` because their oxygen fugacity is undefined.
     ``strict_pack_standards`` refuses known liquid-standard mismatches and
     missing declarations before solving; unresolved references remain notices.
+    In the S/P extension, ``parent_activity["P2O5"]`` is reported on the
+    half-P4O10(cr) crystal proxy. Convert it before using it as gas
+    ``a(P2O5)`` on the pure-liquid standard.
     """
     if profile is None:
         result, _state = _evaluate_redox_with_packs(
