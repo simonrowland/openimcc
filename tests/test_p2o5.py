@@ -13,6 +13,7 @@ from openimcc import (
     load_datapack,
 )
 from openimcc.gas import evaluate_gas, load_gas_datapack, species_thermo
+from openimcc.p2o5 import P2O5ActivityRefusal
 
 
 @pytest.mark.parametrize("value", [True, np.bool_(True)])
@@ -40,7 +41,28 @@ def test_suito_regression_and_explicit_atm_to_bar_standard_conversion() -> None:
     assert result.log10_activity == pytest.approx(expected)
     assert result.activity == pytest.approx(10**expected)
     assert result.activity == pytest.approx(result.gamma * result.x_p2o5)
+    assert result.activity.hex() == "0x1.bb7329112883fp-53"
+    assert result.gamma.hex() == "0x1.5a71f81567a71p-46"
     assert result.notice.code == "imcc_p2o5_activity_domain_notice"
+
+
+@pytest.mark.parametrize(
+    ("composition", "temperature", "axis"),
+    [
+        ({"P2O5": 1.0e308, "SiO2": 1.0e308}, 1873.0, "composition_moles"),
+        ({"P2O5": 1.0, "SiO2": 1.0}, 5.0e-324, "temperature_K"),
+        ({"P2O5": 1.0, "SiO2": 1.0}, 1.0e308, "temperature_K"),
+    ],
+)
+def test_p2o5_unrepresentable_composition_or_temperature_is_typed(
+    composition, temperature, axis
+) -> None:
+    with pytest.raises(P2O5ActivityRefusal) as refused:
+        evaluate_p2o5_activity(composition, temperature)
+
+    assert refused.value.code == "p2o5_activity_unrepresentable"
+    assert refused.value.row_id == "suito_inoue_1984_eq14_no_mn"
+    assert refused.value.violated_axes == (axis,)
 
 
 @pytest.mark.parametrize(

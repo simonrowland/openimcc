@@ -9,6 +9,11 @@
 - Serve Os's empirical card data through 3300 K above its condensate fit maximum
   of 3000 K and below its printed melting point.
 
+### Numeric representability
+
+- Suito-Inoue P2O5 activity reports a typed refusal when extreme composition
+  or temperature inputs make its result unrepresentable.
+
 ### Trace gas parent standards
 
 - Gas trace filling now uses the sulfur fugacity helper for S2, refuses

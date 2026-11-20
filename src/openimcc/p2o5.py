@@ -13,6 +13,7 @@ from typing import Mapping
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
 from openimcc.activity_fragments import load_activity_fragment
+from openimcc.kernel import ImccComponentOutsideDomainError
 from openimcc.scalar_boundary import is_declared_real_scalar
 
 _LN10 = math.log(10.0)
@@ -22,6 +23,28 @@ _SUPPORTED_COMPONENTS = frozenset(
         "Na2O", "K2O", "P2O5", "MnO", "Fe2O3",
     }
 )
+
+
+class P2O5ActivityRefusal(ImccComponentOutsideDomainError):
+    """Typed refusal when the selected P2O5 law cannot be represented."""
+
+    code = "p2o5_activity_unrepresentable"
+
+    def __init__(self, row_id: str, axis: str, reason: str) -> None:
+        self.row_id = row_id
+        self.violated_axes = (axis,)
+        self.reason = reason
+        super().__init__(
+            f"{self.code}: P2O5 row {row_id} refused; violated axis: {axis}; {reason}"
+        )
+
+
+def _checked_finite(value: float, row_id: str, axis: str) -> float:
+    if not math.isfinite(value):
+        raise P2O5ActivityRefusal(
+            row_id, axis, f"{axis} is not finite for the Suito-Inoue P2O5 law"
+        )
+    return value
 
 
 @dataclass(frozen=True)
@@ -75,6 +98,7 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
     rows = fragment["rows"]
     standards = fragment["standards"]
     central_row = rows["suito_inoue_1984_eq14_no_mn"]
+    row_id = "suito_inoue_1984_eq14_no_mn"
     central_coefficients = central_row["coefficients"]
     amounts: dict[str, float] = {}
     for key, amount in composition_moles.items():
@@ -89,7 +113,20 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         # Fe2O3 contributes two Fe atoms, represented as two FeO-equivalent
         # formula moles in this regression's FetO term and composition basis.
         amounts[canonical] = amounts.get(canonical, 0.0) + value * (2 if key == "Fe2O3" else 1)
-    total = math.fsum(amounts.values())
+        if not math.isfinite(amounts[canonical]):
+            raise P2O5ActivityRefusal(
+                row_id, "composition_moles", "canonical mole total is not finite"
+            )
+    try:
+        total = math.fsum(amounts.values())
+    except OverflowError as exc:
+        raise P2O5ActivityRefusal(
+            row_id, "composition_moles", "total moles are not representable"
+        ) from exc
+    if not math.isfinite(total):
+        raise P2O5ActivityRefusal(
+            row_id, "composition_moles", "total moles are not finite"
+        )
     if total <= 0 or amounts.get("P2O5", 0.0) <= 0:
         raise ValueError("composition must contain positive total moles and P2O5")
     x = {name: value / total for name, value in amounts.items()}
@@ -100,7 +137,20 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         else math.log10(amounts["P2O5"]) - math.log10(total)
     )
     wt = {name: value * MOLAR_MASS_G_MOL[name] for name, value in amounts.items()}
-    total_mass = math.fsum(wt.values())
+    if any(not math.isfinite(value) for value in wt.values()):
+        raise P2O5ActivityRefusal(
+            row_id, "composition_wt_percent", "oxide mass is not finite"
+        )
+    try:
+        total_mass = math.fsum(wt.values())
+    except OverflowError as exc:
+        raise P2O5ActivityRefusal(
+            row_id, "composition_wt_percent", "total oxide mass is not representable"
+        ) from exc
+    if not math.isfinite(total_mass):
+        raise P2O5ActivityRefusal(
+            row_id, "composition_wt_percent", "total oxide mass is not finite"
+        )
     wt = {name: value / total_mass * 100.0 for name, value in wt.items()}
     term = math.fsum(
         float(coefficient) * x.get(name, 0.0)
@@ -111,6 +161,7 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         + float(central_coefficients["inverse_temperature_k"]) / T
         + float(central_coefficients["constant"])
     )
+    _checked_finite(log_gamma, row_id, "temperature_K")
     source_standard = standards[central_row["source_standard"]]
     source_delta_g = source_standard["delta_g_standard_j_mol"]
     source_g = float(source_delta_g["intercept"]) + float(source_delta_g["slope_j_mol_k"]) * T
@@ -123,8 +174,13 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         * T
         * math.log(float(target_standard["pressure_ratio_atm_per_bar"]))
     )
+    _checked_finite(source_g, row_id, "temperature_K")
+    _checked_finite(pack_g, row_id, "temperature_K")
     old_standard_shift = (source_g - pack_g) / (R_J_MOL_K*T*_LN10)
-    central = log_gamma + log10_x_p + old_standard_shift
+    _checked_finite(old_standard_shift, row_id, "temperature_K")
+    central = _checked_finite(
+        log_gamma + log10_x_p + old_standard_shift, row_id, "temperature_K"
+    )
     # Turkdogan Eq. 13 and Eq. 25 use different published liquid standards;
     # retain each row's standard when forming the comparison spread.
     eq13 = rows["turkdogan_2000_eq13"]
@@ -187,5 +243,13 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
     additional_notices = (
         (P2O5FeIIINotice(),) if composition_moles.get("Fe2O3", 0) > 0 else ()
     )
-    return P2O5ActivityResult(10.0**central, central, 10.0**(central-log10_x_p),
-                              x_p, band, width, notice, additional_notices)
+    return P2O5ActivityResult(
+        activity=10.0**central,
+        log10_activity=central,
+        gamma=10.0**(central - log10_x_p),
+        x_p2o5=x_p,
+        band_log10_activity=band,
+        band_width_dex=width,
+        notice=notice,
+        additional_notices=additional_notices,
+    )
