@@ -368,26 +368,39 @@ domain notices plus Turkdogan Eq. 13 and Eq. 25 as two comparison regressions,
 not an uncertainty interval around Suito; Suito can lie outside their spread.
 With or without MnO, P2O5 is not a parent in the default D066 `evaluate()`
 result. When P2O5 is present, its helper activity on the Jung-Hudon liquid
-standard is reported in the `trace_components_outside_melt_model` notice, at
-`melt.labels.notices[...].activities["P2O5"].activity`. Gas P channels need
+standard is reported on the typed trace notice and through
+`melt.trace_activities()["P2O5"].activity`. Gas P channels need
 that activity supplied explicitly, or need `composition_wt_pct` so
 `evaluate_gas()` can resolve it from the composition. For example:
 
 ```python
-melt = evaluate(composition, T_K, basis_type="wt")
-p_notice = next(
-    notice for notice in melt.labels.notices
-    if getattr(notice, "code", None) == "trace_components_outside_melt_model"
+from openimcc import (
+    ImccTraceMajorBiasError, evaluate, evaluate_gas, load_gas_datapack,
 )
-activities = {name: melt.activity(name) for name in melt.parent_oxides}
-activities["P2O5"] = p_notice.activities["P2O5"].activity
+
+composition = {
+    "SiO2": 51.85068, "MgO": 4.78527, "FeO": 13.77307, "CaO": 9.02862,
+    "Al2O3": 14.80572, "TiO2": 1.73824, "Na2O": 3.23108, "K2O": 0.78732,
+    "P2O5": 0.10,
+}
+T_K, fO2_bar = 1800.0, 1e-10
+melt = evaluate(composition, T_K, basis_type="wt")
+
+# Majors that the trace-bias gate refuses for this P2O5 load are left out.
+activities = {}
+for name in melt.parent_oxides:
+    try:
+        activities[name] = melt.activity(name)
+    except ImccTraceMajorBiasError:
+        pass
+activities["P2O5"] = melt.trace_activities()["P2O5"].activity
 gas = evaluate_gas(
     activities, T_K, fO2_bar, load_gas_datapack(),
-    parent_oxides=(*melt.parent_oxides, "P2O5"),
+    parent_oxides=tuple(activities),
 )
 # Alternatively, let evaluate_gas() resolve the trace activity itself:
 gas = evaluate_gas(
-    {name: melt.activity(name) for name in melt.parent_oxides},
+    {name: a for name, a in activities.items() if name != "P2O5"},
     T_K, fO2_bar, load_gas_datapack(), composition_wt_pct=composition,
 )
 ```
