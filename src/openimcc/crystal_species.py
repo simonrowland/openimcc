@@ -13,6 +13,7 @@ import re
 from typing import Any, Mapping, Sequence
 
 from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
+from openimcc.diagnostics import _crystal_source_cap_excludes_candidate
 from openimcc.janaf_crystals import (
     _load_crystal_species as _load_janaf_crystal_species,
     _load_phases as _load_janaf_phases,
@@ -833,17 +834,16 @@ def _available_at_temperature(
     temperature_K: float,
     *,
     allow_extrapolation: bool,
-) -> tuple[bool, float | None, bool]:
+) -> tuple[bool, float | None, bool, float | None]:
     lower_K, upper_K = candidate.interval_K
     limit_K = _source_solid_limit(candidate)
-    if (
-        len(candidate.phase.get("oxide_stoichiometry", {})) > 1
-        and limit_K is not None
-        and temperature_K > limit_K
-    ):
-        return False, None, False
+    cap_limit_K = _crystal_source_cap_excludes_candidate(
+        candidate.phase.get("oxide_stoichiometry", {}), limit_K, temperature_K,
+    )
+    if cap_limit_K is not None:
+        return False, None, False, cap_limit_K
     if lower_K <= temperature_K <= upper_K:
-        return True, None, False
+        return True, None, False, None
     if (
         allow_extrapolation
         and candidate.dataset == "Barin aluminates"
@@ -855,8 +855,8 @@ def _available_at_temperature(
         edge_K = upper_K
         cp_nodes = candidate.polymorph["source_series"].get("Cp", {}).get("nodes", ())
         if any(float(node["T_K"]) == edge_K for node in cp_nodes):
-            return True, edge_K, True
-    return False, None, False
+            return True, edge_K, True, None
+    return False, None, False, None
 
 
 def _evaluate_candidate(
@@ -1073,19 +1073,19 @@ def evaluate_crystal_species(
                 != named_segment.casefold()
             ):
                 continue
-        available, continue_from_K, extrapolated = _available_at_temperature(
+        (
+            available,
+            continue_from_K,
+            extrapolated,
+            cap_limit_K,
+        ) = _available_at_temperature(
             candidate,
             temperature_K,
             allow_extrapolation=allow_extrapolation,
         )
         if not available:
-            limit = _source_solid_limit(candidate)
-            if (
-                len(candidate.phase.get("oxide_stoichiometry", {})) > 1
-                and limit is not None
-                and temperature_K > limit
-            ):
-                cap_refusals.append((candidate, limit))
+            if cap_limit_K is not None:
+                cap_refusals.append((candidate, cap_limit_K))
             continue
         properties = _evaluate_candidate(
             candidate,

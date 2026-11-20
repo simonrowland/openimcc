@@ -765,7 +765,7 @@ def liquidus_bracket(composition, T_low, T_high, pack=None, *, condensate=None):
         source_limit = standard.source_solid_limit_K
         if _crystal_source_cap_excludes_candidate(
             phase["oxide_stoichiometry"], source_limit, float(T_high),
-        ):
+        ) is not None:
             hi = min(hi, source_limit)
         a, b = max(float(T_low), lo), min(float(T_high), hi)
         if a >= b:
@@ -895,12 +895,15 @@ def _crystal_source_cap_excludes_candidate(
     stoichiometry: Mapping[str, Any],
     source_solid_limit_K: float | None,
     temperature_K: float,
-) -> bool:
-    return (
+) -> float | None:
+    """Return the exceeded cap, or None when the source solid is available."""
+    if (
         len(stoichiometry) > 1
         and source_solid_limit_K is not None
         and temperature_K > source_solid_limit_K
-    )
+    ):
+        return source_solid_limit_K
+    return None
 
 
 @dataclass(frozen=True)
@@ -936,7 +939,7 @@ def _fusion_node_crystal_standard(
     unavailable_reason = None
     if _crystal_source_cap_excludes_candidate(
         stoichiometry, source_limit, temperature_K,
-    ):
+    ) is not None:
         unavailable_reason = "above_source_melting_point"
     elif not domain[0] <= temperature_K <= domain[1]:
         unavailable_reason = "temperature_out_of_range"
