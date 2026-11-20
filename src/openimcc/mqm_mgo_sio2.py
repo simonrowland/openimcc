@@ -27,6 +27,7 @@ _Z_SIO2 = 2.7548875
 _T_MIN_K = 1200.0
 _T_MAX_K = 3000.0
 _ACTIVITY_STEP = 1.0e-5
+_ACTIVITY_STENCIL_REL_TOL = 0.05
 _BINODAL_STEP = 0.001
 
 _SOURCE = (
@@ -167,9 +168,13 @@ def _pair_fractions(x_sio2: float, temperature_K: float) -> tuple[float, float, 
             else:
                 upper = q
         if cancellation_collapsed:
-            # When one component is dilute, q can round to its smaller Y_i
-            # even though Y_i-q is still positive. Bisect that remainder
-            # directly so the pair fraction remains representable.
+            # Let r=min(YMg,YSi)-q. The other pair remainder is
+            # |YMg−YSi|+r, so the log quotient is
+            # 2 ln(q)−ln(r)−ln(|YMg−YSi|+r). Its log arguments are
+            # dimensionless, as is the target -Δg/(RT), since Δg and RT
+            # are both J/mol. As r→0+, -ln(r)→+∞; as r→min(Y), q→0
+            # and the quotient tends to -∞, keeping the root bracketed
+            # inside 0<r<min(Y).
             smaller_y = min(y_mgo, y_sio2)
             larger_gap = abs(y_mgo - y_sio2)
             lower_remainder, upper_remainder = 0.0, smaller_y
@@ -354,9 +359,30 @@ def evaluate_mgo_sio2_mqm(
         ln_a_sio2_wu, ln_a_mgo_wu = 0.0, -math.inf
     else:
         h = min(_ACTIVITY_STEP, x_sio2 / 2.0, x_mgo / 2.0)
+        x_sio2_plus = x_sio2 + h
+        x_sio2_minus = x_sio2 - h
+        # Recover the center from input moles: 1−xSiO2 loses precision in
+        # this dilute limit and would hide stencil-spacing distortion.
+        x_mgo_center = amounts.get("MgO", 0.0) / total
+        x_mgo_plus = 1.0 - x_sio2_plus
+        x_mgo_minus = 1.0 - x_sio2_minus
+        recovered_steps = (
+            x_mgo_center - x_mgo_plus,
+            x_mgo_minus - x_mgo_center,
+        )
+        relative_step_error = max(
+            abs(recovered_step - h) / h for recovered_step in recovered_steps
+        )
+        if relative_step_error > _ACTIVITY_STENCIL_REL_TOL:
+            raise ImccComponentOutsideDomainError(
+                "Wu 1993 MgO–SiO2 MQM activity evaluation refused; violated axis: "
+                "composition_mole_fraction; central-difference stencil steps "
+                f"differ from the nominal step by {relative_step_error:.1%}, "
+                f"above the {_ACTIVITY_STENCIL_REL_TOL:.0%} tolerance"
+            )
         derivative = (
-            _mixing_gibbs_j_mol(x_sio2 + h, temperature)
-            - _mixing_gibbs_j_mol(x_sio2 - h, temperature)
+            _mixing_gibbs_j_mol(x_sio2_plus, temperature)
+            - _mixing_gibbs_j_mol(x_sio2_minus, temperature)
         ) / (2.0 * h)
         # Premise: Wu Eqs. (2)–(8), pp. 27, 30, minimize Gmix at fixed
         # analytical composition. For g=Gmix/(nMgO+nSiO2), Euler's relation

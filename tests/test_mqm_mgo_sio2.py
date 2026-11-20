@@ -220,14 +220,16 @@ def test_binary_domain_frozen_result_and_default_bit_identity() -> None:
         evaluate_mgo_sio2_mqm(composition, 3001.0)
 
 
-def test_dilute_mgo_limit_and_pure_end_absent_activities_are_stable() -> None:
-    dilute = evaluate_mgo_sio2_mqm({"SiO2": 1.0, "MgO": 1.0e-15}, 3000.0)
+def test_dilute_mgo_activity_refuses_rounding_distorted_stencil() -> None:
+    with pytest.raises(ImccComponentOutsideDomainError) as refused:
+        evaluate_mgo_sio2_mqm({"SiO2": 1.0, "MgO": 1.0e-15}, 3000.0)
 
-    assert all(math.isfinite(value) for value in (
-        dilute.a_mgo, dilute.a_sio2, *dilute.pair_fractions
-    ))
-    assert dilute.pair_fractions[0] > 0.0
+    assert "Wu 1993 MgO–SiO2 MQM" in str(refused.value)
+    assert "composition_mole_fraction" in str(refused.value)
+    assert "5% tolerance" in str(refused.value)
 
+
+def test_pure_end_absent_activities_remain_zero() -> None:
     pure_mgo = evaluate_mgo_sio2_mqm({"MgO": 1.0, "SiO2": 0.0}, 3000.0)
     pure_sio2 = evaluate_mgo_sio2_mqm({"MgO": 0.0, "SiO2": 1.0}, 3000.0)
     assert pure_mgo.a_sio2 == 0.0
