@@ -19,6 +19,8 @@
   In NASA parent-standard conversion failures refuse the affected gas channel.
 - Solid-to-liquid benchmark activity conversion now reports an unrepresentable
   measured value on its row and continues with later points.
+- MgO–SiO2 MQM retains dilute pair fractions; underflowed P2O5 activities are
+  refused and sulfur comparison outputs are reported as unavailable.
 
 ### Trace gas parent standards
 

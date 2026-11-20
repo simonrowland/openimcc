@@ -138,6 +138,7 @@ def _pair_fractions(x_sio2: float, temperature_K: float) -> tuple[float, float, 
 
     if x_mgo == 0.0 or x_sio2 == 0.0:
         q = 0.0
+        x_mgm, x_sisi = y_mgo, y_sio2
     else:
         # Premise: Wu Eq. (2), p. 27, gives the pair reaction equilibrium;
         # with X_MgSi=2q, X_MgMg=YMg−q, X_SiSi=YSi−q and Z=2, it reduces to
@@ -145,25 +146,61 @@ def _pair_fractions(x_sio2: float, temperature_K: float) -> tuple[float, float, 
         # bisection is in the feasible interval [0,min(YMg,YSi)].
         target = -delta_g / (_R * temperature_K)
         lower, upper = 0.0, min(y_mgo, y_sio2)
+        cancellation_collapsed = False
         for _ in range(100):
             q = (lower + upper) / 2.0
             if q <= 0.0:
                 value = -math.inf
             else:
+                mg_pairs = y_mgo - q
+                si_pairs = y_sio2 - q
+                if mg_pairs <= 0.0 or si_pairs <= 0.0:
+                    cancellation_collapsed = True
+                    break
                 value = (
                     2.0 * math.log(q)
-                    - math.log(y_mgo - q)
-                    - math.log(y_sio2 - q)
+                    - math.log(mg_pairs)
+                    - math.log(si_pairs)
                 )
             if value < target:
                 lower = q
             else:
                 upper = q
-        q = (lower + upper) / 2.0
+        if cancellation_collapsed:
+            # When one component is dilute, q can round to its smaller Y_i
+            # even though Y_i-q is still positive. Bisect that remainder
+            # directly so the pair fraction remains representable.
+            smaller_y = min(y_mgo, y_sio2)
+            larger_gap = abs(y_mgo - y_sio2)
+            lower_remainder, upper_remainder = 0.0, smaller_y
+            for _ in range(100):
+                remainder = (lower_remainder + upper_remainder) / 2.0
+                q = smaller_y - remainder
+                if remainder <= 0.0:
+                    value = math.inf
+                elif q <= 0.0:
+                    value = -math.inf
+                else:
+                    value = (
+                        2.0 * math.log(q)
+                        - math.log(remainder)
+                        - math.log(larger_gap + remainder)
+                    )
+                if value > target:
+                    lower_remainder = remainder
+                else:
+                    upper_remainder = remainder
+            remainder = (lower_remainder + upper_remainder) / 2.0
+            q = smaller_y - remainder
+            if y_mgo <= y_sio2:
+                x_mgm, x_sisi = remainder, larger_gap + remainder
+            else:
+                x_mgm, x_sisi = larger_gap + remainder, remainder
+        else:
+            q = (lower + upper) / 2.0
+            x_mgm, x_sisi = y_mgo - q, y_sio2 - q
 
-    x_mgm = y_mgo - q
     x_mgsi = 2.0 * q
-    x_sisi = y_sio2 - q
     return x_mgm, x_mgsi, x_sisi, y_sio2, delta_g
 
 

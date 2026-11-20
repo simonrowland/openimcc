@@ -243,10 +243,26 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
     additional_notices = (
         (P2O5FeIIINotice(),) if composition_moles.get("Fe2O3", 0) > 0 else ()
     )
+    try:
+        activity = 10.0**central
+        gamma = 10.0**(central - log10_x_p)
+    except (OverflowError, ValueError) as exc:
+        raise P2O5ActivityRefusal(
+            row_id, "activity", f"activity or gamma is not representable: {exc}"
+        ) from exc
+    if (
+        not math.isfinite(activity)
+        or activity <= 0.0
+        or not math.isfinite(gamma)
+        or gamma <= 0.0
+    ):
+        raise P2O5ActivityRefusal(
+            row_id, "activity", "activity or gamma is outside the finite positive float range"
+        )
     return P2O5ActivityResult(
-        activity=10.0**central,
+        activity=activity,
         log10_activity=central,
-        gamma=10.0**(central - log10_x_p),
+        gamma=gamma,
         x_p2o5=x_p,
         band_log10_activity=band,
         band_width_dex=width,

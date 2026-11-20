@@ -1061,6 +1061,52 @@ def test_oneill_scss_overflow_after_capacity_conversion_is_a_typed_notice(
     assert result.scss_oneill_2021_ppm is None
 
 
+def test_oneill_scss_capacity_underflow_uses_log_space_and_clears_failed_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    melt_result = SimpleNamespace(
+        labels=SimpleNamespace(notices=()), parent_oxides=("FeO", "SiO2")
+    )
+    monkeypatch.setattr(
+        sulfur_module,
+        "_melt_activities",
+        lambda *_args: (melt_result, 1.0, None),
+    )
+    result = evaluate_sulfur(
+        {"FeO": 0.01, "SiO2": 99.99},
+        1.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=object(),
+    )
+
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "oneill-scss-unavailable"
+    )
+    assert notice.model == "ONeill-2021-Eq-10.43"
+    assert notice.axis == "scss_ppm"
+    assert result.scss_oneill_2021_ppm is None
+
+
+def test_om2022_sulfate_underflow_is_unavailable_not_zero() -> None:
+    result = evaluate_sulfur(
+        {"SiO2": 100.0},
+        1673.0,
+        log10_fO2=-300.0,
+        log10_fS2=-300.0,
+    )
+
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "om2022-comparison-unavailable"
+    )
+    assert notice.model == "ONeill-Mavrogenes-2022"
+    assert result.comparison_band.sulfate_s6_ppm is None
+
+
 def test_melt_activity_reports_floating_point_overflow() -> None:
     with np.errstate(over="raise"):
         result, activity, error = sulfur_module._melt_activities(

@@ -718,7 +718,11 @@ def evaluate_sulfur(
                 # cannot be represented.
                 ln_c2_ppm = (log_cs2 + 4.0) * _LN10
             else:
-                ln_c2_ppm = math.log(c2_ppm)
+                ln_c2_ppm = (
+                    math.log(c2_ppm)
+                    if c2_ppm > 0.0
+                    else (log_cs2 + 4.0) * _LN10
+                )
             try:
                 ln_delta_g_over_rt = 14695.0 / T - 9.656 + 1.02 * math.log(T)
                 oneill2021_scss = math.exp(
@@ -729,6 +733,7 @@ def evaluate_sulfur(
                 if not math.isfinite(oneill2021_scss) or oneill2021_scss <= 0.0:
                     raise ValueError("O'Neill SCSS is not finite and positive")
             except (OverflowError, ValueError) as exc:
+                oneill2021_scss = None
                 notices.append(_notice(
                     "oneill-scss-unavailable",
                     "O'Neill 2021 SCSS is outside the finite positive float range: "
@@ -1115,7 +1120,14 @@ def evaluate_sulfur(
                 + 16500.0 * cations_om.get("Fe", 0.0)
             ) / T
             comparison_s6 = math.exp(ln_c6 + _LN10 * log_so3)
+            if not math.isfinite(comparison_s6) or comparison_s6 <= 0.0:
+                comparison_s6 = None
+                raise ValueError(
+                    "O'Neill and Mavrogenes sulfate comparison is outside the "
+                    "finite positive float range"
+                )
         except (ImccRefusal, ValueError, ArithmeticError) as exc:
+            comparison_s6 = None
             notices.append(_notice(
                 "om2022-comparison-unavailable",
                 "could not calculate the O'Neill and Mavrogenes sulfate comparison: "

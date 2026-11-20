@@ -65,6 +65,18 @@ def test_p2o5_unrepresentable_composition_or_temperature_is_typed(
     assert refused.value.violated_axes == (axis,)
 
 
+def test_p2o5_underflowed_activity_is_a_typed_refusal() -> None:
+    with pytest.raises(P2O5ActivityRefusal) as refused:
+        evaluate_p2o5_activity(
+            {"CaO": 40, "MgO": 8, "FeO": 12, "SiO2": 39, "P2O5": 1},
+            1.0,
+        )
+
+    assert refused.value.code == "p2o5_activity_unrepresentable"
+    assert refused.value.row_id == "suito_inoue_1984_eq14_no_mn"
+    assert refused.value.violated_axes == ("activity",)
+
+
 @pytest.mark.parametrize(
     ("composition", "temperature", "axis"),
     [
@@ -159,10 +171,12 @@ def test_fe2o3_is_folded_into_feo_equivalent_with_feiii_notice() -> None:
     assert ferric.additional_notices[0].code == "p2o5_feiii_phosphate_chemistry_not_modelled"
 
 
-def test_positive_p2o5_inventory_keeps_its_log_fraction_after_normalization_underflow() -> None:
-    result = evaluate_p2o5_activity(
-        {"SiO2": 1000.0, "P2O5": 5.0e-324}, 1873.0
-    )
-    assert result.x_p2o5 == 0.0
-    assert math.isfinite(result.log10_activity)
-    assert math.isfinite(result.gamma)
+def test_positive_p2o5_inventory_with_underflowed_activity_is_refused() -> None:
+    with pytest.raises(P2O5ActivityRefusal) as refused:
+        evaluate_p2o5_activity(
+            {"SiO2": 1000.0, "P2O5": 5.0e-324}, 1873.0
+        )
+
+    assert refused.value.code == "p2o5_activity_unrepresentable"
+    assert refused.value.row_id == "suito_inoue_1984_eq14_no_mn"
+    assert refused.value.violated_axes == ("activity",)
