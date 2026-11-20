@@ -21,7 +21,7 @@ import math
 from numbers import Integral
 import warnings
 from types import MappingProxyType
-from typing import Any, Mapping, NoReturn, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, NoReturn, Sequence
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -29,6 +29,9 @@ from scipy.optimize import least_squares
 from openimcc._constants import R_J_MOL_K as _R_J_MOL_K
 from openimcc.receipt import CalculationReceipt
 from openimcc.scalar_boundary import is_declared_real_scalar
+
+if TYPE_CHECKING:
+    from openimcc.trace_components import TraceActivityEstimate
 
 
 LOG10 = math.log(10.0)
@@ -883,6 +886,25 @@ class ImccResult:
     def gamma(self, name: str) -> float:
         """Return one parent-oxide activity coefficient by name."""
         return float(self.parent_gamma[self._parent_index(name)])
+
+    def trace_activities(self) -> Mapping[str, TraceActivityEstimate]:
+        """Return the existing trace estimates in a read-only oxide mapping.
+
+        Values are the ``TraceActivityEstimate`` objects attached to the
+        result's typed trace flags. Refused estimates remain present with
+        ``activity=None`` and their refusal code.
+        """
+        from openimcc.trace_components import TraceActivityFlag
+
+        flags = (
+            *getattr(self.labels, "flags", ()),
+            *getattr(self.labels, "notices", ()),
+        )
+        return MappingProxyType({
+            flag.oxide: flag.estimates[0]
+            for flag in flags
+            if isinstance(flag, TraceActivityFlag)
+        })
 
     def to_dataframe(self) -> Any:
         """Return parent-oxide activities and coefficients as a pandas frame."""

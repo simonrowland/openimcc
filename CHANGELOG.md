@@ -29,9 +29,10 @@
   aluminate associates alongside the major oxides. For MnO-bearing
   compositions, major activities come from D066 plus the Mn associates; FeO
   is about +0.002 to +0.003 dex relative to the former closed-redox result.
-- P2O5 and other redox-only parents no longer appear in `parent_oxides`; the
-  P2O5 helper activity is reported in the trace notice. Ferric fractions and
-  metal amounts require an explicit `evaluate_redox()` call.
+- For MnO-bearing D066 evaluations, P2O5 and other redox-only parents are
+  absent from `parent_oxides`; the P2O5 helper activity is reported in the
+  trace notice. Ferric fractions and metal amounts require an explicit
+  `evaluate_redox()` call.
 
 ### Trace gas parent standards
 

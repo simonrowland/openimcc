@@ -106,7 +106,11 @@ from openimcc.sulfur import (
     SulfurResult,
     evaluate_sulfur,
 )
-from openimcc.trace_components import supported_trace_oxides
+from openimcc.trace_components import (
+    TraceActivityEstimate,
+    TraceActivityFlag,
+    supported_trace_oxides,
+)
 
 
 def _resolve_version() -> str:
@@ -374,6 +378,8 @@ __all__ = [
     "check_pack_standards",
     # --- pack row participation -------------------------------------------
     "PackRowParticipation",
+    "TraceActivityEstimate",
+    "TraceActivityFlag",
     # --- opt-in trace-melt activity candidates ---------------------------
     "Cr3TraceActivity",
     "cr3_trace_activity",

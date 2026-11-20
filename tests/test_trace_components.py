@@ -10,6 +10,8 @@ import pytest
 from openimcc import (
     ImccTraceLimitExceededError,
     ImccTraceMajorBiasError,
+    TraceActivityEstimate,
+    TraceActivityFlag,
     element_to_parent_oxide,
     evaluate,
     load_datapack,
@@ -18,7 +20,6 @@ from openimcc import (
 from openimcc.activity_fragments import load_activity_fragment
 from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.gas import (
-    TraceActivityFlag,
     TraceGasChannelRefusal,
     evaluate_gas,
 )
@@ -950,6 +951,61 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration(
     assert cr_estimate.reference is not None
     assert "required redox rows extrapolated" in cr_estimate.reference
     assert "temperature_K" in cr_estimate.violated_axes
+    cr_activity = cr_result.trace_activities()["Cr2O3"]
+    assert cr_activity.activity == cr_estimate.activity
+    assert cr_activity.code == cr_estimate.code
+
+    ce_rule = trace_component_rule("Ce2O3")
+    assert ce_rule is not None
+    ce_sio2_moles = (
+        MOLAR_MASS_G_MOL["CaO"] + 0.72 * MOLAR_MASS_G_MOL["Al2O3"]
+    ) / (
+        MOLAR_MASS_G_MOL["SiO2"] * ((17508.97 + 14.93) / 3.46)
+    )
+    ce_composition = {
+        "CaO": 1.0,
+        "MgO": 1.0,
+        "Al2O3": 1.0,
+        "FeO": 1.0,
+        "SiO2": ce_sio2_moles,
+        "Ce2O3": 1.0e-8,
+    }
+    ce_masses = {**MOLAR_MASS_G_MOL, "Ce2O3": ce_rule.molar_mass_g_mol}
+    ce_composition_wt = {
+        oxide: amount * ce_masses[oxide]
+        for oxide, amount in ce_composition.items()
+    }
+    ce_result = evaluate(ce_composition_wt, 1873.0, basis_type="wt")
+    ce_activity = ce_result.trace_activities()["Ce2O3"]
+    assert ce_activity.activity is None
+    assert ce_activity.code == "trace_refused_review_gamma_activity"
+
+    joint_trace_result = evaluate(
+        {
+            **_MARE_BASALT_WT,
+            "MnO": 0.206,
+            "P2O5": 0.1,
+            "Cr2O3": 0.1,
+        },
+        2100.0,
+        basis_type="wt",
+        allow_extrapolation=True,
+    )
+    assert "MnO" in joint_trace_result.parent_oxides
+    assert "P2O5" not in joint_trace_result.parent_oxides
+    assert "Cr2O3" not in joint_trace_result.parent_oxides
+    flags_by_oxide = {
+        item.oxide: item
+        for item in joint_trace_result.labels.notices
+        if isinstance(item, TraceActivityFlag)
+    }
+    trace_activities = joint_trace_result.trace_activities()
+    for oxide in ("P2O5", "Cr2O3"):
+        assert isinstance(trace_activities[oxide], TraceActivityEstimate)
+        assert trace_activities[oxide] is flags_by_oxide[oxide].estimates[0]
+        assert trace_activities[oxide].activity == flags_by_oxide[oxide].activity
+    with pytest.raises(TypeError):
+        trace_activities["P2O5"] = trace_activities["Cr2O3"]
 
     mn_composition = _weight_composition({"MnO": 0.002})
     mn_result = evaluate(

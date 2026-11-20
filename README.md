@@ -74,6 +74,9 @@ estimate, not a bound. The current `γ·x` table uses γ(MnO) = 1.9 and
 γ(CrO1.5) = 31.1 as guides from Sossi and Fegley (2018, Table 2,
 pp. 409–410, [doi:10.2138/rmg.2018.84.11](https://doi.org/10.2138/rmg.2018.84.11)).
 The shared registration table is in `openimcc.trace_components`.
+`melt.trace_activities()` returns a read-only mapping from trace oxide to its
+existing `TraceActivityEstimate`. Refused estimates remain in the mapping with
+`activity=None` and their refusal `code`.
 
 In `evaluate_gas()`, Cl and F traces do not supply the Cl2 and F2 gas-parent
 fugacities, and SO3 does not supply the S2 fugacity, so those channels are
@@ -363,9 +366,9 @@ standard. The opt-in `evaluate_p2o5_activity(composition_moles, T_K)` estimates
 dilute-solute P2O5 activity with Suito & Inoue (1984) Eq. 14 and returns typed
 domain notices plus Turkdogan Eq. 13 and Eq. 25 as two comparison regressions,
 not an uncertainty interval around Suito; Suito can lie outside their spread.
-P2O5 is not a melt parent in `evaluate()`, with or without MnO. When P2O5 is
-present, its helper activity on the Jung-Hudon liquid standard is reported in
-the `trace_components_outside_melt_model` notice, at
+With or without MnO, P2O5 is not a parent in the default D066 `evaluate()`
+result. When P2O5 is present, its helper activity on the Jung-Hudon liquid
+standard is reported in the `trace_components_outside_melt_model` notice, at
 `melt.labels.notices[...].activities["P2O5"].activity`. Gas P channels need
 that activity supplied explicitly, or need `composition_wt_pct` so
 `evaluate_gas()` can resolve it from the composition. For example:
