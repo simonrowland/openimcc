@@ -53,6 +53,8 @@ ADDITIONAL_CRYSTALS = {
     "V": "V-004",
     "Mo": "Mo-004",
     "Nb": "Nb-004",
+    "B2O3": "B-095",
+    "WO3": "O-065",
 }
 
 def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:

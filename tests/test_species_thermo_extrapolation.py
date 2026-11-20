@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -13,6 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import pytest
+import yaml
 
 from openimcc.gas import (
     ImccGasCrystalPolymorphError,
@@ -398,6 +400,84 @@ def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
         species_thermo("Ti3O5", "cr", cap + 1.0)
     lead_source = next(row for row in janaf["phases"] if row["formula"] == "PbO")
     assert all(node["T_K"] != 1200.0 for node in lead_source["nodes"])
+
+
+def test_janaf_boron_and_tungsten_oxide_crystals_reconstruct_nodes() -> None:
+    root = Path(__file__).parents[1]
+    packaged = json.loads(
+        (root / "src/openimcc/data/diagnostics/janaf-crystal-species.json")
+        .read_text(encoding="utf-8")
+    )
+    expectations = {
+        "B-095": ("B2O3", 723.0),
+        "O-065": ("WO3", 1745.0),
+    }
+    for table_id, (formula, cap_K) in expectations.items():
+        source_path = root / "data-src/janaf" / f"{table_id}.yaml"
+        source = yaml.safe_load(source_path.read_text(encoding="utf-8"))
+        table = source["table"]
+        phase = next(
+            row for row in packaged["phases"]
+            if row["crystal_table_id"] == table_id
+        )
+        assert phase["formula"] == formula
+        assert phase["crystal_transition_temperature_K"] == cap_K
+        assert phase["source_sha256"] == hashlib.sha256(
+            source_path.read_bytes()
+        ).hexdigest()
+        gaps = []
+        for row in table["values"]:
+            temperature = float(row["temperature"]["value"])
+            enthalpy_increment = row["enthalpy_increment"]["value"]
+            entropy = row["entropy"]["value"]
+            printed_delta_f_g = row["formation_gibbs_energy"]["value"]
+            log_k = row["log10_formation_equilibrium_constant"]["value"]
+            if (
+                temperature < 298.15 or temperature > cap_K
+                or enthalpy_increment is None or entropy is None
+                or printed_delta_f_g is None or log_k is None
+            ):
+                continue
+            selected = species_thermo(
+                formula, "cr", temperature,
+                polymorph=phase["source_title"],
+            )
+            assert selected.source_table_id == table_id
+            absolute_g = (
+                phase["formation_enthalpy_298_kJ_mol"]
+                + float(enthalpy_increment)
+                - temperature * float(entropy) / 1000.0
+            )
+            assert selected.G_J_mol / 1000.0 == pytest.approx(
+                absolute_g, abs=0.002
+            )
+            log_k_delta_f_g = (
+                -8.31446261815324 * temperature * math.log(10.0)
+                * float(log_k) / 1000.0
+            )
+            assert log_k_delta_f_g == pytest.approx(
+                float(printed_delta_f_g), abs=0.25
+            )
+            gap = absolute_g - float(printed_delta_f_g)
+            assert selected.G_J_mol / 1000.0 - gap == pytest.approx(
+                float(printed_delta_f_g), abs=0.002
+            )
+            gaps.append(gap)
+        assert gaps
+
+    boron_oxide = species_thermo("B2O3", "cr", 723.0)
+    assert boron_oxide.source_table_id == "B-095"
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("B2O3", "cr", 724.0)
+
+    tungsten_low = species_thermo("WO3", "cr", 1000.0)
+    tungsten_high = species_thermo("WO3", "cr", 1100.0)
+    assert tungsten_low.source_table_id == tungsten_high.source_table_id == "O-065"
+    assert tungsten_low.phase_identity["polymorph"] == "I"
+    assert tungsten_high.phase_identity["polymorph"] == "II"
+    assert species_thermo("WO3", "cr", 1745.0).T_max == 1745.0
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("WO3", "cr", 1746.0)
 
 
 def test_janaf_iron_reference_state_tracks_alpha_gamma_transition() -> None:

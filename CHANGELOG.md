@@ -99,6 +99,8 @@
   now check the generator's packaged output.
 - Crystal fallback adds the indexed Zr, Hf, Fe, Fe2O3, FeS, Mn, W, B, V, Mo,
   and Nb JANAF tables with source hashes and row locators.
+- Crystal fallback adds the indexed JANAF B2O3 and WO3 tables, preserving the
+  B2O3 fusion cap and WO3 phase transition.
 - Crystal fallback adds Robie and Hemingway (1995) printed node tables for
   Al2SiO5, Ca2SiO4, KAlSiO4, kaolinite, and boehmite with page and row locators.
 - Crystal fallback adds Robie and Hemingway (1995) spodumene, feldspar, and
