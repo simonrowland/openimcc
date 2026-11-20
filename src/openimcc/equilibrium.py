@@ -353,7 +353,7 @@ def _source_cap_excludes_candidate(
 ) -> bool:
     return diagnostics._crystal_source_cap_excludes_candidate(
         stoichiometry, _source_solid_limit_K(source), temperature_K,
-    )
+    ) is not None
 
 
 def _source_solid_limits_K(
