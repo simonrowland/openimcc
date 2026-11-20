@@ -829,6 +829,27 @@ def _source_solid_limit(candidate: _Candidate) -> float | None:
     return None
 
 
+def _active_janaf_phase_segment(
+    phase: Mapping[str, Any], temperature_K: float,
+) -> Mapping[str, Any] | None:
+    segments = phase.get("phase_segments", ())
+    return next(
+        (
+            segment
+            for index, segment in enumerate(segments)
+            if float(segment["temperature_K"][0]) <= temperature_K
+            and (
+                temperature_K < float(segment["temperature_K"][1])
+                or (
+                    index == len(segments) - 1
+                    and temperature_K == float(segment["temperature_K"][1])
+                )
+            )
+        ),
+        None,
+    )
+
+
 def _available_at_temperature(
     candidate: _Candidate,
     temperature_K: float,
@@ -1050,22 +1071,8 @@ def evaluate_crystal_species(
         if named is not None and candidate != named:
             continue
         if named_segment is not None:
-            segment = next(
-                (
-                    item for index, item in enumerate(
-                        candidate.phase["phase_segments"]
-                    )
-                    if float(item["temperature_K"][0]) <= temperature_K
-                    and (
-                        temperature_K < float(item["temperature_K"][1])
-                        or (
-                            index == len(candidate.phase["phase_segments"]) - 1
-                            and temperature_K
-                            == float(item["temperature_K"][1])
-                        )
-                    )
-                ),
-                None,
+            segment = _active_janaf_phase_segment(
+                candidate.phase, temperature_K,
             )
             if (
                 segment is None
@@ -1163,21 +1170,11 @@ def evaluate_crystal_species(
     }
     if candidate.dataset == "JANAF crystal tables":
         segments = candidate.phase["phase_segments"]
-        segment_index = next(
-            (
-                index for index, segment in enumerate(segments)
-                if float(segment["temperature_K"][0]) <= temperature_K
-                and (
-                    temperature_K < float(segment["temperature_K"][1])
-                    or (
-                        index == len(segments) - 1
-                        and temperature_K == float(segment["temperature_K"][1])
-                    )
-                )
-            ),
-            len(segments) - 1,
+        segment = _active_janaf_phase_segment(
+            candidate.phase, temperature_K,
         )
-        segment = segments[segment_index]
+        if segment is None:
+            segment = segments[-1]
         phase_identity["polymorph"] = segment["phase_label"]
         phase_identity["source_title"] = candidate.phase["source_title"]
         phase_identity["temperature_segment_K"] = tuple(
