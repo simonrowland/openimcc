@@ -29,14 +29,14 @@ _POLYMORPH_ALIASES = {
 }
 
 
-def _is_reference_polymorph(polymorph: str | None) -> bool:
+def is_reference_polymorph(polymorph: str | None) -> bool:
     return (
         isinstance(polymorph, str)
         and polymorph.strip().casefold() in _REFERENCE_POLYMORPHS
     )
 
 
-def _is_element_formula(formula: str) -> bool:
+def is_element_formula(formula: str) -> bool:
     return re.fullmatch(r"[A-Z][a-z]?", formula) is not None
 
 
@@ -824,22 +824,33 @@ def evaluate_crystal_species(
     named = None
     named_segment = None
     named_segment_interval = None
-    is_reference = _is_reference_polymorph(polymorph)
+    is_reference = is_reference_polymorph(polymorph)
     alias_used = False
     if is_reference:
-        if not _is_element_formula(formula):
+        if not is_element_formula(formula):
             raise CrystalSpeciesPolymorphError(
                 f"reference selection is ambiguous for {formula}(cr); "
                 f"select one of the available polymorphs: {', '.join(labels)}",
                 labels,
             )
-        source_title = str(candidates[0].phase.get("source_title", ""))
-        source_segments = candidates[0].phase.get("phase_segments", ())
-        has_reference_title = re.search(r"\bref\b", source_title, re.I) is not None
+        is_janaf_elemental_reference = (
+            len(candidates) == 1
+            and candidates[0].dataset == "JANAF crystal tables"
+            and (
+                float(
+                    candidates[0].phase["formation_enthalpy_298_kJ_mol"]
+                ) == 0.0
+                or re.search(
+                    r"\bref\b",
+                    str(candidates[0].phase.get("source_title", "")),
+                    re.I,
+                )
+                is not None
+            )
+        )
         if (
             len(candidates) != 1
-            or candidates[0].dataset != "JANAF crystal tables"
-            or not (has_reference_title or len(source_segments) > 1)
+            or not is_janaf_elemental_reference
         ):
             raise CrystalSpeciesPolymorphError(
                 f"reference selection is ambiguous for {formula}(cr) from "
@@ -982,8 +993,8 @@ def evaluate_crystal_species(
             rule = "selected by the source-defined elemental reference-state table"
         elif alias_used:
             rule = (
-                f"selected by polymorph={polymorph!r} as an alias for "
-                f"{named.label} within {dataset}"
+                f"selected through the {polymorph!r} alias for "
+                f"{named.label} in {dataset}"
             )
         else:
             rule = f"selected by polymorph={polymorph!r} within {dataset}"
@@ -1035,8 +1046,8 @@ def evaluate_crystal_species(
             )
         elif alias_used:
             phase_identity["selection_rule"] = (
-                "JANAF phase alias selects the source title and transition rows "
-                "identify the active segment"
+                "selected as an alias of the source table title; transition rows "
+                "identify the active segment at T"
             )
         else:
             phase_identity["selection_rule"] = (
@@ -1124,4 +1135,6 @@ __all__ = [
     "CrystalSpeciesThermo",
     "continue_constant_cp",
     "evaluate_crystal_species",
+    "is_element_formula",
+    "is_reference_polymorph",
 ]

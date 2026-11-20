@@ -340,6 +340,28 @@ def test_elemental_reference_polymorph_selectors() -> None:
         species_thermo("Au", "cr", 1000.0, pack, polymorph="reference")
 
 
+@pytest.mark.parametrize(
+    ("formula", "table_id"),
+    (
+        ("W", "W-004"),
+        ("B", "B-004"),
+        ("V", "V-004"),
+        ("Mo", "Mo-004"),
+        ("Nb", "Nb-004"),
+    ),
+)
+def test_janaf_elemental_reference_selector_uses_zero_formation_enthalpy(
+    formula: str, table_id: str
+) -> None:
+    selected = species_thermo(formula, "cr", 1000.0, polymorph="reference")
+    default = species_thermo(formula, "cr", 1000.0)
+
+    assert selected.source_table_id == table_id
+    assert _value_hexes(selected) == _value_hexes(default)
+    assert selected.phase_identity is not None
+    assert "reference-state" in selected.phase_identity["selection_rule"]
+
+
 def test_ambiguous_reference_selector_is_typed() -> None:
     with pytest.raises(
         ImccGasCrystalPolymorphError,
@@ -372,6 +394,13 @@ def test_shipped_crystal_polymorph_aliases(
     assert selected.phase_identity is not None
     assert phase_fragment in str(selected.phase_identity)
     assert "alias" in selected.phase_identity["selection_rule"]
+    if formula == "FeS":
+        assert selected.phase_identity["temperature_segment_K"] == (411.0, 598.0)
+        assert selected.phase_identity["polymorph"] == "BETA"
+        assert selected.phase_identity["selection_rule"] == (
+            "selected as an alias of the source table title; transition rows "
+            "identify the active segment at T"
+        )
 
 
 def test_distinct_crystal_phases_are_not_aliased() -> None:

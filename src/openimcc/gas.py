@@ -43,8 +43,8 @@ from openimcc.activity_fragments import load_activity_fragment
 from openimcc.crystal_species import (
     CrystalSpeciesPolymorphError,
     CrystalSpeciesTemperatureError,
-    _is_element_formula,
-    _is_reference_polymorph,
+    is_element_formula,
+    is_reference_polymorph,
     continue_constant_cp,
     evaluate_crystal_species,
 )
@@ -2991,7 +2991,7 @@ def species_thermo(
     polymorph:
         Selects a named polymorph when a shipped crystal dataset supplies the
         ``(cr)`` fallback. It is ignored when a condensate row exists, which
-        retains precedence.
+        retains precedence, except for the reference selectors.
     """
     if phase not in {"g", "l", "cr"}:
         raise ValueError("phase must be 'g', 'l', or 'cr'")
@@ -3062,11 +3062,11 @@ def species_thermo(
             active_pack.gas_df, row_name, T_K, allow_extrapolation
         )
     elif phase == "cr":
-        reference_selector = _is_reference_polymorph(polymorph)
+        reference_selector = is_reference_polymorph(polymorph)
         if (
             reference_selector
             and row_name in active_pack.oxide_df.index
-            and not _is_element_formula(species)
+            and not is_element_formula(species)
         ):
             raise ImccGasCrystalPolymorphError(
                 f"reference selection is ambiguous for {row_name}; "
@@ -3134,7 +3134,7 @@ def species_thermo(
         if identity_record is not None:
             phase_identity = MappingProxyType(deepcopy(identity_record))
 
-        if _is_reference_polymorph(polymorph):
+        if is_reference_polymorph(polymorph):
             identity_polymorph = (
                 str(identity_record.get("polymorph", ""))
                 if identity_record is not None
@@ -3148,7 +3148,7 @@ def species_thermo(
                     or "(ref)" in identity_polymorph.casefold()
                 )
             )
-            if not _is_element_formula(species) or not is_reference_identity:
+            if not is_element_formula(species) or not is_reference_identity:
                 raise ImccGasCrystalPolymorphError(
                     f"reference selection is ambiguous for {row_name}; "
                     "the condensate source does not identify one elemental "
