@@ -17,6 +17,8 @@
   or O’Neill SCSS overflow remains a model-specific typed notice.
 - P2O5 and sulfur trace-law refusals stay on the affected trace, while Ga and
   In NASA parent-standard conversion failures refuse the affected gas channel.
+- Solid-to-liquid benchmark activity conversion now reports an unrepresentable
+  measured value on its row and continues with later points.
 
 ### Trace gas parent standards
 

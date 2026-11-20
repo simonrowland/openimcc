@@ -262,6 +262,20 @@ _SOLID_STANDARD_CONDENSATE_CSV = (
 )
 
 
+class BenchStandardConversionRefusal(ImccComponentOutsideDomainError):
+    """Typed refusal when a measured standard conversion is unrepresentable."""
+
+    code = "bench_solid_standard_conversion_unrepresentable"
+
+    def __init__(self, parent_oxide: str, axis: str, reason: str) -> None:
+        self.row_id = f"{parent_oxide}_solid_to_liquid_activity"
+        self.violated_axes = (axis,)
+        self.reason = reason
+        super().__init__(
+            f"{self.code}: row {self.row_id} refused; violated axis: {axis}; {reason}"
+        )
+
+
 @dataclass(frozen=True)
 class PointResult:
     """One bench point versus one IMCC pack."""
@@ -558,10 +572,25 @@ def _convert_solid_activity_to_liquid(
 ) -> float:
     if activity_solid <= 0.0 or not math.isfinite(activity_solid):
         raise ValueError("solid-standard activity must be finite and positive")
-    return 10.0 ** (
+    log10_activity_liquid = (
         math.log10(activity_solid)
         - _solid_to_liquid_log10_shift(parent_oxide, temperature_K)
     )
+    try:
+        activity_liquid = 10.0**log10_activity_liquid
+    except (OverflowError, ValueError) as exc:
+        raise BenchStandardConversionRefusal(
+            parent_oxide,
+            "measured_activity",
+            f"solid-to-liquid activity is outside the finite float range: {exc}",
+        ) from exc
+    if not math.isfinite(activity_liquid) or activity_liquid <= 0.0:
+        raise BenchStandardConversionRefusal(
+            parent_oxide,
+            "measured_activity",
+            "solid-to-liquid activity is outside the finite positive float range",
+        )
+    return activity_liquid
 
 
 def _domain_partition(domain_flag: str | None) -> str | None:
@@ -1231,9 +1260,16 @@ def run_bench(
         )
         rows.append(row)
         if row.standard_state == "pure-solid" and row.observable == "activity":
-            measured_liquid = _convert_solid_activity_to_liquid(
-                row.measured, row.parent_oxide, row.temperature_K
-            )
+            try:
+                measured_liquid = _convert_solid_activity_to_liquid(
+                    row.measured, row.parent_oxide, row.temperature_K
+                )
+            except BenchStandardConversionRefusal as exc:
+                rows[-1] = replace(
+                    row,
+                    notices=(*row.notices, str(exc)),
+                )
+                continue
             converted_residual, converted_ratio = _residual_and_ratio(
                 row.predicted, measured_liquid, score=row.score
             )

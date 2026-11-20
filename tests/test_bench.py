@@ -29,6 +29,7 @@ from openimcc import (
 )
 from openimcc.json_utils import DuplicateJsonKeyError
 from openimcc.bench import (
+    BenchStandardConversionRefusal,
     _PACK_OVERLAY_BY_VERSION,
     _PACK_OVERLAY_MODEL_BY_VERSION,
     _CALLER_STANDARD_STATE_CONVENTIONS,
@@ -1319,6 +1320,66 @@ def test_bench_conversion_identity_names_current_gibbs_sources(
     assert "Gibbs conversion v2" in converted.convention
     assert "liquid Gibbs from packaged condensate rows" in converted.convention
     assert "JANAF Mg-008 apparent crystal Gibbs" in converted.convention
+
+
+def test_solid_activity_conversion_overflow_is_a_typed_refusal() -> None:
+    with pytest.raises(BenchStandardConversionRefusal) as refused:
+        _convert_solid_activity_to_liquid(
+            float.fromhex("0x1.fffffffffffffp+1023"), "Al2O3", 2500.0
+        )
+
+    assert refused.value.code == "bench_solid_standard_conversion_unrepresentable"
+    assert refused.value.row_id == "Al2O3_solid_to_liquid_activity"
+    assert refused.value.violated_axes == ("measured_activity",)
+
+
+def test_bench_continues_after_solid_activity_conversion_refusal(
+    tmp_path: Path,
+) -> None:
+    fixture = _write_fixture(
+        tmp_path / "bench.yaml",
+        [
+            {
+                "id": "solid_overflow_2500",
+                "population": "overflow_probe",
+                "composition_id": "cmas_in_domain",
+                "material_class": "cmas_slag",
+                "temperature_K": 2500.0,
+                "parent_oxide": "Al2O3",
+                "species": "AlO",
+                "observable": "activity",
+                "measured": float.fromhex("0x1.fffffffffffffp+1023"),
+                "units": "dimensionless",
+                "score": True,
+                "convention": "pure-solid",
+            },
+            {
+                "id": "solid_ok_1800",
+                "population": "regular_probe",
+                "composition_id": "cmas_in_domain",
+                "material_class": "cmas_slag",
+                "temperature_K": 1800.0,
+                "parent_oxide": "Al2O3",
+                "species": "AlO",
+                "observable": "activity",
+                "measured": 0.2,
+                "units": "dimensionless",
+                "score": True,
+                "convention": "pure-solid",
+            },
+        ],
+    )
+
+    report = run_bench(fixture, DATAPACK_PATH)
+
+    assert len(report.points) == 2
+    assert len(report.converted_points) == 1
+    assert report.converted_points[0].point_id == "solid_ok_1800"
+    assert any(
+        "bench_solid_standard_conversion_unrepresentable" in notice
+        and "Al2O3_solid_to_liquid_activity" in notice
+        for notice in report.notices
+    )
 
 
 def test_solid_reference_pairs_close_at_each_melting_point() -> None:
