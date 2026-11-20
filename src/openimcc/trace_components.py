@@ -1023,13 +1023,32 @@ def _resolve_trace_activity(
                     None,
                 )
         else:
-            helper_result = _activity_fragment_result(
-                rule.activity_fragment,
-                composition_moles,
-                T_K,
-                fO2_bar=fO2_bar,
-                total_pressure_bar=total_pressure_bar,
-            )
+            try:
+                helper_result = _activity_fragment_result(
+                    rule.activity_fragment,
+                    composition_moles,
+                    T_K,
+                    fO2_bar=fO2_bar,
+                    total_pressure_bar=total_pressure_bar,
+                )
+            except ImccRefusal as refusal:
+                if rule.activity_fragment not in {"P", "S"}:
+                    raise
+                return (
+                    TraceActivityEstimate(
+                        oxide,
+                        None,
+                        x,
+                        "trace_refused_activity_law",
+                        reference=str(refusal),
+                        violated_axes=tuple(
+                            getattr(refusal, "violated_axes", ("activity",))
+                        ),
+                        source_row_id=getattr(refusal, "row_id", None),
+                    ),
+                    None,
+                    None,
+                )
         if helper_result is not None:
             (
                 activity,
@@ -1309,7 +1328,11 @@ def _activity_fragment_result(
             reference,
         )
     if element == "S":
-        from openimcc.sulfur import _OXIDES, evaluate_sulfur
+        from openimcc.sulfur import (
+            SulfurLawRefusal,
+            _OXIDES,
+            evaluate_sulfur,
+        )
 
         sulfur_moles = composition_moles.get("S", 0.0)
         sulfur_composition = {
@@ -1331,6 +1354,8 @@ def _activity_fragment_result(
                     sulfur_moles * MOLAR_MASS_G_MOL["S"] / total_mass * 1.0e6
                 ),
             )
+        except SulfurLawRefusal:
+            raise
         except (ValueError, ImccRefusal, ArithmeticError):
             return None
         if result.log10_fS2 is None:

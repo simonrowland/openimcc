@@ -695,6 +695,7 @@ def test_ga_gas_conversion_identity_and_kems_fit_domain(packaged_gas_pack) -> No
         )
 
     inside = gas_at(an_di, 2.0)
+    assert inside["Ga"].hex() == "0x1.1b42c3b4c2a01p-35"
     inside_flag = inside.domain_flags["Ga"]
     assert inside_flag.code == "nasa_standard_converted_activity_v1"
     assert inside_flag.reference is not None
@@ -746,6 +747,91 @@ def test_ga_gas_conversion_identity_and_kems_fit_domain(packaged_gas_pack) -> No
     assert indium_flag.reference is not None
     assert "NASA standard" in indium_flag.reference
     assert "inside the measured 1550–1740 K KEMS fit" in str(indium_flag)
+
+
+def test_ga_nasa_conversion_overflow_is_a_typed_trace_refusal(
+    monkeypatch: pytest.MonkeyPatch,
+    packaged_gas_pack,
+) -> None:
+    from types import SimpleNamespace
+
+    import openimcc.model as model_module
+
+    monkeypatch.setattr(
+        model_module,
+        "evaluate",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            labels=SimpleNamespace(notices=())
+        ),
+    )
+    with pytest.raises(ImccComponentOutsideDomainError) as refused:
+        evaluate_gas(
+            {},
+            1.0,
+            1.0e-8,
+            packaged_gas_pack,
+            gas_species=("Ga", "GaO"),
+            composition_wt_pct={
+                "SiO2": 50.34,
+                "Al2O3": 15.4,
+                "MgO": 10.8,
+                "CaO": 23.46,
+                "Ga2O3": 0.05,
+            },
+            allow_extrapolation=True,
+        )
+
+    assert "trace_gas_channel_refused" in str(refused.value)
+    assert "GaO1.5-liquid-KEMS-1700K" in str(refused.value)
+    assert "temperature_K" in str(refused.value)
+
+
+@pytest.mark.parametrize(
+    ("trace", "species", "row_id"),
+    [
+        ("P2O5", "P2", "suito_inoue_1984_eq14_no_mn"),
+        ("S", "S2", "sulfide_capacity_eq_7"),
+    ],
+)
+def test_unrepresentable_trace_law_refuses_only_its_gas_channel(
+    trace: str,
+    species: str,
+    row_id: str,
+    monkeypatch: pytest.MonkeyPatch,
+    packaged_gas_pack,
+) -> None:
+    from types import SimpleNamespace
+
+    import openimcc.model as model_module
+
+    monkeypatch.setattr(
+        model_module,
+        "evaluate",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            labels=SimpleNamespace(notices=())
+        ),
+    )
+    composition = {
+        "SiO2": 50.34,
+        "Al2O3": 15.4,
+        "MgO": 10.8,
+        "CaO": 23.46,
+        trace: 0.05,
+    }
+    with pytest.raises(ImccComponentOutsideDomainError) as refused:
+        evaluate_gas(
+            {},
+            5.0e-324,
+            1.0e-8,
+            packaged_gas_pack,
+            gas_species=(species,),
+            composition_wt_pct=composition,
+            allow_extrapolation=True,
+        )
+
+    assert "trace_gas_channel_refused" in str(refused.value)
+    assert row_id in str(refused.value)
+    assert "temperature_K" in str(refused.value)
 
 
 def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration(

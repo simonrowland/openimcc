@@ -4094,9 +4094,67 @@ def evaluate_gas(
                         # ln K_Bischof - ln K_NASA. R has J mol^-1 K^-1 and
                         # G has J mol^-1, making the exponent dimensionless.
                         # At 1674 K, the In conversion is about 0.00112.
-                        standard_ratio = math.exp(
+                        conversion_row_id = str(fragment_row["row"])
+                        conversion_log_ratio = (
                             bischof_parent_k_log - nasa_parent_k_log
                         )
+                        conversion_failure: str | None = None
+                        try:
+                            standard_ratio = math.exp(conversion_log_ratio)
+                        except (OverflowError, ValueError) as exc:
+                            standard_ratio = 0.0
+                            conversion_failure = f"{type(exc).__name__}: {exc}"
+                        if (
+                            conversion_failure is None
+                            and (not math.isfinite(standard_ratio) or standard_ratio <= 0.0)
+                        ):
+                            conversion_failure = (
+                                "conversion factor is not finite and positive"
+                            )
+                        converted_activity = (
+                            estimate.activity * standard_ratio
+                            if conversion_failure is None
+                            else 0.0
+                        )
+                        converted_activity_range = (
+                            (
+                                estimate.activity_range[0] * standard_ratio,
+                                estimate.activity_range[1] * standard_ratio,
+                            )
+                            if conversion_failure is None
+                            and estimate.activity_range is not None
+                            else None
+                        )
+                        if conversion_failure is None and (
+                            not math.isfinite(converted_activity)
+                            or converted_activity <= 0.0
+                            or (
+                                converted_activity_range is not None
+                                and any(
+                                    not math.isfinite(value) or value <= 0.0
+                                    for value in converted_activity_range
+                                )
+                            )
+                        ):
+                            conversion_failure = (
+                                "converted activity is outside the finite positive float range"
+                            )
+                        if conversion_failure is not None:
+                            refusal = (
+                                "Bischof KEMS-to-NASA parent-standard conversion "
+                                f"row {conversion_row_id} refused; violated axes: "
+                                f"temperature_K; {conversion_failure}"
+                            )
+                            trace_activity_estimates[oxide] = replace(
+                                estimate,
+                                activity=None,
+                                activity_range=None,
+                                code="trace_refused_nasa_standard_conversion",
+                                reference=refusal,
+                                violated_axes=("temperature_K",),
+                                source_row_id=conversion_row_id,
+                            )
+                            continue
                         fit_window_low, fit_window_high = map(
                             float, fragment_row["temperature_window_K"]
                         )
@@ -4172,15 +4230,8 @@ def evaluate_gas(
                             estimate,
                             code="nasa_standard_converted_activity_v1",
                             reference=nasa_reference,
-                            activity=estimate.activity * standard_ratio,
-                            activity_range=(
-                                (
-                                    estimate.activity_range[0] * standard_ratio,
-                                    estimate.activity_range[1] * standard_ratio,
-                                )
-                                if estimate.activity_range is not None
-                                else None
-                            ),
+                            activity=converted_activity,
+                            activity_range=converted_activity_range,
                             parent_liquid_standard_offset=ParentLiquidStandardOffset(
                                 code="parent_liquid_standard_offset",
                                 factor=standard_ratio,

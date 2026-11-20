@@ -15,6 +15,8 @@
   or temperature inputs make its result unrepresentable.
 - Boulliung-Wood sulfur capacities now refuse non-finite results, and Smythe
   or O’Neill SCSS overflow remains a model-specific typed notice.
+- P2O5 and sulfur trace-law refusals stay on the affected trace, while Ga and
+  In NASA parent-standard conversion failures refuse the affected gas channel.
 
 ### Trace gas parent standards
 
