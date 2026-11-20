@@ -13,6 +13,8 @@
 
 - Suito-Inoue P2O5 activity reports a typed refusal when extreme composition
   or temperature inputs make its result unrepresentable.
+- Boulliung-Wood sulfur capacities now refuse non-finite results, and Smythe
+  or O’Neill SCSS overflow remains a model-specific typed notice.
 
 ### Trace gas parent standards
 

@@ -980,6 +980,87 @@ def test_sulfate_comparison_reports_arithmetic_overflow() -> None:
     assert "OverflowError: math range error" in notice.message
 
 
+def test_sulfur_in_domain_capacity_and_prediction_are_bit_exact() -> None:
+    result = evaluate_sulfur(
+        _MORB, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0
+    )
+
+    assert result.log10_sulfide_capacity_wt_percent.hex() == "-0x1.1fff65532cb22p+2"
+    assert result.log10_sulfate_capacity_wt_percent.hex() == "0x1.93f93b451ed10p+2"
+    assert result.dissolved_total_s_ppm.hex() == "0x1.0313d4b8fa0a6p-5"
+
+
+def test_sulfur_capacity_refuses_nonfinite_temperature_result() -> None:
+    with pytest.raises(sulfur_module.SulfurLawRefusal) as refused:
+        evaluate_sulfur(
+            _MORB, 5.0e-324, log10_fO2=-8.0, log10_fS2=-10.0
+        )
+
+    assert refused.value.code == "sulfur_law_unrepresentable"
+    assert refused.value.row_id in {
+        "sulfide_capacity_eq_7", "sulfate_capacity_eq_9"
+    }
+    assert refused.value.violated_axes == ("temperature_K",)
+
+
+def test_sulfur_capacity_prediction_overflow_is_a_typed_notice() -> None:
+    result = evaluate_sulfur(
+        {"FeO": 100.0}, 50.0, log10_fO2=-8.0, log10_fS2=-10.0
+    )
+
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "sulfur-capacity-unavailable"
+    )
+    assert notice.model == "Boulliung-Wood-capacities"
+    assert notice.axis == "capacity_predicted_total_S_ppm"
+
+
+def test_smythe_scss_overflow_is_a_typed_notice() -> None:
+    result = evaluate_sulfur(
+        {"CaO": 99.0, "FeO": 1.0},
+        1.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+    )
+
+    notice = next(
+        notice for notice in result.notices if notice.code == "scss-unavailable"
+    )
+    assert notice.model == "Smythe-2017-Eq-11"
+    assert notice.axis == "scss_ppm"
+
+
+def test_oneill_scss_overflow_after_capacity_conversion_is_a_typed_notice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    melt_result = SimpleNamespace(
+        labels=SimpleNamespace(notices=()), parent_oxides=("FeO",)
+    )
+    monkeypatch.setattr(
+        sulfur_module,
+        "_melt_activities",
+        lambda *_args: (melt_result, 1.0, None),
+    )
+    result = evaluate_sulfur(
+        {"FeO": 100.0},
+        50.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=object(),
+    )
+
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "oneill-scss-unavailable"
+    )
+    assert notice.model == "ONeill-2021-Eq-10.43"
+    assert notice.axis == "scss_ppm"
+    assert result.scss_oneill_2021_ppm is None
+
+
 def test_melt_activity_reports_floating_point_overflow() -> None:
     with np.errstate(over="raise"):
         result, activity, error = sulfur_module._melt_activities(

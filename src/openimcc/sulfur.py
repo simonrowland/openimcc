@@ -13,7 +13,11 @@ from typing import Mapping
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K as _R
 from openimcc.activity_fragments import load_activity_fragment
-from openimcc.kernel import ImccRefusal, PackRowParticipation
+from openimcc.kernel import (
+    ImccComponentOutsideDomainError,
+    ImccRefusal,
+    PackRowParticipation,
+)
 from openimcc.model import (
     ImccLoadedDatapack,
     evaluate,
@@ -89,6 +93,20 @@ class SulfurNotice:
     calibrated_interval: tuple[float, float] | None = None
     distance_beyond_interval: float | None = None
     distance_unit: str | None = None
+
+
+class SulfurLawRefusal(ImccComponentOutsideDomainError):
+    """Typed refusal when a sulfur capacity law has non-finite output."""
+
+    code = "sulfur_law_unrepresentable"
+
+    def __init__(self, row_id: str, axis: str, reason: str) -> None:
+        self.row_id = row_id
+        self.violated_axes = (axis,)
+        self.reason = reason
+        super().__init__(
+            f"{self.code}: sulfur row {row_id} refused; violated axis: {axis}; {reason}"
+        )
 
 
 @dataclass(frozen=True)
@@ -255,6 +273,16 @@ def _capacity_logs(
         )
         + float(sulfate_fit["constant_K"])
     ) / T_K
+    if not math.isfinite(log_cs2):
+        raise SulfurLawRefusal(
+            "sulfide_capacity_eq_7", "temperature_K",
+            "Boulliung-Wood 2023 sulfide capacity is not finite",
+        )
+    if not math.isfinite(log_cs6):
+        raise SulfurLawRefusal(
+            "sulfate_capacity_eq_9", "temperature_K",
+            "Boulliung-Wood 2023 sulfate capacity is not finite",
+        )
     return log_cs2, log_cs6
 
 
@@ -682,13 +710,32 @@ def evaluate_sulfur(
             # Log terms use the ppm-normalized concentration convention, so the
             # exponent is dimensionless and the result is ppm S.
             # Sanity: the negative pressure term lowers SCSS as pressure rises.
-            c2_ppm = 10.0 ** (log_cs2 + 4.0)
-            ln_delta_g_over_rt = 14695.0 / T - 9.656 + 1.02 * math.log(T)
-            oneill2021_scss = math.exp(
-                ln_delta_g_over_rt + math.log(c2_ppm)
-                + math.log(x_fes) - math.log(a_feo)
-                - 269.40 * (pressure * 1.0e-4) / T
-            )
+            try:
+                c2_ppm = 10.0 ** (log_cs2 + 4.0)
+            except OverflowError:
+                # Preserve the direct multiply-then-log path in its domain;
+                # only use the log identity when the intermediate C2 value
+                # cannot be represented.
+                ln_c2_ppm = (log_cs2 + 4.0) * _LN10
+            else:
+                ln_c2_ppm = math.log(c2_ppm)
+            try:
+                ln_delta_g_over_rt = 14695.0 / T - 9.656 + 1.02 * math.log(T)
+                oneill2021_scss = math.exp(
+                    ln_delta_g_over_rt + ln_c2_ppm
+                    + math.log(x_fes) - math.log(a_feo)
+                    - 269.40 * (pressure * 1.0e-4) / T
+                )
+                if not math.isfinite(oneill2021_scss) or oneill2021_scss <= 0.0:
+                    raise ValueError("O'Neill SCSS is not finite and positive")
+            except (OverflowError, ValueError) as exc:
+                notices.append(_notice(
+                    "oneill-scss-unavailable",
+                    "O'Neill 2021 SCSS is outside the finite positive float range: "
+                    + f"{type(exc).__name__}: {exc}",
+                    model="ONeill-2021-Eq-10.43",
+                    axis="scss_ppm",
+                ))
     else:
         notices.append(_notice(
             "scss-unavailable", "SCSS requires positive FeO mole fraction and FeS in the matte",
