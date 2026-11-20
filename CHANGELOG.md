@@ -8,6 +8,7 @@
   equal-temperature transition and the transition row at the next segment.
 - Added the Bulletin 2131 carbonate and sulfide crystal tables with their
   printed phase identities and melting limits.
+- Added the Bulletin 2131 grossular and Ca-Al pyroxene crystal tables.
 - Analbite remains capped at the p. 374 footer's “Melting T 1391 K” (PDF
   text line 18610), although its phase description and final row reach 1400 K
   (lines 18582 and 18608). Unnamed NaAlSi3O8 at 1395–1400 K selects ALBITE:

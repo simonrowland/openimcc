@@ -942,12 +942,14 @@ def test_robie_hemingway_target_tables_reconstruct_printed_nodes() -> None:
         for phase in source["phases"]
         if phase["id"] in {
             "witherite", "aragonite", "calcite", "pyrite", "marcasite",
-            "chalcocite", "chalcopyrite", "bornite",
+            "chalcocite", "chalcopyrite", "bornite", "grossular",
+            "ca-al-pyroxene",
         }
     }
     assert set(phases) == {
         "witherite", "aragonite", "calcite", "pyrite", "marcasite",
-        "chalcocite", "chalcopyrite", "bornite",
+        "chalcocite", "chalcopyrite", "bornite", "grossular",
+        "ca-al-pyroxene",
     }
     packaged_path = Path(__file__).parents[1] / (
         "src/openimcc/data/diagnostics/rh-crystal-species.json"
