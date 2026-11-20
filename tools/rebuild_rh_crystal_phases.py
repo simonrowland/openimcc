@@ -31,10 +31,20 @@ RECORDS = {
     "ulvospinel": (236, "ULVOSPINEL"),
 }
 SOURCE_SOLID_LIMITS = {
+    "chalcocite": {
+        "temperature_K": 1403.0,
+        "kind": "melting",
+        "locator": {"page": 127, "row": "Melting T", "column": "temperature"},
+    },
     "fayalite": {
         "temperature_K": 1490.0,
         "kind": "melting",
         "locator": {"page": 332, "row": "Melting T", "column": "temperature"},
+    },
+    "pyrite": {
+        "temperature_K": 1015.0,
+        "kind": "melting",
+        "locator": {"page": 132, "row": "Melting T", "column": "temperature"},
     },
     "perovskite": {
         "temperature_K": 2188.0,
@@ -339,6 +349,8 @@ def build_crystal_species() -> dict[str, Any]:
                 ),
             },
         }
+        if source_phase["id"] in SOURCE_SOLID_LIMITS:
+            phase["source_solid_limit"] = SOURCE_SOLID_LIMITS[source_phase["id"]]
         if source_phase["source_formula_as_published"] != source_phase["formula"]:
             phase["source_formula_note"] = (
                 "The printed p. 382 formula is Al2Si2O5(OH)2, while its printed "

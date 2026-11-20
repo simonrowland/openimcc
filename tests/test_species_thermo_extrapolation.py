@@ -932,6 +932,107 @@ def test_robie_hemingway_added_crystal_tables_reconstruct_printed_nodes() -> Non
         assert albite.T_max == 1400.0
 
 
+def test_robie_hemingway_target_tables_reconstruct_printed_nodes() -> None:
+    table_path = Path(__file__).parents[1] / (
+        "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json"
+    )
+    source = json.loads(table_path.read_text(encoding="utf-8"))
+    phases = {
+        phase["id"]: phase
+        for phase in source["phases"]
+        if phase["id"] in {
+            "witherite", "aragonite", "calcite", "pyrite", "marcasite",
+            "chalcocite", "chalcopyrite", "bornite",
+        }
+    }
+    assert set(phases) == {
+        "witherite", "aragonite", "calcite", "pyrite", "marcasite",
+        "chalcocite", "chalcopyrite", "bornite",
+    }
+    packaged_path = Path(__file__).parents[1] / (
+        "src/openimcc/data/diagnostics/rh-crystal-species.json"
+    )
+    packaged = {
+        phase["id"]: phase
+        for phase in json.loads(packaged_path.read_text(encoding="utf-8"))["phases"]
+    }
+    gas_constant_J_mol_K = 8.31446261815324
+    element_reference_gaps: dict[tuple[str, float], list[float]] = {}
+
+    for phase_id, phase in phases.items():
+        runtime_phase = packaged[phase_id]
+        assert runtime_phase["source"]["printed_page"] == phase["printed_page"]
+        assert runtime_phase["source"]["printed_phase_description"] == (
+            phase["printed_phase_description"]
+        )
+        assert runtime_phase["source_temperature_K"] == phase["source_temperature_K"]
+        assert len(phase["rows"]) == len(runtime_phase["source_row_locators"])
+        h298 = float(phase["rows"][0]["formation_enthalpy_kJ_mol"])
+
+        for row in phase["rows"]:
+            temperature = float(row["T_K"])
+            label = (
+                str(int(temperature))
+                if temperature.is_integer()
+                else str(temperature)
+            )
+            locator = row["locator"]
+            assert locator["page"] == phase["printed_page"]
+            assert locator["row"] == f"{label} K"
+            assert runtime_phase["source_row_locators"][label] == locator
+
+            selected = species_thermo(
+                phase["formula"], "cr", temperature,
+                polymorph=phase["name_as_published"],
+            )
+            assert selected.source_table_id == (
+                f"USGS-B2131-p{phase['printed_page']}"
+            )
+            assert selected.phase_identity["polymorph"] == phase["name_as_published"]
+            absolute_g = (
+                h298
+                + temperature
+                * float(row["H_minus_H298_over_T_J_mol_K"])
+                / 1000.0
+                - temperature * float(row["S_J_mol_K"]) / 1000.0
+            )
+            assert selected.G_J_mol / 1000.0 == pytest.approx(absolute_g, abs=0.002)
+
+            printed_g = float(row["formation_gibbs_kJ_mol"])
+            reconstructed_g = (
+                -gas_constant_J_mol_K
+                * temperature
+                * math.log(10.0)
+                * float(row["log10_Kf"])
+                / 1000.0
+            )
+            assert reconstructed_g == pytest.approx(printed_g, abs=0.25)
+            element_reference_gaps.setdefault(
+                (phase["formula"], temperature), []
+            ).append(absolute_g - printed_g)
+
+    # The two CaCO3 tables and two FeS2 tables share one elemental reference
+    # contribution at their common nodes, within the printed table rounding.
+    for gaps in element_reference_gaps.values():
+        if len(gaps) > 1:
+            assert max(gaps) - min(gaps) <= 0.25
+
+    for formula, phase_id, source_id, limit in (
+        ("Cu2S", "CHALCOCITE", "chalcocite", 1403.0),
+        ("FeS2", "PYRITE", "pyrite", 1015.0),
+    ):
+        assert packaged[source_id]["source_solid_limit"]["temperature_K"] == limit
+        last_row_temperature = float(phases[source_id]["rows"][-1]["T_K"])
+        assert last_row_temperature <= limit
+        with pytest.raises(
+            ImccGasTemperatureOutsideDomainError,
+        ):
+            species_thermo(
+                formula, "cr", limit + 1.0,
+                polymorph=phase_id, allow_extrapolation=True,
+            )
+
+
 def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
     kalsilite = species_thermo(
         "KAlSiO4", "cr", 1000.0, polymorph="kAlSiLiTe"
