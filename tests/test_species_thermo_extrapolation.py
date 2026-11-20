@@ -535,6 +535,83 @@ def test_robie_hemingway_al2sio5_selection_and_printed_gibbs() -> None:
         species_thermo("AlO(OH)", "cr", 601.0)
 
 
+def test_robie_hemingway_added_crystal_tables_reconstruct_printed_nodes() -> None:
+    table_path = Path(__file__).parents[1] / (
+        "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json"
+    )
+    source = json.loads(table_path.read_text(encoding="utf-8"))
+    phase_ids = {
+        "tephroite", "alpha-spodumene", "beta-spodumene", "microcline",
+        "sanidine", "albite", "analbite",
+    }
+    phases = [phase for phase in source["phases"] if phase["id"] in phase_ids]
+    assert {phase["id"] for phase in phases} == phase_ids
+    element_reference_gaps: dict[tuple[str, float], list[float]] = {}
+
+    for phase in phases:
+        first, last = phase["source_temperature_K"]
+        valid_last = float(
+            phase.get("valid_temperature_K", phase["source_temperature_K"])[1]
+        )
+        assert phase["rows"][0]["T_K"] == first
+        assert phase["rows"][-1]["T_K"] == last
+        for row in phase["rows"]:
+            temperature = float(row["T_K"])
+            absolute_g = (
+                float(phase["rows"][0]["formation_enthalpy_kJ_mol"])
+                + temperature * float(row["H_minus_H298_over_T_J_mol_K"]) / 1000.0
+                - temperature * float(row["S_J_mol_K"]) / 1000.0
+            )
+            if temperature <= valid_last:
+                selected = species_thermo(
+                    phase["formula"], "cr", temperature,
+                    polymorph=phase["name_as_published"],
+                )
+                assert selected.source_table_id == (
+                    f"USGS-B2131-p{phase['printed_page']}"
+                )
+                assert selected.phase_identity["polymorph"] == (
+                    phase["name_as_published"]
+                )
+                assert selected.G_J_mol / 1000.0 == pytest.approx(
+                    absolute_g, abs=0.002
+                )
+            else:
+                with pytest.raises(ImccGasTemperatureOutsideDomainError):
+                    species_thermo(
+                        phase["formula"], "cr", temperature,
+                        polymorph=phase["name_as_published"],
+                    )
+            # This difference is the elemental-reference Gibbs contribution
+            # between the table's absolute G reconstruction and printed ΔfG.
+            gap = absolute_g - float(row["formation_gibbs_kJ_mol"])
+            reconstructed_absolute_g = (
+                selected.G_J_mol / 1000.0
+                if temperature <= valid_last else absolute_g
+            )
+            reconstructed_delta_f_g = reconstructed_absolute_g - gap
+            assert reconstructed_delta_f_g == pytest.approx(
+                float(row["formation_gibbs_kJ_mol"]), abs=0.002
+            )
+            element_reference_gaps.setdefault(
+                (phase["formula"], temperature), []
+            ).append(gap)
+
+    # Polymorph tables for the same stoichiometry must share the same
+    # elemental-reference contribution at their common temperature nodes.
+    for gaps in element_reference_gaps.values():
+        if len(gaps) > 1:
+            assert max(gaps) - min(gaps) <= 0.15
+
+    beta = species_thermo(
+        "LiAlSi2O6", "cr", 1696.0, polymorph="β-SPODUMENE"
+    )
+    assert beta.T_max == 1696.0
+    assert "Melting point is 1696 K." in beta.phase_identity["note"]
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("LiAlSi2O6", "cr", 1697.0, polymorph="β-SPODUMENE")
+
+
 def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
     kalsilite = species_thermo(
         "KAlSiO4", "cr", 1000.0, polymorph="kAlSiLiTe"

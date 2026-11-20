@@ -52,6 +52,11 @@ JANAF_CRYSTAL_TABLE_IDS = frozenset({
     "B-004", "Fe-004", "Fe-023", "Fe-030", "Hf-005", "Mn-004",
     "Mo-004", "Nb-004", "V-004", "W-004", "Zr-005",
 })
+RH_CRYSTAL_TABLE_IDS = frozenset({
+    "USGS-B2131-p338", "USGS-B2131-p350", "USGS-B2131-p351",
+    "USGS-B2131-p366", "USGS-B2131-p367", "USGS-B2131-p373",
+    "USGS-B2131-p374",
+})
 ELEMENTAL_REFERENCE_CRYSTAL_CARD_IDS = frozenset({
     "BU-0054", "BU-3110", "BU-3120", "P672-Rh-cr", "BU-2611",
     "BURCAT-OS-CR", "P672-Ru-cr",
@@ -1184,6 +1189,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         if isinstance(table_id, str)
     }
     assert not JANAF_CRYSTAL_TABLE_IDS & ionisation_source_ids
+    assert not RH_CRYSTAL_TABLE_IDS & ionisation_source_ids
     # These crystal cards establish metal reference H/S/Cp, not gas ionisation.
     assert not ELEMENTAL_REFERENCE_CRYSTAL_CARD_IDS & ionisation_source_ids
     negative_screen = yaml.safe_load(

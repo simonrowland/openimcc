@@ -230,6 +230,17 @@ def build_crystal_species() -> dict[str, Any]:
         source_range = list(map(float, source_phase["source_temperature_K"]))
         if temperatures[0] != source_range[0] or temperatures[-1] != source_range[1]:
             raise ValueError(f"{source_phase['id']} range differs from its rows")
+        valid_range = source_phase.get(
+            "valid_temperature_K", source_phase["source_temperature_K"]
+        )
+        valid_range_values = list(map(float, valid_range))
+        if (
+            len(valid_range_values) != 2
+            or valid_range_values[0] < source_range[0]
+            or valid_range_values[1] > source_range[1]
+            or valid_range_values[0] >= valid_range_values[1]
+        ):
+            raise ValueError(f"{source_phase['id']} has an invalid valid-temperature range")
 
         anchors = [row for row in rows if float(row["T_K"]) == 298.15]
         if len(anchors) != 1:
@@ -301,7 +312,7 @@ def build_crystal_species() -> dict[str, Any]:
             "source_table_id": f"USGS-B2131-p{page}",
             "source_authority": "published_transcribed",
             "source_temperature_K": source_phase["source_temperature_K"],
-            "valid_temperature_K": source_phase["source_temperature_K"],
+            "valid_temperature_K": valid_range,
             "formation_enthalpy_298_kJ_mol": formation_enthalpy,
             "source_crystal_enthalpy_increment_nodes_kJ_mol": enthalpy_nodes,
             "source_crystal_entropy_nodes_J_mol_K": entropy_nodes,
