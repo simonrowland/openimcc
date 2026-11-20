@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### JANAF element crystals
+
+- Added indexed NIST-JANAF crystal datasets for titanium, nickel, chromium,
+  calcium, silicon, cobalt, tantalum, and copper with separate polymorphs and
+  source-row locators.
+
 ### Crystal phase interpolation
 
 - JANAF crystal functions now use each phase's printed endpoint below an

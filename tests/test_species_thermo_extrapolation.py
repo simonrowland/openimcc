@@ -79,12 +79,19 @@ def _element_reference_sum_kJ_mol(formula: str, temperature_K: float) -> float |
 _JANAF_ELEMENT_GAS_TABLES = {
     "Al": "Al-005",
     "B": "B-005",
+    "Ca": "Ca-006",
+    "Co": "Co-005",
+    "Cr": "Cr-005",
+    "Cu": "Cu-005",
     "K": "K-005",
     "Li": "Li-005",
     "Mn": "Mn-005",
     "Na": "Na-005",
+    "Ni": "Ni-005",
     "O2": "O-029",
     "Si": "Si-005",
+    "Ta": "Ta-005",
+    "Ti": "Ti-006",
     "W": "W-005",
 }
 
@@ -615,6 +622,118 @@ def test_janaf_boron_and_tungsten_oxide_crystals_reconstruct_nodes() -> None:
     assert species_thermo("WO3", "cr", 1745.0).T_max == 1745.0
     with pytest.raises(ImccGasTemperatureOutsideDomainError):
         species_thermo("WO3", "cr", 1746.0)
+
+
+def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
+    root = Path(__file__).parents[1]
+    packaged = json.loads(
+        (root / "src/openimcc/data/diagnostics/janaf-crystal-species.json")
+        .read_text(encoding="utf-8")
+    )
+    expected_tables = {
+        "Ti alpha": ("Ti", "Ti-002"),
+        "Ti beta": ("Ti", "Ti-003"),
+        "Ni": ("Ni", "Ni-002"),
+        "Cr": ("Cr", "Cr-002"),
+        "Ca alpha": ("Ca", "Ca-002"),
+        "Ca beta": ("Ca", "Ca-003"),
+        "Si": ("Si", "Si-002"),
+        "Co": ("Co", "Co-002"),
+        "Ta": ("Ta", "Ta-002"),
+        "Cu": ("Cu", "Cu-002"),
+    }
+    phases = {
+        phase["id"]: phase
+        for phase in packaged["phases"]
+        if phase["id"] in expected_tables
+    }
+    assert set(phases) == set(expected_tables)
+    reference_gaps: dict[tuple[str, float], list[float]] = {}
+
+    for phase_id, (formula, table_id) in expected_tables.items():
+        phase = phases[phase_id]
+        source_path = root / "data-src/janaf" / f"{table_id}.txt"
+        raw = source_path.read_bytes()
+        source_lines = raw.decode("utf-8").splitlines()
+        assert phase["formula"] == formula
+        assert phase["crystal_table_id"] == table_id
+        assert phase["source_path"] == f"data-src/janaf/{table_id}.txt"
+        assert phase["source_sha256"] == hashlib.sha256(raw).hexdigest()
+        assert phase["source_title"] == " | ".join(
+            source_lines[0].split("\t")
+        )
+
+        records = [*phase["nodes"], *phase["transition_rows"]]
+        record_lines = {row["source_line_number"] for row in records}
+        source_rows = {
+            line_number: row
+            for line_number, raw_line in enumerate(source_lines, start=1)
+            if (row := _janaf_text_reference_row(raw_line)) is not None
+        }
+        assert record_lines == set(source_rows)
+        for record in records:
+            source_row = source_rows[record["source_line_number"]]
+            assert record["T_K"] == source_row["T_K"]
+            assert record["enthalpy_increment_kJ_mol"] == source_row[
+                "Hinc_kJ_mol"
+            ]
+            assert record["entropy_J_mol_K"] == source_row["S_J_mol_K"]
+            if "raw_line" in record:
+                assert record["raw_line"] == source_lines[
+                    record["source_line_number"] - 1
+                ]
+
+        anchor = source_rows[next(
+            line_number
+            for line_number, row in source_rows.items()
+            if row["T_K"] == 298.15
+        )]
+        assert phase["formation_enthalpy_298_kJ_mol"] == anchor[
+            "delta_fH_kJ_mol"
+        ]
+        selected = evaluate_janaf_crystal(phase_id, 298.15)
+        assert selected.provenance["table_id"] == table_id
+        assert selected.provenance["source_sha256"] == phase["source_sha256"]
+
+        cap_K = float(phase["crystal_transition_temperature_K"])
+        liquid_transitions = [
+            row for row in phase["transition_rows"]
+            if "<-->" in row["label"] and "LIQUID" in row["label"].upper()
+        ]
+        if liquid_transitions:
+            assert cap_K == max(float(row["T_K"]) for row in liquid_transitions)
+            assert phase["transition_row_at_cap"] in liquid_transitions
+        else:
+            assert cap_K == float(phase["source_temperature_K"][1])
+        evaluate_janaf_crystal(phase_id, cap_K)
+        with pytest.raises(ValueError):
+            evaluate_janaf_crystal(phase_id, cap_K + 0.1)
+
+        for row in source_rows.values():
+            temperature = float(row["T_K"])
+            printed_delta_f_g = row["delta_fG_kJ_mol"]
+            if (
+                temperature < 298.15 or temperature > cap_K
+                or printed_delta_f_g is None
+            ):
+                continue
+            absolute_g = (
+                float(phase["formation_enthalpy_298_kJ_mol"])
+                + float(row["Hinc_kJ_mol"])
+                - temperature * float(row["S_J_mol_K"]) / 1000.0
+            )
+            element_reference_sum = _janaf_element_reference_sum_kJ_mol(
+                formula, temperature
+            )
+            assert absolute_g - element_reference_sum == pytest.approx(
+                float(printed_delta_f_g), abs=0.02
+            )
+            gap = absolute_g - float(printed_delta_f_g)
+            reference_gaps.setdefault((formula, temperature), []).append(gap)
+
+    for gaps in reference_gaps.values():
+        if len(gaps) > 1:
+            assert max(gaps) - min(gaps) <= 0.02
 
 
 def test_janaf_internal_transition_uses_the_previous_phase_endpoint() -> None:

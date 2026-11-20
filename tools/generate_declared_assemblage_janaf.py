@@ -33,29 +33,39 @@ CRYSTAL_SPECIES_TARGET = (
 # These vendored crystal tables are outside the pure-oxide standards used by
 # declared assemblages. Keep them in a separate package resource so those
 # callers continue to see only their existing oxide rows.
-ADDITIONAL_CRYSTALS = {
-    "PbO": "O-006",
-    "ZrO2": "O-052",
-    "TiO": "O-019",
-    "Ti3O5": "O-081",
-    "Ti2O3": "O-059",
-    "Cr2O3": "Cr-014",
-    "LiAlO2": "Al-068",
-    "Ta2O5": "O-077",
-    "Zr": "Zr-005",
-    "Hf": "Hf-005",
-    "Fe": "Fe-004",
-    "Fe2O3": "Fe-030",
-    "FeS": "Fe-023",
-    "Mn": "Mn-004",
-    "W": "W-004",
-    "B": "B-004",
-    "V": "V-004",
-    "Mo": "Mo-004",
-    "Nb": "Nb-004",
-    "B2O3": "B-095",
-    "WO3": "O-065",
-}
+ADDITIONAL_CRYSTALS = (
+    ("PbO", "PbO", "O-006"),
+    ("ZrO2", "ZrO2", "O-052"),
+    ("TiO", "TiO", "O-019"),
+    ("Ti3O5", "Ti3O5", "O-081"),
+    ("Ti2O3", "Ti2O3", "O-059"),
+    ("Cr2O3", "Cr2O3", "Cr-014"),
+    ("LiAlO2", "LiAlO2", "Al-068"),
+    ("Ta2O5", "Ta2O5", "O-077"),
+    ("Zr", "Zr", "Zr-005"),
+    ("Hf", "Hf", "Hf-005"),
+    ("Fe", "Fe", "Fe-004"),
+    ("Fe2O3", "Fe2O3", "Fe-030"),
+    ("FeS", "FeS", "Fe-023"),
+    ("Mn", "Mn", "Mn-004"),
+    ("W", "W", "W-004"),
+    ("B", "B", "B-004"),
+    ("V", "V", "V-004"),
+    ("Mo", "Mo", "Mo-004"),
+    ("Nb", "Nb", "Nb-004"),
+    ("B2O3", "B2O3", "B-095"),
+    ("WO3", "WO3", "O-065"),
+    ("Ti alpha", "Ti", "Ti-002"),
+    ("Ti beta", "Ti", "Ti-003"),
+    ("Ni", "Ni", "Ni-002"),
+    ("Cr", "Cr", "Cr-002"),
+    ("Ca alpha", "Ca", "Ca-002"),
+    ("Ca beta", "Ca", "Ca-003"),
+    ("Si", "Si", "Si-002"),
+    ("Co", "Co", "Co-002"),
+    ("Ta", "Ta", "Ta-002"),
+    ("Cu", "Cu", "Cu-002"),
+)
 
 def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
     values = table["values"]
@@ -66,6 +76,11 @@ def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
                 row["enthalpy_increment"]["value"]
             ),
             "entropy_J_mol_K": float(row["entropy"]["value"]),
+            **(
+                {"source_line_number": row["source_line_number"]}
+                if "source_line_number" in row
+                else {}
+            ),
         }
         for row in values
         if row["enthalpy_increment"]["value"] is not None
@@ -280,7 +295,7 @@ def _parse_janaf_text_table(table_id: str, raw: bytes) -> dict:
 
 def _extra_crystal_phases() -> list[dict]:
     phases = []
-    for formula, table_id in ADDITIONAL_CRYSTALS.items():
+    for phase_id, formula, table_id in ADDITIONAL_CRYSTALS:
         prepared = _prepare_source_table(table_id)
         transitions = prepared["transition_rows"]
         fusion_rows = [
@@ -302,7 +317,7 @@ def _extra_crystal_phases() -> list[dict]:
         )
         phases.append(
             {
-                "id": formula,
+                "id": phase_id,
                 "formula": formula,
                 "crystal_table_id": table_id,
                 "source_title": prepared["title_as_published"],
