@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import lru_cache, partial
 import math
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
+from openimcc._numeric_guards import (
+    _checked_finite as _numeric_checked_finite,
+    _checked_fsum as _numeric_checked_fsum,
+    _checked_positive_finite as _numeric_checked_positive_finite,
+    _checked_pow10 as _numeric_checked_pow10,
+)
 from openimcc.activity_fragments import load_activity_fragment
 from openimcc.kernel import ImccComponentOutsideDomainError
 from openimcc.trace_envelope_calibration import _iw_log10_fO2_bar
@@ -670,32 +676,33 @@ def _numeric_refusal(
     )
 
 
-def _checked_fsum(values: Iterable[float], row_id: str, axis: str) -> float:
-    try:
-        value = math.fsum(values)
-    except (OverflowError, ValueError) as exc:
-        raise _numeric_refusal(
-            row_id, f"{axis}_overflow", f"{axis} could not be summed: {exc}"
-        ) from exc
-    return _checked_finite(value, row_id, axis)
+def _numeric_guard_refusal(
+    row_id: str,
+    axis: str,
+    failure: str,
+    cause: BaseException | None,
+    _context: str | None,
+) -> ReviewGammaActivityRefusal:
+    if failure == "sum_overflow":
+        failed_axis = f"{axis}_overflow"
+        reason = f"{axis} could not be summed: {cause}"
+    elif failure == "nonfinite":
+        failed_axis = f"{axis}_nonfinite"
+        reason = f"{axis} is not finite"
+    elif failure == "not_positive_finite":
+        failed_axis = f"{axis}_nonfinite"
+        reason = f"{axis} is not a finite positive value"
+    else:
+        failed_axis = f"{axis}_overflow"
+        reason = f"{axis} cannot be represented: {cause}"
+    return _numeric_refusal(row_id, failed_axis, reason)
 
 
-def _checked_finite(value: float, row_id: str, axis: str) -> float:
-    if not math.isfinite(value):
-        raise _numeric_refusal(
-            row_id, f"{axis}_nonfinite", f"{axis} is not finite"
-        )
-    return value
-
-
-def _checked_positive_finite(value: float, row_id: str, axis: str) -> float:
-    if not math.isfinite(value) or value <= 0.0:
-        raise _numeric_refusal(
-            row_id,
-            f"{axis}_nonfinite",
-            f"{axis} is not a finite positive value",
-        )
-    return value
+_checked_fsum = partial(_numeric_checked_fsum, refusal=_numeric_guard_refusal)
+_checked_finite = partial(_numeric_checked_finite, refusal=_numeric_guard_refusal)
+_checked_positive_finite = partial(
+    _numeric_checked_positive_finite, refusal=_numeric_guard_refusal,
+)
 
 
 def _checked_exp(log_value: float, row_id: str, axis: str) -> float:
@@ -709,15 +716,7 @@ def _checked_exp(log_value: float, row_id: str, axis: str) -> float:
     return _checked_positive_finite(value, row_id, axis)
 
 
-def _checked_pow10(log10_value: float, row_id: str, axis: str) -> float:
-    _checked_finite(log10_value, row_id, f"log10_{axis}")
-    try:
-        value = 10.0**log10_value
-    except (OverflowError, ValueError) as exc:
-        raise _numeric_refusal(
-            row_id, f"{axis}_overflow", f"{axis} cannot be represented: {exc}"
-        ) from exc
-    return _checked_positive_finite(value, row_id, axis)
+_checked_pow10 = partial(_numeric_checked_pow10, refusal=_numeric_guard_refusal)
 
 
 def _check_gamma_range(

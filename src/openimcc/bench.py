@@ -63,6 +63,7 @@ from openimcc import (
 )
 from openimcc.model import DEFAULT_MELT_PACK_NAME
 from openimcc.json_utils import reject_duplicate_json_keys
+from openimcc._numeric_guards import _checked_pow10 as _numeric_checked_pow10
 from openimcc.janaf_crystals import _JANAF_OXIDE_PAIRS, _apparent_gibbs
 
 _YAML_BASE_LOADER = yaml.SafeLoader
@@ -274,6 +275,26 @@ class BenchStandardConversionRefusal(ImccComponentOutsideDomainError):
         super().__init__(
             f"{self.code}: row {self.row_id} refused; violated axis: {axis}; {reason}"
         )
+
+
+def _bench_numeric_refusal(
+    row_id: str,
+    axis: str,
+    failure: str,
+    cause: BaseException | None,
+    _context: str | None,
+) -> BenchStandardConversionRefusal:
+    if failure == "power_overflow":
+        reason = (
+            "solid-to-liquid activity is outside the finite float range: "
+            f"{cause}"
+        )
+    else:
+        reason = (
+            "solid-to-liquid activity is outside the finite positive float range"
+        )
+    parent_oxide = row_id.removesuffix("_solid_to_liquid_activity")
+    return BenchStandardConversionRefusal(parent_oxide, axis, reason)
 
 
 @dataclass(frozen=True)
@@ -576,21 +597,15 @@ def _convert_solid_activity_to_liquid(
         math.log10(activity_solid)
         - _solid_to_liquid_log10_shift(parent_oxide, temperature_K)
     )
-    try:
-        activity_liquid = 10.0**log10_activity_liquid
-    except (OverflowError, ValueError) as exc:
-        raise BenchStandardConversionRefusal(
-            parent_oxide,
-            "measured_activity",
-            f"solid-to-liquid activity is outside the finite float range: {exc}",
-        ) from exc
-    if not math.isfinite(activity_liquid) or activity_liquid <= 0.0:
-        raise BenchStandardConversionRefusal(
-            parent_oxide,
-            "measured_activity",
-            "solid-to-liquid activity is outside the finite positive float range",
-        )
-    return activity_liquid
+    row_id = f"{parent_oxide}_solid_to_liquid_activity"
+    return _numeric_checked_pow10(
+        log10_activity_liquid,
+        row_id,
+        "measured_activity",
+        refusal=_bench_numeric_refusal,
+        context="solid_to_liquid_activity",
+        check_log_finite=False,
+    )
 
 
 def _domain_partition(domain_flag: str | None) -> str | None:

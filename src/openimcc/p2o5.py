@@ -8,10 +8,17 @@ notice, including when the composition lies inside the reported calibration.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 import math
 from typing import Mapping
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
+from openimcc._numeric_guards import (
+    _checked_finite as _numeric_checked_finite,
+    _checked_fsum as _numeric_checked_fsum,
+    _checked_positive_finite as _numeric_checked_positive_finite,
+    _checked_pow10 as _numeric_checked_pow10,
+)
 from openimcc.activity_fragments import load_activity_fragment
 from openimcc.kernel import ImccComponentOutsideDomainError
 from openimcc.scalar_boundary import is_declared_real_scalar
@@ -39,12 +46,41 @@ class P2O5ActivityRefusal(ImccComponentOutsideDomainError):
         )
 
 
-def _checked_finite(value: float, row_id: str, axis: str) -> float:
-    if not math.isfinite(value):
-        raise P2O5ActivityRefusal(
-            row_id, axis, f"{axis} is not finite for the Suito-Inoue P2O5 law"
+def _p2o5_numeric_refusal(
+    row_id: str,
+    axis: str,
+    failure: str,
+    cause: BaseException | None,
+    context: str | None,
+) -> P2O5ActivityRefusal:
+    if failure == "sum_overflow":
+        if context == "total_moles":
+            reason = "total moles are not representable"
+        else:
+            reason = "total oxide mass is not representable"
+    elif failure == "nonfinite":
+        reason = {
+            "canonical_moles": "canonical mole total is not finite",
+            "total_moles": "total moles are not finite",
+            "oxide_mass": "oxide mass is not finite",
+            "total_oxide_mass": "total oxide mass is not finite",
+        }.get(
+            context,
+            f"{axis} is not finite for the Suito-Inoue P2O5 law",
         )
-    return value
+    elif failure == "not_positive_finite":
+        reason = "activity or gamma is outside the finite positive float range"
+    else:
+        reason = f"activity or gamma is not representable: {cause}"
+    return P2O5ActivityRefusal(row_id, axis, reason)
+
+
+_checked_fsum = partial(_numeric_checked_fsum, refusal=_p2o5_numeric_refusal)
+_checked_finite = partial(_numeric_checked_finite, refusal=_p2o5_numeric_refusal)
+_checked_positive_finite = partial(
+    _numeric_checked_positive_finite, refusal=_p2o5_numeric_refusal,
+)
+_checked_pow10 = partial(_numeric_checked_pow10, refusal=_p2o5_numeric_refusal)
 
 
 @dataclass(frozen=True)
@@ -113,20 +149,13 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         # Fe2O3 contributes two Fe atoms, represented as two FeO-equivalent
         # formula moles in this regression's FetO term and composition basis.
         amounts[canonical] = amounts.get(canonical, 0.0) + value * (2 if key == "Fe2O3" else 1)
-        if not math.isfinite(amounts[canonical]):
-            raise P2O5ActivityRefusal(
-                row_id, "composition_moles", "canonical mole total is not finite"
-            )
-    try:
-        total = math.fsum(amounts.values())
-    except OverflowError as exc:
-        raise P2O5ActivityRefusal(
-            row_id, "composition_moles", "total moles are not representable"
-        ) from exc
-    if not math.isfinite(total):
-        raise P2O5ActivityRefusal(
-            row_id, "composition_moles", "total moles are not finite"
+        _checked_finite(
+            amounts[canonical], row_id, "composition_moles",
+            context="canonical_moles",
         )
+    total = _checked_fsum(
+        amounts.values(), row_id, "composition_moles", context="total_moles",
+    )
     if total <= 0 or amounts.get("P2O5", 0.0) <= 0:
         raise ValueError("composition must contain positive total moles and P2O5")
     x = {name: value / total for name, value in amounts.items()}
@@ -137,20 +166,14 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         else math.log10(amounts["P2O5"]) - math.log10(total)
     )
     wt = {name: value * MOLAR_MASS_G_MOL[name] for name, value in amounts.items()}
-    if any(not math.isfinite(value) for value in wt.values()):
-        raise P2O5ActivityRefusal(
-            row_id, "composition_wt_percent", "oxide mass is not finite"
+    for value in wt.values():
+        _checked_finite(
+            value, row_id, "composition_wt_percent", context="oxide_mass",
         )
-    try:
-        total_mass = math.fsum(wt.values())
-    except OverflowError as exc:
-        raise P2O5ActivityRefusal(
-            row_id, "composition_wt_percent", "total oxide mass is not representable"
-        ) from exc
-    if not math.isfinite(total_mass):
-        raise P2O5ActivityRefusal(
-            row_id, "composition_wt_percent", "total oxide mass is not finite"
-        )
+    total_mass = _checked_fsum(
+        wt.values(), row_id, "composition_wt_percent",
+        context="total_oxide_mass",
+    )
     wt = {name: value / total_mass * 100.0 for name, value in wt.items()}
     term = math.fsum(
         float(coefficient) * x.get(name, 0.0)
@@ -243,22 +266,28 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
     additional_notices = (
         (P2O5FeIIINotice(),) if composition_moles.get("Fe2O3", 0) > 0 else ()
     )
-    try:
-        activity = 10.0**central
-        gamma = 10.0**(central - log10_x_p)
-    except (OverflowError, ValueError) as exc:
-        raise P2O5ActivityRefusal(
-            row_id, "activity", f"activity or gamma is not representable: {exc}"
-        ) from exc
-    if (
-        not math.isfinite(activity)
-        or activity <= 0.0
-        or not math.isfinite(gamma)
-        or gamma <= 0.0
-    ):
-        raise P2O5ActivityRefusal(
-            row_id, "activity", "activity or gamma is outside the finite positive float range"
-        )
+    activity = _checked_pow10(
+        central,
+        row_id,
+        "activity",
+        context="activity_or_gamma",
+        check_log_finite=False,
+        check_result=False,
+    )
+    gamma = _checked_pow10(
+        central - log10_x_p,
+        row_id,
+        "activity",
+        context="activity_or_gamma",
+        check_log_finite=False,
+        check_result=False,
+    )
+    _checked_positive_finite(
+        activity, row_id, "activity", context="activity_or_gamma",
+    )
+    _checked_positive_finite(
+        gamma, row_id, "activity", context="activity_or_gamma",
+    )
     return P2O5ActivityResult(
         activity=activity,
         log10_activity=central,
