@@ -6,7 +6,11 @@
 
 - JANAF crystal functions now use each phase's printed endpoint below an
   equal-temperature transition and the transition row at the next segment.
-- Analbite crystal service stops at its printed 1391 K melting point.
+- Analbite remains capped at the p. 374 footer's “Melting T 1391 K” (PDF
+  text line 18610), although its phase description and final row reach 1400 K
+  (lines 18582 and 18608). Unnamed NaAlSi3O8 at 1395–1400 K selects ALBITE:
+  p. 373 gives its range to 1400 K at line 18523 and leaves the melting-T
+  value blank at line 18561.
 
 ### Elemental reference crystals
 

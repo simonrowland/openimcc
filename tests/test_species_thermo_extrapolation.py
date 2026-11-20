@@ -918,9 +918,18 @@ def test_robie_hemingway_added_crystal_tables_reconstruct_printed_nodes() -> Non
         "NaAlSi3O8", "cr", 1391.0, polymorph="ANALBITE"
     )
     assert analbite.T_max == 1391.0
-    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
-        species_thermo("NaAlSi3O8", "cr", 1392.0, polymorph="ANALBITE")
-    assert refusal.value.declared_interval_K == (298.15, 1391.0)
+    for temperature in (1392.0, 1395.0, 1400.0):
+        with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+            species_thermo(
+                "NaAlSi3O8", "cr", temperature, polymorph="ANALBITE"
+            )
+        assert refusal.value.declared_interval_K == (298.15, 1391.0)
+
+    for temperature in (1395.0, 1400.0):
+        albite = species_thermo("NaAlSi3O8", "cr", temperature)
+        assert albite.source_table_id == "USGS-B2131-p373"
+        assert albite.phase_identity["polymorph"] == "ALBITE"
+        assert albite.T_max == 1400.0
 
 
 def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
