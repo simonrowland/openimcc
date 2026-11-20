@@ -180,6 +180,67 @@ def _node_values(
     ]
 
 
+def _janaf_nodes_for_temperature(
+    row: Mapping[str, Any],
+    temperature_K: float,
+    *,
+    include_cap: bool = True,
+) -> list[Mapping[str, Any]]:
+    """Select each equal-temperature JANAF transition row for this segment.
+
+    The named ``A <--> B`` row closes the segment below a transition; the
+    following ``TRANSITION`` row opens the next segment at that same T. At a
+    crystal-liquid cap, retain the dedicated cap row at the inclusive edge.
+    """
+    nodes = [*row["nodes"], *row.get("transition_rows", [])]
+    cap_row = row.get("transition_row_at_cap") if include_cap else None
+    if cap_row is not None:
+        nodes.append(cap_row)
+
+    by_temperature: dict[float, list[Mapping[str, Any]]] = {}
+    for node in nodes:
+        by_temperature.setdefault(float(node["T_K"]), []).append(node)
+
+    selected = []
+    cap_temperature = float(cap_row["T_K"]) if cap_row is not None else None
+    for node_temperature in sorted(by_temperature):
+        group = by_temperature[node_temperature]
+        if (
+            cap_row is not None
+            and node_temperature == cap_temperature
+            and temperature_K == cap_temperature
+        ):
+            node = cap_row
+        else:
+            transition = next(
+                (
+                    candidate
+                    for candidate in reversed(group)
+                    if str(candidate.get("label", "")).strip().upper()
+                    == "TRANSITION"
+                ),
+                None,
+            )
+            phase_endpoint = next(
+                (
+                    candidate
+                    for candidate in group
+                    if "<-->" in str(candidate.get("label", ""))
+                ),
+                None,
+            )
+            if transition is not None and phase_endpoint is not None:
+                node = (
+                    transition
+                    if temperature_K >= node_temperature
+                    else phase_endpoint
+                )
+            else:
+                node = group[-1]
+        selected.append(node)
+    return selected
+
+
 def evaluate_janaf_crystal(
     phase_id: str, temperature_K: float, *, apply_phase_cap: bool = True
 ) -> JanafCrystalGibbs:
@@ -221,7 +282,9 @@ def evaluate_janaf_crystal(
     source = (
         [transition]
         if use_transition
-        else [*row["nodes"], *row.get("transition_rows", [])]
+        else _janaf_nodes_for_temperature(
+            row, temperature, include_cap=False
+        )
     )
     gibbs = _apparent_gibbs(
         float(row["formation_enthalpy_298_kJ_mol"]),
@@ -265,9 +328,13 @@ def evaluate_janaf_apparent_gibbs(
         (node for node in reversed(transitions) if float(node["T_K"]) == temperature),
         None,
     )
-    source_nodes = [transition] if transition is not None else [
-        *row["nodes"], *transitions
-    ]
+    source_nodes = (
+        [transition]
+        if transition is not None
+        else _janaf_nodes_for_temperature(
+            row, temperature, include_cap=False
+        )
+    )
     gibbs = _apparent_gibbs(
         float(row["formation_enthalpy_298_kJ_mol"]),
         _node_values(source_nodes),

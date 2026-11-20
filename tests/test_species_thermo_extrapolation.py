@@ -76,6 +76,142 @@ def _element_reference_sum_kJ_mol(formula: str, temperature_K: float) -> float |
     return total
 
 
+_JANAF_ELEMENT_GAS_TABLES = {
+    "Al": "Al-005",
+    "B": "B-005",
+    "K": "K-005",
+    "Li": "Li-005",
+    "Mn": "Mn-005",
+    "Na": "Na-005",
+    "O2": "O-029",
+    "Si": "Si-005",
+    "W": "W-005",
+}
+
+
+def _janaf_text_reference_row(raw_line: str) -> dict[str, float] | None:
+    cells = raw_line.strip().split("\t")
+    try:
+        temperature, entropy, enthalpy_increment = (
+            float(cells[index]) for index in (0, 2, 4)
+        )
+    except (IndexError, ValueError):
+        return None
+
+    formation_enthalpy = formation_gibbs = None
+    if len(cells) > 6:
+        try:
+            formation_enthalpy = float(cells[5])
+            formation_gibbs = float(cells[6])
+        except ValueError:
+            pass
+    if formation_enthalpy is None and len(cells) > 5:
+        values = re.findall(
+            r"(?<![A-Za-z])[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?",
+            cells[5],
+        )
+        if len(values) >= 2:
+            formation_enthalpy, formation_gibbs = map(float, values[:2])
+
+    return {
+        "T_K": temperature,
+        "Hinc_kJ_mol": enthalpy_increment,
+        "S_J_mol_K": entropy,
+        "delta_fH_kJ_mol": formation_enthalpy,
+        "delta_fG_kJ_mol": formation_gibbs,
+    }
+
+
+@lru_cache(maxsize=None)
+def _janaf_element_reference_rows(element: str) -> tuple[dict[str, float], ...]:
+    table_id = _JANAF_ELEMENT_GAS_TABLES[element]
+    root = Path(__file__).parents[1] / "data-src/janaf"
+    yaml_path = root / f"{table_id}.yaml"
+    if yaml_path.exists():
+        table = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))["table"]
+        rows = []
+        for source_row in table["values"]:
+            rows.append({
+                "T_K": float(source_row["temperature"]["value"]),
+                "Hinc_kJ_mol": source_row["enthalpy_increment"]["value"],
+                "S_J_mol_K": source_row["entropy"]["value"],
+                "delta_fH_kJ_mol": source_row["formation_enthalpy"]["value"],
+                "delta_fG_kJ_mol": source_row["formation_gibbs_energy"]["value"],
+            })
+        rows.extend(
+            row
+            for ambiguity in table.get("parse_ambiguities", ())
+            if (row := _janaf_text_reference_row(ambiguity["raw_line"])) is not None
+        )
+    else:
+        text_path = root / f"{table_id}.txt"
+        rows = [
+            row
+            for line in text_path.read_text(encoding="utf-8").splitlines()[2:]
+            if (row := _janaf_text_reference_row(line)) is not None
+        ]
+    return tuple(sorted(rows, key=lambda row: row["T_K"]))
+
+
+def _janaf_element_reference_g_app_kJ_mol(
+    element: str, temperature_K: float
+) -> float:
+    rows = _janaf_element_reference_rows(element)
+    anchor = next(
+        row for row in rows
+        if row["T_K"] == 298.15 and row["delta_fH_kJ_mol"] is not None
+    )
+
+    def value_at(column: str) -> float:
+        points = {
+            row["T_K"]: row[column]
+            for row in rows
+            if row[column] is not None
+        }
+        temperatures = sorted(points)
+        if temperature_K in points:
+            return float(points[temperature_K])
+        upper = next(
+            (index for index, value in enumerate(temperatures)
+             if value > temperature_K),
+            None,
+        )
+        if upper is None or upper == 0:
+            raise ValueError(
+                f"{element} JANAF reference has no {column} at "
+                f"{temperature_K:g} K"
+            )
+        low_T, high_T = temperatures[upper - 1], temperatures[upper]
+        low_value, high_value = points[low_T], points[high_T]
+        return float(low_value) + (float(high_value) - float(low_value)) * (
+            (temperature_K - low_T) / (high_T - low_T)
+        )
+
+    return (
+        float(anchor["delta_fH_kJ_mol"])
+        + value_at("Hinc_kJ_mol")
+        - temperature_K * value_at("S_J_mol_K") / 1000.0
+        - value_at("delta_fG_kJ_mol")
+    )
+
+
+def _janaf_element_reference_sum_kJ_mol(
+    formula: str, temperature_K: float
+) -> float:
+    atoms = {
+        element: int(count or "1")
+        for element, count in re.findall(r"([A-Z][a-z]?)([0-9]*)", formula)
+    }
+    return math.fsum(
+        (count / 2.0 if element == "O" else count)
+        * _janaf_element_reference_g_app_kJ_mol(
+            "O2" if element == "O" else element,
+            temperature_K,
+        )
+        for element, count in atoms.items()
+    )
+
+
 def test_species_thermo_in_range_values_remain_byte_identical() -> None:
     legacy = SpeciesThermo(1.0, 2.0, 3.0, 4.0, "row", None, None, 10.0, 20.0)
     assert legacy.extrapolated is False
@@ -412,6 +548,7 @@ def test_janaf_boron_and_tungsten_oxide_crystals_reconstruct_nodes() -> None:
         "B-095": ("B2O3", 723.0),
         "O-065": ("WO3", 1745.0),
     }
+    element_reference_tolerances_kJ_mol = {"B2O3": 0.005, "WO3": 0.005}
     for table_id, (formula, cap_K) in expectations.items():
         source_path = root / "data-src/janaf" / f"{table_id}.yaml"
         source = yaml.safe_load(source_path.read_text(encoding="utf-8"))
@@ -425,7 +562,6 @@ def test_janaf_boron_and_tungsten_oxide_crystals_reconstruct_nodes() -> None:
         assert phase["source_sha256"] == hashlib.sha256(
             source_path.read_bytes()
         ).hexdigest()
-        gaps = []
         for row in table["values"]:
             temperature = float(row["temperature"]["value"])
             enthalpy_increment = row["enthalpy_increment"]["value"]
@@ -458,12 +594,13 @@ def test_janaf_boron_and_tungsten_oxide_crystals_reconstruct_nodes() -> None:
             assert log_k_delta_f_g == pytest.approx(
                 float(printed_delta_f_g), abs=0.25
             )
-            gap = absolute_g - float(printed_delta_f_g)
-            assert selected.G_J_mol / 1000.0 - gap == pytest.approx(
-                float(printed_delta_f_g), abs=0.002
+            element_reference_sum = _janaf_element_reference_sum_kJ_mol(
+                formula, temperature
             )
-            gaps.append(gap)
-        assert gaps
+            assert absolute_g - element_reference_sum == pytest.approx(
+                float(printed_delta_f_g),
+                abs=element_reference_tolerances_kJ_mol[formula],
+            )
 
     boron_oxide = species_thermo("B2O3", "cr", 723.0)
     assert boron_oxide.source_table_id == "B-095"
@@ -478,6 +615,71 @@ def test_janaf_boron_and_tungsten_oxide_crystals_reconstruct_nodes() -> None:
     assert species_thermo("WO3", "cr", 1745.0).T_max == 1745.0
     with pytest.raises(ImccGasTemperatureOutsideDomainError):
         species_thermo("WO3", "cr", 1746.0)
+
+
+def test_janaf_internal_transition_uses_the_previous_phase_endpoint() -> None:
+    source_path = Path(__file__).parents[1] / (
+        "src/openimcc/data/diagnostics/janaf-crystal-species.json"
+    )
+    phase = next(
+        row for row in json.loads(source_path.read_text(encoding="utf-8"))["phases"]
+        if row["crystal_table_id"] == "O-065"
+    )
+    endpoint = next(
+        row for row in phase["transition_rows"]
+        if row["T_K"] == 1050.0 and row["label"] == "I <--> II"
+    )
+    transition = next(
+        row for row in phase["transition_rows"]
+        if row["T_K"] == 1050.0 and row["label"] == "TRANSITION"
+    )
+    lower = next(row for row in phase["nodes"] if row["T_K"] == 1000.0)
+    upper = next(row for row in phase["nodes"] if row["T_K"] == 1100.0)
+
+    def interpolate(left, right, temperature, key):
+        fraction = (temperature - left["T_K"]) / (right["T_K"] - left["T_K"])
+        return left[key] + (right[key] - left[key]) * fraction
+
+    below_T = 1025.0
+    below = evaluate_crystal_species("WO3", below_T)
+    assert below is not None
+    expected_below_hinc = interpolate(
+        lower, endpoint, below_T, "enthalpy_increment_kJ_mol"
+    )
+    expected_below_entropy = interpolate(
+        lower, endpoint, below_T, "entropy_J_mol_K"
+    )
+    assert below.H_app_kJ_mol == pytest.approx(
+        phase["formation_enthalpy_298_kJ_mol"] + expected_below_hinc
+    )
+    assert below.S_J_molK == pytest.approx(expected_below_entropy)
+    assert below.G_J_mol / 1000.0 == pytest.approx(
+        below.H_app_kJ_mol - below_T * below.S_J_molK / 1000.0
+    )
+
+    old_transition_endpoint_hinc = interpolate(
+        lower, transition, below_T, "enthalpy_increment_kJ_mol"
+    )
+    assert below.H_app_kJ_mol - (
+        phase["formation_enthalpy_298_kJ_mol"] + old_transition_endpoint_hinc
+    ) == pytest.approx(-0.7415)
+
+    at_transition = evaluate_crystal_species("WO3", 1050.0)
+    assert at_transition is not None
+    assert at_transition.H_app_kJ_mol == pytest.approx(
+        phase["formation_enthalpy_298_kJ_mol"]
+        + transition["enthalpy_increment_kJ_mol"]
+    )
+    after_T = 1075.0
+    after = evaluate_crystal_species("WO3", after_T)
+    assert after is not None
+    assert after.H_app_kJ_mol == pytest.approx(
+        phase["formation_enthalpy_298_kJ_mol"]
+        + interpolate(transition, upper, after_T, "enthalpy_increment_kJ_mol")
+    )
+    assert after.S_J_molK == pytest.approx(
+        interpolate(transition, upper, after_T, "entropy_J_mol_K")
+    )
 
 
 def test_janaf_iron_reference_state_tracks_alpha_gamma_transition() -> None:
@@ -624,6 +826,24 @@ def test_robie_hemingway_added_crystal_tables_reconstruct_printed_nodes() -> Non
         "tephroite", "alpha-spodumene", "beta-spodumene", "microcline",
         "sanidine", "albite", "analbite",
     }
+    expected_served_upper_K = {
+        "tephroite": 1500.0,
+        "alpha-spodumene": 1200.0,
+        "beta-spodumene": 1696.0,
+        "microcline": 1400.0,
+        "sanidine": 1400.0,
+        "albite": 1400.0,
+        "analbite": 1391.0,
+    }
+    element_reference_tolerances_kJ_mol = {
+        "tephroite": 0.50,
+        "alpha-spodumene": 0.10,
+        "beta-spodumene": 0.10,
+        "microcline": 0.15,
+        "sanidine": 0.15,
+        "albite": 0.20,
+        "analbite": 0.15,
+    }
     phases = [phase for phase in source["phases"] if phase["id"] in phase_ids]
     assert {phase["id"] for phase in phases} == phase_ids
     element_reference_gaps: dict[tuple[str, float], list[float]] = {}
@@ -633,6 +853,7 @@ def test_robie_hemingway_added_crystal_tables_reconstruct_printed_nodes() -> Non
         valid_last = float(
             phase.get("valid_temperature_K", phase["source_temperature_K"])[1]
         )
+        assert valid_last == expected_served_upper_K[phase["id"]]
         assert phase["rows"][0]["T_K"] == first
         assert phase["rows"][-1]["T_K"] == last
         for row in phase["rows"]:
@@ -662,17 +883,15 @@ def test_robie_hemingway_added_crystal_tables_reconstruct_printed_nodes() -> Non
                         phase["formula"], "cr", temperature,
                         polymorph=phase["name_as_published"],
                     )
-            # This difference is the elemental-reference Gibbs contribution
-            # between the table's absolute G reconstruction and printed ΔfG.
-            gap = absolute_g - float(row["formation_gibbs_kJ_mol"])
-            reconstructed_absolute_g = (
-                selected.G_J_mol / 1000.0
-                if temperature <= valid_last else absolute_g
+            element_reference_sum = _janaf_element_reference_sum_kJ_mol(
+                phase["formula"], temperature
             )
-            reconstructed_delta_f_g = reconstructed_absolute_g - gap
+            reconstructed_delta_f_g = absolute_g - element_reference_sum
             assert reconstructed_delta_f_g == pytest.approx(
-                float(row["formation_gibbs_kJ_mol"]), abs=0.002
+                float(row["formation_gibbs_kJ_mol"]),
+                abs=element_reference_tolerances_kJ_mol[phase["id"]],
             )
+            gap = absolute_g - float(row["formation_gibbs_kJ_mol"])
             element_reference_gaps.setdefault(
                 (phase["formula"], temperature), []
             ).append(gap)
@@ -690,6 +909,18 @@ def test_robie_hemingway_added_crystal_tables_reconstruct_printed_nodes() -> Non
     assert "Melting point is 1696 K." in beta.phase_identity["note"]
     with pytest.raises(ImccGasTemperatureOutsideDomainError):
         species_thermo("LiAlSi2O6", "cr", 1697.0, polymorph="β-SPODUMENE")
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("LiAlSi2O6", "cr", 1697.0)
+    assert refusal.value.declared_interval_K == (298.15, 1696.0)
+    assert "(298.15, 1696) K" in str(refusal.value)
+
+    analbite = species_thermo(
+        "NaAlSi3O8", "cr", 1391.0, polymorph="ANALBITE"
+    )
+    assert analbite.T_max == 1391.0
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("NaAlSi3O8", "cr", 1392.0, polymorph="ANALBITE")
+    assert refusal.value.declared_interval_K == (298.15, 1391.0)
 
 
 def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:

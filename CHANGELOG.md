@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Crystal phase interpolation
+
+- JANAF crystal functions now use each phase's printed endpoint below an
+  equal-temperature transition and the transition row at the next segment.
+- Analbite crystal service stops at its printed 1391 K melting point.
+
 ### Elemental reference crystals
 
 - Packaged the vendored low-temperature Burcat and Pankratz crystal functions

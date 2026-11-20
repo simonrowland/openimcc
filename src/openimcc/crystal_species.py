@@ -15,6 +15,7 @@ from typing import Any, Mapping, Sequence
 from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
 from openimcc.diagnostics import _crystal_source_cap_excludes_candidate
 from openimcc.janaf_crystals import (
+    _janaf_nodes_for_temperature,
     _load_crystal_species as _load_janaf_crystal_species,
     _load_phases as _load_janaf_phases,
     evaluate_janaf_crystal,
@@ -249,17 +250,6 @@ def _linear_value_and_slope(
         value = left[1] + (right[1] - left[1]) * fraction
     slope = (right[1] - left[1]) / (right[0] - left[0])
     return value, slope
-
-
-def _unique_janaf_nodes(
-    row: Mapping[str, Any], *, include_cap: bool = True
-) -> list[Mapping[str, Any]]:
-    nodes = [*row["nodes"], *row.get("transition_rows", [])]
-    cap_row = row.get("transition_row_at_cap")
-    if include_cap and cap_row is not None:
-        nodes.append(cap_row)
-    by_temperature = {float(node["T_K"]): node for node in nodes}
-    return [by_temperature[t] for t in sorted(by_temperature)]
 
 
 def _node_covered_interval(
@@ -677,7 +667,10 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
                 max(298.15, source_lo),
                 min(source_hi, float(row["crystal_transition_temperature_K"])),
             )
-            nodes = _unique_janaf_nodes(row)
+            nodes = [*row["nodes"], *row.get("transition_rows", [])]
+            cap_row = row.get("transition_row_at_cap")
+            if cap_row is not None:
+                nodes.append(cap_row)
             interval = _node_covered_interval(
                 interval, [float(node["T_K"]) for node in nodes]
             )
@@ -890,7 +883,7 @@ def _evaluate_candidate(
         "JANAF pure-oxide crystals", "JANAF crystal tables",
     }:
         row = candidate.phase
-        nodes = _unique_janaf_nodes(row)
+        nodes = _janaf_nodes_for_temperature(row, temperature_K)
         enthalpy_nodes = [
             {"T_K": node["T_K"], "value": node["enthalpy_increment_kJ_mol"]}
             for node in nodes
@@ -1104,14 +1097,19 @@ def evaluate_crystal_species(
     if not evaluated:
         available_labels = labels
         candidate = named or candidates[0]
-        low_K, high_K = candidate.interval_K
+        if named is None and named_segment_interval is None:
+            low_K = min(item.interval_K[0] for item in candidates)
+            high_K = max(item.interval_K[1] for item in candidates)
+        else:
+            low_K, high_K = candidate.interval_K
         if named_segment_interval is not None:
             low_K, high_K = named_segment_interval
         if cap_refusals:
             candidate, limit = cap_refusals[0]
             message = (
                 f"cannot serve {formula}(cr) at T={temperature_K:g} K: "
-                f"above its source solid limit of {limit:g} K; available "
+                f"above its source solid limit of {limit:g} K; declared "
+                f"interval is ({low_K:g}, {high_K:g}) K; available "
                 f"polymorphs: {', '.join(available_labels)}"
             )
         elif named_segment_interval is not None:
@@ -1124,7 +1122,8 @@ def evaluate_crystal_species(
         else:
             message = (
                 f"T={temperature_K:g} K is outside the declared G(T) interval "
-                f"for {formula}(cr) from {dataset}; available polymorphs: "
+                f"({low_K:g}, {high_K:g}) K for {formula}(cr) from "
+                f"{dataset}; available polymorphs: "
                 f"{', '.join(available_labels)}"
             )
         raise CrystalSpeciesTemperatureError(
