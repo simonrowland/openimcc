@@ -50,6 +50,9 @@
 
 ### Gas thermochemistry
 
+- Crystal selection accepts elemental reference-state aliases, tracks JANAF
+  reference segments, and maps the shipped periclase, rutile, beta-Ti3O5, and
+  troilite aliases without crossing phase identities.
 - `species_thermo(..., phase="cr")` now falls back to shipped JANAF pure-oxide,
   Barin aluminate, and Berman/Robie–Hemingway crystal data when a formula has no
   condensate row. Existing condensate selection and refusal behavior stays

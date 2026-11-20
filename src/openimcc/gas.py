@@ -43,6 +43,8 @@ from openimcc.activity_fragments import load_activity_fragment
 from openimcc.crystal_species import (
     CrystalSpeciesPolymorphError,
     CrystalSpeciesTemperatureError,
+    _is_element_formula,
+    _is_reference_polymorph,
     continue_constant_cp,
     evaluate_crystal_species,
 )
@@ -3060,6 +3062,16 @@ def species_thermo(
             active_pack.gas_df, row_name, T_K, allow_extrapolation
         )
     elif phase == "cr":
+        reference_selector = _is_reference_polymorph(polymorph)
+        if (
+            reference_selector
+            and row_name in active_pack.oxide_df.index
+            and not _is_element_formula(species)
+        ):
+            raise ImccGasCrystalPolymorphError(
+                f"reference selection is ambiguous for {row_name}; "
+                "the selector applies to elemental reference crystals"
+            )
         try:
             row = _oxide_row_for_T(
                 active_pack.oxide_df, row_name, T_K, allow_extrapolation
@@ -3121,6 +3133,33 @@ def species_thermo(
         identity_record = _crystal_phase_identity_rows().get(identity_key)
         if identity_record is not None:
             phase_identity = MappingProxyType(deepcopy(identity_record))
+
+        if _is_reference_polymorph(polymorph):
+            identity_polymorph = (
+                str(identity_record.get("polymorph", ""))
+                if identity_record is not None
+                else ""
+            )
+            is_reference_identity = (
+                identity_record is not None
+                and identity_record.get("kind") == "single_polymorph"
+                and (
+                    "reference" in identity_polymorph.casefold()
+                    or "(ref)" in identity_polymorph.casefold()
+                )
+            )
+            if not _is_element_formula(species) or not is_reference_identity:
+                raise ImccGasCrystalPolymorphError(
+                    f"reference selection is ambiguous for {row_name}; "
+                    "the condensate source does not identify one elemental "
+                    "reference crystal"
+                )
+            reference_identity = deepcopy(identity_record)
+            reference_identity["selection_rule"] = (
+                "selected by the source-defined elemental reference-state "
+                "condensate row"
+            )
+            phase_identity = MappingProxyType(reference_identity)
 
         if extrapolated:
             if (

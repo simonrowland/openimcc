@@ -319,6 +319,68 @@ def test_janaf_iron_reference_state_tracks_alpha_gamma_transition() -> None:
     assert gamma.phase_identity["temperature_segment_K"] == (1184.0, 1665.0)
 
 
+def test_elemental_reference_polymorph_selectors() -> None:
+    pack = load_gas_datapack()
+    selections = (
+        ("Au", 1300.0, "ReFeReNcE", "BU-0054", "gold elemental reference"),
+        ("Pt", 1500.0, "ref", "BU-3120", "platinum elemental reference"),
+        ("Fe", 1300.0, "Reference State", "Fe-004", "GAMMA"),
+    )
+    for formula, temperature, selector, table_id, expected_phase in selections:
+        selected = species_thermo(
+            formula, "cr", temperature, pack, polymorph=selector
+        )
+        default = species_thermo(formula, "cr", temperature, pack)
+        assert selected.source_table_id == table_id
+        assert _value_hexes(selected) == _value_hexes(default)
+        assert selected.phase_identity is not None
+        assert expected_phase in selected.phase_identity["polymorph"]
+        assert "reference-state" in selected.phase_identity["selection_rule"]
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("Au", "cr", 1000.0, pack, polymorph="reference")
+
+
+def test_ambiguous_reference_selector_is_typed() -> None:
+    with pytest.raises(
+        ImccGasCrystalPolymorphError,
+        match="reference selection is ambiguous",
+    ):
+        species_thermo("Al2SiO5", "cr", 1300.0, polymorph="reference")
+
+
+@pytest.mark.parametrize(
+    ("formula", "polymorph", "temperature", "table_id", "phase_fragment"),
+    (
+        ("MgO", "periclase", 1500.0, "Mg-008", "Mg-008"),
+        ("TiO2", "rutile", 1500.0, "O-043", "O-043"),
+        ("Ti3O5", "beta", 1000.0, "O-081", "Beta"),
+        ("FeS", "troilite", 500.0, "Fe-023", "Troilite"),
+    ),
+)
+def test_shipped_crystal_polymorph_aliases(
+    formula: str,
+    polymorph: str,
+    temperature: float,
+    table_id: str,
+    phase_fragment: str,
+) -> None:
+    selected = species_thermo(
+        formula, "cr", temperature, polymorph=polymorph
+    )
+
+    assert selected.source_table_id == table_id
+    assert selected.phase_identity is not None
+    assert phase_fragment in str(selected.phase_identity)
+    assert "alias" in selected.phase_identity["selection_rule"]
+
+
+def test_distinct_crystal_phases_are_not_aliased() -> None:
+    with pytest.raises(ImccGasCrystalPolymorphError):
+        species_thermo("Ta2O5", "cr", 500.0, polymorph="beta")
+    with pytest.raises(ImccGasCrystalPolymorphError):
+        species_thermo("PbO", "cr", 500.0, polymorph="red")
+
+
 def test_robie_hemingway_al2sio5_selection_and_printed_gibbs() -> None:
     expected = {300.0: "Kyanite", 1000.0: "Andalusite", 1800.0: "Sillimanite"}
     for temperature, polymorph in expected.items():

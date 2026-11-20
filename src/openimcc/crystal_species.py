@@ -20,6 +20,24 @@ from openimcc.janaf_crystals import (
 
 
 _FORMULA_TOKEN = re.compile(r"[A-Z][a-z]?|\(|\)|\d+(?:\.\d+)?")
+_REFERENCE_POLYMORPHS = frozenset({"ref", "reference", "reference state"})
+_POLYMORPH_ALIASES = {
+    "MgO": {"periclase": "Mg-008"},
+    "TiO2": {"rutile": "O-043"},
+    "Ti3O5": {"beta": "O-081"},
+    "FeS": {"troilite": "Fe-023"},
+}
+
+
+def _is_reference_polymorph(polymorph: str | None) -> bool:
+    return (
+        isinstance(polymorph, str)
+        and polymorph.strip().casefold() in _REFERENCE_POLYMORPHS
+    )
+
+
+def _is_element_formula(formula: str) -> bool:
+    return re.fullmatch(r"[A-Z][a-z]?", formula) is not None
 
 
 @dataclass(frozen=True)
@@ -806,10 +824,41 @@ def evaluate_crystal_species(
     named = None
     named_segment = None
     named_segment_interval = None
-    if polymorph is not None:
+    is_reference = _is_reference_polymorph(polymorph)
+    alias_used = False
+    if is_reference:
+        if not _is_element_formula(formula):
+            raise CrystalSpeciesPolymorphError(
+                f"reference selection is ambiguous for {formula}(cr); "
+                f"select one of the available polymorphs: {', '.join(labels)}",
+                labels,
+            )
+        source_title = str(candidates[0].phase.get("source_title", ""))
+        source_segments = candidates[0].phase.get("phase_segments", ())
+        has_reference_title = re.search(r"\bref\b", source_title, re.I) is not None
+        if (
+            len(candidates) != 1
+            or candidates[0].dataset != "JANAF crystal tables"
+            or not (has_reference_title or len(source_segments) > 1)
+        ):
+            raise CrystalSpeciesPolymorphError(
+                f"reference selection is ambiguous for {formula}(cr) from "
+                f"{dataset}; available polymorphs: {', '.join(labels)}",
+                labels,
+            )
+        named = candidates[0]
+    elif polymorph is not None:
         folded = polymorph.casefold()
+        alias_target = _POLYMORPH_ALIASES.get(formula, {}).get(folded)
         for candidate in candidates:
             source_title = str(candidate.phase.get("source_title", ""))
+            if (
+                alias_target is not None
+                and candidate.source_table_id.casefold() == alias_target.casefold()
+            ):
+                named = candidate
+                alias_used = True
+                break
             if (
                 candidate.label.casefold() == folded
                 or source_title.casefold() == folded
@@ -929,7 +978,15 @@ def evaluate_crystal_species(
     tied_candidates = []
     if named is not None:
         selected = evaluated[0]
-        rule = f"selected by polymorph={polymorph!r} within {dataset}"
+        if is_reference:
+            rule = "selected by the source-defined elemental reference-state table"
+        elif alias_used:
+            rule = (
+                f"selected by polymorph={polymorph!r} as an alias for "
+                f"{named.label} within {dataset}"
+            )
+        else:
+            rule = f"selected by polymorph={polymorph!r} within {dataset}"
     else:
         selected = min(evaluated, key=lambda item: item[1][3])
         rule = f"lowest apparent G at T among {dataset} polymorphs covering T"
@@ -971,9 +1028,20 @@ def evaluate_crystal_species(
         phase_identity["temperature_segment_K"] = tuple(
             map(float, segment["temperature_K"])
         )
-        phase_identity["selection_rule"] = (
-            "JANAF source title and transition rows identify the active segment"
-        )
+        if is_reference:
+            phase_identity["selection_rule"] = (
+                "JANAF reference-state table and transition rows identify the "
+                "active segment at T"
+            )
+        elif alias_used:
+            phase_identity["selection_rule"] = (
+                "JANAF phase alias selects the source title and transition rows "
+                "identify the active segment"
+            )
+        else:
+            phase_identity["selection_rule"] = (
+                "JANAF source title and transition rows identify the active segment"
+            )
     if len(tied_candidates) > 1:
         tied_names = [item[0].label for item in tied_candidates]
         phase_identity["tie_note"] = (
