@@ -59,12 +59,13 @@ stoichiometry. The bound is capped at 0.01 dex; rows above the cap refuse that
 major's `activity()` request while preserving the other rows.
 
 The MnO and Cr₂O₃ class calibration grids span 1400–2200 K and ΔIW −6 to +4.
-Because `evaluate()` has no fO2 input or calibrated-melt identity, it cannot
-establish those conditions. The `mn_calibrated_envelope_v3` and
-`cr_calibrated_envelope_v3` flags therefore report `DEPENDS` and use the strict
-bound. The calibration table and derivation are beside the shared trace
-registration. Components with modeled associate rows, such as MnO in the
-redox pack, remain full components and do not enter the trace bound.
+The grids apply to helper-based activity estimates. The D066 `evaluate()` path
+solves MnO as a full component with its MnSiO3, Mn2SiO4, and MnAl2O4 associates
+alongside the majors; MnO does not enter the trace bound. `evaluate()` has no
+fO2 input or calibrated-melt identity, so Cr₂O₃ helper estimates report
+`DEPENDS` and use the strict bound. Call `evaluate_redox()` to request closed or
+imposed oxygen and Fe/Mn redox bookkeeping. The calibration table and
+derivation are beside the shared trace registration.
 
 Each registered component uses the best available activity estimate: source
 associate rows or helpers first, then a published `γ·x` guide, then ideal
@@ -362,10 +363,35 @@ standard. The opt-in `evaluate_p2o5_activity(composition_moles, T_K)` estimates
 dilute-solute P2O5 activity with Suito & Inoue (1984) Eq. 14 and returns typed
 domain notices plus Turkdogan Eq. 13 and Eq. 25 as two comparison regressions,
 not an uncertainty interval around Suito; Suito can lie outside their spread.
-When a trace P2O5 is present with MnO, the redox merge also contains a P2O5
-parent row referenced to half P4O10(cr). `evaluate()` replaces that proxy with
-the trace helper's activity on the Jung-Hudon liquid standard and preserves
-the helper's validity axes in its typed notice.
+P2O5 is not a melt parent in `evaluate()`, with or without MnO. When P2O5 is
+present, its helper activity on the Jung-Hudon liquid standard is reported in
+the `trace_components_outside_melt_model` notice, at
+`melt.labels.notices[...].activities["P2O5"].activity`. Gas P channels need
+that activity supplied explicitly, or need `composition_wt_pct` so
+`evaluate_gas()` can resolve it from the composition. For example:
+
+```python
+melt = evaluate(composition, T_K, basis_type="wt")
+p_notice = next(
+    notice for notice in melt.labels.notices
+    if getattr(notice, "code", None) == "trace_components_outside_melt_model"
+)
+activities = {name: melt.activity(name) for name in melt.parent_oxides}
+activities["P2O5"] = p_notice.activities["P2O5"].activity
+gas = evaluate_gas(
+    activities, T_K, fO2_bar, load_gas_datapack(),
+    parent_oxides=(*melt.parent_oxides, "P2O5"),
+)
+# Alternatively, let evaluate_gas() resolve the trace activity itself:
+gas = evaluate_gas(
+    {name: melt.activity(name) for name in melt.parent_oxides},
+    T_K, fO2_bar, load_gas_datapack(), composition_wt_pct=composition,
+)
+```
+
+The helper's validity axes are preserved in the typed trace notice. P2O5
+activities from an extension pack remain on the half-P4O10(cr) standard and
+cannot be supplied directly to the Jung-Hudon gas parent.
 P-gas pressures above 1 bar carry a notice that phosphorus would leave
 essentially completely and the fixed-composition dilute equilibrium is not
 physical there. See
@@ -1104,9 +1130,9 @@ reports `row_key`, `active`, `gating_reason`, and
 `equilibrium_mole_fraction`. The key is the pack species formula; if formulas
 repeat, it is the zero-based pack row index. Rows whose required parent oxide
 is absent are omitted. Active rows report their solved mole fraction without a
-threshold; gated rows report their reason and a zero fraction. Redox fractions
-come from its coupled solve; sulfur forwards the fractions from its internal
-melt solve.
+threshold; gated rows report their reason and a zero fraction. Ferric fractions
+and metal amounts are available only from an explicit `evaluate_redox()` call.
+Sulfur forwards the fractions from its internal melt solve.
 
 The `[gas]` extra exports per-row thermochemistry and the default channel
 selection:

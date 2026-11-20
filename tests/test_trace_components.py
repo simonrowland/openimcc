@@ -285,12 +285,6 @@ def test_mno_redox_uses_profile_selected_melt_and_redox_packs() -> None:
     selected_melt = selected_profile.melt_pack
     composition = {oxide: 1.0 for oxide in selected_melt.parent_oxides}
     composition["MnO"] = 0.01
-    expected = evaluate_redox(
-        _redox_inventory(composition),
-        1800.0,
-        "closed",
-        profile=selected_profile,
-    )
     result = evaluate(
         composition,
         1800.0,
@@ -301,9 +295,13 @@ def test_mno_redox_uses_profile_selected_melt_and_redox_packs() -> None:
     )
 
     assert result.receipt.data_digests["melt"] == selected_melt.binding_digest
-    for parent, activity in expected.parent_activity.items():
-        if parent in result.parent_oxides:
-            assert result.activity(parent) == pytest.approx(activity, rel=1e-12)
+    assert result.receipt.data_digests["redox"] == (
+        selected_profile.redox_pack.canonical_digest
+    )
+    assert "MnO" in result.parent_oxides
+    assert {"MnSiO3(l)", "Mn2SiO4(l)", "MnAl2O4(l)"} <= set(
+        result.species_names
+    )
 
 
 def test_mno_redox_refuses_incompatible_selected_melt_pack() -> None:
@@ -313,7 +311,7 @@ def test_mno_redox_refuses_incompatible_selected_melt_pack() -> None:
     composition = {oxide: 1.0 for oxide in selected_melt.parent_oxides}
     composition["MnO"] = 0.01
 
-    with pytest.raises(RedoxInputError, match="FeO\\(l\\) basis"):
+    with pytest.raises(RedoxInputError, match="D066 v4 liquid-oxide standards"):
         evaluate(
             composition,
             1800.0,
@@ -957,13 +955,11 @@ def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration(
     mn_result = evaluate(
         mn_composition, 1800.0, basis_type="wt", allow_extrapolation=True
     )
-    mn_flag = next(
-        item for item in mn_result.labels.notices
-        if isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+    assert "MnO" in mn_result.parent_oxides
+    assert not any(
+        isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+        for item in mn_result.labels.notices
     )
-    assert mn_flag.code == "source_grounded_associate_activity"
-    assert mn_flag.estimates[0].limitations == ()
-    assert "redox flags:" not in str(mn_flag)
     assert not any(
         isinstance(item, TraceComponentsOutsideMeltModelNotice)
         for item in mn_result.labels.notices
@@ -1266,29 +1262,21 @@ def test_sulfur_pressure_notice_names_each_calibrated_model() -> None:
     assert estimate.reference.count("Smythe-2017-SCSS") == 1
 
 
-def test_manganese_redox_messages_are_carried_once() -> None:
+def test_manganese_is_full_component_without_redox_bookkeeping() -> None:
     result = evaluate(
         _weight_composition({"MnO": 0.002}),
         1800.0,
         basis_type="wt",
         allow_extrapolation=True,
     )
-    redox_messages = tuple(
-        flag for flag in result.labels.flags if flag.startswith("RED:")
+    assert "MnO" in result.parent_oxides
+    assert {"MnSiO3(l)", "Mn2SiO4(l)", "MnAl2O4(l)"} <= set(
+        result.species_names
     )
-    trace_flag = next(
-        item for item in result.labels.notices
-        if isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
-    )
-
-    assert redox_messages
-    assert "redox flags:" not in str(trace_flag)
-    assert all(
-        sum(str(item).count(message) for item in (
-            *result.labels.flags,
-            *result.labels.notices,
-        )) == 1
-        for message in redox_messages
+    assert not any(flag.startswith("RED:") for flag in result.labels.flags)
+    assert not any(
+        isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+        for item in result.labels.notices
     )
 
 
@@ -1309,7 +1297,9 @@ def test_mixed_redox_traces_render_shared_messages_once() -> None:
         for item in result.labels.notices
         if isinstance(item, TraceActivityFlag)
     }
-    for oxide in ("MnO", "Li2O"):
+    assert "MnO" in result.parent_oxides
+    assert "MnO" not in flags
+    for oxide in ("Li2O",):
         expected = trace_components.resolve_trace_activity(
             oxide,
             fractions[oxide],
@@ -1486,9 +1476,6 @@ def test_evaluate_uses_full_manganese_associate_solve_for_basalt(
     }
     composition["MnO"] = x_mno
 
-    expected = evaluate_redox(
-        _redox_inventory(composition), 1800.0, "closed"
-    )
     result = evaluate(
         composition,
         1800.0,
@@ -1502,20 +1489,12 @@ def test_evaluate_uses_full_manganese_associate_solve_for_basalt(
     ]["source"]
     assert result.labels.coverage["MnO"] == mno_lineage
 
-    for major, activity in expected.parent_activity.items():
-        if major in result.parent_oxides:
-            assert result.activity(major) == pytest.approx(activity, rel=1e-12)
-    assert result.activity("MnO") == pytest.approx(
-        expected.parent_activity["MnO"], rel=1e-12
+    assert "MnO" in result.parent_oxides
+    assert not any(flag.startswith("RED:") for flag in result.labels.flags)
+    assert not any(
+        isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+        for item in result.labels.notices
     )
-    assert "RED: unmodelled_redox_couples" in expected.flags
-    expected_mn_thermochemistry_flags = {
-        flag for flag in expected.flags
-        if flag.startswith("Mn")
-    }
-    assert expected_mn_thermochemistry_flags
-    assert expected_mn_thermochemistry_flags <= set(result.labels.flags)
-    assert "RED: unmodelled_redox_couples" in result.labels.flags
     assert not math.isclose(result.activity("MnO"), x_mno, rel_tol=1e-3)
     assert not math.isclose(
         result.activity("MnO"), 1.9 * x_mno, rel_tol=1e-3
@@ -1555,12 +1534,99 @@ def test_evaluate_uses_full_manganese_associate_solve_for_basalt(
         for index, name in enumerate(complex_names)
     )
     assert result.D == pytest.approx(recomputed_D, abs=1e-12)
-    assert result.convergence.solver_path == expected.solver_path
     assert result.convergence.iterations > 0
     assert not any(
         isinstance(item, (TraceComponentsOutsideMeltModelNotice, TraceMajorBiasFlag))
         for item in result.labels.notices
     )
+
+
+@pytest.mark.parametrize("temperature_K", (1800.0, 2100.0))
+def test_manganese_full_component_limit_is_continuous(
+    temperature_K: float,
+) -> None:
+    composition_wt = {**_MARE_BASALT_WT, "K2O": 0.05}
+    without_mn = evaluate(
+        composition_wt,
+        temperature_K,
+        basis_type="wt",
+        allow_extrapolation=True,
+    )
+    loadings_wt_pct = (1.0e-5, 1.0e-6, 1.0e-7)
+    mole_fractions: list[float] = []
+    shifts_by_parent = {parent: [] for parent in without_mn.parent_oxides}
+    for loading_wt_pct in loadings_wt_pct:
+        composition = {**composition_wt, "MnO": loading_wt_pct}
+        with_mn = evaluate(
+            composition,
+            temperature_K,
+            basis_type="wt",
+            allow_extrapolation=True,
+        )
+        _, trace_fractions = trace_fractions_from_wt(composition)
+        mole_fractions.append(trace_fractions["MnO"])
+        for parent in without_mn.parent_oxides:
+            shifts_by_parent[parent].append(math.log10(
+                with_mn.activity(parent) / without_mn.activity(parent)
+            ))
+
+    for parent, shifts in shifts_by_parent.items():
+        slopes = [
+            shift / mole_fraction
+            for shift, mole_fraction in zip(shifts, mole_fractions, strict=True)
+        ]
+        ratios = [
+            abs(shifts[index] / shifts[index + 1])
+            for index in range(len(shifts) - 1)
+        ]
+        x_mean = math.fsum(mole_fractions) / len(mole_fractions)
+        y_mean = math.fsum(shifts) / len(shifts)
+        fitted_slope = math.fsum(
+            (x_value - x_mean) * (shift - y_mean)
+            for x_value, shift in zip(mole_fractions, shifts, strict=True)
+        ) / math.fsum((x_value - x_mean) ** 2 for x_value in mole_fractions)
+        intercept = y_mean - fitted_slope * x_mean
+
+        assert all(
+            math.isclose(ratio, 10.0, rel_tol=0.05)
+            for ratio in ratios
+        ), (parent, temperature_K, ratios, slopes)
+        assert abs(intercept) <= 1.0e-11, (
+            parent,
+            temperature_K,
+            intercept,
+            slopes,
+        )
+        assert abs(shifts[-1]) <= 1.0e-7, (
+            parent,
+            temperature_K,
+            shifts[-1],
+            slopes,
+        )
+
+
+def test_manganese_association_competes_with_silica_and_raises_sodium() -> None:
+    without_mn = evaluate(
+        _MARE_BASALT_WT,
+        2100.0,
+        basis_type="wt",
+        allow_extrapolation=True,
+    )
+    with_mn = evaluate(
+        {**_MARE_BASALT_WT, "MnO": 0.206},
+        2100.0,
+        basis_type="wt",
+        allow_extrapolation=True,
+    )
+
+    na2o_shift_dex = math.log10(
+        with_mn.activity("Na2O") / without_mn.activity("Na2O")
+    )
+    sio2_shift_dex = math.log10(
+        with_mn.activity("SiO2") / without_mn.activity("SiO2")
+    )
+    assert na2o_shift_dex > 0.0
+    assert sio2_shift_dex < 0.0
 
 
 def test_fe_free_manganese_associate_path() -> None:
@@ -1577,15 +1643,17 @@ def test_fe_free_manganese_associate_path() -> None:
         basis_type="mol",
         allow_extrapolation=True,
     )
-    flag = next(
-        item for item in result.labels.notices
-        if isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+    assert "MnO" in result.parent_oxides
+    assert {"MnSiO3(l)", "Mn2SiO4(l)", "MnAl2O4(l)"} <= set(
+        result.species_names
     )
-    assert flag.code == "published_gamma_x_assumption"
-    assert result.activity("MnO") == pytest.approx(1.9 * flag.x)
+    assert not any(
+        isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+        for item in result.labels.notices
+    )
 
 
-def test_manganese_associate_refusal_uses_published_gamma_rung(
+def test_manganese_full_component_does_not_use_trace_helper_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def refuse_associates(*args, **kwargs):
@@ -1600,13 +1668,12 @@ def test_manganese_associate_refusal_uses_published_gamma_rung(
         basis_type="wt",
         allow_extrapolation=True,
     )
-    flag = next(
-        item for item in result.labels.notices
-        if isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+    assert "MnO" in result.parent_oxides
+    assert "MnSiO3(l)" in result.species_names
+    assert not any(
+        isinstance(item, TraceActivityFlag) and item.oxide == "MnO"
+        for item in result.labels.notices
     )
-    assert flag.code == "published_gamma_x_assumption"
-    assert flag.gamma == 1.9
-    assert flag.activity == pytest.approx(1.9 * flag.x)
 
 
 def test_redox_sweeps_recompute_stored_class_envelopes() -> None:

@@ -3682,16 +3682,18 @@ def test_lunar_low_ti_trace_composition_reports_major_gas_bias_gate(
         composition_wt_pct=_LUNAR_LOW_TI_COMPOSITION,
     )
 
-    assert len(without_composition) == 45
-    assert len(with_composition) == 21
-    assert len(with_composition.omitted_channels) == 24
+    # MnO is now supplied by the joint melt solve, while P2O5 remains a trace
+    # helper activity and is filled only when its composition is provided.
+    assert len(without_composition) == 34
+    assert len(with_composition) == 19
+    assert len(with_composition.omitted_channels) == 26
     omitted_majors = {
         flag.major_oxide
         for refusal in with_composition.omitted_channels.values()
         for flag in refusal.major_flags
     }
     assert omitted_majors == {
-        "Al2O3", "CaO", "FeO", "K2O", "MgO", "Na2O", "TiO2",
+        "Al2O3", "CaO", "FeO", "K2O", "MgO", "MnO", "Na2O", "TiO2",
     }
     for species, refusal in with_composition.omitted_channels.items():
         assert refusal.major_flags
@@ -3721,16 +3723,13 @@ def test_lunar_low_ti_phosphorus_uses_trace_activity_and_janaf_anchor(
         for oxide in _LUNAR_LOW_TI_COMPOSITION
         if oxide in melt.parent_oxides
     }
-    p2o5_index = melt.parent_oxides.index("P2O5")
-    p2o5_activity = activities["P2O5"]
-    assert p2o5_activity == pytest.approx(2.3445036367522946e-13, rel=1e-10)
-    assert melt.parent_gamma[p2o5_index] == pytest.approx(
-        p2o5_activity / melt.parent_x[p2o5_index], rel=1e-12
-    )
     melt_flag = next(
         item for item in melt.labels.notices
         if isinstance(item, TraceActivityFlag) and item.oxide == "P2O5"
     )
+    p2o5_activity = melt_flag.activity
+    assert p2o5_activity == pytest.approx(2.3445036367522946e-13, rel=1e-10)
+    assert "P2O5" not in melt.parent_oxides
     assert "temperature_outside_1823_1923_K" in (
         melt_flag.estimates[0].violated_axes
     )
@@ -3740,6 +3739,7 @@ def test_lunar_low_ti_phosphorus_uses_trace_activity_and_janaf_anchor(
         temperature,
         oxygen_fugacity,
         gas_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "MnO", "P2O5"),
         gas_species=_P_CHANNELS,
     )
     with_composition = evaluate_gas(
@@ -3786,11 +3786,11 @@ def test_lunar_low_ti_phosphorus_uses_trace_activity_and_janaf_anchor(
         expected = (
             equilibrium_constant * p2o5_activity / oxygen_fugacity**n_o2
         ) ** (1.0 / n_gas)
-        assert without_composition[species] == pytest.approx(expected, rel=0.03)
+        assert without_composition[species] == 0.0
         assert with_composition[species] == pytest.approx(expected, rel=0.03)
 
-    assert without_composition["P4O6"] == pytest.approx(2.1e-20, rel=0.03)
-    assert without_composition["PO2"] == pytest.approx(1.34e-7, rel=0.03)
+    assert with_composition["P4O6"] == pytest.approx(2.1e-20, rel=0.03)
+    assert with_composition["PO2"] == pytest.approx(1.34e-7, rel=0.03)
     assert isinstance(with_composition.domain_flags["P4O6"], TraceActivityFlag)
     assert "temperature_outside_1823_1923_K" in str(
         with_composition.domain_flags["P4O6"]

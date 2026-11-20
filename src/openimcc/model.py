@@ -39,7 +39,6 @@ if TYPE_CHECKING:
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
     ImccCompositionIncompleteError,
-    ImccConvergence,
     ImccDatapack,
     ImccFerricInputUnsupportedError,
     ImccInvalidWarmStartError,
@@ -2133,6 +2132,147 @@ def _sp_extension_refusal(component_names: Sequence[str]) -> ImccSPComponentRequ
     )
 
 
+def _with_mno_associations(
+    melt_pack: ImccLoadedDatapack,
+    redox_pack: Any,
+    temperature_K: float,
+) -> ImccDatapack:
+    """Build a solve-local D066 input with the selected pack's Mn rows."""
+    from openimcc.redox_pack import RedoxInputError, reaction_gibbs_j_mol
+
+    if (
+        melt_pack.model_id != "IMCC-SF04-D066"
+        or melt_pack.version != "1.0.6-d066-v4"
+    ):
+        raise RedoxInputError(
+            "Mn associates require the D066 v4 liquid-oxide standards"
+        )
+
+    registry = {
+        str(parent["parent_oxide"]): parent
+        for parent in redox_pack.parents
+    }
+    rows = tuple(
+        row for row in redox_pack.rows
+        if row.get("role") == "complex" and "MnO(l)" in row.get("nu", {})
+    )
+    if not rows:
+        raise RedoxInputError(
+            f"redox pack {redox_pack.version} has no Mn association rows"
+        )
+
+    base = melt_pack.kernel_datapack
+    base_parents = tuple(base.parent_oxides)
+    parent_names = (*base_parents, "MnO")
+    if len(set(parent_names)) != len(parent_names):
+        raise RedoxInputError("D066 already contains an MnO parent")
+
+    parent_standards: dict[str, str] = {}
+    for name in parent_names:
+        redox_name = f"{name}(l)"
+        record = registry.get(redox_name)
+        if record is None:
+            if name == "MnO":
+                raise RedoxInputError(
+                    f"redox pack {redox_pack.version} has no MnO(l) parent standard"
+                )
+            continue
+        standard = str(record.get("parent_standard_state", ""))
+        expected = (
+            "pure liquid MnO at 1 bar" if name == "MnO" else "liquid oxide"
+        )
+        if standard != expected:
+            raise RedoxInputError(
+                f"redox parent {redox_name} uses unsupported standard "
+                f"{standard!r}; expected {expected!r}"
+            )
+        parent_standards[name] = standard
+
+    # D066 v4's SiO2 parent uses the measured Richet liquid reference on its
+    # retained JANAF fusion anchor. The redox rows use that same piecewise
+    # SiO2(l) function; Al2O3(l) is the liquid-oxide reference in both models,
+    # and MnO(l) is introduced with its declared pure-liquid standard.
+    # Therefore each reaction Gibbs value is already on the D066 parent
+    # standards; log10(K) = -ΔG°/(R T ln 10) is exact at this evaluation T.
+    # ΔG° is J/mol, R is J/(mol K), and T is K, so log10(K) is dimensionless.
+    # Sanity: a stable associated product has negative ΔG° and therefore K > 1.
+    row_vectors: list[np.ndarray] = []
+    log10_k: list[float] = []
+    domains: list[tuple[float, float]] = []
+    names: list[str] = []
+    coverage = dict(base.coverage)
+    species = redox_pack.content["thermo_species"]
+    for row in rows:
+        name = str(row["complex"])
+        if name in base.reactions or name in names or name in parent_names:
+            raise RedoxInputError(f"duplicate Mn association species {name!r}")
+        if row.get("composition_coefficients") is not None or row.get(
+            "composition_term"
+        ) is not None:
+            raise RedoxInputError(
+                f"Mn association {name} has no fixed standard Gibbs reaction"
+            )
+        vector = np.zeros(len(parent_names), dtype=float)
+        for raw_parent, amount in row["nu"].items():
+            parent = str(raw_parent).removesuffix("(l)")
+            if parent not in parent_names:
+                raise RedoxInputError(
+                    f"Mn association {name} references unsupported parent "
+                    f"{raw_parent!r}"
+                )
+            if parent != "MnO" and parent not in parent_standards:
+                raise RedoxInputError(
+                    f"redox pack does not declare the liquid standard for "
+                    f"{raw_parent}"
+                )
+            vector[parent_names.index(parent)] = float(amount)
+        row_vectors.append(vector)
+        delta_g = reaction_gibbs_j_mol(
+            redox_pack,
+            row,
+            temperature_K,
+            allow_extrapolation=True,
+        )
+        log10_k.append(
+            -delta_g / (_R_J_MOL_K * temperature_K * math.log(10.0))
+        )
+        # This in-memory A + B/T row is exact only at the temperature being
+        # evaluated, so its solver domain is that single point. The source
+        # row's evidence interval is retained in the selected redox pack and
+        # used to mark the returned result as extrapolated below.
+        # At 1800 K this is a point domain (1800, 1800); evaluate() sets
+        # extrapolated=True from the source row's redox evidence interval.
+        domains.append((temperature_K, temperature_K))
+        names.append(name)
+        record = species.get(name, {})
+        provenance = record.get("provenance", {})
+        coverage[name] = str(
+            provenance.get("source") or row.get("provenance", {}).get("source")
+            or f"openimcc redox pack {redox_pack.version}"
+        )
+
+    mno_record = species.get("MnO(l)", {})
+    mno_source = mno_record.get("provenance", {}).get("source")
+    coverage["MnO"] = str(mno_source or f"openimcc redox pack {redox_pack.version}")
+    base_nu = np.vstack((base.nu, np.zeros((1, base.n_complexes))))
+    augmented_nu = np.column_stack((base_nu, np.column_stack(row_vectors)))
+    runtime = ImccDatapack(
+        reactions=(*base.reactions, *names),
+        nu=augmented_nu,
+        A=np.concatenate((base.A, np.asarray(log10_k, dtype=float))),
+        B=np.concatenate((base.B, np.zeros(len(rows), dtype=float))),
+        domains=(*base.domains, *domains),
+        paper_domains=(*base.paper_domains, *((None,) * len(rows))),
+        version=base.version,
+        parent_oxides=parent_names,
+    )
+    return label_research_datapack(
+        runtime,
+        model_id=base.model_id,
+        coverage=coverage,
+    )
+
+
 def evaluate(
     composition: Mapping[str, float] | Sequence[float],
     T_K: float,
@@ -2478,6 +2618,51 @@ def evaluate(
             f"X_Me2O={x_me2o:.12g} exceeds validated bound 0.5"
         )
 
+    mno_joint_model = False
+    mno_redox_pack = None
+    if trace_moles.get("MnO", 0.0) > 0.0:
+        if any(term.active for term in excess_gibbs_terms):
+            from openimcc.redox import RedoxExcessGibbsUnsupportedError
+
+            raise RedoxExcessGibbsUnsupportedError(
+                "redox evaluation does not support melt packs with active "
+                "excess-Gibbs terms"
+            )
+
+        from openimcc.redox_pack import RedoxInputError, load_redox_pack
+
+        if not isinstance(pack, ImccLoadedDatapack):
+            raise RedoxInputError(
+                "Mn associates require a loaded D066 v4 melt datapack"
+            )
+        if selected_profile is None:
+            mno_redox_pack = load_redox_pack()
+        elif selected_profile.redox_pack_path is None:
+            from openimcc.profiles import ProfileRedoxUnavailableError
+
+            raise ProfileRedoxUnavailableError(
+                "the SF04 publication has no redox model; use "
+                "profile='openimcc' or pass explicit packs"
+            )
+        else:
+            mno_redox_pack = selected_profile.redox_pack
+
+        try:
+            mno_temperature = float(T_K)
+        except (OverflowError, TypeError, ValueError):
+            mno_temperature = float("nan")
+        if not math.isfinite(mno_temperature) or mno_temperature <= 0.0:
+            # Let the kernel return its established typed temperature refusal.
+            # This placeholder is never solved or returned.
+            mno_temperature = 1800.0
+        kernel_pack = _with_mno_associations(
+            pack, mno_redox_pack, mno_temperature
+        )
+        parent_oxides = tuple(kernel_pack.parent_oxides)
+        vector = np.append(vector, float(trace_moles["MnO"]))
+        basis = float(vector.sum())
+        mno_joint_model = True
+
     species_pair_W = None
     try:
         species_temperature = float(T_K)
@@ -2742,10 +2927,16 @@ def evaluate(
                     and T_K < start_temperature
                 ):
                     try:
+                        warm_composition = (
+                            dict(zip(parent_oxides, vector, strict=True))
+                            if mno_joint_model
+                            else vector
+                        )
                         warm_result = evaluate(
-                            vector,
+                            warm_composition,
                             start_temperature,
-                            pack,
+                            pack=None if selected_profile is not None else pack,
+                            profile=selected_profile,
                             basis=basis,
                             basis_type="mol",
                             extra_mol=extra_mol,
@@ -2822,6 +3013,25 @@ def evaluate(
                 cold_error.diagnostics["recovery_attempts"] = recovery_attempts
             raise cold_error from None
 
+    if mno_joint_model:
+        temperature = float(T_K)
+        outside_mno_evidence = any(
+            not float(row["T_domain_K"][0]) <= temperature
+            <= float(row["T_domain_K"][1])
+            for row in mno_redox_pack.rows
+            if row.get("role") == "complex"
+            and "MnO(l)" in row.get("nu", {})
+            and all(
+                float(vector[parent_oxides.index(
+                    str(parent).removesuffix("(l)")
+                )]) > 0.0
+                for parent, amount in row["nu"].items()
+                if float(amount) > 0.0
+            )
+        )
+        if outside_mno_evidence:
+            result = replace(result, extrapolated=True)
+
     active_excess_terms = tuple(term for term in excess_gibbs_terms if term.active)
     if excess_gibbs_terms:
         analytical_parent_terms = tuple(
@@ -2895,37 +3105,43 @@ def evaluate(
     trace_notice: TraceComponentsOutsideMeltModelNotice | None = None
     trace_activity_flags: list[TraceActivityFlag] = []
     trace_major_flags: list[TraceMajorBiasFlag] = []
-    redox_pack_participation: tuple[PackRowParticipation, ...] | None = None
     if trace_fractions:
         redox_trace_oxides = tuple(
             oxide
             for oxide in trace_fractions
             if (rule := trace_component_rule(oxide)) is not None
             and rule.activity_model == "redox_associates"
+            and not (mno_joint_model and oxide == "MnO")
         )
-        trace_redox_pack = None
+        trace_redox_pack = mno_redox_pack
         if redox_trace_oxides:
-            if selected_profile is None:
-                from openimcc.redox_pack import load_redox_pack
+            if trace_redox_pack is None:
+                if selected_profile is None:
+                    from openimcc.redox_pack import load_redox_pack
 
-                trace_redox_pack = load_redox_pack()
-            elif selected_profile.redox_pack_path is None:
-                raise ProfileRedoxUnavailableError(
-                    "the SF04 publication has no redox model; use "
-                    "profile='openimcc' or pass explicit packs"
-                )
-            else:
-                trace_redox_pack = selected_profile.redox_pack
+                    trace_redox_pack = load_redox_pack()
+                elif selected_profile.redox_pack_path is None:
+                    raise ProfileRedoxUnavailableError(
+                        "the SF04 publication has no redox model; use "
+                        "profile='openimcc' or pass explicit packs"
+                    )
+                else:
+                    trace_redox_pack = selected_profile.redox_pack
         composition_moles = {
             name: float(amount)
             for name, amount in zip(parent_oxides, vector, strict=True)
             if amount > 0.0
         }
-        composition_moles.update(trace_moles)
+        composition_moles.update({
+            name: amount
+            for name, amount in trace_moles.items()
+            if not (mno_joint_model and name == "MnO")
+        })
         trace_activity_estimates = {}
         for oxide, x_trace in trace_fractions.items():
-            rule = trace_component_rule(oxide)
-            estimate, redox_result, redox_state = _resolve_trace_activity(
+            if mno_joint_model and oxide == "MnO":
+                continue
+            estimate, _redox_result, _redox_state = _resolve_trace_activity(
                 oxide,
                 x_trace,
                 composition_moles,
@@ -2933,141 +3149,7 @@ def evaluate(
                 melt_pack=pack,
                 loaded_redox_pack=trace_redox_pack,
             )
-            if (
-                redox_result is not None
-                and redox_state is not None
-                and rule is not None
-                and rule.full_component
-            ):
-                # Reuse every normalized field and convergence diagnostic from
-                # the same redox equilibrium that supplied the Mn activity.
-                redox_parent_oxides = tuple(redox_result.parent_moles)
-                species_names = tuple(redox_result.species_moles)
-                parent_mol = np.asarray(
-                    [redox_result.parent_moles[name] for name in redox_parent_oxides],
-                    dtype=float,
-                )
-                species_total = math.fsum(redox_result.species_moles.values())
-                species_x = np.asarray(
-                    [redox_result.species_moles[name] / species_total
-                     for name in species_names],
-                    dtype=float,
-                )
-                parent_x_star = np.asarray(
-                    [species_x[species_names.index(name)] for name in redox_parent_oxides],
-                    dtype=float,
-                )
-                parent_x = parent_mol / float(redox_state.basis)
-                parent_activity = np.asarray(
-                    [redox_result.parent_activity.get(name, 0.0)
-                     for name in redox_parent_oxides],
-                    dtype=float,
-                )
-                parent_gamma = np.divide(
-                    parent_activity,
-                    parent_x,
-                    out=np.zeros_like(parent_activity),
-                    where=parent_x > 0.0,
-                )
-                complex_x = species_x[len(redox_parent_oxides):]
-                redox_thermo_species = trace_redox_pack.content["thermo_species"]
-                coverage = {}
-                for name in species_names:
-                    lineage = result.labels.coverage.get(name)
-                    if lineage is None:
-                        redox_name = (
-                            name if name.endswith("(l)") else f"{name}(l)"
-                        )
-                        provenance = redox_thermo_species.get(
-                            redox_name, {}
-                        ).get("provenance", {})
-                        lineage = provenance.get(
-                            "source", result.labels.evidence_class
-                        )
-                    coverage[name] = lineage
-                result = replace(
-                    result,
-                    parent_oxides=redox_parent_oxides,
-                    parent_mol=parent_mol,
-                    basis=float(redox_state.basis),
-                    parent_x=parent_x,
-                    parent_x_star=parent_x_star,
-                    parent_activity=parent_activity,
-                    parent_gamma=parent_gamma,
-                    complex_x=complex_x,
-                    species_x=species_x,
-                    species_names=species_names,
-                    D=float(redox_state.D),
-                    convergence=ImccConvergence(
-                        iterations=redox_state.iterations,
-                        residual_inf=redox_state.residual_inf,
-                        residual_l2=redox_state.residual_l2,
-                        total_displacement=redox_state.total_displacement,
-                        solver_path=redox_state.solver_path,
-                        continuation_stages=redox_state.continuation_stages,
-                    ),
-                    labels=replace(
-                        result.labels,
-                        coverage=coverage,
-                        flags=tuple(dict.fromkeys(
-                            (*result.labels.flags, *redox_result.flags)
-                        )),
-                    ),
-                    extrapolated=(
-                        result.extrapolated
-                        or bool(redox_result.extrapolated_redox_rows)
-                    ),
-                    excess_gibbs_J=0.0,
-                    excess_enthalpy_J=0.0,
-                )
-                flags = list(dict.fromkeys((*flags, *redox_result.flags)))
-                redox_pack_participation = redox_result.pack_row_participation
-                # The complete redox result already carries these messages in
-                # labels.flags; keep the trace notice's typed axes only.
-                estimate = replace(estimate, reference=None)
             trace_activity_estimates[oxide] = estimate
-
-        if redox_pack_participation is not None:
-            # Shared redox messages are already on labels.flags. Keep the
-            # typed estimate axes, but render those messages only once.
-            for oxide, estimate in tuple(trace_activity_estimates.items()):
-                rule = trace_component_rule(oxide)
-                if rule is not None and rule.activity_model == "redox_associates":
-                    trace_activity_estimates[oxide] = replace(
-                        estimate, reference=None
-                    )
-            p2o5_estimate = trace_activity_estimates.get("P2O5")
-            if (
-                p2o5_estimate is not None
-                and p2o5_estimate.activity is not None
-                and "P2O5" in result.parent_oxides
-            ):
-                p2o5_index = result.parent_oxides.index("P2O5")
-                parent_activity = result.parent_activity.copy()
-                parent_activity[p2o5_index] = p2o5_estimate.activity
-                parent_gamma = result.parent_gamma.copy()
-                if result.parent_x[p2o5_index] > 0.0:
-                    parent_gamma[p2o5_index] = (
-                        p2o5_estimate.activity / result.parent_x[p2o5_index]
-                    )
-
-                # Premise: the Mn redox pack's P2O5 parent is on the half-
-                # P4O10(cr) standard, while the trace helper returns the
-                # gas-layer Jung-Hudon P2O5(l), 1-bar activity. Equal chemical
-                # potentials give mu_source + RT ln(a_source) =
-                # mu_target + RT ln(a_target), hence
-                # a_target = a_source * exp((G_source - G_target)/(RT)).
-                # The helper already applies that conversion to its Suito
-                # hypothetical-liquid estimate, so expose that target value
-                # instead of the redox proxy. Gibbs energies are J/mol, R is
-                # J/(mol K), and T is K, so the exponent is dimensionless.
-                # As x(P2O5) -> 0 the helper activity -> 0; the redox proxy
-                # must not leave finite phosphorus pressure in that limit.
-                result = replace(
-                    result,
-                    parent_activity=parent_activity,
-                    parent_gamma=parent_gamma,
-                )
         trace_activity_flags.extend(
             TraceActivityFlag(estimate)
             for estimate in trace_activity_estimates.values()
@@ -3448,6 +3530,9 @@ def evaluate(
             adapter_labels,
             identity={**adapter_labels.identity, "profile": profile_name},
         )
+    data_digests = {"melt": binding_digest}
+    if mno_joint_model:
+        data_digests["redox"] = mno_redox_pack.canonical_digest
     receipt = build_calculation_receipt(
         request={
             "composition": composition,
@@ -3465,7 +3550,7 @@ def evaluate(
                 "y_init": y_init,
             },
         },
-        data_digests={"melt": binding_digest},
+        data_digests=data_digests,
         solver={"tol": tol, "max_iter": max_iter},
     )
     return replace(
@@ -3473,9 +3558,7 @@ def evaluate(
         labels=adapter_labels,
         receipt=receipt,
         pack_row_participation=(
-            redox_pack_participation
-            if redox_pack_participation is not None
-            else _pack_row_participation(
+            _pack_row_participation(
                 kernel_pack,
                 dict(zip(parent_oxides, vector, strict=True)),
                 result.complex_x,

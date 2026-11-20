@@ -23,6 +23,16 @@
   spacing loses precision; underflowed P2O5 activities are refused and sulfur
   comparison outputs are reported as unavailable.
 
+### MnO full-component solve
+
+- The default D066 evaluation now solves MnO with its liquid silicate and
+  aluminate associates alongside the major oxides. For MnO-bearing
+  compositions, major activities come from D066 plus the Mn associates; FeO
+  is about +0.002 to +0.003 dex relative to the former closed-redox result.
+- P2O5 and other redox-only parents no longer appear in `parent_oxides`; the
+  P2O5 helper activity is reported in the trace notice. Ferric fractions and
+  metal amounts require an explicit `evaluate_redox()` call.
+
 ### Trace gas parent standards
 
 - Gas trace filling now uses the sulfur fugacity helper for S2, refuses
