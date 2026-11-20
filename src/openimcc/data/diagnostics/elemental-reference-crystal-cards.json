@@ -1,0 +1,594 @@
+{
+  "schema": "openimcc-elemental-reference-crystal-cards-v1",
+  "records": [
+    {
+      "formula": "Au",
+      "phase": "crystal",
+      "elemental_reference": true,
+      "polymorph": "gold elemental reference crystal",
+      "source_card_id": "BU-0054",
+      "source_table_id": "BU-0054",
+      "source_path": "data-src/published-thermo/burcat-au.json",
+      "source_title": "Burcat and Ruscic, Third Millennium Thermochemical Database; cards BU-0056, BU-0055, and BU-0054",
+      "source_locator": "BURCAT.THR.txt card BU-0054",
+      "source_note": "Gold reference element; Barin (1994); crystal branch ends at the 1337 K melting marker.",
+      "functional_form": "NASA-7 polynomial",
+      "form": "nasa7",
+      "temperature_range_K": [
+        500.0,
+        1337.0
+      ],
+      "source_limit_K": 1337.0,
+      "formation_enthalpy_298_kJ_mol": 0.0,
+      "segments": [
+        {
+          "temperature_range_K": [
+            500.0,
+            1337.0
+          ],
+          "coefficients": [
+            4.07183461,
+            -0.00598711833,
+            1.3142079e-05,
+            -1.1618466e-08,
+            3.82648489e-12,
+            -1052.19873,
+            -16.2179472
+          ]
+        }
+      ]
+    },
+    {
+      "formula": "Pd",
+      "phase": "crystal",
+      "elemental_reference": true,
+      "polymorph": "palladium elemental reference crystal",
+      "source_card_id": "BU-3110",
+      "source_table_id": "BU-3110",
+      "source_path": "data-src/published-thermo/burcat-pd.json",
+      "source_title": "Burcat and Ruscic, Third Millennium Thermochemical Database; cards BU-3112, BU-3111, and BU-3110",
+      "source_locator": "BURCAT.THR.txt card BU-3110",
+      "source_note": "Palladium reference element; Gurvich Thermel table (1992), BURCAT.THR.txt card BU-3110; low block 298.15–1000 K and high block 1000–1827 K; crystal branch ends at the 1827 K melting marker.",
+      "functional_form": "NASA-7 polynomial",
+      "form": "nasa7",
+      "temperature_range_K": [
+        298.15,
+        1827.0
+      ],
+      "source_limit_K": 1827.0,
+      "formation_enthalpy_298_kJ_mol": 0.0,
+      "segments": [
+        {
+          "temperature_range_K": [
+            298.15,
+            1000.0
+          ],
+          "coefficients": [
+            2.34355559,
+            0.00480156324,
+            -1.00146179e-05,
+            9.59678811e-09,
+            -3.20834438e-12,
+            -841.117191,
+            -9.89514066
+          ]
+        },
+        {
+          "temperature_range_K": [
+            1000.0,
+            1827.0
+          ],
+          "coefficients": [
+            2.54024381,
+            0.00158104408,
+            -1.29896078e-06,
+            8.8076472e-10,
+            -1.84147165e-13,
+            -758.598463,
+            -10.2418323
+          ]
+        }
+      ]
+    },
+    {
+      "formula": "Pt",
+      "phase": "crystal",
+      "elemental_reference": true,
+      "polymorph": "platinum elemental reference crystal",
+      "source_card_id": "BU-3120",
+      "source_table_id": "BU-3120",
+      "source_path": "data-src/published-thermo/burcat-pt.json",
+      "source_title": "Burcat and Ruscic, Third Millennium Thermochemical Database; cards BU-3122, BU-3120, BU-3121, and BU-3126",
+      "source_locator": "BURCAT.THR.txt card BU-3120",
+      "source_note": "BURCAT.THR.txt card BU-3120; elemental reference platinum crystal through the 2042 K melting marker.",
+      "functional_form": "NASA-7 polynomial",
+      "form": "nasa7",
+      "temperature_range_K": [
+        298.15,
+        2042.0
+      ],
+      "source_limit_K": 2042.0,
+      "formation_enthalpy_298_kJ_mol": 0.0,
+      "segments": [
+        {
+          "temperature_range_K": [
+            298.15,
+            1000.0
+          ],
+          "coefficients": [
+            2.60343622,
+            0.00237670693,
+            -3.28073455e-06,
+            2.61765836e-09,
+            -7.69578918e-13,
+            -857.676172,
+            -10.4182748
+          ]
+        },
+        {
+          "temperature_range_K": [
+            1000.0,
+            2042.0
+          ],
+          "coefficients": [
+            2.85793043,
+            0.00102169438,
+            -5.90389244e-07,
+            2.63911729e-10,
+            -5.6592556e-15,
+            -895.79315,
+            -11.5728164
+          ]
+        }
+      ]
+    },
+    {
+      "formula": "Rh",
+      "phase": "crystal",
+      "elemental_reference": true,
+      "polymorph": "rhodium elemental reference crystal",
+      "source_card_id": "P672-Rh-cr",
+      "source_table_id": "P672-Rh-cr",
+      "source_path": "data-src/published-thermo/pankratz-rh.json",
+      "source_title": "Pankratz, Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672",
+      "source_locator": "Rhodium elemental condensed table, printed p. 330",
+      "source_note": "Printed p. 330; the elemental table anchors Rh(cr) at zero formation enthalpy and prints the 2237 K melting marker. Crystal thermal cells are transcribed through the marker.",
+      "functional_form": "tabulated Cp, S and H-H298",
+      "form": "tabulated",
+      "temperature_range_K": [
+        298.15,
+        2237.0
+      ],
+      "source_limit_K": 2237.0,
+      "formation_enthalpy_298_kJ_mol": 0.0,
+      "node_columns": [
+        "T_K",
+        "Cp_cal_mol_K",
+        "S_cal_mol_K",
+        "H_minus_H298_kcal_mol"
+      ],
+      "nodes": [
+        [
+          298.15,
+          5.952,
+          7.542,
+          0.0
+        ],
+        [
+          300,
+          5.958,
+          7.579,
+          0.011
+        ],
+        [
+          400,
+          6.257,
+          9.335,
+          0.622
+        ],
+        [
+          500,
+          6.51,
+          10.759,
+          1.261
+        ],
+        [
+          600,
+          6.74,
+          11.967,
+          1.923
+        ],
+        [
+          700,
+          6.957,
+          13.022,
+          2.608
+        ],
+        [
+          800,
+          7.167,
+          13.965,
+          3.315
+        ],
+        [
+          900,
+          7.376,
+          14.821,
+          4.042
+        ],
+        [
+          1000,
+          7.587,
+          15.609,
+          4.79
+        ],
+        [
+          1100,
+          7.805,
+          16.342,
+          5.559
+        ],
+        [
+          1200,
+          8.032,
+          17.031,
+          6.351
+        ],
+        [
+          1300,
+          8.271,
+          17.683,
+          7.166
+        ],
+        [
+          1400,
+          8.528,
+          18.306,
+          8.006
+        ],
+        [
+          1500,
+          8.804,
+          18.903,
+          8.872
+        ],
+        [
+          1600,
+          9.103,
+          19.481,
+          9.768
+        ],
+        [
+          1700,
+          9.429,
+          20.042,
+          10.694
+        ],
+        [
+          1800,
+          9.784,
+          20.591,
+          11.654
+        ],
+        [
+          1900,
+          10.173,
+          21.13,
+          12.652
+        ],
+        [
+          2000,
+          10.597,
+          21.663,
+          13.69
+        ],
+        [
+          2100,
+          11.062,
+          22.191,
+          14.773
+        ],
+        [
+          2200,
+          11.569,
+          22.717,
+          15.904
+        ],
+        [
+          2237,
+          11.769,
+          22.912,
+          16.336
+        ]
+      ]
+    },
+    {
+      "formula": "Ir",
+      "phase": "crystal",
+      "elemental_reference": true,
+      "polymorph": "iridium elemental reference crystal",
+      "source_card_id": "BU-2611",
+      "source_table_id": "BU-2611",
+      "source_path": "data-src/published-thermo/burcat-ir.json",
+      "source_title": "Burcat and Ruscic, Third Millennium Thermochemical Database; cards BU-2613, BU-2611, and BU-2612",
+      "source_locator": "BURCAT.THR.txt card BU-2611",
+      "source_note": "BURCAT.THR.txt card BU-2611; elemental reference iridium crystal through the 2720 K melting marker; calculated from Gurvich's Thermel (1992).",
+      "functional_form": "NASA-7 polynomial",
+      "form": "nasa7",
+      "temperature_range_K": [
+        298.15,
+        2720.0
+      ],
+      "source_limit_K": 2720.0,
+      "formation_enthalpy_298_kJ_mol": 0.0,
+      "segments": [
+        {
+          "temperature_range_K": [
+            298.15,
+            1000.0
+          ],
+          "coefficients": [
+            2.84948295,
+            0.000201970716,
+            1.56773265e-06,
+            -1.82288867e-09,
+            7.55628355e-13,
+            -869.155364,
+            -12.0832139
+          ]
+        },
+        {
+          "temperature_range_K": [
+            1000.0,
+            2720.0
+          ],
+          "coefficients": [
+            3.12748335,
+            2.66314435e-05,
+            5.72352901e-07,
+            -2.05605606e-10,
+            3.10639151e-14,
+            -987.100754,
+            -13.6884967
+          ]
+        }
+      ]
+    },
+    {
+      "formula": "Os",
+      "phase": "crystal",
+      "elemental_reference": true,
+      "polymorph": "osmium elemental reference crystal",
+      "source_card_id": "BURCAT-OS-CR",
+      "source_table_id": "BURCAT-OS-CR",
+      "source_path": "data-src/published-thermo/burcat-os.json",
+      "source_title": "Burcat and Ruscic, Third Millennium Thermochemical Database; OS(g), OS(cr), and OS(liq) cards, calculated from Gurvich's Thermel Table 1992",
+      "source_locator": "BURCAT.THR.txt card BURCAT-OS-CR",
+      "source_note": "BURCAT.THR.txt card OS(cr) REF ELEMENT, calculated from Gurvich's Thermel Table 1992; the elemental-reference crystal branch ends at its 3300 K melt marker.",
+      "functional_form": "NASA-7 polynomial",
+      "form": "nasa7",
+      "temperature_range_K": [
+        298.15,
+        3300.0
+      ],
+      "source_limit_K": 3300.0,
+      "formation_enthalpy_298_kJ_mol": 0.0,
+      "segments": [
+        {
+          "temperature_range_K": [
+            298.15,
+            1000.0
+          ],
+          "coefficients": [
+            2.16079282,
+            0.00466479149,
+            -8.62786766e-06,
+            7.57104172e-09,
+            -2.44751408e-12,
+            -789.155315,
+            -9.46567913
+          ]
+        },
+        {
+          "temperature_range_K": [
+            1000.0,
+            3300.0
+          ],
+          "coefficients": [
+            3.01993455,
+            0.000249424566,
+            -1.10850253e-09,
+            5.58953566e-11,
+            -2.90167949e-15,
+            -926.335857,
+            -13.4045369
+          ]
+        }
+      ]
+    },
+    {
+      "formula": "Ru",
+      "phase": "crystal",
+      "elemental_reference": true,
+      "polymorph": "ruthenium elemental reference crystal",
+      "source_card_id": "P672-Ru-cr",
+      "source_table_id": "P672-Ru-cr",
+      "source_path": "data-src/published-thermo/pankratz-ru.json",
+      "source_title": "Pankratz, Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672",
+      "source_locator": "Ruthenium elemental condensed table, printed p. 332",
+      "source_note": "Printed p. 332; the elemental table anchors Ru(cr) at zero formation enthalpy and prints the 2607 K melting marker. Crystal thermal cells are transcribed through the marker.",
+      "functional_form": "tabulated Cp, S and H-H298",
+      "form": "tabulated",
+      "temperature_range_K": [
+        298.15,
+        2607.0
+      ],
+      "source_limit_K": 2607.0,
+      "formation_enthalpy_298_kJ_mol": 0.0,
+      "node_columns": [
+        "T_K",
+        "Cp_cal_mol_K",
+        "S_cal_mol_K",
+        "H_minus_H298_kcal_mol"
+      ],
+      "nodes": [
+        [
+          298.15,
+          5.73,
+          6.839,
+          0.0
+        ],
+        [
+          300,
+          5.736,
+          6.874,
+          0.011
+        ],
+        [
+          400,
+          6.041,
+          8.568,
+          0.6
+        ],
+        [
+          500,
+          6.281,
+          9.943,
+          1.217
+        ],
+        [
+          600,
+          6.485,
+          11.107,
+          1.855
+        ],
+        [
+          700,
+          6.665,
+          12.12,
+          2.513
+        ],
+        [
+          800,
+          6.827,
+          13.021,
+          3.188
+        ],
+        [
+          900,
+          6.978,
+          13.834,
+          3.878
+        ],
+        [
+          1000,
+          7.122,
+          14.577,
+          4.583
+        ],
+        [
+          1100,
+          7.266,
+          15.262,
+          5.302
+        ],
+        [
+          1200,
+          7.413,
+          15.901,
+          6.036
+        ],
+        [
+          1300,
+          7.567,
+          16.5,
+          6.785
+        ],
+        [
+          1400,
+          7.734,
+          17.067,
+          7.55
+        ],
+        [
+          1500,
+          7.917,
+          17.606,
+          8.332
+        ],
+        [
+          1600,
+          8.121,
+          18.124,
+          9.134
+        ],
+        [
+          1700,
+          8.35,
+          18.623,
+          9.957
+        ],
+        [
+          1800,
+          8.61,
+          19.107,
+          10.805
+        ],
+        [
+          1900,
+          8.903,
+          19.58,
+          11.68
+        ],
+        [
+          2000,
+          9.235,
+          20.045,
+          12.587
+        ],
+        [
+          2100,
+          9.609,
+          20.505,
+          13.529
+        ],
+        [
+          2200,
+          10.03,
+          20.961,
+          14.51
+        ],
+        [
+          2300,
+          10.503,
+          21.417,
+          15.537
+        ],
+        [
+          2400,
+          11.032,
+          21.875,
+          16.613
+        ],
+        [
+          2500,
+          11.62,
+          22.338,
+          17.745
+        ],
+        [
+          2600,
+          12.273,
+          22.806,
+          18.939
+        ],
+        [
+          2607,
+          12.322,
+          22.839,
+          19.025
+        ]
+      ]
+    }
+  ]
+}

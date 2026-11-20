@@ -43,6 +43,7 @@ from openimcc.activity_fragments import load_activity_fragment
 from openimcc.crystal_species import (
     CrystalSpeciesPolymorphError,
     CrystalSpeciesTemperatureError,
+    ELEMENTAL_REFERENCE_CARD_SPECIES,
     is_element_formula,
     is_reference_polymorph,
     continue_constant_cp,
@@ -2931,10 +2932,12 @@ def species_thermo(
     ``"g"``, ``"l"`` or ``"cr"``. The active row follows the runtime interval
     selector and temperatures outside its closed interval are refused unless
     ``allow_extrapolation=True``. Gas and liquid continuation follows
-    ``evaluate_gas``. For ``(cr)``, condensate rows retain their existing
-    selection and refusal behavior; the shipped crystal datasets are a fallback
-    only when no condensate row exists for the formula. Crystal continuations
-    require source-defined phase identity, stability range, and solid limit.
+    ``evaluate_gas``. For ``(cr)``, condensate rows keep precedence wherever
+    they cover T. The seven vendored elemental-reference metal cards also fill
+    their source interval when a condensate row exists but does not cover T.
+    Other shipped crystal datasets remain a fallback only when no condensate
+    row exists. Crystal continuations require source-defined phase identity,
+    stability range, and solid limit.
     For Berman rows, the 298.15 K H/S identity is a helper-level check only;
     public service starts at each row's fusion-node lower bound.
 
@@ -2990,8 +2993,8 @@ def species_thermo(
         default remains a strict refusal outside the selected row's interval.
     polymorph:
         Selects a named polymorph when a shipped crystal dataset supplies the
-        ``(cr)`` fallback. It is ignored when a condensate row exists, which
-        retains precedence, except for the reference selectors.
+        ``(cr)`` fallback. It is ignored where a condensate row covers T,
+        except for the reference selectors.
     """
     if phase not in {"g", "l", "cr"}:
         raise ValueError("phase must be 'g', 'l', or 'cr'")
@@ -3072,15 +3075,61 @@ def species_thermo(
                 f"reference selection is ambiguous for {row_name}; "
                 "the selector applies to elemental reference crystals"
             )
-        try:
-            row = _oxide_row_for_T(
-                active_pack.oxide_df, row_name, T_K, allow_extrapolation
-            )
-        except ImccGasSpeciesNotFoundError:
-            crystal = crystal_dataset_result()
-            if crystal is not None:
-                return crystal
-            raise
+        if species in ELEMENTAL_REFERENCE_CARD_SPECIES:
+            try:
+                # Check empirical condensate coverage before considering either
+                # source's continuation.
+                row = _oxide_row_for_T(
+                    active_pack.oxide_df, row_name, T_K, False
+                )
+            except ImccGasSpeciesNotFoundError:
+                crystal = crystal_dataset_result()
+                if crystal is not None:
+                    return crystal
+                raise
+            except ImccGasTemperatureOutsideDomainError as condensate_error:
+                try:
+                    crystal = crystal_dataset_result()
+                except ImccGasTemperatureOutsideDomainError as card_error:
+                    if allow_extrapolation:
+                        # Continuation remains available only after both source
+                        # intervals have been checked for empirical coverage.
+                        row = _oxide_row_for_T(
+                            active_pack.oxide_df, row_name, T_K, True
+                        )
+                    else:
+                        # Refuse against whichever source interval is closer to
+                        # T, so the reported bounds describe the relevant edge.
+                        def interval_distance(
+                            error: ImccGasTemperatureOutsideDomainError,
+                        ) -> float:
+                            lower_K, upper_K = error.declared_interval_K
+                            return max(lower_K - T_K, 0.0, T_K - upper_K)
+
+                        if interval_distance(card_error) < interval_distance(
+                            condensate_error
+                        ):
+                            raise card_error
+                        raise condensate_error
+                else:
+                    if crystal is not None:
+                        return crystal
+                    if allow_extrapolation:
+                        row = _oxide_row_for_T(
+                            active_pack.oxide_df, row_name, T_K, True
+                        )
+                    else:
+                        raise condensate_error
+        else:
+            try:
+                row = _oxide_row_for_T(
+                    active_pack.oxide_df, row_name, T_K, allow_extrapolation
+                )
+            except ImccGasSpeciesNotFoundError:
+                crystal = crystal_dataset_result()
+                if crystal is not None:
+                    return crystal
+                raise
     else:
         row = _oxide_row_for_T(
             active_pack.oxide_df, row_name, T_K, allow_extrapolation

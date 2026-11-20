@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Elemental reference crystals
+
+- Packaged the vendored low-temperature Burcat and Pankratz crystal functions
+  for Au, Pd, Pt, Rh, Ir, Os, and Ru as a fallback outside condensate coverage.
+- Serve Os's empirical card data through 3300 K above its condensate fit maximum
+  of 3000 K and below its printed melting point.
+
 ### Trace gas parent standards
 
 - Gas trace filling now uses the sulfur fugacity helper for S2, refuses

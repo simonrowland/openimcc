@@ -32,6 +32,7 @@ from openimcc.crystal_species import (
     _cp_primitive,
     _berman_properties,
     _formula_element_counts,
+    CrystalSpeciesTemperatureError,
     evaluate_crystal_species,
 )
 from openimcc.janaf_crystals import evaluate_janaf_crystal
@@ -238,6 +239,100 @@ def test_rh_crystal_generator_check_matches_packaged_data() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_elemental_reference_crystal_card_generator_check_matches_package() -> None:
+    root = Path(__file__).parents[1]
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(root / "tools/generate_elemental_reference_crystal_cards.py"),
+            "--check",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_vendored_elemental_reference_crystal_cards_and_ranges() -> None:
+    cards = (
+        ("Au", "BU-0054", "NASA-7 polynomial", (500.0, 1337.0)),
+        ("Pd", "BU-3110", "NASA-7 polynomial", (298.15, 1827.0)),
+        ("Pt", "BU-3120", "NASA-7 polynomial", (298.15, 2042.0)),
+        ("Rh", "P672-Rh-cr", "tabulated Cp, S and H-H298", (298.15, 2237.0)),
+        ("Ir", "BU-2611", "NASA-7 polynomial", (298.15, 2720.0)),
+        ("Os", "BURCAT-OS-CR", "NASA-7 polynomial", (298.15, 3300.0)),
+        ("Ru", "P672-Ru-cr", "tabulated Cp, S and H-H298", (298.15, 2607.0)),
+    )
+    for formula, card_id, functional_form, card_range in cards:
+        result = species_thermo(formula, "cr", 1000.0, polymorph="reference")
+        identity = result.phase_identity
+        assert result.source_row_id == card_id
+        assert result.source_table_id == card_id
+        assert (result.T_min, result.T_max) == card_range
+        assert identity is not None
+        assert "elemental reference crystal" in identity["polymorph"]
+        assert identity["source_card_id"] == card_id
+        assert identity["functional_form"] == functional_form
+        assert identity["selection_rule"] == (
+            "selected by the vendored source card's elemental reference crystal"
+        )
+
+
+def test_elemental_reference_card_join_is_close_without_adjustment() -> None:
+    # The condensate Phi fit implies Cp/H/S by differentiation; the seam gate
+    # compares G directly because derivatives are fit-implied residuals.
+    gibbs_gaps = {}
+    for formula in ("Au", "Pd", "Pt", "Rh", "Ir", "Os", "Ru"):
+        card = evaluate_crystal_species(formula, 1200.0, polymorph="reference")
+        condensate = species_thermo(formula, "cr", 1200.0)
+        assert card is not None
+        gibbs_gaps[formula] = card.G_J_mol - condensate.G_J_mol
+        assert abs(gibbs_gaps[formula]) <= 2.0
+
+    assert abs(gibbs_gaps["Au"]) < 1.0e-6
+
+
+def test_elemental_reference_card_preserves_condensate_at_1500_and_refuses_below_card() -> None:
+    pd = species_thermo("Pd", "cr", 1500.0, polymorph="reference")
+    assert _value_hexes(pd) == {
+        "Cp_J_molK": "0x1.0c037ec008f96p+5",
+        "S_J_molK": "0x1.4cb2790d14e4fp+6",
+        "H_app_kJ_mol": "0x1.17a4823489c42p+5",
+        "G_J_mol": "-0x1.5ece1bbe82569p+16",
+    }
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("Au", "cr", 499.0, polymorph="reference")
+    assert refusal.value.declared_interval_K == (500.0, 1337.0)
+    with pytest.raises(CrystalSpeciesTemperatureError) as refusal:
+        evaluate_crystal_species("Au", 499.0, polymorph="reference")
+    assert refusal.value.declared_interval_K == (500.0, 1337.0)
+
+
+def test_elemental_reference_card_beats_condensate_continuation() -> None:
+    direct = species_thermo("Au", "cr", 1100.0, polymorph="reference")
+    continued = species_thermo(
+        "Au", "cr", 1100.0, allow_extrapolation=True, polymorph="reference"
+    )
+
+    assert _value_hexes(continued) == _value_hexes(direct)
+    assert continued.source_table_id == "BU-0054"
+    assert not continued.extrapolated
+
+
+def test_os_reference_card_covers_above_condensate_fit_and_reports_its_edge() -> None:
+    result = species_thermo("Os", "cr", 3100.0, polymorph="reference")
+    assert result.source_table_id == "BURCAT-OS-CR"
+    assert result.T_min == 298.15
+    assert result.T_max == 3300.0
+
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("Os", "cr", 3301.0, polymorph="reference")
+    assert refusal.value.declared_interval_K == (298.15, 3300.0)
+
+
 def test_additional_janaf_crystals_keep_titles_transitions_and_caps() -> None:
     lead_oxide = species_thermo("PbO", "cr", 800.0)
     assert lead_oxide.source_table_id == "O-006"
@@ -336,8 +431,6 @@ def test_elemental_reference_polymorph_selectors() -> None:
         assert selected.phase_identity is not None
         assert expected_phase in selected.phase_identity["polymorph"]
         assert "reference-state" in selected.phase_identity["selection_rule"]
-    with pytest.raises(ImccGasTemperatureOutsideDomainError):
-        species_thermo("Au", "cr", 1000.0, pack, polymorph="reference")
 
 
 @pytest.mark.parametrize(
@@ -839,30 +932,19 @@ def test_gas_formation_enthalpy_uses_vendored_text_table_anchors() -> None:
         assert result.formation_enthalpy_source_id == source_id
 
 
-def test_species_thermo_crystal_constant_cp_continuation_is_continuous() -> None:
+def test_species_thermo_uses_os_card_after_condensate_fit_ends() -> None:
     pack = load_gas_datapack()
     edge = species_thermo("Os", "cr", 3000.0, pack)
-    continued = species_thermo(
+    card = species_thermo(
         "Os", "cr", 3100.0, pack, allow_extrapolation=True
     )
 
-    assert continued.extrapolated is True
-    assert continued.declared_interval_K == (1200.0, 3000.0)
-    assert continued.phase_identity is not None
-    polymorph = continued.phase_identity["polymorph"]
-    assert continued.continuation == (
-        f"constant-Cp crystal continuation within {polymorph} stability range"
-    )
-    assert continued.Cp_J_molK == edge.Cp_J_molK
-    assert continued.H_app_kJ_mol == pytest.approx(
-        edge.H_app_kJ_mol + edge.Cp_J_molK * 100.0 / 1000.0
-    )
-    assert continued.S_J_molK == pytest.approx(
-        edge.S_J_molK + edge.Cp_J_molK * math.log(3100.0 / 3000.0)
-    )
-    assert continued.G_J_mol == pytest.approx(
-        1000.0 * continued.H_app_kJ_mol - 3100.0 * continued.S_J_molK
-    )
+    assert edge.declared_interval_K == (1200.0, 3000.0)
+    assert card.source_table_id == "BURCAT-OS-CR"
+    assert card.extrapolated is False
+    assert card.declared_interval_K == (298.15, 3300.0)
+    assert card.continuation is None
+    assert card == species_thermo("Os", "cr", 3100.0, pack)
 
 
 def test_species_thermo_refuses_transition_and_melting_crossings() -> None:

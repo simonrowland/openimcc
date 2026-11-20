@@ -12,6 +12,7 @@ import math
 import re
 from typing import Any, Mapping, Sequence
 
+from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
 from openimcc.janaf_crystals import (
     _load_crystal_species as _load_janaf_crystal_species,
     _load_phases as _load_janaf_phases,
@@ -21,6 +22,9 @@ from openimcc.janaf_crystals import (
 
 _FORMULA_TOKEN = re.compile(r"[A-Z][a-z]?|\(|\)|\d+(?:\.\d+)?")
 _REFERENCE_POLYMORPHS = frozenset({"ref", "reference", "reference state"})
+ELEMENTAL_REFERENCE_CARD_SPECIES = frozenset(
+    {"Au", "Pd", "Pt", "Rh", "Ir", "Os", "Ru"}
+)
 _POLYMORPH_ALIASES = {
     "MgO": {"periclase": "Mg-008"},
     "TiO2": {"rutile": "O-043"},
@@ -112,6 +116,15 @@ def _rh_crystal_table_phases() -> tuple[dict[str, Any], ...]:
 def _barin_phases() -> tuple[dict[str, Any], ...]:
     return tuple(
         _read_json("data/diagnostics/barin-aluminate-crystals.json")["phases"]
+    )
+
+
+@lru_cache(maxsize=1)
+def _elemental_reference_card_phases() -> tuple[dict[str, Any], ...]:
+    return tuple(
+        _read_json(
+            "data/diagnostics/elemental-reference-crystal-cards.json"
+        )["records"]
     )
 
 
@@ -554,6 +567,96 @@ def _barin_properties(
     return cp, entropy, enthalpy_app_kJ_mol, gibbs_J_mol
 
 
+def _nasa7_card_values(
+    coefficients: Sequence[float], temperature_K: float
+) -> tuple[float, float, float]:
+    """Evaluate a NASA-7 Cp, H and S block in its source units."""
+    a1, a2, a3, a4, a5, a6, a7 = map(float, coefficients)
+    t = temperature_K
+    gas_constant = R_PUBLISHED_GAS_J_MOL_K
+    # Premise: Burcat's seven constants give Cp/R=a1+a2*T+...+a5*T^4.
+    # Integrating Cp gives H/R=a1*T+a2*T^2/2+...+a5*T^5/5+a6; integrating
+    # Cp/T gives S/R=a1*ln(T)+a2*T+...+a5*T^4/4+a7. The elemental cards'
+    # absolute NASA H is the apparent H used by the condensate fit; their
+    # a6 coefficients put H(298.15 K) at ΔfH298=0 when that temperature is in
+    # the fitted block. Do not extrapolate H(298.15 K) from a block whose floor
+    # is higher (as Au's is). Then G_app=1000*H_app-T*S. R is J/(mol K); H is
+    # converted to kJ/mol only at the returned apparent-enthalpy field.
+    cp = gas_constant * (
+        a1 + a2 * t + a3 * t**2 + a4 * t**3 + a5 * t**4
+    )
+    enthalpy_J_mol = gas_constant * (
+        a1 * t
+        + a2 * t**2 / 2.0
+        + a3 * t**3 / 3.0
+        + a4 * t**4 / 4.0
+        + a5 * t**5 / 5.0
+        + a6
+    )
+    entropy_J_molK = gas_constant * (
+        a1 * math.log(t)
+        + a2 * t
+        + a3 * t**2 / 2.0
+        + a4 * t**3 / 3.0
+        + a5 * t**4 / 4.0
+        + a7
+    )
+    return cp, enthalpy_J_mol, entropy_J_molK
+
+
+def _elemental_reference_card_properties(
+    phase: Mapping[str, Any], temperature_K: float
+) -> tuple[float, float, float, float]:
+    """Return apparent thermochemistry for one Burcat or Pankratz crystal card."""
+    gas_constant = R_PUBLISHED_GAS_J_MOL_K
+    formation_enthalpy = float(phase["formation_enthalpy_298_kJ_mol"])
+    if phase["form"] == "nasa7":
+        segments = phase["segments"]
+        selected_segment = segments[0]
+        for segment in segments[1:]:
+            if temperature_K >= float(segment["temperature_range_K"][0]):
+                selected_segment = segment
+        cp, enthalpy_J_mol, entropy = _nasa7_card_values(
+            selected_segment["coefficients"], temperature_K
+        )
+        enthalpy_app_kJ_mol = enthalpy_J_mol / 1000.0
+    elif phase["form"] == "tabulated":
+        # Pankratz prints Cp in cal/(mol K), S in cal/(mol K), and H-H298 in
+        # kcal/mol. Interpolate H-H298 and S linearly between printed nodes;
+        # Cp is the H secant between nodes and the printed Cp at a source node.
+        # This propagates the table into one consistent H/S/G function while
+        # retaining source Cp at the printed temperatures. The factor 4.184
+        # converts cal to J and kcal to kJ; G_app=1000*H_app-T*S.
+        rows = phase["nodes"]
+        enthalpy_nodes = [
+            {"T_K": float(row[0]), "value": float(row[3]) * 4.184}
+            for row in rows
+        ]
+        entropy_nodes = [
+            {"T_K": float(row[0]), "value": float(row[2]) * 4.184}
+            for row in rows
+        ]
+        enthalpy_increment, slope_kJ_molK = _linear_value_and_slope(
+            enthalpy_nodes, temperature_K
+        )
+        entropy, _ = _linear_value_and_slope(entropy_nodes, temperature_K)
+        printed_cp = next(
+            (
+                float(row[1]) * 4.184
+                for row in rows
+                if float(row[0]) == temperature_K
+            ),
+            None,
+        )
+        cp = printed_cp if printed_cp is not None else 1000.0 * slope_kJ_molK
+        enthalpy_app_kJ_mol = formation_enthalpy + enthalpy_increment
+    else:
+        raise ValueError(f"unsupported elemental crystal card form {phase['form']!r}")
+
+    gibbs_J_mol = 1000.0 * enthalpy_app_kJ_mol - temperature_K * entropy
+    return cp, entropy, enthalpy_app_kJ_mol, gibbs_J_mol
+
+
 def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
     formula_counts = _formula_element_counts(formula)
     if formula_counts is None:
@@ -686,6 +789,25 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
         ))
     if robie_hemingway:
         return [("Robie-Hemingway 1995 tables", robie_hemingway)]
+
+    elemental_reference_cards = []
+    for phase in _elemental_reference_card_phases():
+        if phase["formula"] != formula:
+            continue
+        interval = tuple(map(float, phase["temperature_range_K"]))
+        source_card_id = str(phase["source_card_id"])
+        elemental_reference_cards.append(_Candidate(
+            "Elemental reference crystal cards",
+            str(phase["polymorph"]),
+            phase,
+            None,
+            interval,
+            source_card_id,
+            str(phase["source_table_id"]),
+            "published_fitted",
+        ))
+    if elemental_reference_cards:
+        return [("Elemental reference crystal cards", elemental_reference_cards)]
     return []
 
 
@@ -701,6 +823,8 @@ def _source_solid_limit(candidate: _Candidate) -> float | None:
         "JANAF pure-oxide crystals", "JANAF crystal tables",
     }:
         return float(phase["crystal_transition_temperature_K"])
+    if candidate.dataset == "Elemental reference crystal cards":
+        return float(phase["source_limit_K"])
     return None
 
 
@@ -788,6 +912,15 @@ def _evaluate_candidate(
         formation_enthalpy = float(candidate.phase["formation_enthalpy_298_kJ_mol"])
         return cp, entropy, enthalpy_app, gibbs, formation_enthalpy
 
+    if candidate.dataset == "Elemental reference crystal cards":
+        cp, entropy, enthalpy_app, gibbs = _elemental_reference_card_properties(
+            candidate.phase, temperature_K
+        )
+        formation_enthalpy = float(
+            candidate.phase["formation_enthalpy_298_kJ_mol"]
+        )
+        return cp, entropy, enthalpy_app, gibbs, formation_enthalpy
+
     phase = candidate.phase
     if phase.get("berman_parameters") is not None:
         cp, entropy, enthalpy_app, gibbs = _berman_properties(phase, temperature_K)
@@ -833,6 +966,11 @@ def evaluate_crystal_species(
                 f"select one of the available polymorphs: {', '.join(labels)}",
                 labels,
             )
+        is_elemental_reference_card = (
+            len(candidates) == 1
+            and candidates[0].dataset == "Elemental reference crystal cards"
+            and candidates[0].phase.get("elemental_reference") is True
+        )
         is_janaf_elemental_reference = (
             len(candidates) == 1
             and candidates[0].dataset == "JANAF crystal tables"
@@ -850,7 +988,10 @@ def evaluate_crystal_species(
         )
         if (
             len(candidates) != 1
-            or not is_janaf_elemental_reference
+            or not (
+                is_elemental_reference_card
+                or is_janaf_elemental_reference
+            )
         ):
             raise CrystalSpeciesPolymorphError(
                 f"reference selection is ambiguous for {formula}(cr) from "
@@ -990,7 +1131,10 @@ def evaluate_crystal_species(
     if named is not None:
         selected = evaluated[0]
         if is_reference:
-            rule = "selected by the source-defined elemental reference-state table"
+            if named.dataset == "Elemental reference crystal cards":
+                rule = "selected by the vendored source card's elemental reference crystal"
+            else:
+                rule = "selected by the source-defined elemental reference-state table"
         elif alias_used:
             rule = (
                 f"selected through the {polymorph!r} alias for "
@@ -1053,6 +1197,25 @@ def evaluate_crystal_species(
             phase_identity["selection_rule"] = (
                 "JANAF source title and transition rows identify the active segment"
             )
+    elif candidate.dataset == "Elemental reference crystal cards":
+        source_phase = candidate.phase
+        phase_identity["source_card_id"] = source_phase["source_card_id"]
+        phase_identity["source_path"] = source_phase["source_path"]
+        phase_identity["source_title"] = source_phase["source_title"]
+        phase_identity["functional_form"] = source_phase["functional_form"]
+        phase_identity["source_card_range_K"] = candidate.interval_K
+        phase_identity["temperature_segment_K"] = candidate.interval_K
+        if source_phase["form"] == "nasa7":
+            for segment in source_phase["segments"]:
+                lower_K, upper_K = map(float, segment["temperature_range_K"])
+                if lower_K <= temperature_K < upper_K or (
+                    temperature_K == upper_K
+                    and upper_K == candidate.interval_K[1]
+                ):
+                    phase_identity["temperature_segment_K"] = (
+                        lower_K, upper_K
+                    )
+                    break
     if len(tied_candidates) > 1:
         tied_names = [item[0].label for item in tied_candidates]
         phase_identity["tie_note"] = (

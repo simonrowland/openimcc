@@ -881,6 +881,39 @@ def _crystal_phase_artifact(mapper: SourceMapper) -> dict[str, Any]:
     )
 
 
+def _elemental_reference_crystal_card_artifact(
+    mapper: SourceMapper,
+) -> dict[str, Any]:
+    relative_file = "diagnostics/elemental-reference-crystal-cards.json"
+    path = DATA / relative_file
+    raw = path.read_bytes()
+    content = json.loads(raw)
+    rows: list[dict[str, Any]] = []
+    for card in content["records"]:
+        row = _row(f"records:{card['formula']}", str(card["source_card_id"]))
+        if card["form"] == "nasa7":
+            citation = card["source_title"]
+        else:
+            citation = f"Pankratz Bulletin 672 table {card['source_card_id']}"
+        _add_citation(
+            row,
+            citation,
+            "derived",
+            mapper,
+            citation_key=str(card["source_card_id"]),
+        )
+        _missing_provenance(row)
+        rows.append(row)
+    return _finish_artifact(
+        identity=content["schema"],
+        file="data/" + relative_file,
+        raw=raw,
+        rows=rows,
+        runtime_digest=_sha256(raw),
+        mapper=mapper,
+    )
+
+
 _FRAGMENT_SOURCE_KEYS = {
     "citation",
     "doi",
@@ -1278,6 +1311,7 @@ def build() -> dict[str, Any]:
         _barin_artifact(mapper),
         _rh_crystal_species_artifact(mapper),
         _crystal_phase_artifact(mapper),
+        _elemental_reference_crystal_card_artifact(mapper),
     ]
     artifacts.extend(
         _fragment_artifact(path, mapper)

@@ -226,6 +226,9 @@ def _expected_row_ids(artifact: dict) -> set[str]:
             for row in content["pure_oxide_controls"]
         }
         return phases | controls
+    if file == "diagnostics/elemental-reference-crystal-cards.json":
+        content = json.loads(path.read_text(encoding="utf-8"))
+        return {f"records:{row['formula']}" for row in content["records"]}
     if file.startswith("fragments/"):
         content = json.loads(path.read_text(encoding="utf-8"))
         rows = content.get("rows", {})
@@ -244,7 +247,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 36
+    assert len(entries) == 37
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -348,6 +351,28 @@ def test_every_default_row_has_mapped_or_unmapped_lineage() -> None:
         assert all(item["row"] in actual for item in entry["unmapped"])
         assert entry["counts"]["rows"] == len(expected)
         assert entry["complete"] is (not entry["unmapped"])
+
+
+def test_elemental_reference_crystal_cards_are_registered_in_ancestry() -> None:
+    entries = coefficient_ancestry()
+    artifact = _artifact(
+        entries, "openimcc-elemental-reference-crystal-cards-v1"
+    )
+
+    assert {row["id"] for row in artifact["rows"]} == {
+        f"records:{formula}"
+        for formula in ("Au", "Pd", "Pt", "Rh", "Ir", "Os", "Ru")
+    }
+    assert artifact["work_ids"] == ["burcat-third-millennium"]
+    assert artifact["complete"] is False
+    assert any("P672-Rh-cr" in item["citation"] for item in artifact["unmapped"])
+    assert any("P672-Ru-cr" in item["citation"] for item in artifact["unmapped"])
+    gold = next(row for row in artifact["rows"] if row["id"] == "records:Au")
+    assert any(
+        source["work_id"] == "burcat-third-millennium"
+        and "BU-0054" in source["citation"]
+        for source in gold["sources"]
+    )
 
 
 def test_every_shipped_fragment_row_appears_in_the_manifest() -> None:
