@@ -25,6 +25,11 @@
   printed phase identities and melting limits.
 - Added the Bulletin 2131 grossular and Ca-Al pyroxene crystal tables.
 
+### JANAF phase selection
+
+- Dedicated phase tables retain their title identity through metastable
+  extensions so short polymorph names select the matching table.
+
 ### Crystal phase interpolation
 
 - JANAF crystal functions now use each phase's printed endpoint below an

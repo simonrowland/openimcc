@@ -161,9 +161,17 @@ def _phase_segments(
     source_temperature_K: list[float],
     transition_rows: list[dict],
     cap_K: float,
-    initial_phase_label: str | None = None,
+    dedicated_phase_label: str | None = None,
 ) -> list[dict]:
     lower_K = max(298.15, source_temperature_K[0])
+    if dedicated_phase_label is not None:
+        return [
+            {
+                "phase_label": dedicated_phase_label,
+                "temperature_K": [lower_K, cap_K],
+            }
+        ]
+
     named_transitions = []
     for row in transition_rows:
         if "<-->" not in row["label"]:
@@ -178,7 +186,7 @@ def _phase_segments(
 
     segments = []
     segment_lower = lower_K
-    phase_label = initial_phase_label or title
+    phase_label = title
     for temperature_K, left, right in named_transitions:
         if not segments:
             phase_label = left
@@ -303,9 +311,32 @@ def _parse_janaf_text_table(table_id: str, raw: bytes) -> dict:
 
 
 def _extra_crystal_phases() -> list[dict]:
+    prepared_crystals = [
+        (phase_id, formula, table_id, _prepare_source_table(table_id))
+        for phase_id, formula, table_id in ADDITIONAL_CRYSTALS
+    ]
+    titled_siblings: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    # Same-formula tables with the same title base and distinct printed phase
+    # suffixes are dedicated polymorph tables; their transitions are metastable.
+    for _phase_id, formula, table_id, prepared in prepared_crystals:
+        title = prepared["title_as_published"]
+        if "," not in title:
+            continue
+        title_base, phase_suffix = title.rsplit(",", 1)
+        phase_label = phase_suffix.split("(", 1)[0].strip()
+        if phase_label:
+            titled_siblings.setdefault((formula, title_base), []).append(
+                (table_id, phase_label.upper())
+            )
+    dedicated_phase_labels = {
+        table_id: phase_label
+        for siblings in titled_siblings.values()
+        if len({phase_label for _, phase_label in siblings}) > 1
+        for table_id, phase_label in siblings
+    }
+
     phases = []
-    for phase_id, formula, table_id in ADDITIONAL_CRYSTALS:
-        prepared = _prepare_source_table(table_id)
+    for phase_id, formula, table_id, prepared in prepared_crystals:
         transitions = prepared["transition_rows"]
         fusion_rows = [
             row for row in transitions
@@ -350,10 +381,7 @@ def _extra_crystal_phases() -> list[dict]:
                     prepared["source_temperature_K"],
                     transitions,
                     cap_K,
-                    initial_phase_label={
-                        "Na-019": "DELTA",
-                        "Na-021": "III",
-                    }.get(table_id),
+                    dedicated_phase_label=dedicated_phase_labels.get(table_id),
                 ),
             }
         )

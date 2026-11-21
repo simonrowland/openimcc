@@ -1205,11 +1205,26 @@ def evaluate_crystal_species(
         phase_identity["temperature_segment_K"] = tuple(
             map(float, segment["temperature_K"])
         )
+        dedicated_table_phase = (
+            len(segments) == 1
+            and str(segment["phase_label"]).casefold()
+            != candidate.label.casefold()
+        )
         if is_reference:
             phase_identity["selection_rule"] = (
                 "JANAF reference-state table and transition rows identify the "
                 "active segment at T"
             )
+        elif dedicated_table_phase:
+            if alias_used:
+                phase_identity["selection_rule"] = (
+                    "selected as an alias of the source table title; the table "
+                    "retains its named phase identity"
+                )
+            else:
+                phase_identity["selection_rule"] = (
+                    "JANAF source table title identifies its phase"
+                )
         elif alias_used:
             phase_identity["selection_rule"] = (
                 "selected as an alias of the source table title; transition rows "

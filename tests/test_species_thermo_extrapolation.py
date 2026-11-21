@@ -822,6 +822,123 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         assert selected_form.source_table_id == expected_table
 
 
+@pytest.mark.parametrize(
+    ("formula", "temperature", "polymorph", "table_id", "answer_hexes"),
+    (
+        (
+            "Ti", 1500.0, "BETA", "Ti-003",
+            {
+                "Cp_J_molK": "0x1.f7ffffffffffcp+4",
+                "S_J_molK": "0x1.45374bc6a7efap+6",
+                "H_app_kJ_mol": "0x1.4133333333333p+5",
+                "G_J_mol": "-0x1.3f8e000000000p+16",
+            },
+        ),
+        (
+            "Ca", 900.0, "BETA", "Ca-003",
+            {
+                "Cp_J_molK": "0x1.1a00000000003p+5",
+                "S_J_molK": "0x1.2def9db22d0e5p+6",
+                "H_app_kJ_mol": "0x1.33fbe76c8b43ap+4",
+                "G_J_mol": "-0x1.7c5d333333332p+15",
+            },
+        ),
+        (
+            "K2SO4", 900.0, "BETA", "K-018",
+            {
+                "Cp_J_molK": "0x1.737d05f417d01p+7",
+                "S_J_molK": "0x1.6f87ae147ae14p+8",
+                "H_app_kJ_mol": "-0x1.4b876c8b43958p+10",
+                "G_J_mol": "-0x1.9483d00000000p+20",
+            },
+        ),
+        (
+            "Na2SO4", 400.0, "V", "Na-023",
+            {
+                "Cp_J_molK": "0x1.121eb851eb851p+7",
+                "S_J_molK": "0x1.7b676c8b43958p+7",
+                "H_app_kJ_mol": "-0x1.5777df3b645a2p+10",
+                "G_J_mol": "-0x1.61f19cccccccdp+20",
+            },
+        ),
+        (
+            "Na2SO4", 458.0, "IV", "Na-022",
+            {
+                "Cp_J_molK": "0x1.2a8469ee5846bp+7",
+                "S_J_molK": "0x1.a4ec8b4395810p+7",
+                "H_app_kJ_mol": "-0x1.553d604189375p+10",
+                "G_J_mol": "-0x1.64c66989374bcp+20",
+            },
+        ),
+    ),
+)
+def test_janaf_dedicated_phase_names_select_tables_and_preserve_answers(
+    formula: str,
+    temperature: float,
+    polymorph: str,
+    table_id: str,
+    answer_hexes: dict[str, str],
+) -> None:
+    unnamed = species_thermo(formula, "cr", temperature)
+    named = species_thermo(
+        formula, "cr", temperature, polymorph=polymorph
+    )
+
+    assert unnamed.source_table_id == table_id
+    assert _value_hexes(unnamed) == answer_hexes
+    assert named.source_table_id == table_id
+    assert named.phase_identity is not None
+    assert named.phase_identity["polymorph"] == polymorph
+
+
+@pytest.mark.parametrize(
+    ("formula", "temperature", "polymorph", "table_id"),
+    (
+        ("Ti", 1939.0, "BETA", "Ti-003"),
+        ("Ca", 1115.0, "BETA", "Ca-003"),
+        ("K2SO4", 1342.0, "BETA", "K-018"),
+    ),
+)
+def test_dedicated_janaf_beta_selector_reaches_the_solid_limit(
+    formula: str, temperature: float, polymorph: str, table_id: str,
+) -> None:
+    selected = species_thermo(
+        formula, "cr", temperature, polymorph=polymorph
+    )
+
+    assert selected.source_table_id == table_id
+    assert selected.phase_identity is not None
+    assert selected.phase_identity["polymorph"] == "BETA"
+
+
+@pytest.mark.parametrize(
+    ("formula", "temperature", "polymorph", "table_id", "phase"),
+    (
+        ("Fe", 1300.0, "GAMMA", "Fe-004", "GAMMA"),
+        ("Mn", 1200.0, "BETA", "Mn-004", "BETA"),
+        ("WO3", 1100.0, "II", "O-065", "II"),
+        ("Co", 1000.0, "BETA", "Co-002", "BETA"),
+        ("AlF3", 1000.0, "BETA", "Al-041", "BETA"),
+    ),
+)
+def test_multiphase_janaf_reference_selectors_keep_transition_segments(
+    formula: str,
+    temperature: float,
+    polymorph: str,
+    table_id: str,
+    phase: str,
+) -> None:
+    unnamed = species_thermo(formula, "cr", temperature)
+    named = species_thermo(
+        formula, "cr", temperature, polymorph=polymorph
+    )
+
+    assert unnamed.source_table_id == named.source_table_id == table_id
+    assert _value_hexes(named) == _value_hexes(unnamed)
+    assert named.phase_identity is not None
+    assert named.phase_identity["polymorph"] == phase
+
+
 def test_janaf_internal_transition_uses_the_previous_phase_endpoint() -> None:
     source_path = Path(__file__).parents[1] / (
         "src/openimcc/data/diagnostics/janaf-crystal-species.json"
