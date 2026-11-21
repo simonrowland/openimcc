@@ -897,8 +897,9 @@ def _crystal_source_cap_excludes_candidate(
     temperature_K: float,
 ) -> float | None:
     """Return the exceeded cap, or None when the source solid is available."""
+    # R&H rows carry printed caps without an oxide-stoichiometry mapping.
     if (
-        len(stoichiometry) > 1
+        (not stoichiometry or len(stoichiometry) > 1)
         and source_solid_limit_K is not None
         and temperature_K > source_solid_limit_K
     ):

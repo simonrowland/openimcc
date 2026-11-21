@@ -1263,7 +1263,12 @@ def evaluate_crystal_species(
         "printed_phase_description"
     )
     if isinstance(source_description, str) and source_description:
-        has_multiple_forms = "; " in source_description or ". " in source_description
+        transition_description = source_description.replace(
+            ". Reference state for sulfur is orthorhombic sulfur.", ""
+        )
+        has_multiple_forms = (
+            "; " in transition_description or ". " in transition_description
+        )
         phase_identity["note"] = (
             f"One row spans a transition: {source_description}"
             if has_multiple_forms

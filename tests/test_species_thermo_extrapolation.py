@@ -8,7 +8,7 @@ import math
 import re
 import subprocess
 import sys
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from fractions import Fraction
 from functools import lru_cache
 from pathlib import Path
@@ -1357,6 +1357,30 @@ def test_robie_hemingway_target_tables_reconstruct_printed_nodes() -> None:
             )
 
 
+def test_rh_printed_solid_limit_caps_extended_candidate(monkeypatch) -> None:
+    candidate = next(
+        candidate
+        for _, candidates in crystal_species._candidates_for_formula("Cu2S")
+        for candidate in candidates
+        if candidate.phase["id"] == "chalcocite"
+    )
+    extended = replace(
+        candidate,
+        interval_K=(candidate.interval_K[0], 1410.0),
+    )
+    monkeypatch.setattr(
+        crystal_species,
+        "_candidates_for_formula",
+        lambda _formula: [("Robie-Hemingway 1995 tables", [extended])],
+    )
+
+    with pytest.raises(
+        ImccGasTemperatureOutsideDomainError,
+        match="above its source solid limit of 1403 K",
+    ):
+        species_thermo("Cu2S", "cr", 1404.0, polymorph="CHALCOCITE")
+
+
 def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
     kalsilite = species_thermo(
         "KAlSiO4", "cr", 1000.0, polymorph="kAlSiLiTe"
@@ -1382,6 +1406,26 @@ def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
         "Ca2SiO4", "cr", 500.0, polymorph="Larnite"
     )
     assert calcium_silicate.phase_identity["note"].startswith(
+        "One row spans a transition: "
+    )
+
+    for polymorph, note in (
+        (
+            "PYRITE",
+            "FeS₂: Cubic crystals 298.15 to 1000 K. "
+            "Reference state for sulfur is orthorhombic sulfur.",
+        ),
+        (
+            "MARCASITE",
+            "FeS₂: Orthorhombic crystals 298.15 to 700 K. "
+            "Reference state for sulfur is orthorhombic sulfur.",
+        ),
+    ):
+        result = species_thermo("FeS2", "cr", 500.0, polymorph=polymorph)
+        assert result.phase_identity["note"] == note
+
+    chalcocite = species_thermo("Cu2S", "cr", 500.0, polymorph="CHALCOCITE")
+    assert chalcocite.phase_identity["note"].startswith(
         "One row spans a transition: "
     )
 
