@@ -62,7 +62,8 @@ RH_CRYSTAL_TABLE_IDS = frozenset({
     "USGS-B2131-p267", "USGS-B2131-p268", "USGS-B2131-p316",
     "USGS-B2131-p338", "USGS-B2131-p345", "USGS-B2131-p350",
     "USGS-B2131-p351", "USGS-B2131-p366", "USGS-B2131-p367",
-    "USGS-B2131-p373", "USGS-B2131-p374",
+    "USGS-B2131-p373", "USGS-B2131-p374", "USGS-B2131-p67",
+    "USGS-B2131-p112", "USGS-B2131-p114", "USGS-B2131-p232",
 })
 ELEMENTAL_REFERENCE_CRYSTAL_CARD_IDS = frozenset({
     "BU-0054", "BU-3110", "BU-3120", "P672-Rh-cr", "BU-2611",
@@ -1919,6 +1920,28 @@ def test_re_and_os_metal_parents_cover_c4(packaged_gas_pack) -> None:
     assert _c4_rows_cover_domain(
         "Os", {}, pack, {"Os": "Os"}
     )
+
+
+def test_robie_hemingway_element_tables_are_in_the_crystal_inventory() -> None:
+    source = json.loads(
+        (
+            ROOT / "data-src" / "robie-hemingway-1995-usgs-b2131"
+            / "crystal-tables.json"
+        ).read_text(encoding="utf-8")
+    )
+    table_pages = {
+        int(phase["printed_page"])
+        for phase in source["phases"]
+        if phase["id"] in {
+            "perovskite-table", "silver-fcc", "thorium-alpha",
+            "thorium-beta", "uranium-alpha", "uranium-beta", "uranium-gamma",
+        }
+    }
+
+    assert table_pages == {67, 112, 114, 232}
+    assert {
+        f"USGS-B2131-p{page}" for page in table_pages
+    } <= RH_CRYSTAL_TABLE_IDS
 
 
 def test_roadmap_status_table_matches_element_status() -> None:

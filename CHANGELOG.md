@@ -26,6 +26,8 @@
 - Added the Bulletin 2131 carbonate and sulfide crystal tables with their
   printed phase identities and melting limits.
 - Added the Bulletin 2131 grossular and Ca-Al pyroxene crystal tables.
+- Added the complete Bulletin 2131 perovskite, silver, thorium, and uranium
+  tables with printed phase ranges, melting limits, and PDF row locators.
 
 ### JANAF phase selection
 

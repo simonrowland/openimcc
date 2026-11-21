@@ -117,6 +117,7 @@ class _Candidate:
     source_row_id: str
     source_table_id: str
     authority: str
+    upper_temperature_inclusive: bool = True
 
 
 def _read_json(resource_name: str) -> dict[str, Any]:
@@ -670,7 +671,9 @@ def _elemental_reference_card_properties(
     return cp, entropy, enthalpy_app_kJ_mol, gibbs_J_mol
 
 
-def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
+def _candidates_for_formula(
+    formula: str, temperature_K: float,
+) -> list[tuple[str, list[_Candidate]]]:
     formula_counts = _formula_element_counts(formula)
     if formula_counts is None:
         return []
@@ -773,10 +776,22 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
             "published_fitted",
         ))
     if minerals:
-        return [("Berman/Robie-Hemingway minerals", minerals)]
+        perovskite_nodes = [
+            candidate for candidate in minerals
+            if candidate.phase.get("id") == "perovskite"
+        ]
+        perovskite_nodes_cover_temperature = any(
+            candidate.interval_K[0] <= temperature_K
+            and temperature_K <= candidate.interval_K[1]
+            for candidate in perovskite_nodes
+        )
+        if not perovskite_nodes or perovskite_nodes_cover_temperature:
+            return [("Berman/Robie-Hemingway minerals", minerals)]
 
     robie_hemingway = []
     for phase in _rh_crystal_table_phases():
+        if phase.get("phase_state", "crystal") != "crystal":
+            continue
         if _formula_element_counts(phase["formula"]) != formula_counts:
             continue
         interval = tuple(map(float, phase["valid_temperature_K"]))
@@ -805,6 +820,7 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
             f"{table_id}:{phase['id']}",
             table_id,
             str(phase["source_authority"]),
+            bool(phase.get("upper_temperature_inclusive", True)),
         ))
     if robie_hemingway:
         return [("Robie-Hemingway 1995 tables", robie_hemingway)]
@@ -881,7 +897,12 @@ def _available_at_temperature(
     )
     if cap_limit_K is not None:
         return False, None, False, cap_limit_K
-    if lower_K <= temperature_K <= upper_K:
+    in_upper_bound = (
+        temperature_K <= upper_K
+        if candidate.upper_temperature_inclusive
+        else temperature_K < upper_K
+    )
+    if lower_K <= temperature_K and in_upper_bound:
         return True, None, False, None
     if (
         allow_extrapolation
@@ -987,7 +1008,7 @@ def evaluate_crystal_species(
     formulas. This keeps pure-oxide controls and direct aluminate tables on their
     source rails; G is never compared across datasets.
     """
-    groups = _candidates_for_formula(formula)
+    groups = _candidates_for_formula(formula, temperature_K)
     if not groups:
         return None
     dataset, candidates = groups[0]

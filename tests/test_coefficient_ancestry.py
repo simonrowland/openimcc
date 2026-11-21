@@ -327,6 +327,17 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     assert {source["work_id"] for _row_id, source in rh_sources} == {
         "robie-hemingway-1995-usgs-b2131"
     }
+    rh_table_artifact = _artifact(entries, "openimcc-rh-crystal-species-v1")
+    new_rh_rows = {
+        f"phases:{phase}"
+        for phase in (
+            "perovskite-table", "silver-fcc", "silver-liquid", "thorium-alpha",
+            "thorium-beta", "uranium-alpha", "uranium-beta", "uranium-gamma",
+            "uranium-liquid",
+        )
+    }
+    assert new_rh_rows <= {row["id"] for row in rh_table_artifact["rows"]}
+    assert rh_table_artifact["work_ids"] == ["robie-hemingway-1995-usgs-b2131"]
     for phase in ("fayalite", "hercynite", "ilmenite", "ulvospinel"):
         row = next(item for item in crystals["rows"] if item["id"] == f"phases:{phase}")
         assert any(

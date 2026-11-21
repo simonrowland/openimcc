@@ -51,6 +51,46 @@ SOURCE_SOLID_LIMITS = {
         "kind": "melting",
         "locator": {"page": 232, "row": "Melting T", "column": "temperature"},
     },
+    "perovskite-table": {
+        "temperature_K": 2188.0,
+        "kind": "melting",
+        "locator": {
+            "page": 232,
+            "row": "Melting T",
+            "pdf_text_line": 10043,
+            "column": "temperature",
+        },
+    },
+    "silver-fcc": {
+        "temperature_K": 1234.9,
+        "kind": "melting",
+        "locator": {
+            "page": 67,
+            "row": "Melting T",
+            "pdf_text_line": 2025,
+            "column": "temperature",
+        },
+    },
+    "thorium-beta": {
+        "temperature_K": 2023.0,
+        "kind": "melting",
+        "locator": {
+            "page": 112,
+            "row": "Melting T",
+            "pdf_text_line": 4063,
+            "column": "temperature",
+        },
+    },
+    "uranium-gamma": {
+        "temperature_K": 1408.0,
+        "kind": "melting",
+        "locator": {
+            "page": 114,
+            "row": "Melting T",
+            "pdf_text_line": 4166,
+            "column": "temperature",
+        },
+    },
 }
 
 
@@ -253,9 +293,25 @@ def build_crystal_species() -> dict[str, Any]:
             raise ValueError(f"{source_phase['id']} has an invalid valid-temperature range")
 
         anchors = [row for row in rows if float(row["T_K"]) == 298.15]
-        if len(anchors) != 1:
-            raise ValueError(f"{source_phase['id']} needs one 298.15 K anchor")
-        formation_enthalpy = float(anchors[0]["formation_enthalpy_kJ_mol"])
+        if len(anchors) > 1:
+            raise ValueError(f"{source_phase['id']} has duplicate 298.15 K anchors")
+        if anchors:
+            formation_enthalpy = float(
+                anchors[0]["formation_enthalpy_kJ_mol"]
+            )
+            if "formation_enthalpy_298_kJ_mol" in source_phase and not math.isclose(
+                formation_enthalpy,
+                float(source_phase["formation_enthalpy_298_kJ_mol"]),
+                rel_tol=0.0,
+                abs_tol=1e-9,
+            ):
+                raise ValueError(
+                    f"{source_phase['id']} anchor differs from its printed row"
+                )
+        elif "formation_enthalpy_298_kJ_mol" in source_phase:
+            formation_enthalpy = float(source_phase["formation_enthalpy_298_kJ_mol"])
+        else:
+            raise ValueError(f"{source_phase['id']} needs a 298.15 K anchor")
         enthalpy_nodes = {}
         entropy_nodes = {}
         formation_enthalpy_nodes = {}
@@ -351,6 +407,10 @@ def build_crystal_species() -> dict[str, Any]:
         }
         if source_phase["id"] in SOURCE_SOLID_LIMITS:
             phase["source_solid_limit"] = SOURCE_SOLID_LIMITS[source_phase["id"]]
+        if source_phase.get("state") == "liquid":
+            phase["phase_state"] = "liquid"
+        if source_phase.get("upper_temperature_inclusive") is False:
+            phase["upper_temperature_inclusive"] = False
         if source_phase["source_formula_as_published"] != source_phase["formula"]:
             phase["source_formula_note"] = (
                 "The printed p. 382 formula is Al2Si2O5(OH)2, while its printed "

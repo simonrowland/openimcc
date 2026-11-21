@@ -1381,6 +1381,149 @@ def test_rh_printed_solid_limit_caps_extended_candidate(monkeypatch) -> None:
         species_thermo("Cu2S", "cr", 1404.0, polymorph="CHALCOCITE")
 
 
+def test_robie_hemingway_perovskite_and_element_tables_reconstruct_nodes() -> None:
+    root = Path(__file__).parents[1]
+    source_path = root / (
+        "data-src/robie-hemingway-1995-usgs-b2131/crystal-tables.json"
+    )
+    source = json.loads(source_path.read_text(encoding="utf-8"))
+    wanted_ids = {
+        "perovskite-table", "silver-fcc", "silver-liquid", "thorium-alpha",
+        "thorium-beta", "uranium-alpha", "uranium-beta", "uranium-gamma",
+        "uranium-liquid",
+    }
+    phases = {
+        phase["id"]: phase
+        for phase in source["phases"]
+        if phase["id"] in wanted_ids
+    }
+    assert set(phases) == wanted_ids
+    expected_row_spans = {
+        "perovskite-table": (17, 10025, 10041),
+        "silver-fcc": (12, 2000, 2011),
+        "silver-liquid": (7, 2012, 2018),
+        "thorium-alpha": (16, 4039, 4054),
+        "thorium-beta": (3, 4055, 4057),
+        "uranium-alpha": (9, 4135, 4143),
+        "uranium-beta": (3, 4144, 4146),
+        "uranium-gamma": (6, 4147, 4152),
+        "uranium-liquid": (5, 4153, 4157),
+    }
+    for phase_id, (count, first_line, last_line) in expected_row_spans.items():
+        locators = [
+            int(row["locator"]["pdf_text_line"])
+            for row in phases[phase_id]["rows"]
+        ]
+        assert len(locators) == count
+        assert locators == list(range(first_line, last_line + 1))
+
+    packaged_path = root / "src/openimcc/data/diagnostics/rh-crystal-species.json"
+    packaged = {
+        phase["id"]: phase
+        for phase in json.loads(packaged_path.read_text(encoding="utf-8"))["phases"]
+    }
+    gas_constant_J_mol_K = 8.31446261815324
+    elemental_gaps: dict[tuple[str, float], list[float]] = {}
+    perovskite_reference_residuals = []
+
+    for phase_id, phase in phases.items():
+        runtime_phase = packaged[phase_id]
+        assert runtime_phase["source"]["printed_page"] == phase["printed_page"]
+        assert runtime_phase["source"]["printed_phase_description"] == (
+            phase["printed_phase_description"]
+        )
+        assert len(phase["rows"]) == len(runtime_phase["source_row_locators"])
+        if "formation_enthalpy_298_kJ_mol" in phase:
+            h298 = float(phase["formation_enthalpy_298_kJ_mol"])
+        else:
+            h298 = float(next(
+                row["formation_enthalpy_kJ_mol"]
+                for row in phase["rows"]
+                if float(row["T_K"]) == 298.15
+            ))
+        valid_lower, valid_upper = map(float, phase["valid_temperature_K"])
+
+        for row in phase["rows"]:
+            temperature = float(row["T_K"])
+            label = (
+                str(int(temperature))
+                if temperature.is_integer()
+                else str(temperature)
+            )
+            locator = row["locator"]
+            assert locator["page"] == phase["printed_page"]
+            assert locator["row"] == f"{label} K"
+            assert runtime_phase["source_row_locators"][label] == locator
+
+            absolute_g = (
+                h298
+                + temperature
+                * float(row["H_minus_H298_over_T_J_mol_K"])
+                / 1000.0
+                - temperature * float(row["S_J_mol_K"]) / 1000.0
+            )
+            printed_g = float(row["formation_gibbs_kJ_mol"])
+            reconstructed_g = (
+                -gas_constant_J_mol_K
+                * temperature
+                * math.log(10.0)
+                * float(row["log10_Kf"])
+                / 1000.0
+            )
+            assert reconstructed_g == pytest.approx(printed_g, abs=0.25)
+            elemental_gaps.setdefault((phase["formula"], temperature), []).append(
+                absolute_g - printed_g
+            )
+
+            if phase.get("state") == "liquid":
+                continue
+            if (
+                phase.get("upper_temperature_inclusive") is False
+                and temperature == valid_upper
+            ):
+                continue
+            assert valid_lower <= temperature <= valid_upper
+            selected = species_thermo(
+                phase["formula"], "cr", temperature,
+                polymorph=phase["name_as_published"],
+            )
+            assert selected.G_J_mol / 1000.0 == pytest.approx(
+                absolute_g, abs=0.002
+            )
+            if phase_id == "perovskite-table":
+                element_g = _element_reference_sum_kJ_mol(
+                    phase["formula"], temperature
+                )
+                if element_g is not None:
+                    perovskite_reference_residuals.append(
+                        abs(absolute_g - element_g - printed_g)
+                    )
+
+    # Transition rows share an element-reference contribution on both sides.
+    for formula, temperature in (
+        ("Ag", 1234.9), ("Th", 1650.0), ("U", 942.0),
+        ("U", 1049.0), ("U", 1408.0),
+    ):
+        gaps = elemental_gaps[(formula, temperature)]
+        assert len(gaps) == 2
+        assert max(gaps) - min(gaps) <= 0.02
+
+    # At common high-temperature nodes, the element-reference mismatch stays
+    # within the previously established 2.5 kJ/mol R&H cross-check tolerance.
+    assert max(perovskite_reference_residuals) == pytest.approx(2.3387, abs=1e-3)
+
+    for phase_id, limit, page, pdf_text_line in (
+        ("perovskite-table", 2188.0, 232, 10043),
+        ("silver-fcc", 1234.9, 67, 2025),
+        ("thorium-beta", 2023.0, 112, 4063),
+        ("uranium-gamma", 1408.0, 114, 4166),
+    ):
+        source_limit = packaged[phase_id]["source_solid_limit"]
+        assert source_limit["temperature_K"] == limit
+        assert source_limit["locator"]["page"] == page
+        assert source_limit["locator"]["pdf_text_line"] == pdf_text_line
+
+
 def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
     kalsilite = species_thermo(
         "KAlSiO4", "cr", 1000.0, polymorph="kAlSiLiTe"
@@ -1461,10 +1604,10 @@ def test_named_janaf_segment_refusal_reports_segment_interval() -> None:
 
 
 def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
-    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
-        species_thermo("CaTiO3", "cr", 1400.0)
-
-    assert refusal.value.declared_interval_K == (1500.0, 1800.0)
+    table_perovskite = species_thermo("CaTiO3", "cr", 1400.0)
+    assert table_perovskite.source_table_id == "USGS-B2131-p232"
+    assert table_perovskite.T_min == 298.15
+    assert table_perovskite.T_max == 1800.0
 
     perovskite = species_thermo("CaTiO3", "cr", 1600.0)
     assert perovskite.T_min == 1500.0
@@ -1474,6 +1617,33 @@ def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
         "One row spans a transition: Orthorhombic crystals 1530 K; "
         "cubic crystals 1530 to 1800 K."
     )
+    for temperature, expected in {
+        1500.0: {
+            "Cp_J_molK": "0x1.3d051eb851eb8p+7",
+            "S_J_molK": "0x1.241999999999ap+8",
+            "H_app_kJ_mol": "-0x1.79023d70a3d70p+10",
+            "G_J_mol": "-0x1.db248ffffffffp+20",
+        },
+        1600.0: {
+            "Cp_J_molK": "0x1.3d051eb851eb8p+7",
+            "S_J_molK": "0x1.2e75c28f5c28fp+8",
+            "H_app_kJ_mol": "-0x1.750bc6a7ef9dbp+10",
+            "G_J_mol": "-0x1.e273800000000p+20",
+        },
+        1700.0: {
+            "Cp_J_molK": "0x1.0bfae147ae148p+7",
+            "S_J_molK": "0x1.36947ae147ae1p+8",
+            "H_app_kJ_mol": "-0x1.71b23d70a3d70p+10",
+            "G_J_mol": "-0x1.e9ef2ffffffffp+20",
+        },
+        1800.0: {
+            "Cp_J_molK": "0x1.0c9eb851eb856p+7",
+            "S_J_molK": "0x1.3e47ae147ae14p+8",
+            "H_app_kJ_mol": "-0x1.6e56a7ef9db22p+10",
+            "G_J_mol": "-0x1.f19f1ffffffffp+20",
+        },
+    }.items():
+        assert _value_hexes(species_thermo("CaTiO3", "cr", temperature)) == expected
 
 
 def test_near_equal_polymorph_g_values_are_reported_as_a_tie() -> None:
