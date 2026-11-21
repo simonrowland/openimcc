@@ -52,7 +52,8 @@ JANAF_CRYSTAL_TABLE_IDS = frozenset({
     "B-004", "Fe-004", "Fe-023", "Fe-030", "Hf-005", "Mn-004",
     "Mo-004", "Nb-004", "V-004", "W-004", "Zr-005",
     "Ti-002", "Ti-003", "Ni-002", "Cr-002", "Ca-002", "Ca-003",
-    "Si-002", "Co-002", "Ta-002", "Cu-002",
+    "Si-002", "Co-002", "Ta-002", "Cu-002", "K-017", "K-018",
+    "Na-019", "Na-020", "Na-021", "Na-022", "Na-023", "Al-041",
 })
 JANAF_CRYSTAL_YAML_TABLE_IDS = frozenset({"B-095", "O-065"})
 RH_CRYSTAL_TABLE_IDS = frozenset({

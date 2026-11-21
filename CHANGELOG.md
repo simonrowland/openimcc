@@ -8,6 +8,11 @@
   calcium, silicon, cobalt, tantalum, and copper with separate polymorphs and
   source-row locators.
 
+### JANAF salt crystals
+
+- Added indexed NIST-JANAF crystal datasets for potassium sulfate, sodium
+  sulfate, and aluminum fluoride with their printed phase names and limits.
+
 ### Crystal phase interpolation
 
 - JANAF crystal functions now use each phase's printed endpoint below an

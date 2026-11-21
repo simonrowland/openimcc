@@ -65,6 +65,14 @@ ADDITIONAL_CRYSTALS = (
     ("Co", "Co", "Co-002"),
     ("Ta", "Ta", "Ta-002"),
     ("Cu", "Cu", "Cu-002"),
+    ("K2SO4 alpha", "K2SO4", "K-017"),
+    ("K2SO4 beta", "K2SO4", "K-018"),
+    ("Na2SO4 delta", "Na2SO4", "Na-019"),
+    ("Na2SO4 I", "Na2SO4", "Na-020"),
+    ("Na2SO4 III", "Na2SO4", "Na-021"),
+    ("Na2SO4 IV", "Na2SO4", "Na-022"),
+    ("Na2SO4 V", "Na2SO4", "Na-023"),
+    ("AlF3", "AlF3", "Al-041"),
 )
 
 def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
@@ -153,6 +161,7 @@ def _phase_segments(
     source_temperature_K: list[float],
     transition_rows: list[dict],
     cap_K: float,
+    initial_phase_label: str | None = None,
 ) -> list[dict]:
     lower_K = max(298.15, source_temperature_K[0])
     named_transitions = []
@@ -169,7 +178,7 @@ def _phase_segments(
 
     segments = []
     segment_lower = lower_K
-    phase_label = title
+    phase_label = initial_phase_label or title
     for temperature_K, left, right in named_transitions:
         if not segments:
             phase_label = left
@@ -341,6 +350,10 @@ def _extra_crystal_phases() -> list[dict]:
                     prepared["source_temperature_K"],
                     transitions,
                     cap_K,
+                    initial_phase_label={
+                        "Na-019": "DELTA",
+                        "Na-021": "III",
+                    }.get(table_id),
                 ),
             }
         )
