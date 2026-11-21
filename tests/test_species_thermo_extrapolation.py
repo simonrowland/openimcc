@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+import openimcc.crystal_species as crystal_species
 from openimcc.gas import (
     ImccGasCrystalPolymorphError,
     ImccGasTemperatureOutsideDomainError,
@@ -1341,11 +1342,110 @@ def test_crystal_source_caps_and_declared_intervals_are_refused() -> None:
     assert continued.Cp_J_molK == 193.101
     assert continued.continuation is not None
 
-    with pytest.raises(
-        ImccGasTemperatureOutsideDomainError,
-        match=r"outside the declared G\(T\) interval.*wollastonite.*pseudowollastonite",
+    wollastonite = species_thermo("CaSiO3", "cr", 1200.0)
+    assert wollastonite.phase_identity is not None
+    assert wollastonite.phase_identity["polymorph"] == "wollastonite"
+    assert wollastonite.declared_interval_K == (298.15, 1817.0)
+
+
+def test_berman_public_service_starts_at_source_supported_temperature(monkeypatch) -> None:
+    supported_rows = (
+        ("Mg2SiO4", "forsterite", 2163.0),
+        ("MgSiO3", "enstatite", 1830.0),
+        ("CaMgSi2O6", "diopside", 1668.0),
+        ("CaAl2Si2O8", "anorthite", 1826.0),
+        ("MgAl2O4", "spinel", 2408.0),
+        ("Ca2MgSi2O7", "akermanite", 1727.0),
+        ("Ca2Al2SiO7", "gehlenite", 1823.0),
+        ("Ca3MgSi2O8", "merwinite", 1840.0),
+        ("CaMgSiO4", "monticellite", 1573.0),
+        ("CaSiO3", "wollastonite", 1817.0),
+        ("CaMg(SiO3)2", "diopside", 1668.0),
+    )
+    for formula, phase_id, upper_K in supported_rows:
+        result = species_thermo(formula, "cr", 298.15)
+        assert result.declared_interval_K == (298.15, upper_K)
+        assert result.phase_identity is not None
+        if formula == "MgAl2O4":
+            # The higher-priority Barin row already covers its source anchor.
+            assert result.source_table_id == "Barin-1995"
+        else:
+            assert result.source_table_id == "Berman-1988"
+            assert result.phase_identity["polymorph"] == phase_id
+            assert result.authority == "published_fitted"
+
+    # Barin normally outranks the Berman spinel row. With higher-priority
+    # sources removed, the Berman row itself keeps its 298.15 K service floor.
+    monkeypatch.setattr(crystal_species, "_load_janaf_phases", lambda: ({}, ""))
+    monkeypatch.setattr(
+        crystal_species, "_load_janaf_crystal_species", lambda: ({}, "")
+    )
+    monkeypatch.setattr(crystal_species, "_barin_phases", lambda: ())
+    berman_spinel = next(
+        row for row in _berman_phases() if row["id"] == "spinel"
+    )
+    for temperature_K in (298.15, 1000.0):
+        spinel = species_thermo("MgAl2O4", "cr", temperature_K)
+        assert spinel.source_table_id == "Berman-1988"
+        assert spinel.declared_interval_K == (298.15, 2408.0)
+        assert spinel.authority == "published_fitted"
+        assert (
+            spinel.Cp_J_molK,
+            spinel.S_J_molK,
+            spinel.H_app_kJ_mol,
+            spinel.G_J_mol,
+        ) == _berman_properties(berman_spinel, temperature_K)
+
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("Mg2SiO4", "cr", 298.14)
+    assert refusal.value.declared_interval_K == (298.15, 2163.0)
+
+    inside_condensate = species_thermo("SiO2", "cr", 1500.0)
+    assert _value_hexes(inside_condensate) == {
+        "Cp_J_molK": "0x1.240610b27dc5cp+6",
+        "S_J_molK": "0x1.25a4de21ba0e6p+7",
+        "H_app_kJ_mol": "-0x1.9ddd493cd318dp+9",
+        "G_J_mol": "-0x1.ffb339de40090p+19",
+    }
+
+    previously_served = species_thermo("Mg2SiO4", "cr", 1500.0)
+    assert _value_hexes(previously_served) == {
+        "Cp_J_molK": "0x1.75dd4b3f35f87p+7",
+        "S_J_molK": "0x1.5da710d34f166p+8",
+        "H_app_kJ_mol": "-0x1.ed8950cb952a0p+10",
+        "G_J_mol": "-0x1.310203a818f0cp+21",
+    }
+
+
+def test_berman_high_temperature_polymorph_floors(monkeypatch) -> None:
+    monkeypatch.setattr(crystal_species, "_load_janaf_phases", lambda: ({}, ""))
+    monkeypatch.setattr(
+        crystal_species, "_load_janaf_crystal_species", lambda: ({}, "")
+    )
+    monkeypatch.setattr(crystal_species, "_barin_phases", lambda: ())
+
+    for phase_id, floor_K in (
+        ("quartz_beta", 848.0),
+        ("tridymite_high", 432.15),
+        ("cristobalite_beta", 535.0),
     ):
-        species_thermo("CaSiO3", "cr", 1200.0)
+        with pytest.raises(CrystalSpeciesTemperatureError) as refusal:
+            evaluate_crystal_species("SiO2", floor_K - 0.01, polymorph=phase_id)
+        assert refusal.value.declared_interval_K[0] == floor_K
+        result = evaluate_crystal_species("SiO2", floor_K, polymorph=phase_id)
+        assert result is not None
+        assert result.T_min == floor_K
+
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("CaSiO3", "cr", 1397.99, polymorph="pseudowollastonite")
+    assert refusal.value.declared_interval_K == (1398.0, 1817.0)
+    at_transition = species_thermo(
+        "CaSiO3", "cr", 1398.0, polymorph="pseudowollastonite"
+    )
+    assert at_transition.declared_interval_K == (1398.0, 1817.0)
+    below_transition = species_thermo("CaSiO3", "cr", 1397.99)
+    assert below_transition.phase_identity is not None
+    assert below_transition.phase_identity["polymorph"] == "wollastonite"
 
 
 def test_berman_and_robie_hemingway_element_reference_anchors() -> None:
@@ -1401,6 +1501,7 @@ def test_berman_lambda_transition_and_disorder_terms_are_retained() -> None:
     phases = _berman_phases()
     akermanite = next(row for row in phases if row["id"] == "akermanite")
     params = akermanite["berman_parameters"]
+    assert params["Tlambda_K"] == 358.0
     coefficients = tuple(float(params.get(f"k{i}", 0.0)) for i in range(7))
     base_h, base_s = _cp_primitive(coefficients, 400.0, 298.15)
     _cp, entropy, enthalpy, _g = _berman_properties(akermanite, 400.0)
@@ -1411,41 +1512,85 @@ def test_berman_lambda_transition_and_disorder_terms_are_retained() -> None:
         params["SPrTr_J_mol_K"] + base_s
         + params["DtH_J_mol"] / params["Tlambda_K"]
     )
+    public_akermanite = species_thermo("Ca2MgSi2O7", "cr", 400.0)
+    assert (
+        public_akermanite.Cp_J_molK,
+        public_akermanite.S_J_molK,
+        public_akermanite.H_app_kJ_mol,
+        public_akermanite.G_J_mol,
+    ) == _berman_properties(akermanite, 400.0)
 
     gehlenite = next(row for row in phases if row["id"] == "gehlenite")
     params = gehlenite["berman_parameters"]
     disorder = gehlenite["disorder_parameters"]
+    assert (params["Tmin_K"], params["Tmax_K"]) == (698.0, 1600.0)
     coefficients = tuple(float(params.get(f"k{i}", 0.0)) for i in range(7))
     disorder_coefficients = (
         disorder["d0"], disorder["d1"], disorder["d2"], 0.0, 0.0,
         disorder["d3"], disorder["d4"],
     )
-    base_h, base_s = _cp_primitive(coefficients, 1700.0, 298.15)
-    disorder_h, disorder_s = _cp_primitive(
-        disorder_coefficients, params["Tmax_K"], params["Tmin_K"]
-    )
-    cp, entropy, enthalpy, _g = _berman_properties(gehlenite, 1700.0)
-    assert enthalpy == pytest.approx(
-        (
-            float(params["HfPrTr_J_mol"])
-            + base_h
-            + disorder_h
-        ) / 1000.0
-    )
-    assert entropy == pytest.approx(
-        params["SPrTr_J_mol_K"] + base_s + disorder_s
-    )
-    assert cp == pytest.approx(
-        math.fsum((
+    for temperature_K in (1000.0, 1700.0):
+        base_h, base_s = _cp_primitive(coefficients, temperature_K, 298.15)
+        disorder_stop_K = min(
+            max(temperature_K, params["Tmin_K"]), params["Tmax_K"]
+        )
+        disorder_h, disorder_s = _cp_primitive(
+            disorder_coefficients, disorder_stop_K, params["Tmin_K"]
+        )
+        cp, entropy, enthalpy, _g = _berman_properties(gehlenite, temperature_K)
+        assert enthalpy == pytest.approx(
+            (float(params["HfPrTr_J_mol"]) + base_h + disorder_h) / 1000.0
+        )
+        assert entropy == pytest.approx(
+            params["SPrTr_J_mol_K"] + base_s + disorder_s
+        )
+        lattice_cp = math.fsum((
             coefficients[0],
-            coefficients[1] / math.sqrt(1700.0),
-            coefficients[2] / 1700.0**2,
-            coefficients[3] / 1700.0**3,
-            coefficients[4] / 1700.0,
-            coefficients[5] * 1700.0,
-            coefficients[6] * 1700.0**2,
+            coefficients[1] / math.sqrt(temperature_K),
+            coefficients[2] / temperature_K**2,
+            coefficients[3] / temperature_K**3,
+            coefficients[4] / temperature_K,
+            coefficients[5] * temperature_K,
+            coefficients[6] * temperature_K**2,
         ))
-    )
+        disorder_cp = 0.0
+        if params["Tmin_K"] <= temperature_K <= params["Tmax_K"]:
+            disorder_cp = math.fsum((
+                disorder["d0"],
+                disorder["d1"] / math.sqrt(temperature_K),
+                disorder["d2"] / temperature_K**2,
+                disorder["d3"] * temperature_K,
+                disorder["d4"] * temperature_K**2,
+            ))
+        assert cp == pytest.approx(lattice_cp + disorder_cp)
+        if temperature_K == 1000.0:
+            public_gehlenite = species_thermo(
+                "Ca2Al2SiO7", "cr", temperature_K
+            )
+            assert public_gehlenite.source_table_id == "Berman-1988"
+            assert public_gehlenite.H_app_kJ_mol == enthalpy
+            assert public_gehlenite.S_J_molK == entropy
+            assert public_gehlenite.Cp_J_molK == pytest.approx(cp)
+            assert public_gehlenite.G_J_mol == pytest.approx(_g)
+
+    for phase_id in ("anorthite", "spinel"):
+        phase = next(row for row in phases if row["id"] == phase_id)
+        assert phase["disorder_parameters"] is None
+        params = phase["berman_parameters"]
+        coefficients = tuple(float(params.get(f"k{i}", 0.0)) for i in range(7))
+        base_h, base_s = _cp_primitive(coefficients, 1000.0, 298.15)
+        cp, entropy, enthalpy, _g = _berman_properties(phase, 1000.0)
+        assert enthalpy == pytest.approx(
+            (float(params["HfPrTr_J_mol"]) + base_h) / 1000.0
+        )
+        assert entropy == pytest.approx(params["SPrTr_J_mol_K"] + base_s)
+        if phase_id == "anorthite":
+            public_result = species_thermo(phase["formula"], "cr", 1000.0)
+            assert public_result.source_table_id == "Berman-1988"
+            assert public_result.Cp_J_molK == pytest.approx(cp)
+            assert public_result.H_app_kJ_mol == enthalpy
+            assert public_result.S_J_molK == entropy
+            assert public_result.G_J_mol == pytest.approx(_g)
 
 
 def test_barin_apparent_g_reconstructs_printed_delta_f_g_nodes() -> None:

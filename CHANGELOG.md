@@ -13,13 +13,22 @@
 - Added indexed NIST-JANAF crystal datasets for potassium sulfate, sodium
   sulfate, and aluminum fluoride with their printed phase names and limits.
 
+### Crystal thermochemistry
+
+- Public Berman mineral service now starts at 298.15 K for the supported
+  low-temperature phases and retains source-printed transition floors for
+  high-temperature polymorphs, without changing fusion-node assemblage ranges.
+
+### Robie and Hemingway crystals
+
+- Added the Bulletin 2131 carbonate and sulfide crystal tables with their
+  printed phase identities and melting limits.
+- Added the Bulletin 2131 grossular and Ca-Al pyroxene crystal tables.
+
 ### Crystal phase interpolation
 
 - JANAF crystal functions now use each phase's printed endpoint below an
   equal-temperature transition and the transition row at the next segment.
-- Added the Bulletin 2131 carbonate and sulfide crystal tables with their
-  printed phase identities and melting limits.
-- Added the Bulletin 2131 grossular and Ca-Al pyroxene crystal tables.
 - Analbite remains capped at the p. 374 footer's “Melting T 1391 K” (PDF
   text line 18610), although its phase description and final row reach 1400 K
   (lines 18582 and 18608). Unnamed NaAlSi3O8 at 1395–1400 K selects ALBITE:

@@ -34,6 +34,29 @@ _POLYMORPH_ALIASES = {
     "FeS": {"troilite": "Fe-023"},
 }
 
+# Berman's thermodynamic functions use a 298.15 K reference, while
+# valid_temperature_K on these diagnostic rows remains the fusion-node domain
+# for declared-assemblage calculations. The high-temperature polymorph floors
+# use Berman (1988), Table 3b and its tridymite transition note; the
+# pseudowollastonite floor is the printed 1398 K transition in Robie et al.
+# (1978), Bulletin 1452, p. 373.
+_BERMAN_PUBLIC_SERVICE_LOWER_K = {
+    "forsterite": 298.15,
+    "enstatite": 298.15,
+    "diopside": 298.15,
+    "anorthite": 298.15,
+    "spinel": 298.15,
+    "akermanite": 298.15,
+    "gehlenite": 298.15,
+    "merwinite": 298.15,
+    "monticellite": 298.15,
+    "wollastonite": 298.15,
+    "quartz_beta": 848.0,
+    "tridymite_high": 432.15,
+    "cristobalite_beta": 535.0,
+    "pseudowollastonite": 1398.0,
+}
+
 
 def is_reference_polymorph(polymorph: str | None) -> bool:
     return (
@@ -719,6 +742,9 @@ def _candidates_for_formula(formula: str) -> list[tuple[str, list[_Candidate]]]:
         if _formula_element_counts(phase["formula"]) != formula_counts:
             continue
         interval = tuple(map(float, phase["valid_temperature_K"]))
+        public_lower_K = _BERMAN_PUBLIC_SERVICE_LOWER_K.get(str(phase["id"]))
+        if phase.get("berman_parameters") is not None and public_lower_K is not None:
+            interval = (public_lower_K, interval[1])
         if phase.get("berman_parameters") is None:
             interval = _node_covered_interval(
                 interval,

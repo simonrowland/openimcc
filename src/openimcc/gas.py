@@ -2938,8 +2938,10 @@ def species_thermo(
     Other shipped crystal datasets remain a fallback only when no condensate
     row exists. Crystal continuations require source-defined phase identity,
     stability range, and solid limit.
-    For Berman rows, the 298.15 K H/S identity is a helper-level check only;
-    public service starts at each row's fusion-node lower bound.
+    Public service for the supported low-temperature Berman phases starts at
+    298.15 K; the named high-temperature polymorphs retain their source-printed
+    transition floors. These service bounds do not change the fusion-node
+    domain used by declared-assemblage calculations.
 
     For gas rows, let ``t = T/1000``. Shomate gives
     ``Cp = A + B*t + C*t² + D*t³ + E/t²`` (J mol⁻¹ K⁻¹), with enthalpy
