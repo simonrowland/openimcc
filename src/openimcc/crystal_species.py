@@ -36,10 +36,11 @@ _POLYMORPH_ALIASES = {
 
 # Berman's thermodynamic functions use a 298.15 K reference, while
 # valid_temperature_K on these diagnostic rows remains the fusion-node domain
-# for declared-assemblage calculations. The high-temperature polymorph floors
-# use Berman (1988), Table 3b and its tridymite transition note; the
-# pseudowollastonite floor is the printed 1398 K transition in Robie et al.
-# (1978), Bulletin 1452, p. 373.
+# for declared-assemblage calculations. Only source-printed lower bounds
+# override that domain here: beta-quartz and beta-cristobalite use their
+# transition temperatures from Berman (1988), Table 3b. High tridymite and
+# pseudowollastonite have no printed lower stability limit in the shipped
+# crystal source data and retain the 1323 K fusion-domain floor.
 _BERMAN_PUBLIC_SERVICE_LOWER_K = {
     "forsterite": 298.15,
     "enstatite": 298.15,
@@ -52,9 +53,7 @@ _BERMAN_PUBLIC_SERVICE_LOWER_K = {
     "monticellite": 298.15,
     "wollastonite": 298.15,
     "quartz_beta": 848.0,
-    "tridymite_high": 432.15,
     "cristobalite_beta": 535.0,
-    "pseudowollastonite": 1398.0,
 }
 
 

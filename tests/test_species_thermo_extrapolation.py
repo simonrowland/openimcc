@@ -1543,7 +1543,6 @@ def test_berman_high_temperature_polymorph_floors(monkeypatch) -> None:
 
     for phase_id, floor_K in (
         ("quartz_beta", 848.0),
-        ("tridymite_high", 432.15),
         ("cristobalite_beta", 535.0),
     ):
         with pytest.raises(CrystalSpeciesTemperatureError) as refusal:
@@ -1553,13 +1552,28 @@ def test_berman_high_temperature_polymorph_floors(monkeypatch) -> None:
         assert result is not None
         assert result.T_min == floor_K
 
-    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
-        species_thermo("CaSiO3", "cr", 1397.99, polymorph="pseudowollastonite")
-    assert refusal.value.declared_interval_K == (1398.0, 1817.0)
-    at_transition = species_thermo(
-        "CaSiO3", "cr", 1398.0, polymorph="pseudowollastonite"
+    with pytest.raises(CrystalSpeciesTemperatureError) as refusal:
+        evaluate_crystal_species("SiO2", 1322.99, polymorph="tridymite_high")
+    assert refusal.value.declared_interval_K[0] == 1323.0
+    tridymite = evaluate_crystal_species(
+        "SiO2", 1323.0, polymorph="tridymite_high"
     )
-    assert at_transition.declared_interval_K == (1398.0, 1817.0)
+    assert tridymite is not None
+    assert tridymite.T_min == 1323.0
+
+    pseudowollastonite = species_thermo(
+        "CaSiO3", "cr", 1350.0, polymorph="pseudowollastonite"
+    )
+    assert pseudowollastonite.declared_interval_K == (1323.0, 1817.0)
+    assert pseudowollastonite.phase_identity is not None
+    assert pseudowollastonite.phase_identity["polymorph"] == "pseudowollastonite"
+    assert _value_hexes(pseudowollastonite) == {
+        "Cp_J_molK": "0x1.fbe4edf0ef261p+6",
+        "S_J_molK": "0x1.fa6f7f5498e75p+7",
+        "H_app_kJ_mol": "-0x1.785e39f457041p+10",
+        "G_J_mol": "-0x1.c30144645dec9p+20",
+    }
+
     below_transition = species_thermo("CaSiO3", "cr", 1397.99)
     assert below_transition.phase_identity is not None
     assert below_transition.phase_identity["polymorph"] == "wollastonite"

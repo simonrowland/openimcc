@@ -1215,11 +1215,13 @@ polymorphs. Barin's printed constant-Cp continuation is opt-in and stops at its
 printed melting or decomposition limit.
 
 Public service for the Berman 1988 low-temperature mineral rows starts at their
-298.15 K reference. The beta-quartz, high-tridymite, and beta-cristobalite rows
-retain their printed transition floors (848 K, 432.15 K, and 535 K); the
-pseudowollastonite row starts at the printed 1398 K wollastonite transition.
-These public-service bounds leave the fusion-node `valid_temperature_K`
-intervals used by declared-assemblage calculations unchanged.
+298.15 K reference. Beta-quartz starts at the printed 848 K alpha-beta
+transition; beta-cristobalite starts at the printed 535 K alpha-beta transition
+(Berman, 1988, Table 3b).
+No printed lower stability limit for high-tridymite or pseudowollastonite is
+shipped, so both retain the 1323 K fusion-domain floor. These public-service
+bounds leave the fusion-node `valid_temperature_K` intervals used by
+declared-assemblage calculations unchanged.
 
 | Condensate interval | Cp (J/mol K) | S (J/mol K) | H_app (kJ/mol) | G_app (kJ/mol) |
 |---|---:|---:|---:|---:|

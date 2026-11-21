@@ -16,8 +16,10 @@
 ### Crystal thermochemistry
 
 - Public Berman mineral service now starts at 298.15 K for the supported
-  low-temperature phases and retains source-printed transition floors for
-  high-temperature polymorphs, without changing fusion-node assemblage ranges.
+  low-temperature phases; beta-quartz and beta-cristobalite use their printed
+  848 K and 535 K alpha-beta transitions from Table 3b. High-tridymite and
+  pseudowollastonite keep the 1323 K fusion-domain floor because no printed
+  lower stability limit is shipped. Fusion-node assemblage ranges are unchanged.
 
 ### Robie and Hemingway crystals
 
