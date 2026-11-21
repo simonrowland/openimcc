@@ -1360,7 +1360,9 @@ def test_robie_hemingway_target_tables_reconstruct_printed_nodes() -> None:
 def test_rh_printed_solid_limit_caps_extended_candidate(monkeypatch) -> None:
     candidate = next(
         candidate
-        for _, candidates in crystal_species._candidates_for_formula("Cu2S")
+        for _, candidates in crystal_species._candidates_for_formula(
+            "Cu2S", 1000.0
+        )
         for candidate in candidates
         if candidate.phase["id"] == "chalcocite"
     )
@@ -1371,7 +1373,9 @@ def test_rh_printed_solid_limit_caps_extended_candidate(monkeypatch) -> None:
     monkeypatch.setattr(
         crystal_species,
         "_candidates_for_formula",
-        lambda _formula: [("Robie-Hemingway 1995 tables", [extended])],
+        lambda _formula, _temperature_K: [
+            ("Robie-Hemingway 1995 tables", [extended])
+        ],
     )
 
     with pytest.raises(
