@@ -66,6 +66,7 @@ RH_CRYSTAL_TABLE_IDS = frozenset({
     "USGS-B2131-p112", "USGS-B2131-p114", "USGS-B2131-p232",
     "USGS-B2131-p315", "USGS-B2131-p327", "USGS-B2131-p383",
     "USGS-B2131-p384", "USGS-B2131-p385",
+    "USGS-B2131-p141", "USGS-B2131-p278", "USGS-B2131-p281",
 })
 ELEMENTAL_REFERENCE_CRYSTAL_CARD_IDS = frozenset({
     "BU-0054", "BU-3110", "BU-3120", "P672-Rh-cr", "BU-2611",
@@ -1959,6 +1960,29 @@ def test_robie_hemingway_silicate_tables_are_in_the_crystal_inventory() -> None:
         for phase in source["phases"]
         if phase["id"] in {
             "rankinite", "pyrophyllite", "margarite", "prehnite", "zoisite",
+        }
+    }
+
+    assert table_pages == expected_pages
+    assert {
+        f"USGS-B2131-p{page}" for page in table_pages
+    } <= RH_CRYSTAL_TABLE_IDS
+
+
+def test_robie_hemingway_salt_and_sulfide_tables_are_in_the_crystal_inventory() -> None:
+    source = json.loads(
+        (
+            ROOT / "data-src" / "robie-hemingway-1995-usgs-b2131"
+            / "crystal-tables.json"
+        ).read_text(encoding="utf-8")
+    )
+    expected_pages = {141, 278, 281}
+    table_pages = {
+        int(phase["printed_page"])
+        for phase in source["phases"]
+        if phase["id"] in {
+            "niter-orthorhombic", "niter-rhombohedral", "soda-niter-alpha",
+            "herzenbergite-orthorhombic", "herzenbergite-cubic",
         }
     }
 

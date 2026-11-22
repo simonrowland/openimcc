@@ -61,6 +61,26 @@ SOURCE_SOLID_LIMITS = {
             "column": "temperature",
         },
     },
+    "niter-rhombohedral": {
+        "temperature_K": 610.0,
+        "kind": "melting",
+        "locator": {
+            "page": 278,
+            "row": "Melting T",
+            "pdf_text_line": 12819,
+            "column": "temperature",
+        },
+    },
+    "herzenbergite-cubic": {
+        "temperature_K": 1153.0,
+        "kind": "melting",
+        "locator": {
+            "page": 141,
+            "row": "Melting T",
+            "pdf_text_line": 5323,
+            "column": "temperature",
+        },
+    },
     "perovskite-table": {
         "temperature_K": 2188.0,
         "kind": "melting",

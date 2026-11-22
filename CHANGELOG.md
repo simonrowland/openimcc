@@ -37,6 +37,8 @@
   tables with printed phase ranges, melting limits, and PDF row locators.
 - Added the Bulletin 2131 rankinite, pyrophyllite, margarite, prehnite, and
   zoisite tables with printed ranges and PDF row locators.
+- Added the Bulletin 2131 niter, soda niter, and herzenbergite crystal tables
+  with printed phase ranges, melting limits, and PDF row locators.
 
 ### JANAF phase selection
 
