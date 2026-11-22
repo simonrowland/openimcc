@@ -8,6 +8,7 @@ import math
 import re
 import subprocess
 import sys
+from copy import deepcopy
 from dataclasses import FrozenInstanceError, replace
 from fractions import Fraction
 from functools import lru_cache
@@ -16,9 +17,12 @@ from pathlib import Path
 import pytest
 import yaml
 
+from openimcc._crystal_interpolation import _linear_value_and_slope
 import openimcc.crystal_species as crystal_species
+import openimcc.janaf_crystals as janaf_crystals
 from openimcc.gas import (
     ImccGasCrystalPolymorphError,
+    ImccGasSpeciesNotFoundError,
     ImccGasTemperatureOutsideDomainError,
     SpeciesThermo,
     _janaf_gibbs,
@@ -389,6 +393,167 @@ def test_janaf_crystal_generator_check_matches_packaged_data() -> None:
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_janaf_liquid_fallback_uses_printed_segments_and_strict_limits() -> None:
+    root = Path(__file__).parents[1]
+    data = json.loads(
+        (
+            root / "src/openimcc/data/diagnostics/janaf-liquid-species.json"
+        ).read_text(encoding="utf-8")
+    )
+    expected_limits = {
+        "Mn": ("Mn-004", (1519.0, 3000.0)),
+        "V2O5": ("O-085", (943.0, 3000.0)),
+    }
+    rows = {row["formula"]: row for row in data["rows"]}
+
+    for formula, (table_id, interval) in expected_limits.items():
+        assert tuple(rows[formula]["temperature_K"]) == interval
+        assert rows[formula]["nodes"][-1]["T_K"] == interval[1]
+        assert "LIQUID <--> IDEAL GAS" not in {
+            node.get("label") for node in rows[formula]["nodes"]
+        }
+        result = species_thermo(formula, "l", interval[0])
+        assert result.source_row_id == table_id
+        assert result.source_table_id == table_id
+        assert result.declared_interval_K == interval
+        assert result.phase_identity["label"] == "LIQUID"
+        assert (
+            result.phase_identity["source_title"]
+            == rows[formula]["source_title"]
+        )
+        assert result.authority == "janaf_transcribed"
+        assert result.continuation is None
+        assert (
+            species_thermo(formula, "l", interval[1]).declared_interval_K
+            == interval
+        )
+        with pytest.raises(ImccGasTemperatureOutsideDomainError):
+            species_thermo(
+                formula, "l", interval[0] - 0.01, allow_extrapolation=True
+            )
+        with pytest.raises(ImccGasTemperatureOutsideDomainError):
+            species_thermo(
+                formula, "l", interval[1] + 0.01, allow_extrapolation=True
+            )
+
+    aluminum = species_thermo("Al", "l", 1000.0)
+    aluminum_source = rows["Al"]
+    aluminum_nodes = aluminum_source["nodes"]
+    h_increment, h_slope = _linear_value_and_slope(
+        [
+            (node["T_K"], node["enthalpy_increment_kJ_mol"])
+            for node in aluminum_nodes
+        ],
+        1000.0,
+    )
+    entropy, _ = _linear_value_and_slope(
+        [(node["T_K"], node["entropy_J_mol_K"]) for node in aluminum_nodes],
+        1000.0,
+    )
+    enthalpy_app = aluminum_source["formation_enthalpy_298_kJ_mol"] + h_increment
+    assert aluminum.Cp_J_molK == 1000.0 * h_slope
+    assert aluminum.S_J_molK == entropy
+    assert aluminum.H_app_kJ_mol == enthalpy_app
+    assert aluminum.G_J_mol == 1000.0 * enthalpy_app - 1000.0 * entropy
+    source = _oxide_row_for_T(
+        load_gas_datapack().oxide_df, "SiO2(l)", 1500.0
+    )
+    assert aluminum.source_table_id == "Al-001"
+    assert aluminum.authority == "janaf_transcribed"
+    assert aluminum.phase_identity["label"] == "LIQUID"
+    assert aluminum.phase_identity["printed_range_K"] == (933.45, 2790.812)
+    assert aluminum.phase_identity["temperature_K"] == (933.45, 2790.812)
+    assert species_thermo("SiO2", "l", 1500.0).source_row_id == str(source["Ref"])
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("SiO2", "l", 1000.0)
+
+
+def test_janaf_liquid_source_order_and_duplicate_tables_refuse(monkeypatch) -> None:
+    root = Path(__file__).parents[1]
+    data = json.loads(
+        (
+            root / "src/openimcc/data/diagnostics/janaf-liquid-species.json"
+        ).read_text(encoding="utf-8")
+    )
+    reference = next(row for row in data["rows"] if row["formula"] == "Al")
+    dedicated = deepcopy(reference)
+    dedicated.update(
+        id="Al-liquid",
+        table_id="Al-liquid",
+        table_kind="l",
+        source_title="Aluminum liquid table",
+    )
+    monkeypatch.setattr(
+        janaf_crystals,
+        "_load_liquid_species_rows",
+        lambda: ((reference, dedicated), "test-resource-digest"),
+    )
+
+    result = species_thermo("Al", "l", 1000.0)
+    assert result.source_table_id == "Al-liquid"
+
+    second_dedicated = deepcopy(dedicated)
+    second_dedicated["table_id"] = "Al-liquid-second"
+    second_dedicated["id"] = "Al-liquid-second"
+    monkeypatch.setattr(
+        janaf_crystals,
+        "_load_liquid_species_rows",
+        lambda: ((reference, dedicated, second_dedicated), "test-resource-digest"),
+    )
+    with pytest.raises(
+        ImccGasSpeciesNotFoundError,
+        match="Al-liquid, Al-liquid-second",
+    ):
+        species_thermo("Al", "l", 1000.0)
+
+
+def test_robie_hemingway_liquids_are_used_only_for_liquid_requests() -> None:
+    root = Path(__file__).parents[1]
+    data = json.loads(
+        (
+            root / "src/openimcc/data/diagnostics/rh-crystal-species.json"
+        ).read_text(encoding="utf-8")
+    )
+    phases = [
+        phase for phase in data["phases"]
+        if phase.get("phase_state") == "liquid"
+    ]
+    assert len(phases) == 6
+
+    for phase in phases:
+        lower_K, upper_K = phase["valid_temperature_K"]
+        result = species_thermo(
+            phase["formula"], "l", lower_K, polymorph="ignored for liquid"
+        )
+        assert result.source_row_id == phase["id"]
+        assert result.source_table_id == phase["source_table_id"]
+        assert result.authority == "published_transcribed"
+        assert result.declared_interval_K == (lower_K, upper_K)
+        assert result.phase_identity["label"] == "LIQUID"
+        assert result.phase_identity["printed_range"] == (
+            phase["source"]["printed_phase_description"]
+        )
+        assert result.continuation is None
+
+    tellurium = next(phase for phase in phases if phase["formula"] == "Te")
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo(
+            "Te", "l", tellurium["valid_temperature_K"][1] + 1,
+            allow_extrapolation=True,
+        )
+
+
+def test_missing_parent_condensate_does_not_fall_back_to_janaf() -> None:
+    pack = load_gas_datapack()
+    stripped = replace(
+        pack,
+        oxide_df=pack.oxide_df.drop(index="SiO2(l)"),
+    )
+
+    with pytest.raises(ImccGasSpeciesNotFoundError, match=r"SiO2\(l\)"):
+        species_thermo("SiO2", "l", 1800.0, datapack=stripped)
 
 
 def test_rh_crystal_generator_check_matches_packaged_data() -> None:

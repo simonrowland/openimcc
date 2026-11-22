@@ -25,6 +25,10 @@ LIQUID_TARGET = (
     ROOT / "src" / "openimcc" / "data" / "diagnostics"
     / "janaf-pure-oxide-liquid-pairs.json"
 )
+LIQUID_SPECIES_TARGET = (
+    ROOT / "src" / "openimcc" / "data" / "diagnostics"
+    / "janaf-liquid-species.json"
+)
 CRYSTAL_SPECIES_TARGET = (
     ROOT / "src" / "openimcc" / "data" / "diagnostics"
     / "janaf-crystal-species.json"
@@ -96,6 +100,19 @@ ADDITIONAL_CRYSTALS = (
     ("Zn reference", "Zn", "Zn-001"),
     ("Pb", "Pb", "Pb-002"),
     ("Pb reference", "Pb", "Pb-001"),
+)
+
+LIQUID_SPECIES_SOURCES = (
+    ("Al", "Al-001", "ref"),
+    ("Pb", "Pb-001", "ref"),
+    ("Ba", "Ba-001", "ref"),
+    ("Mg", "Mg-001", "ref"),
+    ("K", "K-001", "ref"),
+    ("Zn", "Zn-001", "ref"),
+    ("Mn", "Mn-004", "cr,l"),
+    ("V2O5", "O-085", "l"),
+    ("Sr", "Sr-001", "ref"),
+    ("S", "S-001", "ref"),
 )
 
 DEDICATED_PHASE_LABELS = {
@@ -423,6 +440,91 @@ def _extra_crystal_phases() -> list[dict]:
     return phases
 
 
+def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
+    prepared = _prepare_source_table(table_id)
+    transitions = prepared["transition_rows"]
+    opening_rows = []
+    cap_rows = []
+    for row in transitions:
+        if "<-->" not in row["label"]:
+            continue
+        left, right = (
+            part.strip().upper() for part in row["label"].split("<-->", 1)
+        )
+        if (
+            "LIQUID" in right
+            and "LIQUID" not in left
+            # The O-085 glass transition is not the stable crystal-to-liquid
+            # boundary used by the liquid-reference species service.
+            and left != "GLASS"
+        ):
+            opening_rows.append(row)
+        if "LIQUID" in left and "IDEAL GAS" in right:
+            cap_rows.append(row)
+    if len(opening_rows) != 1:
+        raise ValueError(
+            f"{table_id} must have one stable liquid-opening transition; "
+            f"found {len(opening_rows)}"
+        )
+    if len(cap_rows) > 1:
+        raise ValueError(
+            f"{table_id} must have at most one liquid-to-gas cap; "
+            f"found {len(cap_rows)}"
+        )
+
+    opening = opening_rows[0]
+    lower_K = float(opening["T_K"])
+    cap = cap_rows[0] if cap_rows else None
+    upper_K = (
+        float(cap["T_K"])
+        if cap is not None
+        else max(float(node["T_K"]) for node in prepared["nodes"])
+    )
+    if lower_K >= upper_K:
+        raise ValueError(f"{table_id} has an empty liquid interval")
+
+    # The transition row at fusion carries liquid-side H and S. At the
+    # liquid-to-gas cap, the named endpoint row carries the liquid-side values.
+    opening_liquid = next(
+        (
+            row for row in transitions
+            if float(row["T_K"]) == lower_K
+            and row["label"].strip().upper() == "TRANSITION"
+        ),
+        opening,
+    )
+    selected = {
+        float(node["T_K"]): dict(node)
+        for node in prepared["nodes"]
+        if lower_K <= float(node["T_K"]) <= upper_K
+    }
+    selected[lower_K] = dict(opening_liquid)
+    if cap is not None:
+        selected[upper_K] = dict(cap)
+
+    return {
+        "id": table_id,
+        "formula": formula,
+        "table_id": table_id,
+        "table_kind": table_kind,
+        "source_title": prepared["title_as_published"],
+        "source_authority": "janaf_transcribed",
+        "source_sha256": prepared["source_sha256"],
+        "formation_enthalpy_298_kJ_mol": prepared[
+            "formation_enthalpy_298_kJ_mol"
+        ],
+        "temperature_K": [lower_K, upper_K],
+        "opening_row": dict(opening_liquid),
+        "cap_row": dict(cap) if cap is not None else None,
+        "nodes": [selected[temperature] for temperature in sorted(selected)],
+        **{
+            key: prepared[key]
+            for key in ("source_url", "download_url", "source_path")
+            if key in prepared
+        },
+    }
+
+
 def build() -> dict[Path, str]:
     phases = []
     for oxide, definition in _JANAF_OXIDE_PAIRS.items():
@@ -537,6 +639,27 @@ def build() -> dict[Path, str]:
         "rows": liquid_rows,
     }
     rendered[LIQUID_TARGET] = json.dumps(liquid_result, indent=2) + "\n"
+    liquid_species = {
+        "schema": "openimcc-janaf-liquid-species-v1",
+        "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
+        "transformation": (
+            "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) "
+            "columns for the printed liquid segment. Runtime apparent G(T) = "
+            "1000*(Hf(298.15 K) + Hinc) - T*S; interpolate Hinc and S linearly "
+            "and take Cp from the Hinc secant. Opening and cap transition rows "
+            "retain their liquid-side source values."
+        ),
+        "phase_restriction_rule": (
+            "Use the stable liquid-opening transition through the printed "
+            "liquid-to-ideal-gas row, inclusive, or the last printed node when "
+            "no gas cap is present. Never continue outside this interval."
+        ),
+        "rows": [
+            _liquid_species_row(formula, table_id, table_kind)
+            for formula, table_id, table_kind in LIQUID_SPECIES_SOURCES
+        ],
+    }
+    rendered[LIQUID_SPECIES_TARGET] = json.dumps(liquid_species, indent=2) + "\n"
     crystal_species = {
         "schema": "openimcc-janaf-apparent-crystal-species-v1",
         "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",

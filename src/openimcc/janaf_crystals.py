@@ -17,6 +17,7 @@ from openimcc._crystal_interpolation import _linear_value_and_slope
 _RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
 _SPECIES_RESOURCE = "data/diagnostics/janaf-crystal-species.json"
 _LIQUID_RESOURCE = "data/diagnostics/janaf-pure-oxide-liquid-pairs.json"
+_LIQUID_SPECIES_RESOURCE = "data/diagnostics/janaf-liquid-species.json"
 _ANCHOR_TEMPERATURE_K = 298.15
 
 
@@ -79,6 +80,36 @@ class JanafApparentGibbs:
         object.__setattr__(self, "provenance", MappingProxyType(dict(self.provenance)))
 
 
+@dataclass(frozen=True)
+class _JanafLiquidSpecies:
+    """One printed JANAF liquid segment evaluated on the apparent-G basis."""
+
+    formula: str
+    table_id: str
+    source_title: str
+    source_authority: str
+    source_sha256: str
+    resource_sha256: str
+    formation_enthalpy_298_kJ_mol: float
+    domain_K: tuple[float, float]
+    Cp_J_molK: float
+    S_J_molK: float
+    H_app_kJ_mol: float
+    G_J_mol: float
+
+
+class _JanafLiquidSpeciesAmbiguityError(ValueError):
+    """More than one same-priority JANAF liquid table matches a formula."""
+
+    def __init__(self, formula: str, table_ids: Sequence[str]) -> None:
+        self.formula = formula
+        self.table_ids = tuple(table_ids)
+        super().__init__(
+            f"JANAF liquid tables are ambiguous for {formula}: "
+            f"{', '.join(self.table_ids)}"
+        )
+
+
 class JanafCrystalTemperatureError(ValueError):
     """Requested temperature lies outside a JANAF crystal's allowed domain."""
 
@@ -124,6 +155,15 @@ def _load_liquid_rows() -> tuple[dict[str, Any], str]:
     raw = resources.files("openimcc").joinpath(_LIQUID_RESOURCE).read_bytes()
     data = json.loads(raw.decode("utf-8"))
     return {row["table_id"]: row for row in data["rows"]}, hashlib.sha256(raw).hexdigest()
+
+
+@lru_cache(maxsize=1)
+def _load_liquid_species_rows() -> tuple[tuple[dict[str, Any], ...], str]:
+    raw = resources.files("openimcc").joinpath(
+        _LIQUID_SPECIES_RESOURCE
+    ).read_bytes()
+    data = json.loads(raw.decode("utf-8"))
+    return tuple(data["rows"]), hashlib.sha256(raw).hexdigest()
 
 
 def _apparent_gibbs(
@@ -348,3 +388,56 @@ def evaluate_janaf_apparent_gibbs(
         ),
     }
     return JanafApparentGibbs(gibbs, domain, provenance)
+
+
+def _evaluate_janaf_liquid_species(
+    formula: str, temperature_K: float
+) -> _JanafLiquidSpecies | None:
+    """Evaluate one vendored JANAF liquid segment, without extrapolation."""
+    rows, resource_digest = _load_liquid_species_rows()
+    formula_rows = [row for row in rows if row["formula"] == formula]
+    dedicated = [
+        row for row in formula_rows if row["table_kind"] in {"l", "cr,l"}
+    ]
+    candidates = dedicated or [
+        row for row in formula_rows if row["table_kind"] == "ref"
+    ]
+    if not candidates:
+        return None
+    if len(candidates) != 1:
+        raise _JanafLiquidSpeciesAmbiguityError(
+            formula, [str(row["table_id"]) for row in candidates]
+        )
+
+    row = candidates[0]
+    temperature = float(temperature_K)
+    if not math.isfinite(temperature):
+        raise ValueError("temperature_K must be finite")
+    domain = tuple(map(float, row["temperature_K"]))
+    if not domain[0] <= temperature <= domain[1]:
+        raise JanafRowTemperatureError(str(row["table_id"]), temperature, domain)
+
+    nodes = _node_values(row["nodes"])
+    enthalpy_increment, slope_kJ_molK = _linear_value_and_slope(
+        ((node[0], node[1]) for node in nodes), temperature
+    )
+    entropy, _ = _linear_value_and_slope(
+        ((node[0], node[2]) for node in nodes), temperature
+    )
+    formation_enthalpy = float(row["formation_enthalpy_298_kJ_mol"])
+    enthalpy_app = formation_enthalpy + enthalpy_increment
+    gibbs = 1000.0 * enthalpy_app - temperature * entropy
+    return _JanafLiquidSpecies(
+        formula=formula,
+        table_id=str(row["table_id"]),
+        source_title=str(row["source_title"]),
+        source_authority=str(row["source_authority"]),
+        source_sha256=str(row["source_sha256"]),
+        resource_sha256=resource_digest,
+        formation_enthalpy_298_kJ_mol=formation_enthalpy,
+        domain_K=domain,
+        Cp_J_molK=1000.0 * slope_kJ_molK,
+        S_J_molK=entropy,
+        H_app_kJ_mol=enthalpy_app,
+        G_J_mol=gibbs,
+    )

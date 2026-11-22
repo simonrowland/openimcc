@@ -48,6 +48,7 @@ from openimcc.crystal_species import (
     is_reference_polymorph,
     continue_constant_cp,
     evaluate_crystal_species,
+    _evaluate_rh_liquid_species,
 )
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
@@ -61,6 +62,11 @@ from openimcc.liquid_reference import (
     LiquidReferenceAuthority,
     liquid_reference_authority,
     liquid_reference_records,
+)
+from openimcc.janaf_crystals import (
+    _JanafLiquidSpeciesAmbiguityError,
+    JanafRowTemperatureError,
+    _evaluate_janaf_liquid_species,
 )
 from openimcc.receipt import CalculationReceipt, build_calculation_receipt
 from openimcc.scalar_boundary import is_declared_real_scalar
@@ -2932,7 +2938,11 @@ def species_thermo(
     ``"g"``, ``"l"`` or ``"cr"``. The active row follows the runtime interval
     selector and temperatures outside its closed interval are refused unless
     ``allow_extrapolation=True``. Gas and liquid continuation follows
-    ``evaluate_gas``. For ``(cr)``, condensate rows keep precedence wherever
+    ``evaluate_gas``. For ``(l)``, a condensate row keeps precedence whenever
+    it exists; an absent non-parent row falls back to a printed JANAF liquid
+    segment and then to one of the packaged Robie–Hemingway liquids. These
+    dataset intervals stay strict even when ``allow_extrapolation=True``.
+    For ``(cr)``, condensate rows keep precedence wherever
     they cover T. The seven vendored elemental-reference metal cards also fill
     their source interval when a condensate row exists but does not cover T.
     Other shipped crystal datasets remain a fallback only when no condensate
@@ -2987,12 +2997,13 @@ def species_thermo(
     Parameters
     ----------
     allow_extrapolation:
-        If True, continue the same gas or liquid row used by
+        If True, continue the same gas or condensate-liquid row used by
         ``evaluate_gas(..., allow_extrapolation=True)`` and report its
-        continuation and authority. A crystal row can be continued only when
-        source data define its phase, stability range, and solid limit; Barin
-        constant-Cp continuations also require a printed Cp at the edge. The
-        default remains a strict refusal outside the selected row's interval.
+        continuation and authority. Printed JANAF and Robie–Hemingway liquid
+        fallback segments remain within their source intervals. A crystal row
+        can be continued only when source data define its phase, stability
+        range, and solid limit; Barin constant-Cp continuations also require a
+        printed Cp at the edge.
     polymorph:
         Selects a named polymorph when a shipped crystal dataset supplies the
         ``(cr)`` fallback. It is ignored where a condensate row covers T,
@@ -3060,6 +3071,108 @@ def species_thermo(
                 crystal.formation_enthalpy_298_kJ_mol
             ),
             formation_enthalpy_source_id=crystal.formation_enthalpy_source_id,
+        )
+
+    def liquid_dataset_result() -> SpeciesThermo | None:
+        try:
+            janaf = _evaluate_janaf_liquid_species(species, T_K)
+        except _JanafLiquidSpeciesAmbiguityError as exc:
+            raise ImccGasSpeciesNotFoundError(str(exc)) from exc
+        except JanafRowTemperatureError as exc:
+            raise ImccGasTemperatureOutsideDomainError(
+                str(exc),
+                declared_interval_K=exc.domain_K,
+                species=row_name,
+                source_row_id=exc.table_id,
+            ) from exc
+        if janaf is not None:
+            for quantity, value in (
+                ("Cp", janaf.Cp_J_molK),
+                ("entropy", janaf.S_J_molK),
+                ("enthalpy", janaf.H_app_kJ_mol),
+                ("Gibbs energy", janaf.G_J_mol),
+            ):
+                _thermochemistry_value(value, f"{row_name} {quantity}", T_K)
+            identity = MappingProxyType(
+                {
+                    "kind": "single_phase",
+                    "label": "LIQUID",
+                    "source_title": janaf.source_title,
+                    "source_table_id": janaf.table_id,
+                    "printed_range_K": janaf.domain_K,
+                    "temperature_K": janaf.domain_K,
+                    "declared_interval_K": janaf.domain_K,
+                }
+            )
+            return SpeciesThermo(
+                Cp_J_molK=janaf.Cp_J_molK,
+                S_J_molK=janaf.S_J_molK,
+                H_app_kJ_mol=janaf.H_app_kJ_mol,
+                G_J_mol=janaf.G_J_mol,
+                source_row_id=janaf.table_id,
+                source_table_id=janaf.table_id,
+                T_interval=None,
+                T_min=janaf.domain_K[0],
+                T_max=janaf.domain_K[1],
+                derivatives_fit_implied=False,
+                extrapolated=False,
+                declared_interval_K=janaf.domain_K,
+                continuation=None,
+                authority=janaf.source_authority,
+                phase_identity=identity,
+                formation_enthalpy_298_kJ_mol=(
+                    janaf.formation_enthalpy_298_kJ_mol
+                ),
+                formation_enthalpy_source_id=janaf.table_id,
+            )
+
+        try:
+            robie_hemingway = _evaluate_rh_liquid_species(species, T_K)
+        except CrystalSpeciesPolymorphError as exc:
+            raise ImccGasSpeciesNotFoundError(str(exc)) from exc
+        except CrystalSpeciesTemperatureError as exc:
+            raise ImccGasTemperatureOutsideDomainError(
+                str(exc),
+                declared_interval_K=exc.declared_interval_K,
+                species=row_name,
+                source_row_id=exc.source_row_id,
+            ) from exc
+        if robie_hemingway is None:
+            return None
+        for quantity, value in (
+            ("Cp", robie_hemingway.Cp_J_molK),
+            ("entropy", robie_hemingway.S_J_molK),
+            ("enthalpy", robie_hemingway.H_app_kJ_mol),
+            ("Gibbs energy", robie_hemingway.G_J_mol),
+        ):
+            _thermochemistry_value(value, f"{row_name} {quantity}", T_K)
+        return SpeciesThermo(
+            Cp_J_molK=robie_hemingway.Cp_J_molK,
+            S_J_molK=robie_hemingway.S_J_molK,
+            H_app_kJ_mol=robie_hemingway.H_app_kJ_mol,
+            G_J_mol=robie_hemingway.G_J_mol,
+            source_row_id=robie_hemingway.source_row_id,
+            source_table_id=robie_hemingway.source_table_id,
+            T_interval=None,
+            T_min=robie_hemingway.T_min,
+            T_max=robie_hemingway.T_max,
+            derivatives_fit_implied=False,
+            extrapolated=False,
+            declared_interval_K=(
+                robie_hemingway.T_min,
+                robie_hemingway.T_max,
+            ),
+            continuation=None,
+            authority=robie_hemingway.authority,
+            phase_identity=MappingProxyType(
+                dict(robie_hemingway.phase_identity)
+            ),
+            formation_enthalpy_298_kJ_mol=(
+                robie_hemingway.formation_enthalpy_298_kJ_mol
+            ),
+            formation_enthalpy_source_id=(
+                robie_hemingway.formation_enthalpy_source_id
+            ),
         )
 
     if phase == "g":
@@ -3133,9 +3246,20 @@ def species_thermo(
                     return crystal
                 raise
     else:
-        row = _oxide_row_for_T(
-            active_pack.oxide_df, row_name, T_K, allow_extrapolation
-        )
+        try:
+            row = _oxide_row_for_T(
+                active_pack.oxide_df, row_name, T_K, allow_extrapolation
+            )
+        except ImccGasSpeciesNotFoundError:
+            liquid_reference_species = {
+                record.species for record in liquid_reference_records()
+            }
+            if species in IMCC_PARENT_OXIDES or species in liquid_reference_species:
+                raise
+            liquid = liquid_dataset_result()
+            if liquid is not None:
+                return liquid
+            raise
     declared_interval = (float(row["T_min"]), float(row["T_max"]))
     extrapolated = not declared_interval[0] <= T_K <= declared_interval[1]
 

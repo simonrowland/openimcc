@@ -59,7 +59,7 @@ JANAF_CRYSTAL_TABLE_IDS = frozenset({
     "P-006", "P-007", "S-001", "S-002", "S-003", "K-001",
     "K-002", "Zn-001", "Zn-002", "Pb-001", "Pb-002",
 })
-JANAF_CRYSTAL_YAML_TABLE_IDS = frozenset({"B-095", "O-065"})
+JANAF_CRYSTAL_YAML_TABLE_IDS = frozenset({"B-095", "O-065", "O-085"})
 RH_CRYSTAL_TABLE_IDS = frozenset({
     "USGS-B2131-p127", "USGS-B2131-p128", "USGS-B2131-p129",
     "USGS-B2131-p132", "USGS-B2131-p133", "USGS-B2131-p266",
@@ -1955,6 +1955,22 @@ def test_robie_hemingway_element_tables_are_in_the_crystal_inventory() -> None:
     assert {
         f"USGS-B2131-p{page}" for page in table_pages
     } <= RH_CRYSTAL_TABLE_IDS
+
+
+def test_janaf_liquid_species_tables_are_in_the_element_inventory() -> None:
+    data = json.loads(
+        (
+            ROOT / "src" / "openimcc" / "data" / "diagnostics"
+            / "janaf-liquid-species.json"
+        ).read_text(encoding="utf-8")
+    )
+    table_ids = {row["table_id"] for row in data["rows"]}
+
+    assert table_ids == {
+        "Al-001", "Pb-001", "Ba-001", "Mg-001", "K-001", "Zn-001",
+        "Mn-004", "O-085", "Sr-001", "S-001",
+    }
+    assert table_ids <= JANAF_CRYSTAL_TABLE_IDS | JANAF_CRYSTAL_YAML_TABLE_IDS
 
 
 def test_robie_hemingway_silicate_tables_are_in_the_crystal_inventory() -> None:

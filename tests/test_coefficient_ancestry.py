@@ -17,6 +17,7 @@ from openimcc import coefficient_ancestry
 from openimcc.janaf_crystals import (
     evaluate_janaf_apparent_gibbs,
     evaluate_janaf_crystal,
+    _evaluate_janaf_liquid_species,
 )
 from openimcc.profiles import load_profile
 from openimcc.standards import pack_liquid_standards
@@ -215,6 +216,9 @@ def _expected_row_ids(artifact: dict) -> set[str]:
     if file == "diagnostics/janaf-pure-oxide-liquid-pairs.json":
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"rows:{row['table_id']}" for row in content["rows"]}
+    if file == "diagnostics/janaf-liquid-species.json":
+        content = json.loads(path.read_text(encoding="utf-8"))
+        return {f"rows:{row['table_id']}" for row in content["rows"]}
     if file == "diagnostics/barin-aluminate-crystals.json":
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"phases:{row['id']}" for row in content["phases"]}
@@ -247,7 +251,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 37
+    assert len(entries) == 38
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -295,6 +299,16 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     temperature = max(298.15, pair["source_temperature_K"][0])
     result = evaluate_janaf_apparent_gibbs(pair["table_id"], temperature)
     assert result.provenance["resource_sha256"] == liquid_pairs["runtime_digest"]
+
+    liquid_species = _artifact(entries, "openimcc-janaf-liquid-species-v1")
+    liquid_species_data = _json_resource(liquid_species["file"])
+    liquid_species_row = liquid_species_data["rows"][0]
+    temperature = sum(liquid_species_row["temperature_K"]) / 2.0
+    result = _evaluate_janaf_liquid_species(
+        liquid_species_row["formula"], temperature
+    )
+    assert result is not None
+    assert result.resource_sha256 == liquid_species["runtime_digest"]
 
     barin = _artifact(entries, "openimcc-barin-aluminate-crystals-v3")
     assert set(barin["work_ids"]) == {"barin-1995", "janaf-4th"}

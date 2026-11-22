@@ -1177,6 +1177,11 @@ interval by default. Set `allow_extrapolation=True` to continue the same gas or
 liquid row used by `evaluate_gas(..., allow_extrapolation=True)`; crystal-phase
 extrapolation is permitted only for a source-identified single crystal phase,
 within its documented stability range and below its printed melting point.
+For `phase="l"`, an existing condensate row always wins. If it is absent for a
+non-parent species, `species_thermo` serves its printed JANAF liquid segment or,
+when no JANAF liquid is vendored, one of the packaged Robie–Hemingway liquid
+phases. Those source segments keep their printed temperature limits even when
+`allow_extrapolation=True`.
 The frozen `SpeciesThermo` result includes `phase_identity` for crystal rows
 and exposes `formation_enthalpy_298_kJ_mol` with its source table id when the
 selected row contains that anchor. Crystal phase records are curated in

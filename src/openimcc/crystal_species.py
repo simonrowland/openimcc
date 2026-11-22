@@ -494,6 +494,85 @@ def _node_crystal_properties(
     return cp, entropy, enthalpy_app_kJ_mol, gibbs_J_mol
 
 
+def _evaluate_rh_liquid_species(
+    formula: str, temperature_K: float
+) -> CrystalSpeciesThermo | None:
+    """Evaluate a packaged R&H liquid phase for an explicit liquid request."""
+    formula_counts = _formula_element_counts(formula)
+    if formula_counts is None:
+        return None
+    phases = [
+        phase for phase in _rh_crystal_table_phases()
+        if phase.get("phase_state") == "liquid"
+        and _formula_element_counts(str(phase["formula"])) == formula_counts
+    ]
+    if not phases:
+        return None
+    if len(phases) > 1:
+        table_ids = sorted({str(phase["source_table_id"]) for phase in phases})
+        raise CrystalSpeciesPolymorphError(
+            f"R&H liquid tables are ambiguous for {formula}: "
+            f"{', '.join(table_ids)}",
+            table_ids,
+        )
+
+    phase = phases[0]
+    interval = _node_covered_interval(
+        tuple(map(float, phase["valid_temperature_K"])),
+        [
+            float(temperature)
+            for temperature in phase[
+                "source_crystal_enthalpy_increment_nodes_kJ_mol"
+            ]
+        ],
+        [
+            float(temperature)
+            for temperature in phase[
+                "source_crystal_entropy_nodes_J_mol_K"
+            ]
+        ],
+    )
+    temperature = float(temperature_K)
+    if not interval[0] <= temperature <= interval[1]:
+        raise CrystalSpeciesTemperatureError(
+            f"T={temperature:g} K is outside the printed liquid interval "
+            f"[{interval[0]:g}, {interval[1]:g}] K for {formula}(l) from "
+            f"{phase['source_table_id']}",
+            declared_interval_K=interval,
+            source_row_id=str(phase["id"]),
+            available_polymorphs=("LIQUID",),
+        )
+
+    cp, entropy, enthalpy, gibbs = _node_crystal_properties(phase, temperature)
+    table_id = str(phase["source_table_id"])
+    source = phase["source"]
+    identity = {
+        "kind": "single_phase",
+        "label": "LIQUID",
+        "source_title": str(phase["source_title"]),
+        "source_table_id": table_id,
+        "printed_range": str(source["printed_phase_description"]),
+        "temperature_K": interval,
+        "declared_interval_K": interval,
+    }
+    return CrystalSpeciesThermo(
+        Cp_J_molK=cp,
+        S_J_molK=entropy,
+        H_app_kJ_mol=enthalpy,
+        G_J_mol=gibbs,
+        source_row_id=str(phase["id"]),
+        source_table_id=table_id,
+        T_min=interval[0],
+        T_max=interval[1],
+        authority=str(phase["source_authority"]),
+        phase_identity=identity,
+        formation_enthalpy_298_kJ_mol=float(
+            phase["formation_enthalpy_298_kJ_mol"]
+        ),
+        formation_enthalpy_source_id=table_id,
+    )
+
+
 def _barin_properties(
     phase: Mapping[str, Any],
     polymorph: Mapping[str, Any],

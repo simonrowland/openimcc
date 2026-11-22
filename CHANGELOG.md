@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Liquid species thermochemistry
+
+- `species_thermo(..., "l", T)` now serves vendored non-parent JANAF and
+  Robie–Hemingway liquid segments when no condensate row exists, within each
+  source's printed temperature range.
+
 ### Crystal phase names
 
 - Robie and Hemingway thorium, uranium, and silver phases accept ASCII

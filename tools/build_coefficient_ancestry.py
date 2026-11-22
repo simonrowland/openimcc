@@ -1308,6 +1308,12 @@ def build() -> dict[str, Any]:
             collection="rows",
             mapper=mapper,
         ),
+        _janaf_artifact(
+            relative_file="diagnostics/janaf-liquid-species.json",
+            identity="openimcc-janaf-liquid-species-v1",
+            collection="rows",
+            mapper=mapper,
+        ),
         _barin_artifact(mapper),
         _rh_crystal_species_artifact(mapper),
         _crystal_phase_artifact(mapper),
