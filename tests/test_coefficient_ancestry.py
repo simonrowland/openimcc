@@ -333,7 +333,10 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
         for phase in (
             "perovskite-table", "silver-fcc", "silver-liquid", "thorium-alpha",
             "thorium-beta", "uranium-alpha", "uranium-beta", "uranium-gamma",
-            "uranium-liquid",
+            "uranium-liquid", "arsenic-rhombohedral", "cerium-alpha",
+            "cerium-beta", "cerium-liquid", "antimony-rhombohedral",
+            "antimony-liquid", "tin-crystals", "tin-liquid",
+            "tellurium-crystals", "tellurium-liquid",
         )
     }
     assert new_rh_rows <= {row["id"] for row in rh_table_artifact["rows"]}

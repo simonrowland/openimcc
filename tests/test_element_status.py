@@ -67,7 +67,9 @@ RH_CRYSTAL_TABLE_IDS = frozenset({
     "USGS-B2131-p338", "USGS-B2131-p345", "USGS-B2131-p350",
     "USGS-B2131-p351", "USGS-B2131-p366", "USGS-B2131-p367",
     "USGS-B2131-p373", "USGS-B2131-p374", "USGS-B2131-p67",
-    "USGS-B2131-p112", "USGS-B2131-p114", "USGS-B2131-p232",
+    "USGS-B2131-p69", "USGS-B2131-p80", "USGS-B2131-p106",
+    "USGS-B2131-p109", "USGS-B2131-p111", "USGS-B2131-p112",
+    "USGS-B2131-p114", "USGS-B2131-p232",
     "USGS-B2131-p315", "USGS-B2131-p327", "USGS-B2131-p383",
     "USGS-B2131-p384", "USGS-B2131-p385",
     "USGS-B2131-p141", "USGS-B2131-p278", "USGS-B2131-p281",
@@ -1942,10 +1944,14 @@ def test_robie_hemingway_element_tables_are_in_the_crystal_inventory() -> None:
         if phase["id"] in {
             "perovskite-table", "silver-fcc", "thorium-alpha",
             "thorium-beta", "uranium-alpha", "uranium-beta", "uranium-gamma",
+            "uranium-liquid", "arsenic-rhombohedral", "cerium-alpha",
+            "cerium-beta", "cerium-liquid", "antimony-rhombohedral",
+            "antimony-liquid", "tin-crystals", "tin-liquid",
+            "tellurium-crystals", "tellurium-liquid",
         }
     }
 
-    assert table_pages == {67, 112, 114, 232}
+    assert table_pages == {67, 69, 80, 106, 109, 111, 112, 114, 232}
     assert {
         f"USGS-B2131-p{page}" for page in table_pages
     } <= RH_CRYSTAL_TABLE_IDS

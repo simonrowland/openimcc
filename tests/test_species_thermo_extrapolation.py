@@ -1563,7 +1563,10 @@ def test_robie_hemingway_perovskite_and_element_tables_reconstruct_nodes() -> No
     wanted_ids = {
         "perovskite-table", "silver-fcc", "silver-liquid", "thorium-alpha",
         "thorium-beta", "uranium-alpha", "uranium-beta", "uranium-gamma",
-        "uranium-liquid",
+        "uranium-liquid", "arsenic-rhombohedral", "cerium-alpha",
+        "cerium-beta", "cerium-liquid", "antimony-rhombohedral",
+        "antimony-liquid", "tin-crystals", "tin-liquid",
+        "tellurium-crystals", "tellurium-liquid",
     }
     phases = {
         phase["id"]: phase
@@ -1581,6 +1584,16 @@ def test_robie_hemingway_perovskite_and_element_tables_reconstruct_nodes() -> No
         "uranium-beta": (3, 4144, 4146),
         "uranium-gamma": (6, 4147, 4152),
         "uranium-liquid": (5, 4153, 4157),
+        "arsenic-rhombohedral": (8, 2092, 2099),
+        "cerium-alpha": (9, 2590, 2598),
+        "cerium-beta": (3, 2599, 2601),
+        "cerium-liquid": (9, 2602, 2610),
+        "antimony-rhombohedral": (9, 3756, 3764),
+        "antimony-liquid": (10, 3765, 3774),
+        "tin-crystals": (5, 3889, 3893),
+        "tin-liquid": (14, 3894, 3907),
+        "tellurium-crystals": (7, 3993, 3999),
+        "tellurium-liquid": (7, 4000, 4006),
     }
     for phase_id, (count, first_line, last_line) in expected_row_spans.items():
         locators = [
@@ -1605,6 +1618,8 @@ def test_robie_hemingway_perovskite_and_element_tables_reconstruct_nodes() -> No
         assert runtime_phase["source"]["printed_phase_description"] == (
             phase["printed_phase_description"]
         )
+        if phase.get("state") == "liquid":
+            assert runtime_phase["phase_state"] == "liquid"
         assert len(phase["rows"]) == len(runtime_phase["source_row_locators"])
         if "formation_enthalpy_298_kJ_mol" in phase:
             h298 = float(phase["formation_enthalpy_298_kJ_mol"])
@@ -1644,6 +1659,19 @@ def test_robie_hemingway_perovskite_and_element_tables_reconstruct_nodes() -> No
                 / 1000.0
             )
             assert reconstructed_g == pytest.approx(printed_g, abs=0.25)
+            formula_elements = _formula_element_counts(phase["formula"])
+            is_element_reference = (
+                formula_elements is not None
+                and len(formula_elements) == 1
+                and next(iter(formula_elements.values())) == 1
+            )
+            if temperature == 298.15 and is_element_reference:
+                expected_element_gap = (
+                    -temperature * float(row["S_J_mol_K"]) / 1000.0
+                )
+                assert absolute_g - printed_g == pytest.approx(
+                    expected_element_gap, abs=1e-9
+                )
             elemental_gaps.setdefault((phase["formula"], temperature), []).append(
                 absolute_g - printed_g
             )
@@ -1675,11 +1703,19 @@ def test_robie_hemingway_perovskite_and_element_tables_reconstruct_nodes() -> No
     # Transition rows share an element-reference contribution on both sides.
     for formula, temperature in (
         ("Ag", 1234.9), ("Th", 1650.0), ("U", 942.0),
-        ("U", 1049.0), ("U", 1408.0),
+        ("U", 1049.0), ("U", 1408.0), ("Ce", 999.0),
+        ("Ce", 1071.0), ("Sb", 904.0), ("Sn", 505.1),
+        ("Te", 723.0),
     ):
         gaps = elemental_gaps[(formula, temperature)]
         assert len(gaps) == 2
         assert max(gaps) - min(gaps) <= 0.02
+
+    for formula, temperature in (
+        ("Sb", 1000.0), ("Sn", 600.0), ("Te", 800.0), ("Ce", 1100.0),
+    ):
+        with pytest.raises(ImccGasTemperatureOutsideDomainError):
+            species_thermo(formula, "cr", temperature)
 
     # At common high-temperature nodes, the element-reference mismatch stays
     # within the previously established 2.5 kJ/mol R&H cross-check tolerance.

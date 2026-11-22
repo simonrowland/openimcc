@@ -41,6 +41,9 @@
   zoisite tables with printed ranges and PDF row locators.
 - Added the Bulletin 2131 niter, soda niter, and herzenbergite crystal tables
   with printed phase ranges, melting limits, and PDF row locators.
+- Added the Bulletin 2131 arsenic, antimony, tin, tellurium, and cerium
+  element tables with printed phase boundaries, liquid source rows, and PDF
+  row locators.
 
 ### JANAF phase selection
 
