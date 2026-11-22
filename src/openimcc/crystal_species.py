@@ -888,6 +888,23 @@ def _unnamed_element_reference_cap(
     return float(reference["crystal_transition_temperature_K"])
 
 
+def _source_rows_cross_printed_transition(
+    phase: Mapping[str, Any], description: str,
+) -> bool:
+    rows = phase.get("source_crystal_enthalpy_increment_nodes_kJ_mol")
+    if not isinstance(rows, Mapping) or not rows:
+        return False
+    row_temperatures = sorted(float(temperature) for temperature in rows)
+    lower_K, upper_K = row_temperatures[0], row_temperatures[-1]
+    # R&H prints phase boundaries in the description rather than as numeric
+    # table rows. Only mark a transition when this table's own printed rows
+    # lie on both sides of one of those printed temperatures.
+    return any(
+        lower_K < float(temperature) < upper_K
+        for temperature in re.findall(r"\d+(?:\.\d+)?", description)
+    )
+
+
 def _active_janaf_phase_segment(
     phase: Mapping[str, Any], temperature_K: float,
 ) -> Mapping[str, Any] | None:
@@ -1211,6 +1228,16 @@ def evaluate_crystal_species(
                 f"{named_segment!r} of {formula}(cr) from {dataset}; "
                 f"available polymorphs: {', '.join(available_labels)}"
             )
+        elif (
+            named is None
+            and any(temperature_K > item.interval_K[1] for item in candidates)
+            and any(temperature_K < item.interval_K[0] for item in candidates)
+        ):
+            message = (
+                f"T={temperature_K:g} K is in a gap between declared G(T) windows "
+                f"for {formula}(cr) from {dataset}; available windows: "
+                f"{', '.join(available_labels)}"
+            )
         else:
             interval = (
                 f"[{low_K:g}, {high_K:g})"
@@ -1337,15 +1364,11 @@ def evaluate_crystal_species(
         "printed_phase_description"
     )
     if isinstance(source_description, str) and source_description:
-        transition_description = source_description.replace(
-            ". Reference state for sulfur is orthorhombic sulfur.", ""
-        )
-        has_multiple_forms = (
-            "; " in transition_description or ". " in transition_description
-        )
         phase_identity["note"] = (
             f"One row spans a transition: {source_description}"
-            if has_multiple_forms
+            if _source_rows_cross_printed_transition(
+                candidate.phase, source_description
+            )
             else source_description
         )
     limit = _source_solid_limit(candidate)

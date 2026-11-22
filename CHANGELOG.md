@@ -48,6 +48,8 @@
   extensions so short polymorph names select the matching table.
 - Unnamed elemental selection now follows the reference melt for matching
   phase families while named tables retain their printed metastable rows.
+- Gap refusals list each source window, and transition notes reflect the rows
+  in each source table; margarite keeps its printed formula brackets.
 
 ### Crystal phase interpolation
 

@@ -972,6 +972,26 @@ def test_unnamed_red_phosphorus_is_not_capped_at_white_phosphorus_melt() -> None
 
 
 @pytest.mark.parametrize(
+    ("formula", "temperature_K", "windows"),
+    (
+        ("KNO3", 450.0, ("[298.15-400 K]", "[500-600 K]")),
+        ("SnS", 850.0, ("[298.15-800 K]", "[900-1100 K]")),
+    ),
+)
+def test_unnamed_polymorph_gaps_report_each_available_window(
+    formula: str, temperature_K: float, windows: tuple[str, str],
+) -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo(formula, "cr", temperature_K)
+
+    message = str(refusal.value)
+    assert "available windows:" in message
+    assert "declared G(T) interval" not in message
+    for window in windows:
+        assert window in message
+
+
+@pytest.mark.parametrize(
     ("formula", "temperature", "polymorph", "table_id", "answer_hexes"),
     (
         (
@@ -1743,6 +1763,14 @@ def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
     assert source_notes["kalsilite"] == (
         "The element-stoichiometry formula is printed as KAlSiO₄."
     )
+    margarite = next(phase for phase in phases if phase["id"] == "margarite")
+    assert margarite["source_formula_as_published"] == (
+        "CaAl2[Al2Si2]O10(OH)2"
+    )
+    assert source_notes["margarite"] == (
+        "The element-stoichiometry formula is printed as "
+        "CaAl2[Al2Si2]O10(OH)2."
+    )
     assert "engine" not in " ".join(source_notes.values()).casefold()
     assert "formula weight is 258.160" in source_notes["kaolinite"]
 
@@ -1842,6 +1870,20 @@ def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
         },
     }.items():
         assert _value_hexes(species_thermo("CaTiO3", "cr", temperature)) == expected
+
+
+@pytest.mark.parametrize(
+    ("formula", "temperature_K"),
+    (("KNO3", 350.0), ("KNO3", 550.0), ("SnS", 500.0), ("SnS", 1000.0)),
+)
+def test_split_rh_tables_only_note_transitions_crossed_by_their_rows(
+    formula: str, temperature_K: float,
+) -> None:
+    result = species_thermo(formula, "cr", temperature_K)
+
+    assert not result.phase_identity["note"].startswith(
+        "One row spans a transition: "
+    )
 
 
 def test_perovskite_refusal_names_the_printed_table_limit() -> None:
