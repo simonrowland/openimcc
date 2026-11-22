@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from bisect import bisect_left
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import lru_cache
@@ -12,6 +11,7 @@ import math
 import re
 from typing import Any, Mapping, Sequence
 
+from openimcc._crystal_interpolation import _linear_value_and_slope
 from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
 from openimcc.diagnostics import _crystal_source_cap_excludes_candidate
 from openimcc.janaf_crystals import (
@@ -246,35 +246,6 @@ def _formula_element_counts(formula: str) -> dict[str, Fraction] | None:
     return total or None
 
 
-def _linear_value_and_slope(
-    nodes: Sequence[Mapping[str, Any]], temperature_K: float
-) -> tuple[float, float]:
-    """Linearly interpolate a source series and return its selected secant slope."""
-    by_temperature = {
-        float(node["T_K"]): float(node["value"])
-        for node in nodes
-    }
-    points = sorted(by_temperature.items())
-    temperatures = [point[0] for point in points]
-    index = bisect_left(temperatures, temperature_K)
-    if index < len(points) and points[index][0] == temperature_K:
-        value = points[index][1]
-        if index > 0:
-            left, right = points[index - 1], points[index]
-        elif len(points) > 1:
-            left, right = points[index], points[index + 1]
-        else:
-            raise ValueError("a node series needs at least two points for its slope")
-    else:
-        if index == 0 or index == len(points):
-            raise ValueError(f"no source node interval at {temperature_K:g} K")
-        left, right = points[index - 1], points[index]
-        fraction = (temperature_K - left[0]) / (right[0] - left[0])
-        value = left[1] + (right[1] - left[1]) * fraction
-    slope = (right[1] - left[1]) / (right[0] - left[0])
-    return value, slope
-
-
 def _node_covered_interval(
     declared_interval_K: tuple[float, float],
     *node_temperature_sets: Sequence[float],
@@ -491,11 +462,11 @@ def _node_crystal_properties(
     element-referenced R&H ΔfG; perovskite at 1800 K is the sanity anchor.
     """
     enthalpy_nodes = [
-        {"T_K": float(t), "value": float(value)}
+        (float(t), float(value))
         for t, value in phase["source_crystal_enthalpy_increment_nodes_kJ_mol"].items()
     ]
     entropy_nodes = [
-        {"T_K": float(t), "value": float(value)}
+        (float(t), float(value))
         for t, value in phase["source_crystal_entropy_nodes_J_mol_K"].items()
     ]
     enthalpy_increment, slope_kJ_molK = _linear_value_and_slope(
@@ -530,8 +501,14 @@ def _barin_properties(
     # check is kJ/mol*1000 versus K*J/(mol K); CaAl2O4 at its 1800 K node is the
     # known-value check.
     series = polymorph["source_series"]
-    enthalpy_nodes = series["H_minus_H298"]["nodes"]
-    entropy_nodes = series["S"]["nodes"]
+    enthalpy_nodes = [
+        (float(node["T_K"]), float(node["value"]))
+        for node in series["H_minus_H298"]["nodes"]
+    ]
+    entropy_nodes = [
+        (float(node["T_K"]), float(node["value"]))
+        for node in series["S"]["nodes"]
+    ]
     enthalpy_increment, slope_kJ_molK = _linear_value_and_slope(
         enthalpy_nodes, continue_from_K or temperature_K
     )
@@ -643,11 +620,11 @@ def _elemental_reference_card_properties(
         # converts cal to J and kcal to kJ; G_app=1000*H_app-T*S.
         rows = phase["nodes"]
         enthalpy_nodes = [
-            {"T_K": float(row[0]), "value": float(row[3]) * 4.184}
+            (float(row[0]), float(row[3]) * 4.184)
             for row in rows
         ]
         entropy_nodes = [
-            {"T_K": float(row[0]), "value": float(row[2]) * 4.184}
+            (float(row[0]), float(row[2]) * 4.184)
             for row in rows
         ]
         enthalpy_increment, slope_kJ_molK = _linear_value_and_slope(
@@ -931,11 +908,11 @@ def _evaluate_candidate(
         row = candidate.phase
         nodes = _janaf_nodes_for_temperature(row, temperature_K)
         enthalpy_nodes = [
-            {"T_K": node["T_K"], "value": node["enthalpy_increment_kJ_mol"]}
+            (float(node["T_K"]), float(node["enthalpy_increment_kJ_mol"]))
             for node in nodes
         ]
         entropy_nodes = [
-            {"T_K": node["T_K"], "value": node["entropy_J_mol_K"]}
+            (float(node["T_K"]), float(node["entropy_J_mol_K"]))
             for node in nodes
         ]
         enthalpy_increment, slope_kJ_molK = _linear_value_and_slope(

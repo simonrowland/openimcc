@@ -11,6 +11,8 @@ from importlib import resources
 from types import MappingProxyType
 from typing import Any, Literal, Mapping, Sequence
 
+from openimcc._crystal_interpolation import _linear_value_and_slope
+
 
 _RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
 _SPECIES_RESOURCE = "data/diagnostics/janaf-crystal-species.json"
@@ -143,18 +145,12 @@ def _apparent_gibbs(
                     [node[column] for node in nodes],
                 )
             )
-        # Collapse equal-temperature source rows in their stable input order; a
-        # printed final row wins at the exact node, matching the data order.
-        values = {float(node[0]): float(node[column]) for node in nodes}
-        points = sorted(values.items())
-        if temperature in values:
-            return values[temperature]
-        for (lo_T, lo_value), (hi_T, hi_value) in zip(points, points[1:]):
-            if lo_T < temperature < hi_T:
-                return lo_value + (hi_value - lo_value) * (
-                    (temperature - lo_T) / (hi_T - lo_T)
-                )
-        raise ValueError(f"no source node interval at {temperature:g} K")
+        value, _ = _linear_value_and_slope(
+            ((float(node[0]), float(node[column])) for node in nodes),
+            temperature,
+            slope_required=False,
+        )
+        return value
 
     h_increment = interpolate(1)
     entropy = interpolate(2)
