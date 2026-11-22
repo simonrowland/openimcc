@@ -15,6 +15,10 @@
 - `species_thermo("HO", "g", T)` now resolves the existing `OH(g)` row by
   element counts and refuses when multiple pack rows share that composition.
 
+### Refractory melting limits
+
+- Documented the low liquidus bias against measured refractory crystal melting.
+
 ### Crystal phase names
 
 - Robie and Hemingway thorium, uranium, and silver phases accept ASCII

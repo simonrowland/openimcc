@@ -1702,6 +1702,28 @@ Nothing is retuned. Until independent paired measurements are available,
 treat silica activities in these binaries near 1773–1873 K as about 0.4 dex low
 and lime activities as high.
 
+#### Known limit: refractory liquidus
+
+The default liquidus and melting temperatures for refractory silicates and
+aluminates are not calibrated to measured crystal melting. The liquid is too
+stable, so the calculated liquidus is low. At the cited melting or liquidus
+temperatures, or at the nearest supported crystal-source node when the source
+function ends early, the current saturation indices range from −0.769 to
+−0.188 dex (about −24.5 to −6.5 kJ per mole of crystal formula). The diopside
+value at 1665 K is an out-of-domain extrapolation below the model's 1700 K
+floor.
+
+Forsterite's measured congruent melting point is 2163 K (Navrotsky et al.
+1989, DOI [10.1007/BF00387206](https://doi.org/10.1007/BF00387206)). At that
+temperature its saturation index is −0.427 dex; the full equilibrium solver
+places its solidus at 1798.7 K, about 364 K below the measurement.
+
+Checks of the parent-liquid standards and crystal data do not explain these
+gaps. They are dominated by the all-liquid activities, especially the
+associate constants. One independent measurement of the liquid activity
+product for two MgO and one SiO2 in stoichiometric forsterite liquid near
+2163 K would settle the magnesium-silicate associates.
+
 #### Known limit: complex rows below their demonstrated range
 
 The complex rows are evaluated from 1700 K, but several Fegley & Cameron
