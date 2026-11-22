@@ -8,6 +8,11 @@
   Robie–Hemingway liquid segments when no condensate row exists, within each
   source's printed temperature range.
 
+### Gas formula spelling
+
+- `species_thermo("HO", "g", T)` now resolves the existing `OH(g)` row by
+  element counts and refuses when multiple pack rows share that composition.
+
 ### Crystal phase names
 
 - Robie and Hemingway thorium, uranium, and silver phases accept ASCII

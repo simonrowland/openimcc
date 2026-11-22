@@ -49,6 +49,7 @@ from openimcc.crystal_species import (
     continue_constant_cp,
     evaluate_crystal_species,
     _evaluate_rh_liquid_species,
+    _formula_element_counts,
 )
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
@@ -3176,9 +3177,36 @@ def species_thermo(
         )
 
     if phase == "g":
-        row = _nearest_interval_row(
-            active_pack.gas_df, row_name, T_K, allow_extrapolation
-        )
+        try:
+            row = _nearest_interval_row(
+                active_pack.gas_df, row_name, T_K, allow_extrapolation
+            )
+        except ImccGasSpeciesNotFoundError as missing_species:
+            formula_counts = _formula_element_counts(species)
+            if formula_counts is None:
+                raise
+            matching_rows = sorted(
+                {
+                    candidate
+                    for candidate in active_pack.gas_df.index
+                    if str(candidate).endswith("(g)")
+                    and _formula_element_counts(str(candidate)[:-3])
+                    == formula_counts
+                }
+            )
+            if not matching_rows:
+                raise
+            if len(matching_rows) > 1:
+                raise ImccGasSpeciesNotFoundError(
+                    f"multiple JANAF gas rows share the composition of "
+                    f"{species!r}: {', '.join(matching_rows)}"
+                ) from missing_species
+            row = _nearest_interval_row(
+                active_pack.gas_df,
+                matching_rows[0],
+                T_K,
+                allow_extrapolation,
+            )
     elif phase == "cr":
         reference_selector = is_reference_polymorph(polymorph)
         if (
