@@ -946,6 +946,32 @@ def test_janaf_element_crystal_short_names_select_the_printed_table(
 
 
 @pytest.mark.parametrize(
+    ("formula", "temperature_K", "cap_K"),
+    (("S", 400.0, 388.36), ("Sr", 1100.0, 1050.0)),
+)
+def test_unnamed_janaf_element_selection_stops_at_reference_melt(
+    formula: str, temperature_K: float, cap_K: float,
+) -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo(formula, "cr", temperature_K)
+
+    assert f"above its source solid limit of {cap_K:g} K" in str(refusal.value)
+
+
+def test_named_orthorhombic_sulfur_keeps_its_printed_metastable_rows() -> None:
+    selected = species_thermo("S", "cr", 600.0, polymorph="orthorhombic")
+
+    assert selected.source_table_id == "S-002"
+    assert selected.phase_identity["polymorph"] == "ORTHORHOMBIC"
+
+
+def test_unnamed_red_phosphorus_is_not_capped_at_white_phosphorus_melt() -> None:
+    selected = species_thermo("P", "cr", 600.0)
+
+    assert selected.source_table_id in {"P-005", "P-006", "P-007"}
+
+
+@pytest.mark.parametrize(
     ("formula", "temperature", "polymorph", "table_id", "answer_hexes"),
     (
         (

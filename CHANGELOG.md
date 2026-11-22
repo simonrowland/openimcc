@@ -46,6 +46,8 @@
 
 - Dedicated phase tables retain their title identity through metastable
   extensions so short polymorph names select the matching table.
+- Unnamed elemental selection now follows the reference melt for matching
+  phase families while named tables retain their printed metastable rows.
 
 ### Crystal phase interpolation
 

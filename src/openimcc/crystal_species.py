@@ -848,6 +848,46 @@ def _source_solid_limit(candidate: _Candidate) -> float | None:
     return None
 
 
+def _unnamed_element_reference_cap(
+    candidate: _Candidate, candidates: Sequence[_Candidate],
+) -> float | None:
+    if (
+        candidate.dataset != "JANAF crystal tables"
+        or not is_element_formula(str(candidate.phase["formula"]))
+    ):
+        return None
+
+    references = [
+        row
+        for row in candidates
+        if re.search(
+            r"\bref\b", str(row.phase.get("source_title", "")), re.I
+        )
+    ]
+    if len(references) != 1 or candidate is references[0]:
+        return None
+
+    reference = references[0].phase
+    transition = reference.get("transition_row_at_cap")
+    if not isinstance(transition, Mapping):
+        return None
+    transition_label = str(transition.get("label", "")).upper()
+    if (
+        "<-->" not in transition_label
+        or "LIQUID" not in transition_label
+        or "IDEAL GAS" in transition_label
+    ):
+        return None
+
+    if str(candidate.phase["formula"]) == "P":
+        # P-001's 317.3 K crystal-liquid row melts white P; red IV, red V, and
+        # black P are separate allotropes with their own dedicated stability.
+        if "WHITE" not in candidate.label.upper():
+            return None
+
+    return float(reference["crystal_transition_temperature_K"])
+
+
 def _active_janaf_phase_segment(
     phase: Mapping[str, Any], temperature_K: float,
 ) -> Mapping[str, Any] | None:
@@ -1108,6 +1148,14 @@ def evaluate_crystal_species(
                 != named_segment.casefold()
             ):
                 continue
+        reference_cap = (
+            None
+            if named is not None
+            else _unnamed_element_reference_cap(candidate, candidates)
+        )
+        if reference_cap is not None and temperature_K > reference_cap:
+            cap_refusals.append((candidate, reference_cap))
+            continue
         (
             available,
             continue_from_K,
