@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Crystal phase names
+
+- Robie and Hemingway thorium, uranium, and silver phases accept ASCII
+  `alpha`, `beta`, `gamma`, and `face-centered cubic` names, and refusals at
+  shared transition temperatures report the half-open interval that is
+  enforced.
+
 ### JANAF element crystals
 
 - Added indexed NIST-JANAF crystal datasets for titanium, nickel, chromium,
