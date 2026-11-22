@@ -51,6 +51,16 @@ SOURCE_SOLID_LIMITS = {
         "kind": "melting",
         "locator": {"page": 232, "row": "Melting T", "column": "temperature"},
     },
+    "rankinite": {
+        "temperature_K": 1633.0,
+        "kind": "melting",
+        "locator": {
+            "page": 327,
+            "row": "Melting T",
+            "pdf_text_line": 15809,
+            "column": "temperature",
+        },
+    },
     "perovskite-table": {
         "temperature_K": 2188.0,
         "kind": "melting",
