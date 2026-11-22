@@ -113,6 +113,18 @@ LIQUID_SPECIES_SOURCES = (
     ("V2O5", "O-085", "l"),
     ("Sr", "Sr-001", "ref"),
     ("S", "S-001", "ref"),
+    ("Na", "Na-003", "l"),
+    ("Ga", "Ga-003", "l"),
+    ("Ca", "Ca-003", "cr"),
+    ("Li", "Li-003", "l"),
+    ("Cu", "Cu-002", "cr"),
+    ("Si", "Si-002", "cr"),
+    ("Br2", "Br-039", "cr,l"),
+    ("Ni", "Ni-002", "cr"),
+    ("Fe", "Fe-004", "cr"),
+    ("Co", "Co-002", "cr"),
+    ("I2", "I-025", "l"),
+    ("Ti", "Ti-003", "cr"),
 )
 
 DEDICATED_PHASE_LABELS = {

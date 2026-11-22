@@ -60,6 +60,9 @@ JANAF_CRYSTAL_TABLE_IDS = frozenset({
     "K-002", "Zn-001", "Zn-002", "Pb-001", "Pb-002",
 })
 JANAF_CRYSTAL_YAML_TABLE_IDS = frozenset({"B-095", "O-065", "O-085"})
+JANAF_LIQUID_TABLE_IDS = frozenset({
+    "Na-003", "Ga-003", "Li-003", "Br-039", "I-025",
+})
 RH_CRYSTAL_TABLE_IDS = frozenset({
     "USGS-B2131-p127", "USGS-B2131-p128", "USGS-B2131-p129",
     "USGS-B2131-p132", "USGS-B2131-p133", "USGS-B2131-p266",
@@ -1969,8 +1972,14 @@ def test_janaf_liquid_species_tables_are_in_the_element_inventory() -> None:
     assert table_ids == {
         "Al-001", "Pb-001", "Ba-001", "Mg-001", "K-001", "Zn-001",
         "Mn-004", "O-085", "Sr-001", "S-001",
+        "Na-003", "Ga-003", "Ca-003", "Li-003", "Cu-002", "Si-002",
+        "Br-039", "Ni-002", "Fe-004", "Co-002", "I-025", "Ti-003",
     }
-    assert table_ids <= JANAF_CRYSTAL_TABLE_IDS | JANAF_CRYSTAL_YAML_TABLE_IDS
+    assert table_ids <= (
+        JANAF_CRYSTAL_TABLE_IDS
+        | JANAF_CRYSTAL_YAML_TABLE_IDS
+        | JANAF_LIQUID_TABLE_IDS
+    )
 
 
 def test_robie_hemingway_silicate_tables_are_in_the_crystal_inventory() -> None:

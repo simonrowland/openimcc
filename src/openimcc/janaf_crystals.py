@@ -401,7 +401,7 @@ def _evaluate_janaf_liquid_species(
     ]
     candidates = dedicated or [
         row for row in formula_rows if row["table_kind"] == "ref"
-    ]
+    ] or [row for row in formula_rows if row["table_kind"] == "cr"]
     if not candidates:
         return None
     if len(candidates) != 1:
