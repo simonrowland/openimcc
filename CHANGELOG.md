@@ -14,6 +14,8 @@
 - Added indexed NIST-JANAF crystal datasets for titanium, nickel, chromium,
   calcium, silicon, cobalt, tantalum, and copper with separate polymorphs and
   source-row locators.
+- Added indexed NIST-JANAF reference and crystal tables for barium, magnesium,
+  strontium, aluminum, phosphorus, sulfur, potassium, zinc, and lead.
 
 ### JANAF salt crystals
 

@@ -73,7 +73,36 @@ ADDITIONAL_CRYSTALS = (
     ("Na2SO4 IV", "Na2SO4", "Na-022"),
     ("Na2SO4 V", "Na2SO4", "Na-023"),
     ("AlF3", "AlF3", "Al-041"),
+    ("Ba", "Ba", "Ba-002"),
+    ("Ba reference", "Ba", "Ba-001"),
+    ("Mg", "Mg", "Mg-002"),
+    ("Mg reference", "Mg", "Mg-001"),
+    ("Sr alpha", "Sr", "Sr-002"),
+    ("Sr beta", "Sr", "Sr-003"),
+    ("Sr reference", "Sr", "Sr-001"),
+    ("Al", "Al", "Al-002"),
+    ("Al reference", "Al", "Al-001"),
+    ("P white", "P", "P-002"),
+    ("P red IV", "P", "P-005"),
+    ("P red V", "P", "P-006"),
+    ("P black", "P", "P-007"),
+    ("P reference", "P", "P-001"),
+    ("S orthorhombic", "S", "S-002"),
+    ("S monoclinic", "S", "S-003"),
+    ("S reference", "S", "S-001"),
+    ("K", "K", "K-002"),
+    ("K reference", "K", "K-001"),
+    ("Zn", "Zn", "Zn-002"),
+    ("Zn reference", "Zn", "Zn-001"),
+    ("Pb", "Pb", "Pb-002"),
+    ("Pb reference", "Pb", "Pb-001"),
 )
+
+DEDICATED_PHASE_LABELS = {
+    "P-005": "RED IV",
+    "P-006": "RED V",
+}
+
 
 def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
     values = table["values"]
@@ -334,17 +363,23 @@ def _extra_crystal_phases() -> list[dict]:
         if len({phase_label for _, phase_label in siblings}) > 1
         for table_id, phase_label in siblings
     }
+    dedicated_phase_labels.update(DEDICATED_PHASE_LABELS)
 
     phases = []
     for phase_id, formula, table_id, prepared in prepared_crystals:
         transitions = prepared["transition_rows"]
-        fusion_rows = [
+        crystal_liquid_rows = [
             row for row in transitions
-            if "<-->" in row["label"] and "LIQUID" in row["label"].upper()
+            if (
+                "<-->" in row["label"]
+                and "LIQUID" in row["label"].upper()
+                and "IDEAL GAS" not in row["label"].upper()
+            )
         ]
         cap_K = (
-            max(float(row["T_K"]) for row in fusion_rows)
-            if fusion_rows else float(prepared["source_temperature_K"][1])
+            min(float(row["T_K"]) for row in crystal_liquid_rows)
+            if crystal_liquid_rows
+            else float(prepared["source_temperature_K"][1])
         )
         cap_row = next(
             (

@@ -674,6 +674,29 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         "Na2SO4 IV": ("Na2SO4", "Na-022"),
         "Na2SO4 V": ("Na2SO4", "Na-023"),
         "AlF3": ("AlF3", "Al-041"),
+        "Ba": ("Ba", "Ba-002"),
+        "Ba reference": ("Ba", "Ba-001"),
+        "Mg": ("Mg", "Mg-002"),
+        "Mg reference": ("Mg", "Mg-001"),
+        "Sr alpha": ("Sr", "Sr-002"),
+        "Sr beta": ("Sr", "Sr-003"),
+        "Sr reference": ("Sr", "Sr-001"),
+        "Al": ("Al", "Al-002"),
+        "Al reference": ("Al", "Al-001"),
+        "P white": ("P", "P-002"),
+        "P red IV": ("P", "P-005"),
+        "P red V": ("P", "P-006"),
+        "P black": ("P", "P-007"),
+        "P reference": ("P", "P-001"),
+        "S orthorhombic": ("S", "S-002"),
+        "S monoclinic": ("S", "S-003"),
+        "S reference": ("S", "S-001"),
+        "K": ("K", "K-002"),
+        "K reference": ("K", "K-001"),
+        "Zn": ("Zn", "Zn-002"),
+        "Zn reference": ("Zn", "Zn-001"),
+        "Pb": ("Pb", "Pb-002"),
+        "Pb reference": ("Pb", "Pb-001"),
     }
     phases = {
         phase["id"]: phase
@@ -681,6 +704,11 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         if phase["id"] in expected_tables
     }
     assert set(phases) == set(expected_tables)
+    reference_phase_ids = {
+        formula: phase_id
+        for phase_id, (formula, table_id) in expected_tables.items()
+        if table_id.endswith("-001")
+    }
     reference_gaps: dict[tuple[str, float], list[float]] = {}
     packed_formation_rows: dict[str, list[int]] = {}
 
@@ -711,7 +739,18 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         )
         if packed_lines:
             packed_formation_rows[table_id] = packed_lines
-        assert record_lines == set(source_rows)
+        # Same-temperature rows with identical H/S can share one node.
+        assert record_lines <= set(source_rows)
+        for line_number in set(source_rows) - record_lines:
+            source_row = source_rows[line_number]
+            assert any(
+                float(record["T_K"]) == float(source_row["T_K"])
+                and float(record["enthalpy_increment_kJ_mol"])
+                == float(source_row["Hinc_kJ_mol"])
+                and float(record["entropy_J_mol_K"])
+                == float(source_row["S_J_mol_K"])
+                for record in records
+            )
         for record in records:
             source_row = source_rows[record["source_line_number"]]
             assert record["T_K"] == source_row["T_K"]
@@ -732,6 +771,17 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         assert phase["formation_enthalpy_298_kJ_mol"] == anchor[
             "delta_fH_kJ_mol"
         ]
+        if table_id.endswith("-001"):
+            reference_gap = (
+                float(phase["formation_enthalpy_298_kJ_mol"])
+                + float(anchor["Hinc_kJ_mol"])
+                - 298.15 * float(anchor["S_J_mol_K"]) / 1000.0
+                - float(anchor["delta_fG_kJ_mol"])
+            )
+            assert reference_gap == pytest.approx(
+                -298.15 * float(anchor["S_J_mol_K"]) / 1000.0,
+                abs=0.001,
+            )
         selected = evaluate_janaf_crystal(phase_id, 298.15)
         assert selected.provenance["table_id"] == table_id
         assert selected.provenance["source_sha256"] == phase["source_sha256"]
@@ -742,13 +792,19 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         assert selected_dataset.source_table_id == table_id
 
         cap_K = float(phase["crystal_transition_temperature_K"])
-        liquid_transitions = [
+        crystal_liquid_transitions = [
             row for row in phase["transition_rows"]
-            if "<-->" in row["label"] and "LIQUID" in row["label"].upper()
+            if (
+                "<-->" in row["label"]
+                and "LIQUID" in row["label"].upper()
+                and "IDEAL GAS" not in row["label"].upper()
+            )
         ]
-        if liquid_transitions:
-            assert cap_K == max(float(row["T_K"]) for row in liquid_transitions)
-            assert phase["transition_row_at_cap"] in liquid_transitions
+        if crystal_liquid_transitions:
+            assert cap_K == min(
+                float(row["T_K"]) for row in crystal_liquid_transitions
+            )
+            assert phase["transition_row_at_cap"] in crystal_liquid_transitions
         else:
             assert cap_K == float(phase["source_temperature_K"][1])
         evaluate_janaf_crystal(phase_id, cap_K)
@@ -758,22 +814,8 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         for row in source_rows.values():
             temperature = float(row["T_K"])
             printed_delta_f_g = row["delta_fG_kJ_mol"]
-            if (
-                temperature < 298.15 or temperature > cap_K
-            ):
+            if temperature < 298.15 or temperature > cap_K:
                 continue
-            if (
-                row["packed_formation_columns"]
-                and table_id in {"K-017", "K-018", "Na-020", "Na-022", "Na-023"}
-            ):
-                log10_kf = row["log10_Kf"]
-                if log10_kf is None or printed_delta_f_g is None:
-                    continue
-                # The export omits signs in these packed fields. Keep the
-                # printed delta-f G magnitude and recover its sign from log Kf.
-                printed_delta_f_g = math.copysign(
-                    abs(float(printed_delta_f_g)), -float(log10_kf)
-                )
             if printed_delta_f_g is None:
                 continue
             absolute_g = (
@@ -781,15 +823,51 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
                 + float(row["Hinc_kJ_mol"])
                 - temperature * float(row["S_J_mol_K"]) / 1000.0
             )
-            element_reference_sum = _janaf_element_reference_sum_kJ_mol(
-                formula, temperature
+            reference_phase_id = reference_phase_ids.get(formula)
+            if reference_phase_id is not None:
+                reference_g = evaluate_janaf_crystal(
+                    reference_phase_id,
+                    temperature,
+                    apply_phase_cap=False,
+                ).G_J_mol / 1000.0
+            else:
+                reference_g = _janaf_element_reference_sum_kJ_mol(
+                    formula, temperature
+                )
+            if reference_g is None:
+                continue
+            reconstructed_delta_f_g = absolute_g - reference_g
+            if row["packed_formation_columns"]:
+                # NIST packs the formation columns into one text cell, where
+                # the signs are ambiguous. Compare the printed magnitudes.
+                assert abs(reconstructed_delta_f_g) == pytest.approx(
+                    abs(float(printed_delta_f_g)), abs=0.15
+                )
+            else:
+                # Independent reference tables have different temperature
+                # grids, so interpolation can differ by up to 0.11 kJ/mol.
+                assert reconstructed_delta_f_g == pytest.approx(
+                    float(printed_delta_f_g), abs=0.15
+                )
+            log10_kf = row["log10_Kf"]
+            if log10_kf is not None:
+                log_k_delta_f_g = (
+                    -8.31446261815324 * temperature * math.log(10.0)
+                    * float(log10_kf) / 1000.0
+                )
+                if row["packed_formation_columns"]:
+                    assert abs(log_k_delta_f_g) == pytest.approx(
+                        abs(reconstructed_delta_f_g), abs=0.25
+                    )
+                else:
+                    assert log_k_delta_f_g == pytest.approx(
+                        float(printed_delta_f_g), abs=0.25
+                    )
+            gap = (
+                reference_g
+                if row["packed_formation_columns"]
+                else absolute_g - float(printed_delta_f_g)
             )
-            # Independent JANAF elemental references contribute up to about
-            # 0.034 kJ/mol of residual at these source grid points.
-            assert absolute_g - element_reference_sum == pytest.approx(
-                float(printed_delta_f_g), abs=0.05
-            )
-            gap = absolute_g - float(printed_delta_f_g)
             reference_gaps.setdefault((formula, temperature), []).append(gap)
 
     for gaps in reference_gaps.values():
@@ -813,6 +891,16 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         "Ta-002": [41],
         "Ti-002": [20],
         "Ti-003": [20, 29],
+        "Ba-002": [25],
+        "Mg-002": [18],
+        "Sr-002": [16],
+        "Sr-003": [15, 18],
+        "Al-002": [18],
+        "P-002": [12],
+        "S-002": [11],
+        "K-002": [10],
+        "Zn-002": [15],
+        "Pb-002": [15],
     }
     for polymorph, expected_table in (("DELTA", "Na-019"), ("III", "Na-021")):
         selected_form = evaluate_crystal_species(
@@ -820,6 +908,41 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         )
         assert selected_form is not None
         assert selected_form.source_table_id == expected_table
+
+
+@pytest.mark.parametrize(
+    ("formula", "polymorph", "table_id", "title_fragment"),
+    (
+        ("Ba", "reference", "Ba-001", "Barium (Ba)"),
+        ("Mg", "reference", "Mg-001", "Magnesium (Mg)"),
+        ("Sr", "alpha", "Sr-002", "Strontium, Alpha (Sr)"),
+        ("Sr", "beta", "Sr-003", "Strontium, Beta (Sr)"),
+        ("Sr", "reference", "Sr-001", "Strontium (Sr)"),
+        ("Al", "reference", "Al-001", "Aluminum (Al)"),
+        ("P", "white", "P-002", "Phosphorus, White (P)"),
+        ("P", "red IV", "P-005", "Phosphorus, Red, IV (P)"),
+        ("P", "red V", "P-006", "Phosphorus, Red, V (P)"),
+        ("P", "black", "P-007", "Phosphorus, Black (P)"),
+        ("P", "reference", "P-001", "Phosphorus (P)"),
+        ("S", "orthorhombic", "S-002", "Sulfur, Orthorhombic (S)"),
+        ("S", "rhombic", "S-002", "Sulfur, Orthorhombic (S)"),
+        ("S", "monoclinic", "S-003", "Sulfur, Monoclinic (S)"),
+        ("S", "reference", "S-001", "Sulfur (S)"),
+        ("K", "reference", "K-001", "Potassium (K)"),
+        ("Zn", "reference", "Zn-001", "Zinc (Zn)"),
+        ("Pb", "reference", "Pb-001", "Lead (Pb)"),
+    ),
+)
+def test_janaf_element_crystal_short_names_select_the_printed_table(
+    formula: str,
+    polymorph: str,
+    table_id: str,
+    title_fragment: str,
+) -> None:
+    selected = evaluate_crystal_species(formula, 298.15, polymorph=polymorph)
+    assert selected is not None
+    assert selected.source_table_id == table_id
+    assert title_fragment in selected.phase_identity["source_title"]
 
 
 @pytest.mark.parametrize(

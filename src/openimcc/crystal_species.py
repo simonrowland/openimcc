@@ -39,6 +39,7 @@ _POLYMORPH_ALIASES = {
         "beta": "uranium-beta",
         "gamma": "uranium-gamma",
     },
+    "S": {"rhombic": "S-002"},
 }
 
 # Berman's thermodynamic functions use a 298.15 K reference, while
@@ -1010,39 +1011,40 @@ def evaluate_crystal_species(
                 f"select one of the available polymorphs: {', '.join(labels)}",
                 labels,
             )
-        is_elemental_reference_card = (
-            len(candidates) == 1
-            and candidates[0].dataset == "Elemental reference crystal cards"
-            and candidates[0].phase.get("elemental_reference") is True
-        )
-        is_janaf_elemental_reference = (
-            len(candidates) == 1
-            and candidates[0].dataset == "JANAF crystal tables"
-            and (
-                float(
-                    candidates[0].phase["formation_enthalpy_298_kJ_mol"]
-                ) == 0.0
-                or re.search(
-                    r"\bref\b",
-                    str(candidates[0].phase.get("source_title", "")),
-                    re.I,
+        reference_candidates = [
+            candidate
+            for candidate in candidates
+            if (
+                candidate.dataset == "Elemental reference crystal cards"
+                and candidate.phase.get("elemental_reference") is True
+            )
+            or (
+                candidate.dataset == "JANAF crystal tables"
+                and (
+                    re.search(
+                        r"\bref\b",
+                        str(candidate.phase.get("source_title", "")),
+                        re.I,
+                    )
+                    is not None
+                    or (
+                        len(candidates) == 1
+                        and float(
+                            candidate.phase[
+                                "formation_enthalpy_298_kJ_mol"
+                            ]
+                        ) == 0.0
+                    )
                 )
-                is not None
             )
-        )
-        if (
-            len(candidates) != 1
-            or not (
-                is_elemental_reference_card
-                or is_janaf_elemental_reference
-            )
-        ):
+        ]
+        if len(reference_candidates) != 1:
             raise CrystalSpeciesPolymorphError(
                 f"reference selection is ambiguous for {formula}(cr) from "
                 f"{dataset}; available polymorphs: {', '.join(labels)}",
                 labels,
             )
-        named = candidates[0]
+        named = reference_candidates[0]
     elif polymorph is not None:
         folded = polymorph.casefold()
         alias_target = _POLYMORPH_ALIASES.get(formula, {}).get(folded)
