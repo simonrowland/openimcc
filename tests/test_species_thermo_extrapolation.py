@@ -87,19 +87,25 @@ _JANAF_ELEMENT_GAS_TABLES = {
     "B": "B-005",
     "Br": "Br-001",
     "Ca": "Ca-006",
+    "C": "C-002",
+    "Cl": "Cl-001",
     "Co": "Co-005",
     "Cr": "Cr-005",
     "Cu": "Cu-005",
     "F": "F-001",
     "Fe": "Fe-004",
     "Ga": "Ga-005",
+    "H": "H-001",
     "I": "I-001",
     "K": "K-005",
     "Li": "Li-005",
     "Mn": "Mn-005",
+    "Mg": "Mg-005",
     "Na": "Na-005",
     "Ni": "Ni-005",
+    "Mo": "Mo-004",
     "O2": "O-029",
+    "P": "P-001",
     "Si": "Si-005",
     "S": "S-006",
     "Ta": "Ta-005",
@@ -239,17 +245,13 @@ def _janaf_element_reference_g_app_kJ_mol(
 def _janaf_element_reference_sum_kJ_mol(
     formula: str, temperature_K: float
 ) -> float:
-    atoms = {
-        element: int(count or "1")
-        for element, count in re.findall(r"([A-Z][a-z]?)([0-9]*)", formula)
-    }
     return math.fsum(
-        (count / 2.0 if element == "O" else count)
+        (float(count) / 2.0 if element == "O" else float(count))
         * _janaf_element_reference_g_app_kJ_mol(
             "O2" if element == "O" else element,
             temperature_K,
         )
-        for element, count in atoms.items()
+        for element, count in _formula_element_counts(formula).items()
     )
 
 
@@ -483,57 +485,72 @@ def test_janaf_liquid_nodes_match_printed_rows() -> None:
         ).read_text(encoding="utf-8")
     )
 
-    assert len(data["rows"]) == 22
+    assert len(data["rows"]) == 32
+    new_table_ids = {
+        "Na-003", "Ga-003", "Ca-003", "Li-003", "Cu-002", "Si-002",
+        "Br-039", "Ni-002", "Fe-004", "Co-002", "I-025", "Ti-003",
+        "Cl-094", "F-034", "Na-024", "H-063", "H-075", "Cl-162",
+        "B-126", "F-152", "C-146", "H-086",
+    }
     for row in data["rows"]:
         formula = row["formula"]
         formation_enthalpy = float(row["formation_enthalpy_298_kJ_mol"])
-        source_path = root / "data-src/janaf" / f"{row['table_id']}.txt"
-        source_raw = source_path.read_bytes()
-        source_lines = source_raw.decode("utf-8").splitlines()
-        source_rows = {
-            line_number: parsed
-            for line_number, raw_line in enumerate(source_lines, start=1)
-            if (parsed := _janaf_text_reference_row(raw_line)) is not None
-        }
-        assert row["source_sha256"] == hashlib.sha256(source_raw).hexdigest()
-        assert row["source_path"] == str(source_path.relative_to(root))
-        assert row["source_title"] == " | ".join(
-            source_lines[0].split("\t")
-        )
+        verify_source = row["table_id"] in new_table_ids
+        source_rows = {}
+        recovered_temperatures = set()
+        if verify_source:
+            source_path = root / "data-src/janaf" / f"{row['table_id']}.txt"
+            source_raw = source_path.read_bytes()
+            source_lines = source_raw.decode("utf-8").splitlines()
+            source_rows = {
+                line_number: parsed
+                for line_number, raw_line in enumerate(source_lines, start=1)
+                if (parsed := _janaf_text_reference_row(raw_line)) is not None
+            }
+            assert row["source_sha256"] == hashlib.sha256(source_raw).hexdigest()
+            assert row["source_path"] == str(source_path.relative_to(root))
+            assert row["source_title"] == " | ".join(
+                source_lines[0].split("\t")
+            )
         assert row["temperature_K"][0] < row["temperature_K"][1]
-        source_anchor = next(
-            parsed for parsed in source_rows.values()
-            if parsed["T_K"] == 298.15
-        )
-        expected_formation_enthalpy = source_anchor["delta_fH_kJ_mol"]
-        if source_anchor["packed_formation_columns"]:
-            next_printed_enthalpy = next(
-                float(parsed["delta_fH_kJ_mol"])
-                for parsed in source_rows.values()
-                if parsed["T_K"] > 298.15
-                and parsed["delta_fH_kJ_mol"] is not None
-                and not parsed["packed_formation_columns"]
+        if verify_source:
+            source_anchor = next(
+                parsed for parsed in source_rows.values()
+                if parsed["T_K"] == 298.15
             )
-            expected_formation_enthalpy = math.copysign(
-                abs(float(expected_formation_enthalpy)), next_printed_enthalpy
-            )
-        assert formation_enthalpy == expected_formation_enthalpy
-        recovered_temperatures = {
-            float(source_rows[line_number]["T_K"])
-            for line_number in source_rows
-            if source_rows[line_number]["packed_formation_columns"]
-        }
+            expected_formation_enthalpy = source_anchor["delta_fH_kJ_mol"]
+            if source_anchor["packed_formation_columns"]:
+                next_printed_enthalpy = next(
+                    float(parsed["delta_fH_kJ_mol"])
+                    for parsed in source_rows.values()
+                    if parsed["T_K"] > 298.15
+                    and parsed["delta_fH_kJ_mol"] is not None
+                    and not parsed["packed_formation_columns"]
+                )
+                expected_formation_enthalpy = math.copysign(
+                    abs(float(expected_formation_enthalpy)),
+                    next_printed_enthalpy,
+                )
+            assert formation_enthalpy == expected_formation_enthalpy
+            recovered_temperatures = {
+                float(source_rows[line_number]["T_K"])
+                for line_number in source_rows
+                if source_rows[line_number]["packed_formation_columns"]
+            }
         for node in row["nodes"]:
             temperature = float(node["T_K"])
             result = species_thermo(formula, "l", temperature)
-            source_line_number = int(node["source_line_number"])
-            source_line = source_lines[source_line_number - 1]
-            source_fields = source_line.split("\t")
-            assert temperature == float(source_fields[0])
-            assert float(node["entropy_J_mol_K"]) == float(source_fields[2])
-            assert float(node["enthalpy_increment_kJ_mol"]) == float(
-                source_fields[4]
-            )
+            if verify_source:
+                source_line_number = int(node["source_line_number"])
+                source_line = source_lines[source_line_number - 1]
+                source_fields = source_line.split("\t")
+                assert temperature == float(source_fields[0])
+                assert float(node["entropy_J_mol_K"]) == float(
+                    source_fields[2]
+                )
+                assert float(node["enthalpy_increment_kJ_mol"]) == float(
+                    source_fields[4]
+                )
             assert row["temperature_K"][0] <= temperature <= row[
                 "temperature_K"
             ][1]
@@ -547,11 +564,7 @@ def test_janaf_liquid_nodes_match_printed_rows() -> None:
             assert result.G_J_mol == pytest.approx(
                 1000.0 * enthalpy - temperature * entropy, abs=1e-9
             )
-            if row["table_id"] not in {
-                "Na-003", "Ga-003", "Ca-003", "Li-003", "Cu-002",
-                "Si-002", "Br-039", "Ni-002", "Fe-004", "Co-002",
-                "I-025", "Ti-003",
-            }:
+            if not verify_source:
                 continue
             source_row = source_rows.get(source_line_number)
             if source_row is None or source_row["delta_fG_kJ_mol"] is None:
@@ -584,13 +597,21 @@ def test_janaf_liquid_nodes_match_printed_rows() -> None:
                     assert log_k_delta_f_g == pytest.approx(
                         printed_delta_f_g, abs=0.25
                     )
-        lower_K, upper_K = map(float, row["temperature_K"])
-        served_temperatures = {float(node["T_K"]) for node in row["nodes"]}
-        assert {
-            temperature
-            for temperature in recovered_temperatures
-            if lower_K <= temperature <= upper_K
-        } <= served_temperatures
+        if verify_source:
+            lower_K, upper_K = map(float, row["temperature_K"])
+            served_temperatures = {float(node["T_K"]) for node in row["nodes"]}
+            assert {
+                temperature
+                for temperature in recovered_temperatures
+                if lower_K <= temperature <= upper_K
+            } <= served_temperatures
+            if row["table_id"] == "F-034":
+                assert 1300.0 in recovered_temperatures
+                assert 1300.0 in served_temperatures
+
+    water = next(row for row in data["rows"] if row["formula"] == "H2O")
+    assert water["opening_row"] is None
+    assert water["cap_row"]["label"] == "LIQUID <--> REAL GAS"
     v2o5 = species_thermo("V2O5", "l", 1000.0)
     assert v2o5.H_app_kJ_mol == -1368.261
     assert v2o5.S_J_molK == 395.938

@@ -10,6 +10,7 @@
 - Recovered JANAF rows inside a liquid segment are retained, including the
   printed 1000 K V2O5 node.
 - Added 12 JANAF element liquid fallbacks with their printed temperature windows.
+- Added 10 JANAF compound liquid fallbacks with their printed temperature windows.
 
 ### Gas formula spelling
 

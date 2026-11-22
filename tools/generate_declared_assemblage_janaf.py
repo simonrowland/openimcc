@@ -125,6 +125,16 @@ LIQUID_SPECIES_SOURCES = (
     ("Co", "Co-002", "cr"),
     ("I2", "I-025", "l"),
     ("Ti", "Ti-003", "cr"),
+    ("MgCl2", "Cl-094", "l"),
+    ("NaF", "F-034", "l"),
+    ("Na2SO4", "Na-024", "l"),
+    ("H2O", "H-063", "l"),
+    ("H2SO4", "H-075", "cr,l"),
+    ("TiCl4", "Cl-162", "l"),
+    ("B5H9", "B-126", "l"),
+    ("MoF6", "F-152", "l"),
+    ("Ni(CO)4", "C-146", "l"),
+    ("H3PO4", "H-086", "l"),
 )
 
 DEDICATED_PHASE_LABELS = {
@@ -297,6 +307,36 @@ def _prepare_source_table(
         if float(row["temperature"]["value"]) == 298.15
     )
     h298 = reference["formation_enthalpy"]["value"]
+    if h298 is None:
+        ambiguity = next(
+            (
+                row for row in table.get("parse_ambiguities", [])
+                if row.get("raw_line", "").split()
+                and float(row["raw_line"].split()[0]) == 298.15
+            ),
+            None,
+        )
+        later_hf = next(
+            (
+                float(row["formation_enthalpy"]["value"])
+                for row in table["values"]
+                if float(row["temperature"]["value"]) > 298.15
+                and row["formation_enthalpy"]["value"] is not None
+            ),
+            None,
+        )
+        if ambiguity is not None and later_hf is not None:
+            fields = ambiguity["raw_line"].split()
+            try:
+                h298_magnitude = float(fields[5])
+            except (IndexError, ValueError):
+                h298_magnitude = None
+            if h298_magnitude is not None:
+                h298 = (
+                    -abs(h298_magnitude)
+                    if later_hf < 0.0
+                    else abs(h298_magnitude)
+                )
     if h298 is None:
         raise ValueError(f"{table_id} has no 298.15 K formation enthalpy")
     nodes, transition_rows = _source_rows(
@@ -485,9 +525,14 @@ def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
             and left != "GLASS"
         ):
             opening_rows.append(row)
-        if "LIQUID" in left and "IDEAL GAS" in right:
+        if "LIQUID" in left and right in {"IDEAL GAS", "REAL GAS"}:
             cap_rows.append(row)
-    if len(opening_rows) != 1:
+    if len(opening_rows) > 1:
+        raise ValueError(
+            f"{table_id} must have at most one stable liquid-opening transition; "
+            f"found {len(opening_rows)}"
+        )
+    if not opening_rows and table_kind != "l":
         raise ValueError(
             f"{table_id} must have one stable liquid-opening transition; "
             f"found {len(opening_rows)}"
@@ -498,8 +543,12 @@ def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
             f"found {len(cap_rows)}"
         )
 
-    opening = opening_rows[0]
-    lower_K = float(opening["T_K"])
+    opening = opening_rows[0] if opening_rows else None
+    lower_K = (
+        float(opening["T_K"])
+        if opening is not None
+        else min(float(node["T_K"]) for node in prepared["nodes"])
+    )
     cap = cap_rows[0] if cap_rows else None
     upper_K = (
         float(cap["T_K"])
@@ -511,20 +560,25 @@ def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
 
     # The transition row at fusion carries liquid-side H and S. At the
     # liquid-to-gas cap, the named endpoint row carries the liquid-side values.
-    opening_liquid = next(
-        (
-            row for row in transitions
-            if float(row["T_K"]) == lower_K
-            and row["label"].strip().upper() == "TRANSITION"
-        ),
-        opening,
+    opening_liquid = (
+        next(
+            (
+                row for row in transitions
+                if float(row["T_K"]) == lower_K
+                and row["label"].strip().upper() == "TRANSITION"
+            ),
+            opening,
+        )
+        if opening is not None
+        else None
     )
     selected = {
         float(node["T_K"]): dict(node)
         for node in prepared["nodes"]
         if lower_K <= float(node["T_K"]) <= upper_K
     }
-    selected[lower_K] = dict(opening_liquid)
+    if opening_liquid is not None:
+        selected[lower_K] = dict(opening_liquid)
     if cap is not None:
         selected[upper_K] = dict(cap)
 
@@ -540,7 +594,9 @@ def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
             "formation_enthalpy_298_kJ_mol"
         ],
         "temperature_K": [lower_K, upper_K],
-        "opening_row": dict(opening_liquid),
+        "opening_row": (
+            dict(opening_liquid) if opening_liquid is not None else None
+        ),
         "cap_row": dict(cap) if cap is not None else None,
         "nodes": [selected[temperature] for temperature in sorted(selected)],
         **{
@@ -676,9 +732,10 @@ def build() -> dict[Path, str]:
             "retain their liquid-side source values."
         ),
         "phase_restriction_rule": (
-            "Use the stable liquid-opening transition through the printed "
-            "liquid-to-ideal-gas row, inclusive, or the last printed node when "
-            "no gas cap is present. Never continue outside this interval."
+            "Use the stable liquid-opening transition or the first printed "
+            "node in a dedicated liquid table through the printed liquid-to-gas "
+            "row, inclusive, or the last printed node when no gas cap is present. "
+            "Never continue outside this interval."
         ),
         "rows": [
             _liquid_species_row(formula, table_id, table_kind)

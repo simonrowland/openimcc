@@ -61,7 +61,9 @@ JANAF_CRYSTAL_TABLE_IDS = frozenset({
 })
 JANAF_CRYSTAL_YAML_TABLE_IDS = frozenset({"B-095", "O-065", "O-085"})
 JANAF_LIQUID_TABLE_IDS = frozenset({
-    "Na-003", "Ga-003", "Li-003", "Br-039", "I-025",
+    "Na-003", "Ga-003", "Li-003", "Br-039", "I-025", "Cl-094",
+    "F-034", "Na-024", "H-063", "H-075", "Cl-162", "B-126",
+    "F-152", "C-146", "H-086",
 })
 RH_CRYSTAL_TABLE_IDS = frozenset({
     "USGS-B2131-p127", "USGS-B2131-p128", "USGS-B2131-p129",
@@ -1247,7 +1249,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "B-005", "B-006", "B-007", "B-078", "B-079", "B-080",
         "B-093", "B-094", "B-096", "B-098", "Ga-005", "Ga-006", "Ga-007",
         "Hf-006", "Hf-007", "Hf-008", "Hg-004",
-    } | JANAF_CRYSTAL_TABLE_IDS
+    } | JANAF_CRYSTAL_TABLE_IDS | JANAF_LIQUID_TABLE_IDS
     assert JANAF_CRYSTAL_YAML_TABLE_IDS <= {
         path.stem for path in JANAF_DATA.glob("*.yaml")
     }
@@ -1974,6 +1976,8 @@ def test_janaf_liquid_species_tables_are_in_the_element_inventory() -> None:
         "Mn-004", "O-085", "Sr-001", "S-001",
         "Na-003", "Ga-003", "Ca-003", "Li-003", "Cu-002", "Si-002",
         "Br-039", "Ni-002", "Fe-004", "Co-002", "I-025", "Ti-003",
+        "Cl-094", "F-034", "Na-024", "H-063", "H-075", "Cl-162",
+        "B-126", "F-152", "C-146", "H-086",
     }
     assert table_ids <= (
         JANAF_CRYSTAL_TABLE_IDS

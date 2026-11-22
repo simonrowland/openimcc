@@ -2,7 +2,7 @@
   "schema": "openimcc-janaf-liquid-species-v1",
   "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
   "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns for the printed liquid segment. Runtime apparent G(T) = 1000*(Hf(298.15 K) + Hinc) - T*S; interpolate Hinc and S linearly and take Cp from the Hinc secant. Opening and cap transition rows retain their liquid-side source values.",
-  "phase_restriction_rule": "Use the stable liquid-opening transition through the printed liquid-to-ideal-gas row, inclusive, or the last printed node when no gas cap is present. Never continue outside this interval.",
+  "phase_restriction_rule": "Use the stable liquid-opening transition or the first printed node in a dedicated liquid table through the printed liquid-to-gas row, inclusive, or the last printed node when no gas cap is present. Never continue outside this interval.",
   "rows": [
     {
       "id": "Al-001",
@@ -2296,6 +2296,1053 @@
       "source_url": "https://janaf.nist.gov/tables/Ti-003.html",
       "download_url": "https://janaf.nist.gov/tables/Ti-003.txt",
       "source_path": "data-src/janaf/Ti-003.txt"
+    },
+    {
+      "id": "Cl-094",
+      "formula": "MgCl2",
+      "table_id": "Cl-094",
+      "table_kind": "l",
+      "source_title": "Magnesium Chloride (MgCl2) | Cl2Mg1(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "228e0cf0dca15fb7ef477075b9eb11e3955b2b012d0d38bb726027da15533d1b",
+      "formation_enthalpy_298_kJ_mol": -601.577,
+      "temperature_K": [
+        987.0,
+        2500.0
+      ],
+      "opening_row": {
+        "T_K": 987.0,
+        "enthalpy_increment_kJ_mol": 58.085,
+        "entropy_J_mol_K": 227.458,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 16,
+        "raw_line": "987.000\t92.048\t227.458\t168.608\t58.085\tCRYSTAL <--> LIQUID"
+      },
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 987.0,
+          "enthalpy_increment_kJ_mol": 58.085,
+          "entropy_J_mol_K": 227.458,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 16,
+          "raw_line": "987.000\t92.048\t227.458\t168.608\t58.085\tCRYSTAL <--> LIQUID"
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 59.282,
+          "entropy_J_mol_K": 228.662,
+          "source_line_number": 17
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 68.486,
+          "entropy_J_mol_K": 237.435,
+          "source_line_number": 18
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 77.691,
+          "entropy_J_mol_K": 245.444,
+          "source_line_number": 19
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 86.896,
+          "entropy_J_mol_K": 252.812,
+          "source_line_number": 20
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 96.101,
+          "entropy_J_mol_K": 259.634,
+          "source_line_number": 21
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 105.306,
+          "entropy_J_mol_K": 265.984,
+          "source_line_number": 22
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 114.51,
+          "entropy_J_mol_K": 271.925,
+          "source_line_number": 23
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 123.715,
+          "entropy_J_mol_K": 277.505,
+          "source_line_number": 24
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 132.92,
+          "entropy_J_mol_K": 282.767,
+          "source_line_number": 25
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 142.125,
+          "entropy_J_mol_K": 287.744,
+          "source_line_number": 26
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 151.33,
+          "entropy_J_mol_K": 292.465,
+          "source_line_number": 27
+        },
+        {
+          "T_K": 2100.0,
+          "enthalpy_increment_kJ_mol": 160.534,
+          "entropy_J_mol_K": 296.956,
+          "source_line_number": 28
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 169.739,
+          "entropy_J_mol_K": 301.238,
+          "source_line_number": 29
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 178.944,
+          "entropy_J_mol_K": 305.33,
+          "source_line_number": 30
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 188.149,
+          "entropy_J_mol_K": 309.247,
+          "source_line_number": 31
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 197.354,
+          "entropy_J_mol_K": 313.005,
+          "source_line_number": 32
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/Cl-094.html",
+      "download_url": "https://janaf.nist.gov/tables/Cl-094.txt",
+      "source_path": "data-src/janaf/Cl-094.txt"
+    },
+    {
+      "id": "F-034",
+      "formula": "NaF",
+      "table_id": "F-034",
+      "table_kind": "l",
+      "source_title": "Sodium Fluoride (NaF) | F1Na1(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "9120c2248a165cad62dd9cd46519d237fb52cc1d661ce76ec78e79a3d6f24cdc",
+      "formation_enthalpy_298_kJ_mol": -546.204,
+      "temperature_K": [
+        1269.0,
+        3500.0
+      ],
+      "opening_row": {
+        "T_K": 1269.0,
+        "enthalpy_increment_kJ_mol": 58.531,
+        "entropy_J_mol_K": 155.689,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 19,
+        "raw_line": "1269.000\t70.208\t155.689\t109.566\t58.531\tCRYSTAL <--> LIQUID"
+      },
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 1269.0,
+          "enthalpy_increment_kJ_mol": 58.531,
+          "entropy_J_mol_K": 155.689,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 19,
+          "raw_line": "1269.000\t70.208\t155.689\t109.566\t58.531\tCRYSTAL <--> LIQUID"
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 60.702,
+          "entropy_J_mol_K": 157.38,
+          "source_line_number": 20
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 67.646,
+          "entropy_J_mol_K": 162.526,
+          "source_line_number": 21
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 74.515,
+          "entropy_J_mol_K": 167.266,
+          "source_line_number": 22
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 81.324,
+          "entropy_J_mol_K": 171.66,
+          "source_line_number": 23
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 88.083,
+          "entropy_J_mol_K": 175.758,
+          "source_line_number": 24
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 94.8,
+          "entropy_J_mol_K": 179.597,
+          "source_line_number": 25
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 101.481,
+          "entropy_J_mol_K": 183.21,
+          "source_line_number": 26
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 108.131,
+          "entropy_J_mol_K": 186.621,
+          "source_line_number": 27
+        },
+        {
+          "T_K": 2100.0,
+          "enthalpy_increment_kJ_mol": 114.754,
+          "entropy_J_mol_K": 189.852,
+          "source_line_number": 28
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 121.354,
+          "entropy_J_mol_K": 192.923,
+          "source_line_number": 29
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 127.936,
+          "entropy_J_mol_K": 195.848,
+          "source_line_number": 30
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 134.5,
+          "entropy_J_mol_K": 198.642,
+          "source_line_number": 31
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 141.05,
+          "entropy_J_mol_K": 201.316,
+          "source_line_number": 32
+        },
+        {
+          "T_K": 2600.0,
+          "enthalpy_increment_kJ_mol": 147.588,
+          "entropy_J_mol_K": 203.88,
+          "source_line_number": 33
+        },
+        {
+          "T_K": 2700.0,
+          "enthalpy_increment_kJ_mol": 154.112,
+          "entropy_J_mol_K": 206.342,
+          "source_line_number": 34
+        },
+        {
+          "T_K": 2800.0,
+          "enthalpy_increment_kJ_mol": 160.627,
+          "entropy_J_mol_K": 208.711,
+          "source_line_number": 35
+        },
+        {
+          "T_K": 2900.0,
+          "enthalpy_increment_kJ_mol": 167.133,
+          "entropy_J_mol_K": 210.995,
+          "source_line_number": 36
+        },
+        {
+          "T_K": 3000.0,
+          "enthalpy_increment_kJ_mol": 173.631,
+          "entropy_J_mol_K": 213.197,
+          "source_line_number": 37
+        },
+        {
+          "T_K": 3100.0,
+          "enthalpy_increment_kJ_mol": 180.12,
+          "entropy_J_mol_K": 215.325,
+          "source_line_number": 38
+        },
+        {
+          "T_K": 3200.0,
+          "enthalpy_increment_kJ_mol": 186.603,
+          "entropy_J_mol_K": 217.384,
+          "source_line_number": 39
+        },
+        {
+          "T_K": 3300.0,
+          "enthalpy_increment_kJ_mol": 193.08,
+          "entropy_J_mol_K": 219.376,
+          "source_line_number": 40
+        },
+        {
+          "T_K": 3400.0,
+          "enthalpy_increment_kJ_mol": 199.55,
+          "entropy_J_mol_K": 221.308,
+          "source_line_number": 41
+        },
+        {
+          "T_K": 3500.0,
+          "enthalpy_increment_kJ_mol": 206.016,
+          "entropy_J_mol_K": 223.183,
+          "source_line_number": 42
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/F-034.html",
+      "download_url": "https://janaf.nist.gov/tables/F-034.txt",
+      "source_path": "data-src/janaf/F-034.txt"
+    },
+    {
+      "id": "Na-024",
+      "formula": "Na2SO4",
+      "table_id": "Na-024",
+      "table_kind": "l",
+      "source_title": "Sodium Sulfate (Na2SO4) | Na2O4S1(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "fb2c8fcc16815897a5da631f71fe58333cc6c0b0b07d93e218281251ef4d24b6",
+      "formation_enthalpy_298_kJ_mol": -1356.385,
+      "temperature_K": [
+        1157.0,
+        3000.0
+      ],
+      "opening_row": {
+        "T_K": 1157.0,
+        "enthalpy_increment_kJ_mol": 157.089,
+        "entropy_J_mol_K": 422.314,
+        "label": "I <--> LIQUID",
+        "source_line_number": 18,
+        "raw_line": "1157.000\t197.033\t422.314\t286.541\t157.089\tI <--> LIQUID"
+      },
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 1157.0,
+          "enthalpy_increment_kJ_mol": 157.089,
+          "entropy_J_mol_K": 422.314,
+          "label": "I <--> LIQUID",
+          "source_line_number": 18,
+          "raw_line": "1157.000\t197.033\t422.314\t286.541\t157.089\tI <--> LIQUID"
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 165.561,
+          "entropy_J_mol_K": 429.504,
+          "source_line_number": 19
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 185.265,
+          "entropy_J_mol_K": 445.275,
+          "source_line_number": 20
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 204.968,
+          "entropy_J_mol_K": 459.877,
+          "source_line_number": 21
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 224.671,
+          "entropy_J_mol_K": 473.471,
+          "source_line_number": 22
+        },
+        {
+          "T_K": 1600.0,
+          "enthalpy_increment_kJ_mol": 244.374,
+          "entropy_J_mol_K": 486.187,
+          "source_line_number": 23
+        },
+        {
+          "T_K": 1700.0,
+          "enthalpy_increment_kJ_mol": 264.078,
+          "entropy_J_mol_K": 498.132,
+          "source_line_number": 24
+        },
+        {
+          "T_K": 1800.0,
+          "enthalpy_increment_kJ_mol": 283.781,
+          "entropy_J_mol_K": 509.394,
+          "source_line_number": 25
+        },
+        {
+          "T_K": 1900.0,
+          "enthalpy_increment_kJ_mol": 303.484,
+          "entropy_J_mol_K": 520.047,
+          "source_line_number": 26
+        },
+        {
+          "T_K": 2000.0,
+          "enthalpy_increment_kJ_mol": 323.188,
+          "entropy_J_mol_K": 530.154,
+          "source_line_number": 27
+        },
+        {
+          "T_K": 2100.0,
+          "enthalpy_increment_kJ_mol": 342.891,
+          "entropy_J_mol_K": 539.767,
+          "source_line_number": 28
+        },
+        {
+          "T_K": 2200.0,
+          "enthalpy_increment_kJ_mol": 362.594,
+          "entropy_J_mol_K": 548.933,
+          "source_line_number": 29
+        },
+        {
+          "T_K": 2300.0,
+          "enthalpy_increment_kJ_mol": 382.298,
+          "entropy_J_mol_K": 557.692,
+          "source_line_number": 30
+        },
+        {
+          "T_K": 2400.0,
+          "enthalpy_increment_kJ_mol": 402.001,
+          "entropy_J_mol_K": 566.077,
+          "source_line_number": 31
+        },
+        {
+          "T_K": 2500.0,
+          "enthalpy_increment_kJ_mol": 421.704,
+          "entropy_J_mol_K": 574.12,
+          "source_line_number": 32
+        },
+        {
+          "T_K": 2600.0,
+          "enthalpy_increment_kJ_mol": 441.407,
+          "entropy_J_mol_K": 581.848,
+          "source_line_number": 33
+        },
+        {
+          "T_K": 2700.0,
+          "enthalpy_increment_kJ_mol": 461.111,
+          "entropy_J_mol_K": 589.284,
+          "source_line_number": 34
+        },
+        {
+          "T_K": 2800.0,
+          "enthalpy_increment_kJ_mol": 480.814,
+          "entropy_J_mol_K": 596.45,
+          "source_line_number": 35
+        },
+        {
+          "T_K": 2900.0,
+          "enthalpy_increment_kJ_mol": 500.517,
+          "entropy_J_mol_K": 603.364,
+          "source_line_number": 36
+        },
+        {
+          "T_K": 3000.0,
+          "enthalpy_increment_kJ_mol": 520.221,
+          "entropy_J_mol_K": 610.044,
+          "source_line_number": 37
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/Na-024.html",
+      "download_url": "https://janaf.nist.gov/tables/Na-024.txt",
+      "source_path": "data-src/janaf/Na-024.txt"
+    },
+    {
+      "id": "H-063",
+      "formula": "H2O",
+      "table_id": "H-063",
+      "table_kind": "l",
+      "source_title": "Water (H2O) | H2O1(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "582487df3667efbfb920c13839cd6f59182594af2bc324946f18ccaabc8005bb",
+      "formation_enthalpy_298_kJ_mol": -285.83,
+      "temperature_K": [
+        280.0,
+        372.78
+      ],
+      "opening_row": null,
+      "cap_row": {
+        "T_K": 372.78,
+        "enthalpy_increment_kJ_mol": 5.633,
+        "entropy_J_mol_K": 86.808,
+        "label": "LIQUID <--> REAL GAS",
+        "source_line_number": 12,
+        "raw_line": "372.780\t75.962\t86.808\t71.699\t5.633\tLIQUID <--> REAL GAS"
+      },
+      "nodes": [
+        {
+          "T_K": 280.0,
+          "enthalpy_increment_kJ_mol": -1.368,
+          "entropy_J_mol_K": 65.215,
+          "source_line_number": 6
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 69.95,
+          "source_line_number": 7
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.139,
+          "entropy_J_mol_K": 70.416,
+          "source_line_number": 8
+        },
+        {
+          "T_K": 320.0,
+          "enthalpy_increment_kJ_mol": 1.646,
+          "entropy_J_mol_K": 75.279,
+          "source_line_number": 9
+        },
+        {
+          "T_K": 340.0,
+          "enthalpy_increment_kJ_mol": 3.153,
+          "entropy_J_mol_K": 79.847,
+          "source_line_number": 10
+        },
+        {
+          "T_K": 360.0,
+          "enthalpy_increment_kJ_mol": 4.664,
+          "entropy_J_mol_K": 84.164,
+          "source_line_number": 11
+        },
+        {
+          "T_K": 372.78,
+          "enthalpy_increment_kJ_mol": 5.633,
+          "entropy_J_mol_K": 86.808,
+          "label": "LIQUID <--> REAL GAS",
+          "source_line_number": 12,
+          "raw_line": "372.780\t75.962\t86.808\t71.699\t5.633\tLIQUID <--> REAL GAS"
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/H-063.html",
+      "download_url": "https://janaf.nist.gov/tables/H-063.txt",
+      "source_path": "data-src/janaf/H-063.txt"
+    },
+    {
+      "id": "H-075",
+      "formula": "H2SO4",
+      "table_id": "H-075",
+      "table_kind": "cr,l",
+      "source_title": "Sulfuric Acid (O2S(OH)2) | H2O4S1(cr,l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "3a0ae9c68c68daaea5c0ac71a0dfb2df1d9d61d3874b8577bee0cfbdd2bb1ec2",
+      "formation_enthalpy_298_kJ_mol": -813.989,
+      "temperature_K": [
+        283.456,
+        1000.0
+      ],
+      "opening_row": {
+        "T_K": 283.456,
+        "enthalpy_increment_kJ_mol": -2.016,
+        "entropy_J_mol_K": 149.962,
+        "label": "TRANSITION",
+        "source_line_number": 7,
+        "raw_line": "283.456\t135.770\t149.962\t157.073\t-2.016\tTRANSITION"
+      },
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 283.456,
+          "enthalpy_increment_kJ_mol": -2.016,
+          "entropy_J_mol_K": 149.962,
+          "label": "TRANSITION",
+          "source_line_number": 7,
+          "raw_line": "283.456\t135.770\t149.962\t157.073\t-2.016\tTRANSITION"
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 156.895,
+          "source_line_number": 8
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.257,
+          "entropy_J_mol_K": 157.753,
+          "source_line_number": 9
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 15.112,
+          "entropy_J_mol_K": 200.356,
+          "source_line_number": 10
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 31.903,
+          "entropy_J_mol_K": 237.744,
+          "source_line_number": 11
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 50.636,
+          "entropy_J_mol_K": 271.844,
+          "source_line_number": 12
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 71.31,
+          "entropy_J_mol_K": 303.674,
+          "source_line_number": 13
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 93.925,
+          "entropy_J_mol_K": 333.844,
+          "source_line_number": 14
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 118.482,
+          "entropy_J_mol_K": 362.745,
+          "source_line_number": 15
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 144.98,
+          "entropy_J_mol_K": 390.646,
+          "source_line_number": 16
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/H-075.html",
+      "download_url": "https://janaf.nist.gov/tables/H-075.txt",
+      "source_path": "data-src/janaf/H-075.txt"
+    },
+    {
+      "id": "Cl-162",
+      "formula": "TiCl4",
+      "table_id": "Cl-162",
+      "table_kind": "l",
+      "source_title": "Titanium Chloride (TiCl4) | Cl4Ti1(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "653f9beb0e1efb8bf05f5ce6ef83af8ccc1e114ef0df27e98c9f73eb0a045a28",
+      "formation_enthalpy_298_kJ_mol": -804.165,
+      "temperature_K": [
+        249.046,
+        1000.0
+      ],
+      "opening_row": {
+        "T_K": 249.046,
+        "enthalpy_increment_kJ_mol": -7.122,
+        "entropy_J_mol_K": 195.826,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 6,
+        "raw_line": "249.046\t144.910\t195.826\t224.422\t-7.122\tCRYSTAL <--> LIQUID"
+      },
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 249.046,
+          "enthalpy_increment_kJ_mol": -7.122,
+          "entropy_J_mol_K": 195.826,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 6,
+          "raw_line": "249.046\t144.910\t195.826\t224.422\t-7.122\tCRYSTAL <--> LIQUID"
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 221.925,
+          "source_line_number": 7
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.269,
+          "entropy_J_mol_K": 222.824,
+          "source_line_number": 8
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 14.842,
+          "entropy_J_mol_K": 264.741,
+          "source_line_number": 9
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 29.504,
+          "entropy_J_mol_K": 297.456,
+          "source_line_number": 10
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 44.258,
+          "entropy_J_mol_K": 324.352,
+          "source_line_number": 11
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 59.101,
+          "entropy_J_mol_K": 347.232,
+          "source_line_number": 12
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 74.036,
+          "entropy_J_mol_K": 367.173,
+          "source_line_number": 13
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 89.061,
+          "entropy_J_mol_K": 384.869,
+          "source_line_number": 14
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 104.178,
+          "entropy_J_mol_K": 400.795,
+          "source_line_number": 15
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/Cl-162.html",
+      "download_url": "https://janaf.nist.gov/tables/Cl-162.txt",
+      "source_path": "data-src/janaf/Cl-162.txt"
+    },
+    {
+      "id": "B-126",
+      "formula": "B5H9",
+      "table_id": "B-126",
+      "table_kind": "l",
+      "source_title": "Pentaborane (B5H9) | B5H9(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "b045e0f6b078b98f6593d88b56fe6bb426b533d91bea8b63fb0064b62d65f5a9",
+      "formation_enthalpy_298_kJ_mol": 42.844,
+      "temperature_K": [
+        298.15,
+        1500.0
+      ],
+      "opening_row": null,
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 184.33,
+          "source_line_number": 6
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.281,
+          "entropy_J_mol_K": 185.269,
+          "source_line_number": 7
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 17.278,
+          "entropy_J_mol_K": 233.939,
+          "source_line_number": 8
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 35.942,
+          "entropy_J_mol_K": 275.566,
+          "source_line_number": 9
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 55.841,
+          "entropy_J_mol_K": 311.791,
+          "source_line_number": 10
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 78.745,
+          "entropy_J_mol_K": 347.03,
+          "source_line_number": 11
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 103.801,
+          "entropy_J_mol_K": 380.47,
+          "source_line_number": 12
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 130.0,
+          "entropy_J_mol_K": 411.315,
+          "source_line_number": 13
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 157.14,
+          "entropy_J_mol_K": 439.903,
+          "source_line_number": 14
+        },
+        {
+          "T_K": 1100.0,
+          "enthalpy_increment_kJ_mol": 184.925,
+          "entropy_J_mol_K": 466.381,
+          "source_line_number": 15
+        },
+        {
+          "T_K": 1200.0,
+          "enthalpy_increment_kJ_mol": 213.17,
+          "entropy_J_mol_K": 490.955,
+          "source_line_number": 16
+        },
+        {
+          "T_K": 1300.0,
+          "enthalpy_increment_kJ_mol": 241.803,
+          "entropy_J_mol_K": 513.872,
+          "source_line_number": 17
+        },
+        {
+          "T_K": 1400.0,
+          "enthalpy_increment_kJ_mol": 270.751,
+          "entropy_J_mol_K": 535.323,
+          "source_line_number": 18
+        },
+        {
+          "T_K": 1500.0,
+          "enthalpy_increment_kJ_mol": 299.942,
+          "entropy_J_mol_K": 555.462,
+          "source_line_number": 19
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/B-126.html",
+      "download_url": "https://janaf.nist.gov/tables/B-126.txt",
+      "source_path": "data-src/janaf/B-126.txt"
+    },
+    {
+      "id": "F-152",
+      "formula": "MoF6",
+      "table_id": "F-152",
+      "table_kind": "l",
+      "source_title": "Molybdenum Fluoride (MoF6) | F6Mo1(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "372ac14839967279af863d0bbf5dd19fae8f0fd24db5ec07dfbc0a5927206c3d",
+      "formation_enthalpy_298_kJ_mol": -1585.656,
+      "temperature_K": [
+        200.0,
+        1000.0
+      ],
+      "opening_row": null,
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 200.0,
+          "enthalpy_increment_kJ_mol": -15.827,
+          "entropy_J_mol_K": 195.532,
+          "source_line_number": 5
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 259.693,
+          "source_line_number": 6
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.314,
+          "entropy_J_mol_K": 260.744,
+          "source_line_number": 7
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 18.196,
+          "entropy_J_mol_K": 312.066,
+          "source_line_number": 8
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 37.817,
+          "entropy_J_mol_K": 355.777,
+          "source_line_number": 9
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 59.177,
+          "entropy_J_mol_K": 394.673,
+          "source_line_number": 10
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 82.277,
+          "entropy_J_mol_K": 430.247,
+          "source_line_number": 11
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 107.117,
+          "entropy_J_mol_K": 463.39,
+          "source_line_number": 12
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 133.696,
+          "entropy_J_mol_K": 494.675,
+          "source_line_number": 13
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 162.014,
+          "entropy_J_mol_K": 524.496,
+          "source_line_number": 14
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/F-152.html",
+      "download_url": "https://janaf.nist.gov/tables/F-152.txt",
+      "source_path": "data-src/janaf/F-152.txt"
+    },
+    {
+      "id": "C-146",
+      "formula": "Ni(CO)4",
+      "table_id": "C-146",
+      "table_kind": "l",
+      "source_title": "Nickel Carbonyl (Ni(CO)4) | C4Ni1O4(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "3bae7c12e4d8f48b58d3bcee96273cc5e73122afb3e6a378d479d017bcaac802",
+      "formation_enthalpy_298_kJ_mol": -631.784,
+      "temperature_K": [
+        100.0,
+        700.0
+      ],
+      "opening_row": null,
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 100.0,
+          "enthalpy_increment_kJ_mol": -33.934,
+          "entropy_J_mol_K": 145.316,
+          "source_line_number": 4
+        },
+        {
+          "T_K": 170.0,
+          "enthalpy_increment_kJ_mol": -25.604,
+          "entropy_J_mol_K": 207.499,
+          "source_line_number": 6
+        },
+        {
+          "T_K": 200.0,
+          "enthalpy_increment_kJ_mol": -19.692,
+          "entropy_J_mol_K": 239.525,
+          "source_line_number": 7
+        },
+        {
+          "T_K": 298.15,
+          "enthalpy_increment_kJ_mol": 0.0,
+          "entropy_J_mol_K": 319.56,
+          "source_line_number": 8
+        },
+        {
+          "T_K": 300.0,
+          "enthalpy_increment_kJ_mol": 0.376,
+          "entropy_J_mol_K": 320.818,
+          "source_line_number": 9
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 20.995,
+          "entropy_J_mol_K": 380.097,
+          "source_line_number": 10
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 42.166,
+          "entropy_J_mol_K": 427.315,
+          "source_line_number": 11
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 63.889,
+          "entropy_J_mol_K": 466.906,
+          "source_line_number": 12
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 86.165,
+          "entropy_J_mol_K": 501.234,
+          "source_line_number": 13
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/C-146.html",
+      "download_url": "https://janaf.nist.gov/tables/C-146.txt",
+      "source_path": "data-src/janaf/C-146.txt"
+    },
+    {
+      "id": "H-086",
+      "formula": "H3PO4",
+      "table_id": "H-086",
+      "table_kind": "l",
+      "source_title": "Phosphoric Acid (H3PO4) | H3O4P1(l)",
+      "source_authority": "janaf_transcribed",
+      "source_sha256": "d81177bfc53c3489e2999befb88bbec87dd8d4ca98cf131ebc7690c315581a6b",
+      "formation_enthalpy_298_kJ_mol": -1271.663,
+      "temperature_K": [
+        315.5,
+        1000.0
+      ],
+      "opening_row": {
+        "T_K": 315.5,
+        "enthalpy_increment_kJ_mol": 2.562,
+        "entropy_J_mol_K": 159.125,
+        "label": "CRYSTAL <--> LIQUID",
+        "source_line_number": 8,
+        "raw_line": "315.500\t150.273\t159.125\t151.005\t2.562\tCRYSTAL <--> LIQUID"
+      },
+      "cap_row": null,
+      "nodes": [
+        {
+          "T_K": 315.5,
+          "enthalpy_increment_kJ_mol": 2.562,
+          "entropy_J_mol_K": 159.125,
+          "label": "CRYSTAL <--> LIQUID",
+          "source_line_number": 8,
+          "raw_line": "315.500\t150.273\t159.125\t151.005\t2.562\tCRYSTAL <--> LIQUID"
+        },
+        {
+          "T_K": 400.0,
+          "enthalpy_increment_kJ_mol": 16.335,
+          "entropy_J_mol_K": 197.687,
+          "source_line_number": 9
+        },
+        {
+          "T_K": 500.0,
+          "enthalpy_increment_kJ_mol": 35.414,
+          "entropy_J_mol_K": 240.135,
+          "source_line_number": 10
+        },
+        {
+          "T_K": 600.0,
+          "enthalpy_increment_kJ_mol": 57.506,
+          "entropy_J_mol_K": 280.33,
+          "source_line_number": 11
+        },
+        {
+          "T_K": 700.0,
+          "enthalpy_increment_kJ_mol": 82.61,
+          "entropy_J_mol_K": 318.968,
+          "source_line_number": 12
+        },
+        {
+          "T_K": 800.0,
+          "enthalpy_increment_kJ_mol": 110.726,
+          "entropy_J_mol_K": 356.468,
+          "source_line_number": 13
+        },
+        {
+          "T_K": 900.0,
+          "enthalpy_increment_kJ_mol": 141.855,
+          "entropy_J_mol_K": 393.097,
+          "source_line_number": 14
+        },
+        {
+          "T_K": 1000.0,
+          "enthalpy_increment_kJ_mol": 175.997,
+          "entropy_J_mol_K": 429.041,
+          "source_line_number": 15
+        }
+      ],
+      "source_url": "https://janaf.nist.gov/tables/H-086.html",
+      "download_url": "https://janaf.nist.gov/tables/H-086.txt",
+      "source_path": "data-src/janaf/H-086.txt"
     }
   ]
 }
