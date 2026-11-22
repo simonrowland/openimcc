@@ -1598,6 +1598,51 @@ def test_robie_hemingway_aliases_and_printed_phase_notes() -> None:
     assert "formula weight is 258.160" in source_notes["kaolinite"]
 
 
+@pytest.mark.parametrize(
+    ("formula", "polymorph", "temperature_K", "phase_id"),
+    (
+        ("Th", "alpha", 1000.0, "thorium-alpha"),
+        ("Th", "beta", 1650.0, "thorium-beta"),
+        ("U", "alpha", 800.0, "uranium-alpha"),
+        ("U", "beta", 942.0, "uranium-beta"),
+        ("U", "gamma", 1049.0, "uranium-gamma"),
+        ("Ag", "face-centered cubic", 500.0, "silver-fcc"),
+    ),
+)
+def test_rh_ascii_polymorph_aliases_keep_phase_identity(
+    formula: str, polymorph: str, temperature_K: float, phase_id: str,
+) -> None:
+    result = species_thermo(
+        formula, "cr", temperature_K, polymorph=polymorph
+    )
+
+    assert result.source_row_id.endswith(f":{phase_id}")
+
+
+@pytest.mark.parametrize(
+    ("formula", "polymorph", "temperature_K", "interval_K"),
+    (
+        ("Th", "alpha", 1650.0, (298.15, 1650.0)),
+        ("U", "alpha", 942.0, (298.15, 942.0)),
+        ("U", "beta", 1049.0, (942.0, 1049.0)),
+    ),
+)
+def test_named_rh_lower_phase_interval_is_half_open(
+    formula: str,
+    polymorph: str,
+    temperature_K: float,
+    interval_K: tuple[float, float],
+) -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo(
+            formula, "cr", temperature_K, polymorph=polymorph
+        )
+
+    lower_K, upper_K = interval_K
+    assert refusal.value.declared_interval_K == interval_K
+    assert f"[{lower_K:g}, {upper_K:g}) K" in str(refusal.value)
+
+
 def test_named_janaf_segment_refusal_reports_segment_interval() -> None:
     with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
         species_thermo("PbO", "cr", 500.0, polymorph="II")
@@ -1648,6 +1693,14 @@ def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
         },
     }.items():
         assert _value_hexes(species_thermo("CaTiO3", "cr", temperature)) == expected
+
+
+def test_perovskite_refusal_names_the_printed_table_limit() -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
+        species_thermo("CaTiO3", "cr", 2200.0)
+
+    assert refusal.value.declared_interval_K == (298.15, 1800.0)
+    assert "printed source table limit of 1800 K" in str(refusal.value)
 
 
 def test_near_equal_polymorph_g_values_are_reported_as_a_tie() -> None:

@@ -32,6 +32,13 @@ _POLYMORPH_ALIASES = {
     "TiO2": {"rutile": "O-043"},
     "Ti3O5": {"beta": "O-081"},
     "FeS": {"troilite": "Fe-023"},
+    "Ag": {"face-centered cubic": "silver-fcc"},
+    "Th": {"alpha": "thorium-alpha", "beta": "thorium-beta"},
+    "U": {
+        "alpha": "uranium-alpha",
+        "beta": "uranium-beta",
+        "gamma": "uranium-gamma",
+    },
 }
 
 # Berman's thermodynamic functions use a 298.15 K reference, while
@@ -1043,7 +1050,10 @@ def evaluate_crystal_species(
             source_title = str(candidate.phase.get("source_title", ""))
             if (
                 alias_target is not None
-                and candidate.source_table_id.casefold() == alias_target.casefold()
+                and alias_target.casefold() in {
+                    candidate.source_table_id.casefold(),
+                    str(candidate.phase.get("id", "")).casefold(),
+                }
             ):
                 named = candidate
                 alias_used = True
@@ -1129,9 +1139,18 @@ def evaluate_crystal_species(
             low_K, high_K = named_segment_interval
         if cap_refusals:
             candidate, limit = cap_refusals[0]
+            source_table_high_K = candidate.interval_K[1]
+            reason = (
+                f"above its printed source table limit of {source_table_high_K:g} K"
+                if (
+                    candidate.dataset == "Robie-Hemingway 1995 tables"
+                    and source_table_high_K < limit
+                )
+                else f"above its source solid limit of {limit:g} K"
+            )
             message = (
                 f"cannot serve {formula}(cr) at T={temperature_K:g} K: "
-                f"above its source solid limit of {limit:g} K; declared "
+                f"{reason}; declared "
                 f"interval is ({low_K:g}, {high_K:g}) K; available "
                 f"polymorphs: {', '.join(available_labels)}"
             )
@@ -1143,9 +1162,16 @@ def evaluate_crystal_species(
                 f"available polymorphs: {', '.join(available_labels)}"
             )
         else:
+            interval = (
+                f"[{low_K:g}, {high_K:g})"
+                if named is not None
+                and named_segment is None
+                and not candidate.upper_temperature_inclusive
+                else f"({low_K:g}, {high_K:g})"
+            )
             message = (
                 f"T={temperature_K:g} K is outside the declared G(T) interval "
-                f"({low_K:g}, {high_K:g}) K for {formula}(cr) from "
+                f"{interval} K for {formula}(cr) from "
                 f"{dataset}; available polymorphs: "
                 f"{', '.join(available_labels)}"
             )
