@@ -7,6 +7,8 @@
 - `species_thermo(..., "l", T)` now serves vendored non-parent JANAF and
   Robie–Hemingway liquid segments when no condensate row exists, within each
   source's printed temperature range.
+- Recovered JANAF rows inside a liquid segment are retained, including the
+  printed 1000 K V2O5 node.
 
 ### Gas formula spelling
 

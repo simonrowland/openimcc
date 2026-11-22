@@ -3198,7 +3198,8 @@ def species_thermo(
                 raise
             if len(matching_rows) > 1:
                 raise ImccGasSpeciesNotFoundError(
-                    f"multiple JANAF gas rows share the composition of "
+                    "multiple gas rows in the active datapack share the "
+                    "composition of "
                     f"{species!r}: {', '.join(matching_rows)}"
                 ) from missing_species
             row = _nearest_interval_row(
@@ -3282,7 +3283,10 @@ def species_thermo(
             liquid_reference_species = {
                 record.species for record in liquid_reference_records()
             }
-            if species in IMCC_PARENT_OXIDES or species in liquid_reference_species:
+            if (
+                species in IMCC_PARENT_OXIDES
+                or row_name in liquid_reference_species
+            ):
                 raise
             liquid = liquid_dataset_result()
             if liquid is not None:

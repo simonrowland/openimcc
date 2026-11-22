@@ -426,7 +426,7 @@ def _evaluate_janaf_liquid_species(
     )
     formation_enthalpy = float(row["formation_enthalpy_298_kJ_mol"])
     enthalpy_app = formation_enthalpy + enthalpy_increment
-    gibbs = 1000.0 * enthalpy_app - temperature * entropy
+    gibbs = _apparent_gibbs(formation_enthalpy, nodes, temperature)
     return _JanafLiquidSpecies(
         formula=formula,
         table_id=str(row["table_id"]),

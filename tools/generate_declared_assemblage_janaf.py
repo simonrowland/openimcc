@@ -121,7 +121,9 @@ DEDICATED_PHASE_LABELS = {
 }
 
 
-def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
+def _source_rows(
+    table: dict, *, include_recovered_nodes_after_transition: bool = False
+) -> tuple[list[dict], list[dict]]:
     values = table["values"]
     nodes = [
         {
@@ -193,7 +195,10 @@ def _source_rows(table: dict) -> tuple[list[dict], list[dict]]:
     nodes.extend(
         node
         for node in recovered_nodes
-        if float(node["T_K"]) <= cap_K
+        if (
+            include_recovered_nodes_after_transition
+            or float(node["T_K"]) <= cap_K
+        )
         and float(node["T_K"]) not in node_temperatures
     )
     by_temperature = {float(node["T_K"]): node for node in nodes}
@@ -250,7 +255,9 @@ def _phase_segments(
     return segments
 
 
-def _prepare_source_table(table_id: str) -> dict:
+def _prepare_source_table(
+    table_id: str, *, include_recovered_nodes_after_transition: bool = False
+) -> dict:
     source_path = SOURCE / f"{table_id}.yaml"
     source_locator = None
     if source_path.exists():
@@ -280,7 +287,12 @@ def _prepare_source_table(table_id: str) -> dict:
     h298 = reference["formation_enthalpy"]["value"]
     if h298 is None:
         raise ValueError(f"{table_id} has no 298.15 K formation enthalpy")
-    nodes, transition_rows = _source_rows(table)
+    nodes, transition_rows = _source_rows(
+        table,
+        include_recovered_nodes_after_transition=(
+            include_recovered_nodes_after_transition
+        ),
+    )
     source_temperatures = [node["T_K"] for node in nodes] + [
         row["T_K"] for row in transition_rows
     ]
@@ -441,7 +453,9 @@ def _extra_crystal_phases() -> list[dict]:
 
 
 def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
-    prepared = _prepare_source_table(table_id)
+    prepared = _prepare_source_table(
+        table_id, include_recovered_nodes_after_transition=True
+    )
     transitions = prepared["transition_rows"]
     opening_rows = []
     cap_rows = []

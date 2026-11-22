@@ -471,6 +471,38 @@ def test_janaf_liquid_fallback_uses_printed_segments_and_strict_limits() -> None
         species_thermo("SiO2", "l", 1000.0)
 
 
+def test_janaf_liquid_nodes_match_printed_rows() -> None:
+    root = Path(__file__).parents[1]
+    data = json.loads(
+        (
+            root / "src/openimcc/data/diagnostics/janaf-liquid-species.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert len(data["rows"]) == 10
+    for row in data["rows"]:
+        formula = row["formula"]
+        formation_enthalpy = float(row["formation_enthalpy_298_kJ_mol"])
+        for node in row["nodes"]:
+            temperature = float(node["T_K"])
+            result = species_thermo(formula, "l", temperature)
+            enthalpy = formation_enthalpy + float(
+                node["enthalpy_increment_kJ_mol"]
+            )
+            entropy = float(node["entropy_J_mol_K"])
+            assert result.source_table_id == row["table_id"]
+            assert result.H_app_kJ_mol == pytest.approx(enthalpy, abs=1e-12)
+            assert result.S_J_molK == pytest.approx(entropy, abs=1e-12)
+            assert result.G_J_mol == pytest.approx(
+                1000.0 * enthalpy - temperature * entropy, abs=1e-9
+            )
+
+    v2o5 = species_thermo("V2O5", "l", 1000.0)
+    assert v2o5.H_app_kJ_mol == -1368.261
+    assert v2o5.S_J_molK == 395.938
+    assert v2o5.G_J_mol == pytest.approx(-1764199.0, abs=1e-9)
+
+
 def test_janaf_liquid_source_order_and_duplicate_tables_refuse(monkeypatch) -> None:
     root = Path(__file__).parents[1]
     data = json.loads(
