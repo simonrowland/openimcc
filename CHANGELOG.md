@@ -47,6 +47,8 @@
 
 ### JANAF phase selection
 
+- Crystal refusals show the capped source windows, and the tin note no longer
+  treats its liquid header as a transition.
 - Dedicated phase tables retain their title identity through metastable
   extensions so short polymorph names select the matching table.
 - Unnamed elemental selection now follows the reference melt for matching

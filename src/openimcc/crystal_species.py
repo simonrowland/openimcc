@@ -896,12 +896,49 @@ def _source_rows_cross_printed_transition(
         return False
     row_temperatures = sorted(float(temperature) for temperature in rows)
     lower_K, upper_K = row_temperatures[0], row_temperatures[-1]
-    # R&H prints phase boundaries in the description rather than as numeric
-    # table rows. Only mark a transition when this table's own printed rows
-    # lie on both sides of one of those printed temperatures.
+    description_temperatures = [
+        float(temperature)
+        for temperature in re.findall(
+            r"(\d+(?:\.\d+)?)(?=\s+(?:K\b|to\b|and\b))",
+            description,
+            re.I,
+        )
+    ]
+    temperature_counts = {
+        temperature: description_temperatures.count(temperature)
+        for temperature in set(description_temperatures)
+    }
+    transition_temperatures = {
+        temperature
+        for temperature, count in temperature_counts.items()
+        if count > 1
+    }
+    for lower, upper in re.findall(
+        r"\bbetween\s+(\d+(?:\.\d+)?)\s+and\s+(\d+(?:\.\d+)?)\s*K\b",
+        description,
+        re.I,
+    ):
+        transition_temperatures.update((float(lower), float(upper)))
+    for temperature in re.findall(
+        r"\bmelting(?:\s+point)?(?:\s+is)?\s+(\d+(?:\.\d+)?)\s*K\b",
+        description,
+        re.I,
+    ):
+        transition_temperatures.add(float(temperature))
+    for key in ("source_solid_limit", "melting_point"):
+        melting = phase.get(key)
+        if isinstance(melting, Mapping):
+            transition_temperatures.add(float(melting["temperature_K"]))
+
+    # A description may include a phase range whose printed endpoint conflicts
+    # with the table. Count only row temperatures or explicit phase boundaries.
     return any(
-        lower_K < float(temperature) < upper_K
-        for temperature in re.findall(r"\d+(?:\.\d+)?", description)
+        lower_K < temperature < upper_K
+        and (
+            temperature in row_temperatures
+            or temperature in transition_temperatures
+        )
+        for temperature in description_temperatures
     )
 
 
@@ -1215,11 +1252,21 @@ def evaluate_crystal_species(
                 )
                 else f"above its source solid limit of {limit:g} K"
             )
+            available_windows = []
+            for item in candidates:
+                item_cap = _unnamed_element_reference_cap(item, candidates)
+                window_high_K = (
+                    min(item.interval_K[1], item_cap)
+                    if item_cap is not None
+                    else item.interval_K[1]
+                )
+                available_windows.append(
+                    f"{item.label} [{item.interval_K[0]:g}-{window_high_K:g} K]"
+                )
             message = (
                 f"cannot serve {formula}(cr) at T={temperature_K:g} K: "
-                f"{reason}; declared "
-                f"interval is ({low_K:g}, {high_K:g}) K; available "
-                f"polymorphs: {', '.join(available_labels)}"
+                f"{reason}; available windows: "
+                f"{', '.join(available_windows)}"
             )
         elif named_segment_interval is not None:
             message = (

@@ -946,16 +946,43 @@ def test_janaf_element_crystal_short_names_select_the_printed_table(
 
 
 @pytest.mark.parametrize(
-    ("formula", "temperature_K", "cap_K"),
-    (("S", 400.0, 388.36), ("Sr", 1100.0, 1050.0)),
+    ("formula", "temperature_K", "cap_K", "declared_interval", "windows"),
+    (
+        (
+            "S", 400.0, 388.36, (298.15, 800.0),
+            (
+                "Sulfur, Orthorhombic (S) | S1(cr) [298.15-388.36 K]",
+                "Sulfur, Monoclinic (S) | S1(cr) [298.15-388.36 K]",
+                "Sulfur (S) | S1(ref) [298.15-388.36 K]",
+            ),
+        ),
+        (
+            "Sr", 1100.0, 1050.0, (298.15, 1500.0),
+            (
+                "Strontium, Alpha (Sr) | Sr1(cr) [298.15-1050 K]",
+                "Strontium, Beta (Sr) | Sr1(cr) [298.15-1050 K]",
+                "Strontium (Sr) | Sr1(ref) [298.15-1050 K]",
+            ),
+        ),
+    ),
 )
 def test_unnamed_janaf_element_selection_stops_at_reference_melt(
-    formula: str, temperature_K: float, cap_K: float,
+    formula: str,
+    temperature_K: float,
+    cap_K: float,
+    declared_interval: tuple[float, float],
+    windows: tuple[str, ...],
 ) -> None:
     with pytest.raises(ImccGasTemperatureOutsideDomainError) as refusal:
         species_thermo(formula, "cr", temperature_K)
 
+    message = str(refusal.value)
+    assert refusal.value.declared_interval_K == declared_interval
     assert f"above its source solid limit of {cap_K:g} K" in str(refusal.value)
+    assert "declared interval is" not in message
+    assert "available windows:" in message
+    for window in windows:
+        assert window in message
 
 
 def test_named_orthorhombic_sulfur_keeps_its_printed_metastable_rows() -> None:
@@ -1909,17 +1936,82 @@ def test_node_coverage_bounds_perovskite_interval_and_transition_note() -> None:
 
 
 @pytest.mark.parametrize(
-    ("formula", "temperature_K"),
-    (("KNO3", 350.0), ("KNO3", 550.0), ("SnS", 500.0), ("SnS", 1000.0)),
+    ("formula", "temperature_K", "polymorph", "expected_note"),
+    (
+        (
+            "As", 600.0, None,
+            "As: Rhombohedral crystals 298.15 to sublimation point 875 K. "
+            "Ideal tetratomic gas 875 to 1800 K.",
+        ),
+        (
+            "Sb", 500.0, None,
+            "Sb: Rhombohedral crystals 298.15 to melting point 904 K. "
+            "Liquid 904 to 1800 K.",
+        ),
+        (
+            "Te", 500.0, None,
+            "Te: Crystals 298.15 to melting point 723 K. "
+            "Liquid 723 to boiling point 1261 K. "
+            "Ideal diatomic gas 1261 to 1800 K.",
+        ),
+        (
+            "Ce", 800.0, None,
+            "Ce: α-crystals (face-centered cubic) 298.15 to 999 K.",
+        ),
+        (
+            "KNO3", 350.0, None,
+            "KNO₃: Orthorhombic crystals 298.15 to 401 K; "
+            "rhombohedral crystals 401 to 610 K; liquid 610 to 700 K.",
+        ),
+        (
+            "KNO3", 550.0, None,
+            "KNO₃: Orthorhombic crystals 298.15 to 401 K; "
+            "rhombohedral crystals 401 to 610 K; liquid 610 to 700 K.",
+        ),
+        (
+            "SnS", 500.0, None,
+            "SnS: Orthorhombic crystals 298.15 to 875 K; cubic crystals "
+            "875 to melting point 1153 K. Liquid 1153 to 1300 K. "
+            "Reference state for sulfur is orthorhombic sulfur.",
+        ),
+        (
+            "SnS", 1000.0, None,
+            "SnS: Orthorhombic crystals 298.15 to 875 K; cubic crystals "
+            "875 to melting point 1153 K. Liquid 1153 to 1300 K. "
+            "Reference state for sulfur is orthorhombic sulfur.",
+        ),
+        (
+            "Sn", 500.0, None,
+            "Sn: Crystals 298.15 to melting point 505.1 K. "
+            "Liquid 501 to 1800 K.",
+        ),
+        (
+            "FeS2", 500.0, "PYRITE",
+            "FeS₂: Cubic crystals 298.15 to 1000 K. "
+            "Reference state for sulfur is orthorhombic sulfur.",
+        ),
+        (
+            "CaTiO3", 1600.0, None,
+            "One row spans a transition: Orthorhombic crystals 1530 K; "
+            "cubic crystals 1530 to 1800 K.",
+        ),
+        (
+            "NaAlSi3O8", 1000.0, "ANALBITE",
+            "NaAlSi3O8: Triclinic crystals 298.15 to 1400 K.",
+        ),
+    ),
 )
-def test_split_rh_tables_only_note_transitions_crossed_by_their_rows(
-    formula: str, temperature_K: float,
+def test_rh_phase_notes_only_report_printed_transitions(
+    formula: str,
+    temperature_K: float,
+    polymorph: str | None,
+    expected_note: str,
 ) -> None:
-    result = species_thermo(formula, "cr", temperature_K)
-
-    assert not result.phase_identity["note"].startswith(
-        "One row spans a transition: "
+    result = species_thermo(
+        formula, "cr", temperature_K, polymorph=polymorph
     )
+
+    assert result.phase_identity["note"] == expected_note
 
 
 def test_perovskite_refusal_names_the_printed_table_limit() -> None:
