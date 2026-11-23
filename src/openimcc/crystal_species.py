@@ -11,7 +11,10 @@ import math
 import re
 from typing import Any, Mapping, Sequence
 
-from openimcc._crystal_interpolation import _linear_value_and_slope
+from openimcc._crystal_interpolation import (
+    _linear_node_value_or_fallback,
+    _linear_value_and_slope,
+)
 from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
 from openimcc.diagnostics import _crystal_source_cap_excludes_candidate
 from openimcc.janaf_crystals import (
@@ -470,10 +473,11 @@ def _node_crystal_properties(
 ) -> tuple[float, float, float, float]:
     """Interpolate R&H H/S nodes and return apparent-basis thermochemistry.
 
-    Hinc and S are piecewise linear source node values; Cp is the Hinc secant
-    in J/(mol K). H_app=Hf298+Hinc and G_app=1000*H_app-T*S. At each shared
-    source node, subtracting the formula's ΣνG_app(element) recovers the
-    element-referenced R&H ΔfG; perovskite at 1800 K is the sanity anchor.
+    Hinc and S are piecewise linear source node values, as is printed Cp when
+    available; otherwise Cp retains the Hinc secant in J/(mol K).
+    H_app=Hf298+Hinc and G_app=1000*H_app-T*S. At each shared source node,
+    subtracting the formula's ΣνG_app(element) recovers the element-referenced
+    R&H ΔfG; perovskite at 1800 K is the sanity anchor.
     """
     enthalpy_nodes = [
         (float(t), float(value))
@@ -487,7 +491,15 @@ def _node_crystal_properties(
         enthalpy_nodes, temperature_K
     )
     entropy, _ = _linear_value_and_slope(entropy_nodes, temperature_K)
-    cp = 1000.0 * slope_kJ_molK
+    heat_capacity_nodes = [
+        (float(t), float(value))
+        for t, value in phase.get(
+            "source_crystal_heat_capacity_nodes_J_mol_K", {}
+        ).items()
+    ]
+    cp = _linear_node_value_or_fallback(
+        heat_capacity_nodes, temperature_K, 1000.0 * slope_kJ_molK
+    )
     enthalpy_app_kJ_mol = (
         float(phase["formation_enthalpy_298_kJ_mol"]) + enthalpy_increment
     )
@@ -586,9 +598,9 @@ def _barin_properties(
     *,
     continue_from_K: float | None = None,
 ) -> tuple[float, float, float, float]:
-    # Barin supplies ΔfG, H-H298, and absolute S at common T nodes. Between
-    # nodes X(T)=X0+(X1-X0)*(T-T0)/(T1-T0) for Hinc and S; Cp is 1000*(H1-H0)/
-    # (T1-T0) J/(mol K), except that a printed sparse Cp value wins at its node.
+    # Barin supplies ΔfG, H-H298, and absolute S at common T nodes. Interpolate
+    # Hinc, S, and printed Cp linearly within their source nodes; use the Hinc
+    # secant for Cp only outside printed Cp coverage.
     # H_app=Hf298+Hinc and G_app=1000*H_app-T*S use the condensate apparent
     # convention. Removing ΣνG_app(element) recovers printed ΔfG. The unit
     # check is kJ/mol*1000 versus K*J/(mol K); CaAl2O4 at its 1800 K node is the
@@ -617,7 +629,14 @@ def _barin_properties(
         ),
         None,
     )
-    cp = cp_at_node if cp_at_node is not None else 1000.0 * slope_kJ_molK
+    cp = _linear_node_value_or_fallback(
+        [
+            (float(node["T_K"]), float(node["value"]))
+            for node in heat_capacity_nodes
+        ],
+        continue_from_K or temperature_K,
+        1000.0 * slope_kJ_molK,
+    )
     enthalpy_app_kJ_mol = (
         float(phase["formation_enthalpy_298_kJ_mol"]) + enthalpy_increment
     )
@@ -633,6 +652,7 @@ def _barin_properties(
                 f"{phase['id']}/{polymorph['label']} has no printed Cp at "
                 f"continuation edge {continue_from_K:g} K"
             )
+        cp = cp_at_node
         enthalpy_app_kJ_mol, entropy, gibbs_J_mol = continue_constant_cp(
             enthalpy_app_kJ_mol,
             entropy,
@@ -706,10 +726,8 @@ def _elemental_reference_card_properties(
         enthalpy_app_kJ_mol = enthalpy_J_mol / 1000.0
     elif phase["form"] == "tabulated":
         # Pankratz prints Cp in cal/(mol K), S in cal/(mol K), and H-H298 in
-        # kcal/mol. Interpolate H-H298 and S linearly between printed nodes;
-        # Cp is the H secant between nodes and the printed Cp at a source node.
-        # This propagates the table into one consistent H/S/G function while
-        # retaining source Cp at the printed temperatures. The factor 4.184
+        # kcal/mol. Interpolate H-H298, S, and Cp linearly between printed
+        # nodes. The factor 4.184
         # converts cal to J and kcal to kJ; G_app=1000*H_app-T*S.
         rows = phase["nodes"]
         enthalpy_nodes = [
@@ -724,15 +742,14 @@ def _elemental_reference_card_properties(
             enthalpy_nodes, temperature_K
         )
         entropy, _ = _linear_value_and_slope(entropy_nodes, temperature_K)
-        printed_cp = next(
-            (
-                float(row[1]) * 4.184
+        cp = _linear_node_value_or_fallback(
+            [
+                (float(row[0]), float(row[1]) * 4.184)
                 for row in rows
-                if float(row[0]) == temperature_K
-            ),
-            None,
+            ],
+            temperature_K,
+            1000.0 * slope_kJ_molK,
         )
-        cp = printed_cp if printed_cp is not None else 1000.0 * slope_kJ_molK
         enthalpy_app_kJ_mol = formation_enthalpy + enthalpy_increment
     else:
         raise ValueError(f"unsupported elemental crystal card form {phase['form']!r}")
@@ -1101,13 +1118,20 @@ def _evaluate_candidate(
             enthalpy_nodes, temperature_K
         )
         entropy, _ = _linear_value_and_slope(entropy_nodes, temperature_K)
-        # JANAF supplies H increments in kJ/mol and S in J/(mol K), linearly
-        # interpolated between nodes. Cp is the H secant, 1000*(H1-H0)/(T1-T0)
-        # J/(mol K), because these crystal rows have no Cp column. H_app=Hf298+
-        # Hinc and G_app=1000*H_app-T*S, where 1000 converts kJ/mol to J/mol.
+        cp_nodes = [
+            (float(node["T_K"]), float(node["heat_capacity_J_mol_K"]))
+            for node in nodes
+            if node.get("heat_capacity_J_mol_K") is not None
+        ]
+        cp = _linear_node_value_or_fallback(
+            cp_nodes, temperature_K, 1000.0 * slope_kJ_molK
+        )
+        # JANAF H increments and S remain linearly interpolated between source
+        # nodes. H_app=Hf298+Hinc and G_app=1000*H_app-T*S; 1000 converts
+        # kJ/mol to J/mol. Sources without a printed Cp column retain the Hinc
+        # secant through the shared Cp fallback.
         # This is the condensate convention; at every node it reproduces the
         # existing evaluate_janaf_crystal output exactly (known-value check).
-        cp = 1000.0 * slope_kJ_molK
         enthalpy_app = float(row["formation_enthalpy_298_kJ_mol"]) + enthalpy_increment
         # Reuse the established JANAF evaluator so the apparent-G interpolation,
         # cap row, and transition-node tie behavior remain exactly the same.

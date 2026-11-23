@@ -454,7 +454,7 @@ def test_janaf_liquid_fallback_uses_printed_segments_and_strict_limits() -> None
     aluminum = species_thermo("Al", "l", 1000.0)
     aluminum_source = rows["Al"]
     aluminum_nodes = aluminum_source["nodes"]
-    h_increment, h_slope = _linear_value_and_slope(
+    h_increment, _ = _linear_value_and_slope(
         [
             (node["T_K"], node["enthalpy_increment_kJ_mol"])
             for node in aluminum_nodes
@@ -465,8 +465,16 @@ def test_janaf_liquid_fallback_uses_printed_segments_and_strict_limits() -> None
         [(node["T_K"], node["entropy_J_mol_K"]) for node in aluminum_nodes],
         1000.0,
     )
+    printed_cp, _ = _linear_value_and_slope(
+        [
+            (node["T_K"], node["heat_capacity_J_mol_K"])
+            for node in aluminum_nodes
+            if node.get("heat_capacity_J_mol_K") is not None
+        ],
+        1000.0,
+    )
     enthalpy_app = aluminum_source["formation_enthalpy_298_kJ_mol"] + h_increment
-    assert aluminum.Cp_J_molK == 1000.0 * h_slope
+    assert aluminum.Cp_J_molK == printed_cp
     assert aluminum.S_J_molK == entropy
     assert aluminum.H_app_kJ_mol == enthalpy_app
     assert aluminum.G_J_mol == 1000.0 * enthalpy_app - 1000.0 * entropy
@@ -551,6 +559,9 @@ def test_janaf_liquid_nodes_match_printed_rows() -> None:
                 source_line = source_lines[source_line_number - 1]
                 source_fields = source_line.split("\t")
                 assert temperature == float(source_fields[0])
+                assert result.Cp_J_molK == pytest.approx(
+                    float(source_fields[1]), abs=1e-12
+                )
                 assert float(node["entropy_J_mol_K"]) == float(
                     source_fields[2]
                 )
@@ -630,6 +641,88 @@ def test_janaf_liquid_nodes_match_printed_rows() -> None:
     assert v2o5.H_app_kJ_mol == -1368.261
     assert v2o5.S_J_molK == 395.938
     assert v2o5.G_J_mol == pytest.approx(-1764199.0, abs=1e-9)
+
+
+def test_tabulated_cp_uses_printed_nodes_and_selected_transition_side() -> None:
+    co_left = evaluate_crystal_species("Co", math.nextafter(700.1, -math.inf))
+    co_right = species_thermo("Co", "cr", 700.1)
+    assert co_left is not None
+    assert co_left.Cp_J_molK == pytest.approx(31.047, abs=1e-12)
+    assert co_right.Cp_J_molK == 30.583
+
+    alumina_anchor = species_thermo("Al2O3", "cr", 298.15)
+    assert alumina_anchor.Cp_J_molK == pytest.approx(79.0, abs=0.02)
+    sodium_oxide_transition = species_thermo("Na2O", "cr", 1243.15)
+    assert sodium_oxide_transition.Cp_J_molK == 98.142
+    assert species_thermo("Ti3O5", "cr", 400.0).Cp_J_molK == 179.075
+    assert species_thermo("FeS", "cr", 400.0).Cp_J_molK == 89.203
+
+    root = Path(__file__).parents[1]
+    crystal_data = json.loads(
+        (root / "src/openimcc/data/diagnostics/janaf-pure-oxide-crystals.json")
+        .read_text(encoding="utf-8")
+    )
+    alumina_phase = next(
+        row for row in crystal_data["phases"] if row["id"] == "Al2O3"
+    )
+    alumina_nodes = {float(node["T_K"]): node for node in alumina_phase["nodes"]}
+    left_cp = float(alumina_nodes[300.0]["heat_capacity_J_mol_K"])
+    right_cp = float(alumina_nodes[400.0]["heat_capacity_J_mol_K"])
+    alumina_midpoint = species_thermo("Al2O3", "cr", 350.0)
+    assert alumina_midpoint.Cp_J_molK == pytest.approx(
+        left_cp + (right_cp - left_cp) * 0.5
+    )
+
+    liquid_data = json.loads(
+        (root / "src/openimcc/data/diagnostics/janaf-liquid-species.json")
+        .read_text(encoding="utf-8")
+    )
+    vanadium_oxide = next(
+        row for row in liquid_data["rows"] if row["formula"] == "V2O5"
+    )
+    liquid_cp_nodes = [
+        (float(node["T_K"]), float(node["heat_capacity_J_mol_K"]))
+        for node in vanadium_oxide["nodes"]
+        if node.get("heat_capacity_J_mol_K") is not None
+    ]
+    expected_liquid_cp, _ = _linear_value_and_slope(
+        liquid_cp_nodes, 1000.0, slope_required=False
+    )
+    assert species_thermo("V2O5", "l", 1000.0).Cp_J_molK == expected_liquid_cp
+
+    rh_data = json.loads(
+        (root / "src/openimcc/data/diagnostics/rh-crystal-species.json")
+        .read_text(encoding="utf-8")
+    )
+    larnite = next(row for row in rh_data["phases"] if row["id"] == "larnite")
+    rh_cp_nodes = [
+        (float(temperature), float(value))
+        for temperature, value in larnite[
+            "source_crystal_heat_capacity_nodes_J_mol_K"
+        ].items()
+    ]
+    expected_rh_cp, _ = _linear_value_and_slope(rh_cp_nodes, 1650.0)
+    rh_result = species_thermo("Ca2SiO4", "cr", 1650.0, polymorph="Larnite")
+    assert rh_result.source_table_id == "USGS-B2131-p324"
+    assert rh_result.Cp_J_molK == expected_rh_cp
+
+    card_data = json.loads(
+        (
+            root
+            / "src/openimcc/data/diagnostics/elemental-reference-crystal-cards.json"
+        ).read_text(encoding="utf-8")
+    )
+    ruthenium_card = next(
+        row for row in card_data["records"] if row["formula"] == "Ru"
+    )
+    card_cp_nodes = [
+        (float(row[0]), float(row[1]) * 4.184)
+        for row in ruthenium_card["nodes"]
+    ]
+    expected_card_cp, _ = _linear_value_and_slope(card_cp_nodes, 350.0)
+    card_result = species_thermo("Ru", "cr", 350.0, polymorph="reference")
+    assert card_result.source_table_id == "P672-Ru-cr"
+    assert card_result.Cp_J_molK == expected_card_cp
 
 
 @pytest.mark.parametrize(
@@ -1390,7 +1483,7 @@ def test_unnamed_polymorph_gaps_report_each_available_window(
         (
             "Ti", 1500.0, "BETA", "Ti-003",
             {
-                "Cp_J_molK": "0x1.f7ffffffffffcp+4",
+                "Cp_J_molK": "0x1.000624dd2f1aap+5",
                 "S_J_molK": "0x1.45374bc6a7efap+6",
                 "H_app_kJ_mol": "0x1.4133333333333p+5",
                 "G_J_mol": "-0x1.3f8e000000000p+16",
@@ -1399,7 +1492,7 @@ def test_unnamed_polymorph_gaps_report_each_available_window(
         (
             "Ca", 900.0, "BETA", "Ca-003",
             {
-                "Cp_J_molK": "0x1.1a00000000003p+5",
+                "Cp_J_molK": "0x1.25b4395810625p+5",
                 "S_J_molK": "0x1.2def9db22d0e5p+6",
                 "H_app_kJ_mol": "0x1.33fbe76c8b43ap+4",
                 "G_J_mol": "-0x1.7c5d333333332p+15",
@@ -1408,7 +1501,7 @@ def test_unnamed_polymorph_gaps_report_each_available_window(
         (
             "K2SO4", 900.0, "BETA", "K-018",
             {
-                "Cp_J_molK": "0x1.737d05f417d01p+7",
+                "Cp_J_molK": "0x1.76f851eb851ecp+7",
                 "S_J_molK": "0x1.6f87ae147ae14p+8",
                 "H_app_kJ_mol": "-0x1.4b876c8b43958p+10",
                 "G_J_mol": "-0x1.9483d00000000p+20",
@@ -1417,7 +1510,7 @@ def test_unnamed_polymorph_gaps_report_each_available_window(
         (
             "Na2SO4", 400.0, "V", "Na-023",
             {
-                "Cp_J_molK": "0x1.121eb851eb851p+7",
+                "Cp_J_molK": "0x1.2233b645a1cacp+7",
                 "S_J_molK": "0x1.7b676c8b43958p+7",
                 "H_app_kJ_mol": "-0x1.5777df3b645a2p+10",
                 "G_J_mol": "-0x1.61f19cccccccdp+20",
@@ -1426,7 +1519,7 @@ def test_unnamed_polymorph_gaps_report_each_available_window(
         (
             "Na2SO4", 458.0, "IV", "Na-022",
             {
-                "Cp_J_molK": "0x1.2a8469ee5846bp+7",
+                "Cp_J_molK": "0x1.32a978d4fdf3bp+7",
                 "S_J_molK": "0x1.a4ec8b4395810p+7",
                 "H_app_kJ_mol": "-0x1.553d604189375p+10",
                 "G_J_mol": "-0x1.64c66989374bcp+20",

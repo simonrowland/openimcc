@@ -23,6 +23,12 @@
   Cs2 sources. No fit exclusions were needed; the `evaluate_gas` reaction set
   is unchanged. The v1 table remains available for explicit loading.
 
+### Tabulated species heat capacity
+
+- Crystal and liquid fallback tables now interpolate their printed Cp columns
+  linearly within the selected phase segment. Sources without printed Cp
+  coverage retain the existing enthalpy secant; fitted functions are unchanged.
+
 ### Liquid species thermochemistry
 
 - `species_thermo(..., "l", T)` now serves vendored non-parent JANAF and

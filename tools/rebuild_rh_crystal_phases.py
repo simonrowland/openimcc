@@ -344,6 +344,7 @@ def build_crystal_species() -> dict[str, Any]:
             raise ValueError(f"{source_phase['id']} needs a 298.15 K anchor")
         enthalpy_nodes = {}
         entropy_nodes = {}
+        heat_capacity_nodes = {}
         formation_enthalpy_nodes = {}
         formation_gibbs_nodes = {}
         log_k_nodes = {}
@@ -362,6 +363,7 @@ def build_crystal_species() -> dict[str, Any]:
             values = {
                 key: float(row[key])
                 for key in (
+                    "Cp_J_mol_K",
                     "S_J_mol_K",
                     "H_minus_H298_over_T_J_mol_K",
                     "formation_enthalpy_kJ_mol",
@@ -389,6 +391,7 @@ def build_crystal_species() -> dict[str, Any]:
                 3,
             )
             entropy_nodes[label] = values["S_J_mol_K"]
+            heat_capacity_nodes[label] = values["Cp_J_mol_K"]
             formation_enthalpy_nodes[label] = values[
                 "formation_enthalpy_kJ_mol"
             ]
@@ -412,6 +415,7 @@ def build_crystal_species() -> dict[str, Any]:
             "formation_enthalpy_298_kJ_mol": formation_enthalpy,
             "source_crystal_enthalpy_increment_nodes_kJ_mol": enthalpy_nodes,
             "source_crystal_entropy_nodes_J_mol_K": entropy_nodes,
+            "source_crystal_heat_capacity_nodes_J_mol_K": heat_capacity_nodes,
             "source_crystal_formation_enthalpy_nodes_kJ_mol": (
                 formation_enthalpy_nodes
             ),
@@ -462,10 +466,11 @@ def build_crystal_species() -> dict[str, Any]:
             "source_sha256": digest,
         },
         "transformation": (
-            "Use the printed (H-H298)/T and S columns to form Hinc=T*(H-H298)/T, "
-            "then interpolate Hinc and S linearly between source nodes. Runtime "
-            "Gapp=1000*(ΔfH298+Hinc)-T*S. Printed ΔfG and log Kf are retained "
-            "for source checks; no fitted Cp polynomial is used."
+            "Use the printed Cp, (H-H298)/T, and S columns. Form "
+            "Hinc=T*(H-H298)/T, then interpolate Hinc, S, and Cp linearly "
+            "between source nodes. Runtime Gapp=1000*(ΔfH298+Hinc)-T*S. "
+            "Printed ΔfG and log Kf are retained for source checks; no fitted "
+            "Cp polynomial is used."
         ),
         "selection_rule": (
             "Select the lowest apparent G among phases in this R&H dataset only. "

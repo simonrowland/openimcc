@@ -1214,6 +1214,12 @@ JANAF are fit-implied information, not source-quantity gates. The measured
 maximum absolute derivative residuals are reported here for the JANAF-backed
 condensates:
 
+Tabulated crystal and liquid fallback segments linearly interpolate printed
+Cp within the selected source phase segment. If the source has no printed Cp
+column or no Cp-node coverage at the requested temperature, Cp retains the
+existing enthalpy secant; fitted Berman, Shomate, and condensate-polynomial
+sources keep their analytic Cp.
+
 The result also exposes `extrapolated`, `declared_interval_K`, `continuation`,
 and `authority`. The interval is the selected row's declared range; continuation
 is `None` within that range and names the continued fit or source continuation

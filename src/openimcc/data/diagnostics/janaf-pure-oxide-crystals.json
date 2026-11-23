@@ -1,7 +1,7 @@
 {
   "schema": "openimcc-janaf-apparent-crystals-v2",
   "source": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition",
-  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly. Also retain finite enthalpy-increment/entropy columns from identified transition lines in parse_ambiguities; use the crystal-liquid row at its inclusive cap when one is printed.",
+  "transformation": "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] - T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. Interpolate source enthalpy increment and entropy separately, linearly. Retain printed Cp and interpolate it linearly within the selected phase segment; use the H-increment secant only when a source lacks printed Cp. Also retain finite thermochemistry from identified transition lines in parse_ambiguities; use the crystal-liquid row at its inclusive cap when one is printed.",
   "source_span_rule": "Finite source enthalpy-increment and entropy nodes; evaluation starts at 298.15 K.",
   "phase_restriction_rule": "A JANAF crystal is valid through its declared source cap, inclusive. A crystal-to-liquid transition sets the cap when printed; otherwise the last tabulated crystal node sets it. Never evaluate above the cap.",
   "construction_uncertainty_rule": "K2O's 919-1190 K range is uncertainty in the selected fusion-temperature input, not an evaluation-temperature domain.",
@@ -28,147 +28,176 @@
         {
           "T_K": 298.15,
           "enthalpy_increment_kJ_mol": 0.0,
-          "entropy_J_mol_K": 50.053
+          "entropy_J_mol_K": 50.053,
+          "heat_capacity_J_mol_K": 26.581
         },
         {
           "T_K": 300.0,
           "enthalpy_increment_kJ_mol": 0.05,
-          "entropy_J_mol_K": 50.219
+          "entropy_J_mol_K": 50.219,
+          "heat_capacity_J_mol_K": 27.154
         },
         {
           "T_K": 400.0,
           "enthalpy_increment_kJ_mol": 3.921,
-          "entropy_J_mol_K": 61.218
+          "entropy_J_mol_K": 61.218,
+          "heat_capacity_J_mol_K": 47.413
         },
         {
           "T_K": 500.0,
           "enthalpy_increment_kJ_mol": 9.184,
-          "entropy_J_mol_K": 72.923
+          "entropy_J_mol_K": 72.923,
+          "heat_capacity_J_mol_K": 56.856
         },
         {
           "T_K": 600.0,
           "enthalpy_increment_kJ_mol": 15.151,
-          "entropy_J_mol_K": 83.788
+          "entropy_J_mol_K": 83.788,
+          "heat_capacity_J_mol_K": 62.049
         },
         {
           "T_K": 700.0,
           "enthalpy_increment_kJ_mol": 21.526,
-          "entropy_J_mol_K": 93.609
+          "entropy_J_mol_K": 93.609,
+          "heat_capacity_J_mol_K": 65.229
         },
         {
           "T_K": 800.0,
           "enthalpy_increment_kJ_mol": 28.161,
-          "entropy_J_mol_K": 102.466
+          "entropy_J_mol_K": 102.466,
+          "heat_capacity_J_mol_K": 67.337
         },
         {
           "T_K": 900.0,
           "enthalpy_increment_kJ_mol": 34.973,
-          "entropy_J_mol_K": 110.487
+          "entropy_J_mol_K": 110.487,
+          "heat_capacity_J_mol_K": 68.823
         },
         {
           "T_K": 1000.0,
           "enthalpy_increment_kJ_mol": 41.913,
-          "entropy_J_mol_K": 117.798
+          "entropy_J_mol_K": 117.798,
+          "heat_capacity_J_mol_K": 69.923
         },
         {
           "T_K": 1100.0,
           "enthalpy_increment_kJ_mol": 48.949,
-          "entropy_J_mol_K": 124.504
+          "entropy_J_mol_K": 124.504,
+          "heat_capacity_J_mol_K": 70.772
         },
         {
           "T_K": 1200.0,
           "enthalpy_increment_kJ_mol": 56.061,
-          "entropy_J_mol_K": 130.691
+          "entropy_J_mol_K": 130.691,
+          "heat_capacity_J_mol_K": 71.446
         },
         {
           "T_K": 1300.0,
           "enthalpy_increment_kJ_mol": 63.234,
-          "entropy_J_mol_K": 136.432
+          "entropy_J_mol_K": 136.432,
+          "heat_capacity_J_mol_K": 71.998
         },
         {
           "T_K": 1400.0,
           "enthalpy_increment_kJ_mol": 70.458,
-          "entropy_J_mol_K": 141.786
+          "entropy_J_mol_K": 141.786,
+          "heat_capacity_J_mol_K": 72.467
         },
         {
           "T_K": 1500.0,
           "enthalpy_increment_kJ_mol": 77.725,
-          "entropy_J_mol_K": 146.799
+          "entropy_J_mol_K": 146.799,
+          "heat_capacity_J_mol_K": 72.869
         },
         {
           "T_K": 1600.0,
           "enthalpy_increment_kJ_mol": 85.03,
-          "entropy_J_mol_K": 151.514
+          "entropy_J_mol_K": 151.514,
+          "heat_capacity_J_mol_K": 73.22
         },
         {
           "T_K": 1700.0,
           "enthalpy_increment_kJ_mol": 92.368,
-          "entropy_J_mol_K": 155.962
+          "entropy_J_mol_K": 155.962,
+          "heat_capacity_J_mol_K": 73.534
         },
         {
           "T_K": 1800.0,
           "enthalpy_increment_kJ_mol": 99.735,
-          "entropy_J_mol_K": 160.173
+          "entropy_J_mol_K": 160.173,
+          "heat_capacity_J_mol_K": 73.814
         },
         {
           "T_K": 1900.0,
           "enthalpy_increment_kJ_mol": 107.13,
-          "entropy_J_mol_K": 164.171
+          "entropy_J_mol_K": 164.171,
+          "heat_capacity_J_mol_K": 74.074
         },
         {
           "T_K": 2000.0,
           "enthalpy_increment_kJ_mol": 114.549,
-          "entropy_J_mol_K": 167.977
+          "entropy_J_mol_K": 167.977,
+          "heat_capacity_J_mol_K": 74.316
         },
         {
           "T_K": 2100.0,
           "enthalpy_increment_kJ_mol": 121.992,
-          "entropy_J_mol_K": 171.608
+          "entropy_J_mol_K": 171.608,
+          "heat_capacity_J_mol_K": 74.542
         },
         {
           "T_K": 2200.0,
           "enthalpy_increment_kJ_mol": 129.457,
-          "entropy_J_mol_K": 175.081
+          "entropy_J_mol_K": 175.081,
+          "heat_capacity_J_mol_K": 74.751
         },
         {
           "T_K": 2300.0,
           "enthalpy_increment_kJ_mol": 136.942,
-          "entropy_J_mol_K": 178.408
+          "entropy_J_mol_K": 178.408,
+          "heat_capacity_J_mol_K": 74.952
         },
         {
           "T_K": 2400.0,
           "enthalpy_increment_kJ_mol": 144.447,
-          "entropy_J_mol_K": 181.602
+          "entropy_J_mol_K": 181.602,
+          "heat_capacity_J_mol_K": 75.145
         },
         {
           "T_K": 2500.0,
           "enthalpy_increment_kJ_mol": 151.971,
-          "entropy_J_mol_K": 184.674
+          "entropy_J_mol_K": 184.674,
+          "heat_capacity_J_mol_K": 75.333
         },
         {
           "T_K": 2600.0,
           "enthalpy_increment_kJ_mol": 159.513,
-          "entropy_J_mol_K": 187.632
+          "entropy_J_mol_K": 187.632,
+          "heat_capacity_J_mol_K": 75.509
         },
         {
           "T_K": 2700.0,
           "enthalpy_increment_kJ_mol": 167.073,
-          "entropy_J_mol_K": 190.485
+          "entropy_J_mol_K": 190.485,
+          "heat_capacity_J_mol_K": 75.684
         },
         {
           "T_K": 2800.0,
           "enthalpy_increment_kJ_mol": 174.65,
-          "entropy_J_mol_K": 193.24
+          "entropy_J_mol_K": 193.24,
+          "heat_capacity_J_mol_K": 75.852
         },
         {
           "T_K": 2900.0,
           "enthalpy_increment_kJ_mol": 182.243,
-          "entropy_J_mol_K": 195.905
+          "entropy_J_mol_K": 195.905,
+          "heat_capacity_J_mol_K": 76.015
         },
         {
           "T_K": 3000.0,
           "enthalpy_increment_kJ_mol": 189.853,
-          "entropy_J_mol_K": 198.485
+          "entropy_J_mol_K": 198.485,
+          "heat_capacity_J_mol_K": 76.178
         }
       ],
       "transition_rows": [],
@@ -194,207 +223,248 @@
         {
           "T_K": 0.0,
           "enthalpy_increment_kJ_mol": -5.159,
-          "entropy_J_mol_K": 0.0
+          "entropy_J_mol_K": 0.0,
+          "heat_capacity_J_mol_K": 0.0
         },
         {
           "T_K": 100.0,
           "enthalpy_increment_kJ_mol": -4.966,
-          "entropy_J_mol_K": 2.548
+          "entropy_J_mol_K": 2.548,
+          "heat_capacity_J_mol_K": 7.802
         },
         {
           "T_K": 200.0,
           "enthalpy_increment_kJ_mol": -3.188,
-          "entropy_J_mol_K": 14.096
+          "entropy_J_mol_K": 14.096,
+          "heat_capacity_J_mol_K": 26.681
         },
         {
           "T_K": 298.15,
           "enthalpy_increment_kJ_mol": 0.0,
-          "entropy_J_mol_K": 26.924
+          "entropy_J_mol_K": 26.924,
+          "heat_capacity_J_mol_K": 37.106
         },
         {
           "T_K": 300.0,
           "enthalpy_increment_kJ_mol": 0.069,
-          "entropy_J_mol_K": 27.154
+          "entropy_J_mol_K": 27.154,
+          "heat_capacity_J_mol_K": 37.244
         },
         {
           "T_K": 400.0,
           "enthalpy_increment_kJ_mol": 4.087,
-          "entropy_J_mol_K": 38.678
+          "entropy_J_mol_K": 38.678,
+          "heat_capacity_J_mol_K": 42.561
         },
         {
           "T_K": 500.0,
           "enthalpy_increment_kJ_mol": 8.505,
-          "entropy_J_mol_K": 48.523
+          "entropy_J_mol_K": 48.523,
+          "heat_capacity_J_mol_K": 45.544
         },
         {
           "T_K": 600.0,
           "enthalpy_increment_kJ_mol": 13.16,
-          "entropy_J_mol_K": 57.006
+          "entropy_J_mol_K": 57.006,
+          "heat_capacity_J_mol_K": 47.43
         },
         {
           "T_K": 700.0,
           "enthalpy_increment_kJ_mol": 17.972,
-          "entropy_J_mol_K": 64.42
+          "entropy_J_mol_K": 64.42,
+          "heat_capacity_J_mol_K": 48.748
         },
         {
           "T_K": 800.0,
           "enthalpy_increment_kJ_mol": 22.898,
-          "entropy_J_mol_K": 70.996
+          "entropy_J_mol_K": 70.996,
+          "heat_capacity_J_mol_K": 49.74
         },
         {
           "T_K": 900.0,
           "enthalpy_increment_kJ_mol": 27.913,
-          "entropy_J_mol_K": 76.902
+          "entropy_J_mol_K": 76.902,
+          "heat_capacity_J_mol_K": 50.539
         },
         {
           "T_K": 1000.0,
           "enthalpy_increment_kJ_mol": 33.001,
-          "entropy_J_mol_K": 82.262
+          "entropy_J_mol_K": 82.262,
+          "heat_capacity_J_mol_K": 51.208
         },
         {
           "T_K": 1100.0,
           "enthalpy_increment_kJ_mol": 38.151,
-          "entropy_J_mol_K": 87.171
+          "entropy_J_mol_K": 87.171,
+          "heat_capacity_J_mol_K": 51.794
         },
         {
           "T_K": 1200.0,
           "enthalpy_increment_kJ_mol": 43.358,
-          "entropy_J_mol_K": 91.701
+          "entropy_J_mol_K": 91.701,
+          "heat_capacity_J_mol_K": 52.325
         },
         {
           "T_K": 1300.0,
           "enthalpy_increment_kJ_mol": 48.615,
-          "entropy_J_mol_K": 95.908
+          "entropy_J_mol_K": 95.908,
+          "heat_capacity_J_mol_K": 52.81
         },
         {
           "T_K": 1400.0,
           "enthalpy_increment_kJ_mol": 53.918,
-          "entropy_J_mol_K": 99.839
+          "entropy_J_mol_K": 99.839,
+          "heat_capacity_J_mol_K": 53.262
         },
         {
           "T_K": 1500.0,
           "enthalpy_increment_kJ_mol": 59.266,
-          "entropy_J_mol_K": 103.528
+          "entropy_J_mol_K": 103.528,
+          "heat_capacity_J_mol_K": 53.693
         },
         {
           "T_K": 1600.0,
           "enthalpy_increment_kJ_mol": 64.656,
-          "entropy_J_mol_K": 107.007
+          "entropy_J_mol_K": 107.007,
+          "heat_capacity_J_mol_K": 54.107
         },
         {
           "T_K": 1700.0,
           "enthalpy_increment_kJ_mol": 70.087,
-          "entropy_J_mol_K": 110.299
+          "entropy_J_mol_K": 110.299,
+          "heat_capacity_J_mol_K": 54.509
         },
         {
           "T_K": 1800.0,
           "enthalpy_increment_kJ_mol": 75.558,
-          "entropy_J_mol_K": 113.426
+          "entropy_J_mol_K": 113.426,
+          "heat_capacity_J_mol_K": 54.898
         },
         {
           "T_K": 1900.0,
           "enthalpy_increment_kJ_mol": 81.067,
-          "entropy_J_mol_K": 116.404
+          "entropy_J_mol_K": 116.404,
+          "heat_capacity_J_mol_K": 55.278
         },
         {
           "T_K": 2000.0,
           "enthalpy_increment_kJ_mol": 86.613,
-          "entropy_J_mol_K": 119.249
+          "entropy_J_mol_K": 119.249,
+          "heat_capacity_J_mol_K": 55.651
         },
         {
           "T_K": 2100.0,
           "enthalpy_increment_kJ_mol": 92.197,
-          "entropy_J_mol_K": 121.973
+          "entropy_J_mol_K": 121.973,
+          "heat_capacity_J_mol_K": 56.019
         },
         {
           "T_K": 2200.0,
           "enthalpy_increment_kJ_mol": 97.816,
-          "entropy_J_mol_K": 124.587
+          "entropy_J_mol_K": 124.587,
+          "heat_capacity_J_mol_K": 56.379
         },
         {
           "T_K": 2300.0,
           "enthalpy_increment_kJ_mol": 103.472,
-          "entropy_J_mol_K": 127.101
+          "entropy_J_mol_K": 127.101,
+          "heat_capacity_J_mol_K": 56.738
         },
         {
           "T_K": 2400.0,
           "enthalpy_increment_kJ_mol": 109.164,
-          "entropy_J_mol_K": 129.524
+          "entropy_J_mol_K": 129.524,
+          "heat_capacity_J_mol_K": 57.094
         },
         {
           "T_K": 2500.0,
           "enthalpy_increment_kJ_mol": 114.891,
-          "entropy_J_mol_K": 131.862
+          "entropy_J_mol_K": 131.862,
+          "heat_capacity_J_mol_K": 57.445
         },
         {
           "T_K": 2600.0,
           "enthalpy_increment_kJ_mol": 120.653,
-          "entropy_J_mol_K": 134.121
+          "entropy_J_mol_K": 134.121,
+          "heat_capacity_J_mol_K": 57.797
         },
         {
           "T_K": 2700.0,
           "enthalpy_increment_kJ_mol": 126.45,
-          "entropy_J_mol_K": 136.309
+          "entropy_J_mol_K": 136.309,
+          "heat_capacity_J_mol_K": 58.145
         },
         {
           "T_K": 2800.0,
           "enthalpy_increment_kJ_mol": 132.282,
-          "entropy_J_mol_K": 138.43
+          "entropy_J_mol_K": 138.43,
+          "heat_capacity_J_mol_K": 58.491
         },
         {
           "T_K": 2900.0,
           "enthalpy_increment_kJ_mol": 138.148,
-          "entropy_J_mol_K": 140.489
+          "entropy_J_mol_K": 140.489,
+          "heat_capacity_J_mol_K": 58.836
         },
         {
           "T_K": 3000.0,
           "enthalpy_increment_kJ_mol": 144.049,
-          "entropy_J_mol_K": 142.489
+          "entropy_J_mol_K": 142.489,
+          "heat_capacity_J_mol_K": 59.177
         },
         {
           "T_K": 3100.0,
           "enthalpy_increment_kJ_mol": 149.987,
-          "entropy_J_mol_K": 144.436
+          "entropy_J_mol_K": 144.436,
+          "heat_capacity_J_mol_K": 59.516
         },
         {
           "T_K": 3300.0,
           "enthalpy_increment_kJ_mol": 161.958,
-          "entropy_J_mol_K": 148.178
+          "entropy_J_mol_K": 148.178,
+          "heat_capacity_J_mol_K": 60.201
         },
         {
           "T_K": 3400.0,
           "enthalpy_increment_kJ_mol": 167.995,
-          "entropy_J_mol_K": 149.98
+          "entropy_J_mol_K": 149.98,
+          "heat_capacity_J_mol_K": 60.541
         },
         {
           "T_K": 3500.0,
           "enthalpy_increment_kJ_mol": 174.066,
-          "entropy_J_mol_K": 151.74
+          "entropy_J_mol_K": 151.74,
+          "heat_capacity_J_mol_K": 60.878
         },
         {
           "T_K": 3600.0,
           "enthalpy_increment_kJ_mol": 180.171,
-          "entropy_J_mol_K": 153.46
+          "entropy_J_mol_K": 153.46,
+          "heat_capacity_J_mol_K": 61.214
         },
         {
           "T_K": 3700.0,
           "enthalpy_increment_kJ_mol": 186.309,
-          "entropy_J_mol_K": 155.142
+          "entropy_J_mol_K": 155.142,
+          "heat_capacity_J_mol_K": 61.551
         },
         {
           "T_K": 3800.0,
           "enthalpy_increment_kJ_mol": 192.481,
-          "entropy_J_mol_K": 156.787
+          "entropy_J_mol_K": 156.787,
+          "heat_capacity_J_mol_K": 61.888
         },
         {
           "T_K": 3900.0,
           "enthalpy_increment_kJ_mol": 198.687,
-          "entropy_J_mol_K": 158.399
+          "entropy_J_mol_K": 158.399,
+          "heat_capacity_J_mol_K": 62.225
         },
         {
           "T_K": 4000.0,
           "enthalpy_increment_kJ_mol": 204.926,
-          "entropy_J_mol_K": 159.979
+          "entropy_J_mol_K": 159.979,
+          "heat_capacity_J_mol_K": 62.561
         }
       ],
       "transition_rows": [
@@ -402,6 +472,7 @@
           "T_K": 3105.0,
           "enthalpy_increment_kJ_mol": 150.284,
           "entropy_J_mol_K": 144.532,
+          "heat_capacity_J_mol_K": 59.523,
           "label": "CRYSTAL <--> LIQUID",
           "source_line_number": 36,
           "raw_line": "3105.000\t59.523\t144.532\t96.131\t150.284\tCRYSTAL <--> LIQUID"
@@ -411,6 +482,7 @@
         "T_K": 3105.0,
         "enthalpy_increment_kJ_mol": 150.284,
         "entropy_J_mol_K": 144.532,
+        "heat_capacity_J_mol_K": 59.523,
         "label": "CRYSTAL <--> LIQUID",
         "source_line_number": 36,
         "raw_line": "3105.000\t59.523\t144.532\t96.131\t150.284\tCRYSTAL <--> LIQUID"
@@ -436,187 +508,224 @@
         {
           "T_K": 0.0,
           "enthalpy_increment_kJ_mol": -6.749,
-          "entropy_J_mol_K": 0.0
+          "entropy_J_mol_K": 0.0,
+          "heat_capacity_J_mol_K": 0.0
         },
         {
           "T_K": 100.0,
           "enthalpy_increment_kJ_mol": -6.294,
-          "entropy_J_mol_K": 6.222
+          "entropy_J_mol_K": 6.222,
+          "heat_capacity_J_mol_K": 14.715
         },
         {
           "T_K": 200.0,
           "enthalpy_increment_kJ_mol": -3.757,
-          "entropy_J_mol_K": 23.041
+          "entropy_J_mol_K": 23.041,
+          "heat_capacity_J_mol_K": 33.677
         },
         {
           "T_K": 298.15,
           "enthalpy_increment_kJ_mol": 0.0,
-          "entropy_J_mol_K": 38.212
+          "entropy_J_mol_K": 38.212,
+          "heat_capacity_J_mol_K": 42.12
         },
         {
           "T_K": 300.0,
           "enthalpy_increment_kJ_mol": 0.078,
-          "entropy_J_mol_K": 38.473
+          "entropy_J_mol_K": 38.473,
+          "heat_capacity_J_mol_K": 42.242
         },
         {
           "T_K": 400.0,
           "enthalpy_increment_kJ_mol": 4.547,
-          "entropy_J_mol_K": 51.3
+          "entropy_J_mol_K": 51.3,
+          "heat_capacity_J_mol_K": 46.626
         },
         {
           "T_K": 500.0,
           "enthalpy_increment_kJ_mol": 9.338,
-          "entropy_J_mol_K": 61.98
+          "entropy_J_mol_K": 61.98,
+          "heat_capacity_J_mol_K": 48.982
         },
         {
           "T_K": 600.0,
           "enthalpy_increment_kJ_mol": 14.315,
-          "entropy_J_mol_K": 71.052
+          "entropy_J_mol_K": 71.052,
+          "heat_capacity_J_mol_K": 50.48
         },
         {
           "T_K": 700.0,
           "enthalpy_increment_kJ_mol": 19.419,
-          "entropy_J_mol_K": 78.917
+          "entropy_J_mol_K": 78.917,
+          "heat_capacity_J_mol_K": 51.555
         },
         {
           "T_K": 800.0,
           "enthalpy_increment_kJ_mol": 24.618,
-          "entropy_J_mol_K": 85.858
+          "entropy_J_mol_K": 85.858,
+          "heat_capacity_J_mol_K": 52.4
         },
         {
           "T_K": 900.0,
           "enthalpy_increment_kJ_mol": 29.894,
-          "entropy_J_mol_K": 92.072
+          "entropy_J_mol_K": 92.072,
+          "heat_capacity_J_mol_K": 53.112
         },
         {
           "T_K": 1000.0,
           "enthalpy_increment_kJ_mol": 35.237,
-          "entropy_J_mol_K": 97.7
+          "entropy_J_mol_K": 97.7,
+          "heat_capacity_J_mol_K": 53.735
         },
         {
           "T_K": 1100.0,
           "enthalpy_increment_kJ_mol": 40.639,
-          "entropy_J_mol_K": 102.849
+          "entropy_J_mol_K": 102.849,
+          "heat_capacity_J_mol_K": 54.3
         },
         {
           "T_K": 1200.0,
           "enthalpy_increment_kJ_mol": 46.096,
-          "entropy_J_mol_K": 107.596
+          "entropy_J_mol_K": 107.596,
+          "heat_capacity_J_mol_K": 54.831
         },
         {
           "T_K": 1300.0,
           "enthalpy_increment_kJ_mol": 51.604,
-          "entropy_J_mol_K": 112.005
+          "entropy_J_mol_K": 112.005,
+          "heat_capacity_J_mol_K": 55.329
         },
         {
           "T_K": 1400.0,
           "enthalpy_increment_kJ_mol": 57.161,
-          "entropy_J_mol_K": 116.123
+          "entropy_J_mol_K": 116.123,
+          "heat_capacity_J_mol_K": 55.81
         },
         {
           "T_K": 1500.0,
           "enthalpy_increment_kJ_mol": 62.766,
-          "entropy_J_mol_K": 119.989
+          "entropy_J_mol_K": 119.989,
+          "heat_capacity_J_mol_K": 56.275
         },
         {
           "T_K": 1600.0,
           "enthalpy_increment_kJ_mol": 68.416,
-          "entropy_J_mol_K": 123.636
+          "entropy_J_mol_K": 123.636,
+          "heat_capacity_J_mol_K": 56.727
         },
         {
           "T_K": 1700.0,
           "enthalpy_increment_kJ_mol": 74.111,
-          "entropy_J_mol_K": 127.088
+          "entropy_J_mol_K": 127.088,
+          "heat_capacity_J_mol_K": 57.174
         },
         {
           "T_K": 1800.0,
           "enthalpy_increment_kJ_mol": 79.85,
-          "entropy_J_mol_K": 130.369
+          "entropy_J_mol_K": 130.369,
+          "heat_capacity_J_mol_K": 57.609
         },
         {
           "T_K": 1900.0,
           "enthalpy_increment_kJ_mol": 85.633,
-          "entropy_J_mol_K": 133.495
+          "entropy_J_mol_K": 133.495,
+          "heat_capacity_J_mol_K": 58.045
         },
         {
           "T_K": 2000.0,
           "enthalpy_increment_kJ_mol": 91.459,
-          "entropy_J_mol_K": 136.483
+          "entropy_J_mol_K": 136.483,
+          "heat_capacity_J_mol_K": 58.471
         },
         {
           "T_K": 2100.0,
           "enthalpy_increment_kJ_mol": 97.327,
-          "entropy_J_mol_K": 139.346
+          "entropy_J_mol_K": 139.346,
+          "heat_capacity_J_mol_K": 58.894
         },
         {
           "T_K": 2200.0,
           "enthalpy_increment_kJ_mol": 103.238,
-          "entropy_J_mol_K": 142.096
+          "entropy_J_mol_K": 142.096,
+          "heat_capacity_J_mol_K": 59.317
         },
         {
           "T_K": 2300.0,
           "enthalpy_increment_kJ_mol": 109.19,
-          "entropy_J_mol_K": 144.742
+          "entropy_J_mol_K": 144.742,
+          "heat_capacity_J_mol_K": 59.735
         },
         {
           "T_K": 2400.0,
           "enthalpy_increment_kJ_mol": 115.184,
-          "entropy_J_mol_K": 147.293
+          "entropy_J_mol_K": 147.293,
+          "heat_capacity_J_mol_K": 60.149
         },
         {
           "T_K": 2500.0,
           "enthalpy_increment_kJ_mol": 121.22,
-          "entropy_J_mol_K": 149.757
+          "entropy_J_mol_K": 149.757,
+          "heat_capacity_J_mol_K": 60.563
         },
         {
           "T_K": 2600.0,
           "enthalpy_increment_kJ_mol": 127.297,
-          "entropy_J_mol_K": 152.14
+          "entropy_J_mol_K": 152.14,
+          "heat_capacity_J_mol_K": 60.978
         },
         {
           "T_K": 2700.0,
           "enthalpy_increment_kJ_mol": 133.415,
-          "entropy_J_mol_K": 154.449
+          "entropy_J_mol_K": 154.449,
+          "heat_capacity_J_mol_K": 61.388
         },
         {
           "T_K": 2800.0,
           "enthalpy_increment_kJ_mol": 139.575,
-          "entropy_J_mol_K": 156.689
+          "entropy_J_mol_K": 156.689,
+          "heat_capacity_J_mol_K": 61.798
         },
         {
           "T_K": 2900.0,
           "enthalpy_increment_kJ_mol": 145.775,
-          "entropy_J_mol_K": 158.865
+          "entropy_J_mol_K": 158.865,
+          "heat_capacity_J_mol_K": 62.208
         },
         {
           "T_K": 3000.0,
           "enthalpy_increment_kJ_mol": 152.016,
-          "entropy_J_mol_K": 160.981
+          "entropy_J_mol_K": 160.981,
+          "heat_capacity_J_mol_K": 62.618
         },
         {
           "T_K": 3100.0,
           "enthalpy_increment_kJ_mol": 158.298,
-          "entropy_J_mol_K": 163.04
+          "entropy_J_mol_K": 163.04,
+          "heat_capacity_J_mol_K": 63.024
         },
         {
           "T_K": 3200.0,
           "enthalpy_increment_kJ_mol": 164.621,
-          "entropy_J_mol_K": 165.048
+          "entropy_J_mol_K": 165.048,
+          "heat_capacity_J_mol_K": 63.434
         },
         {
           "T_K": 3400.0,
           "enthalpy_increment_kJ_mol": 177.389,
-          "entropy_J_mol_K": 168.918
+          "entropy_J_mol_K": 168.918,
+          "heat_capacity_J_mol_K": 64.245
         },
         {
           "T_K": 3500.0,
           "enthalpy_increment_kJ_mol": 183.834,
-          "entropy_J_mol_K": 170.786
+          "entropy_J_mol_K": 170.786,
+          "heat_capacity_J_mol_K": 64.651
         },
         {
           "T_K": 3600.0,
           "enthalpy_increment_kJ_mol": 190.319,
-          "entropy_J_mol_K": 172.613
+          "entropy_J_mol_K": 172.613,
+          "heat_capacity_J_mol_K": 65.057
         }
       ],
       "transition_rows": [
@@ -624,6 +733,7 @@
           "T_K": 3200.0,
           "enthalpy_increment_kJ_mol": 164.621,
           "entropy_J_mol_K": 165.048,
+          "heat_capacity_J_mol_K": 63.434,
           "label": "CRYSTAL <--> LIQUID",
           "source_line_number": 37,
           "raw_line": "3200.000\t63.434\t165.048\t113.604\t164.621\tCRYSTAL <--> LIQUID"
@@ -633,6 +743,7 @@
         "T_K": 3200.0,
         "enthalpy_increment_kJ_mol": 164.621,
         "entropy_J_mol_K": 165.048,
+        "heat_capacity_J_mol_K": 63.434,
         "label": "CRYSTAL <--> LIQUID",
         "source_line_number": 37,
         "raw_line": "3200.000\t63.434\t165.048\t113.604\t164.621\tCRYSTAL <--> LIQUID"
@@ -658,157 +769,188 @@
         {
           "T_K": 0.0,
           "enthalpy_increment_kJ_mol": -10.02,
-          "entropy_J_mol_K": 0.0
+          "entropy_J_mol_K": 0.0,
+          "heat_capacity_J_mol_K": 0.0
         },
         {
           "T_K": 100.0,
           "enthalpy_increment_kJ_mol": -9.693,
-          "entropy_J_mol_K": 4.295
+          "entropy_J_mol_K": 4.295,
+          "heat_capacity_J_mol_K": 12.855
         },
         {
           "T_K": 200.0,
           "enthalpy_increment_kJ_mol": -6.5,
-          "entropy_J_mol_K": 24.88
+          "entropy_J_mol_K": 24.88,
+          "heat_capacity_J_mol_K": 51.12
         },
         {
           "T_K": 298.15,
           "enthalpy_increment_kJ_mol": 0.0,
-          "entropy_J_mol_K": 50.95
+          "entropy_J_mol_K": 50.95,
+          "heat_capacity_J_mol_K": 79.015
         },
         {
           "T_K": 300.0,
           "enthalpy_increment_kJ_mol": 0.147,
-          "entropy_J_mol_K": 51.44
+          "entropy_J_mol_K": 51.44,
+          "heat_capacity_J_mol_K": 79.416
         },
         {
           "T_K": 400.0,
           "enthalpy_increment_kJ_mol": 8.995,
-          "entropy_J_mol_K": 76.779
+          "entropy_J_mol_K": 76.779,
+          "heat_capacity_J_mol_K": 96.086
         },
         {
           "T_K": 500.0,
           "enthalpy_increment_kJ_mol": 19.145,
-          "entropy_J_mol_K": 99.388
+          "entropy_J_mol_K": 99.388,
+          "heat_capacity_J_mol_K": 106.131
         },
         {
           "T_K": 600.0,
           "enthalpy_increment_kJ_mol": 30.101,
-          "entropy_J_mol_K": 119.345
+          "entropy_J_mol_K": 119.345,
+          "heat_capacity_J_mol_K": 112.545
         },
         {
           "T_K": 700.0,
           "enthalpy_increment_kJ_mol": 41.586,
-          "entropy_J_mol_K": 137.041
+          "entropy_J_mol_K": 137.041,
+          "heat_capacity_J_mol_K": 116.926
         },
         {
           "T_K": 800.0,
           "enthalpy_increment_kJ_mol": 53.447,
-          "entropy_J_mol_K": 152.873
+          "entropy_J_mol_K": 152.873,
+          "heat_capacity_J_mol_K": 120.135
         },
         {
           "T_K": 900.0,
           "enthalpy_increment_kJ_mol": 65.591,
-          "entropy_J_mol_K": 167.174
+          "entropy_J_mol_K": 167.174,
+          "heat_capacity_J_mol_K": 122.662
         },
         {
           "T_K": 1000.0,
           "enthalpy_increment_kJ_mol": 77.965,
-          "entropy_J_mol_K": 180.21
+          "entropy_J_mol_K": 180.21,
+          "heat_capacity_J_mol_K": 124.771
         },
         {
           "T_K": 1100.0,
           "enthalpy_increment_kJ_mol": 90.535,
-          "entropy_J_mol_K": 192.189
+          "entropy_J_mol_K": 192.189,
+          "heat_capacity_J_mol_K": 126.608
         },
         {
           "T_K": 1200.0,
           "enthalpy_increment_kJ_mol": 103.28,
-          "entropy_J_mol_K": 203.277
+          "entropy_J_mol_K": 203.277,
+          "heat_capacity_J_mol_K": 128.252
         },
         {
           "T_K": 1300.0,
           "enthalpy_increment_kJ_mol": 116.18,
-          "entropy_J_mol_K": 213.602
+          "entropy_J_mol_K": 213.602,
+          "heat_capacity_J_mol_K": 129.737
         },
         {
           "T_K": 1400.0,
           "enthalpy_increment_kJ_mol": 129.222,
-          "entropy_J_mol_K": 223.267
+          "entropy_J_mol_K": 223.267,
+          "heat_capacity_J_mol_K": 131.081
         },
         {
           "T_K": 1500.0,
           "enthalpy_increment_kJ_mol": 142.392,
-          "entropy_J_mol_K": 232.353
+          "entropy_J_mol_K": 232.353,
+          "heat_capacity_J_mol_K": 132.29
         },
         {
           "T_K": 1600.0,
           "enthalpy_increment_kJ_mol": 155.675,
-          "entropy_J_mol_K": 240.925
+          "entropy_J_mol_K": 240.925,
+          "heat_capacity_J_mol_K": 133.361
         },
         {
           "T_K": 1700.0,
           "enthalpy_increment_kJ_mol": 169.06,
-          "entropy_J_mol_K": 249.039
+          "entropy_J_mol_K": 249.039,
+          "heat_capacity_J_mol_K": 134.306
         },
         {
           "T_K": 1800.0,
           "enthalpy_increment_kJ_mol": 182.533,
-          "entropy_J_mol_K": 256.74
+          "entropy_J_mol_K": 256.74,
+          "heat_capacity_J_mol_K": 135.143
         },
         {
           "T_K": 1900.0,
           "enthalpy_increment_kJ_mol": 196.085,
-          "entropy_J_mol_K": 264.067
+          "entropy_J_mol_K": 264.067,
+          "heat_capacity_J_mol_K": 135.896
         },
         {
           "T_K": 2000.0,
           "enthalpy_increment_kJ_mol": 209.71,
-          "entropy_J_mol_K": 271.056
+          "entropy_J_mol_K": 271.056,
+          "heat_capacity_J_mol_K": 136.608
         },
         {
           "T_K": 2100.0,
           "enthalpy_increment_kJ_mol": 223.407,
-          "entropy_J_mol_K": 277.738
+          "entropy_J_mol_K": 277.738,
+          "heat_capacity_J_mol_K": 137.319
         },
         {
           "T_K": 2200.0,
           "enthalpy_increment_kJ_mol": 237.174,
-          "entropy_J_mol_K": 284.143
+          "entropy_J_mol_K": 284.143,
+          "heat_capacity_J_mol_K": 138.03
         },
         {
           "T_K": 2300.0,
           "enthalpy_increment_kJ_mol": 251.013,
-          "entropy_J_mol_K": 290.294
+          "entropy_J_mol_K": 290.294,
+          "heat_capacity_J_mol_K": 138.741
         },
         {
           "T_K": 2500.0,
           "enthalpy_increment_kJ_mol": 278.905,
-          "entropy_J_mol_K": 301.922
+          "entropy_J_mol_K": 301.922,
+          "heat_capacity_J_mol_K": 140.206
         },
         {
           "T_K": 2600.0,
           "enthalpy_increment_kJ_mol": 292.963,
-          "entropy_J_mol_K": 307.435
+          "entropy_J_mol_K": 307.435,
+          "heat_capacity_J_mol_K": 140.959
         },
         {
           "T_K": 2700.0,
           "enthalpy_increment_kJ_mol": 307.098,
-          "entropy_J_mol_K": 312.77
+          "entropy_J_mol_K": 312.77,
+          "heat_capacity_J_mol_K": 141.754
         },
         {
           "T_K": 2800.0,
           "enthalpy_increment_kJ_mol": 321.315,
-          "entropy_J_mol_K": 317.94
+          "entropy_J_mol_K": 317.94,
+          "heat_capacity_J_mol_K": 142.591
         },
         {
           "T_K": 2900.0,
           "enthalpy_increment_kJ_mol": 335.62,
-          "entropy_J_mol_K": 322.96
+          "entropy_J_mol_K": 322.96,
+          "heat_capacity_J_mol_K": 143.511
         },
         {
           "T_K": 3000.0,
           "enthalpy_increment_kJ_mol": 350.019,
-          "entropy_J_mol_K": 327.841
+          "entropy_J_mol_K": 327.841,
+          "heat_capacity_J_mol_K": 144.474
         }
       ],
       "transition_rows": [
@@ -816,6 +958,7 @@
           "T_K": 2327.0,
           "enthalpy_increment_kJ_mol": 254.761,
           "entropy_J_mol_K": 291.914,
+          "heat_capacity_J_mol_K": 138.934,
           "label": "ALPHA <--> LIQUID",
           "source_line_number": 28,
           "raw_line": "2327.000\t138.934\t291.914\t182.434\t254.761\tALPHA <--> LIQUID"
@@ -825,6 +968,7 @@
         "T_K": 2327.0,
         "enthalpy_increment_kJ_mol": 254.761,
         "entropy_J_mol_K": 291.914,
+        "heat_capacity_J_mol_K": 138.934,
         "label": "ALPHA <--> LIQUID",
         "source_line_number": 28,
         "raw_line": "2327.000\t138.934\t291.914\t182.434\t254.761\tALPHA <--> LIQUID"
@@ -850,92 +994,110 @@
         {
           "T_K": 298.15,
           "enthalpy_increment_kJ_mol": 0.0,
-          "entropy_J_mol_K": 60.752
+          "entropy_J_mol_K": 60.752,
+          "heat_capacity_J_mol_K": 49.915
         },
         {
           "T_K": 300.0,
           "enthalpy_increment_kJ_mol": 0.092,
-          "entropy_J_mol_K": 61.061
+          "entropy_J_mol_K": 61.061,
+          "heat_capacity_J_mol_K": 49.999
         },
         {
           "T_K": 400.0,
           "enthalpy_increment_kJ_mol": 5.187,
-          "entropy_J_mol_K": 75.704
+          "entropy_J_mol_K": 75.704,
+          "heat_capacity_J_mol_K": 51.84
         },
         {
           "T_K": 500.0,
           "enthalpy_increment_kJ_mol": 10.449,
-          "entropy_J_mol_K": 87.438
+          "entropy_J_mol_K": 87.438,
+          "heat_capacity_J_mol_K": 53.388
         },
         {
           "T_K": 600.0,
           "enthalpy_increment_kJ_mol": 15.865,
-          "entropy_J_mol_K": 97.309
+          "entropy_J_mol_K": 97.309,
+          "heat_capacity_J_mol_K": 54.894
         },
         {
           "T_K": 700.0,
           "enthalpy_increment_kJ_mol": 21.418,
-          "entropy_J_mol_K": 105.866
+          "entropy_J_mol_K": 105.866,
+          "heat_capacity_J_mol_K": 56.149
         },
         {
           "T_K": 800.0,
           "enthalpy_increment_kJ_mol": 27.093,
-          "entropy_J_mol_K": 113.443
+          "entropy_J_mol_K": 113.443,
+          "heat_capacity_J_mol_K": 57.321
         },
         {
           "T_K": 900.0,
           "enthalpy_increment_kJ_mol": 32.872,
-          "entropy_J_mol_K": 120.249
+          "entropy_J_mol_K": 120.249,
+          "heat_capacity_J_mol_K": 58.283
         },
         {
           "T_K": 1000.0,
           "enthalpy_increment_kJ_mol": 38.756,
-          "entropy_J_mol_K": 126.447
+          "entropy_J_mol_K": 126.447,
+          "heat_capacity_J_mol_K": 59.371
         },
         {
           "T_K": 1100.0,
           "enthalpy_increment_kJ_mol": 44.736,
-          "entropy_J_mol_K": 132.146
+          "entropy_J_mol_K": 132.146,
+          "heat_capacity_J_mol_K": 60.234
         },
         {
           "T_K": 1200.0,
           "enthalpy_increment_kJ_mol": 50.802,
-          "entropy_J_mol_K": 137.424
+          "entropy_J_mol_K": 137.424,
+          "heat_capacity_J_mol_K": 61.086
         },
         {
           "T_K": 1300.0,
           "enthalpy_increment_kJ_mol": 56.956,
-          "entropy_J_mol_K": 142.349
+          "entropy_J_mol_K": 142.349,
+          "heat_capacity_J_mol_K": 61.975
         },
         {
           "T_K": 1400.0,
           "enthalpy_increment_kJ_mol": 63.194,
-          "entropy_J_mol_K": 146.971
+          "entropy_J_mol_K": 146.971,
+          "heat_capacity_J_mol_K": 62.76
         },
         {
           "T_K": 1500.0,
           "enthalpy_increment_kJ_mol": 69.502,
-          "entropy_J_mol_K": 151.323
+          "entropy_J_mol_K": 151.323,
+          "heat_capacity_J_mol_K": 63.396
         },
         {
           "T_K": 1600.0,
           "enthalpy_increment_kJ_mol": 75.873,
-          "entropy_J_mol_K": 155.435
+          "entropy_J_mol_K": 155.435,
+          "heat_capacity_J_mol_K": 64.015
         },
         {
           "T_K": 1800.0,
           "enthalpy_increment_kJ_mol": 88.798,
-          "entropy_J_mol_K": 163.045
+          "entropy_J_mol_K": 163.045,
+          "heat_capacity_J_mol_K": 65.229
         },
         {
           "T_K": 1900.0,
           "enthalpy_increment_kJ_mol": 95.349,
-          "entropy_J_mol_K": 166.587
+          "entropy_J_mol_K": 166.587,
+          "heat_capacity_J_mol_K": 65.79
         },
         {
           "T_K": 2000.0,
           "enthalpy_increment_kJ_mol": 101.955,
-          "entropy_J_mol_K": 169.975
+          "entropy_J_mol_K": 169.975,
+          "heat_capacity_J_mol_K": 66.316
         }
       ],
       "transition_rows": [
@@ -943,6 +1105,7 @@
           "T_K": 1650.0,
           "enthalpy_increment_kJ_mol": 79.081,
           "entropy_J_mol_K": 157.409,
+          "heat_capacity_J_mol_K": 64.319,
           "label": "CRYSTAL <--> LIQUID",
           "source_line_number": 21,
           "raw_line": "1650.000\t64.319\t157.409\t109.481\t79.081\tCRYSTAL <--> LIQUID"
@@ -952,6 +1115,7 @@
         "T_K": 1650.0,
         "enthalpy_increment_kJ_mol": 79.081,
         "entropy_J_mol_K": 157.409,
+        "heat_capacity_J_mol_K": 64.319,
         "label": "CRYSTAL <--> LIQUID",
         "source_line_number": 21,
         "raw_line": "1650.000\t64.319\t157.409\t109.481\t79.081\tCRYSTAL <--> LIQUID"
@@ -977,107 +1141,128 @@
         {
           "T_K": 0.0,
           "enthalpy_increment_kJ_mol": -12.399,
-          "entropy_J_mol_K": 0.0
+          "entropy_J_mol_K": 0.0,
+          "heat_capacity_J_mol_K": 0.0
         },
         {
           "T_K": 100.0,
           "enthalpy_increment_kJ_mol": -11.233,
-          "entropy_J_mol_K": 16.649
+          "entropy_J_mol_K": 16.649,
+          "heat_capacity_J_mol_K": 32.752
         },
         {
           "T_K": 200.0,
           "enthalpy_increment_kJ_mol": -6.381,
-          "entropy_J_mol_K": 49.209
+          "entropy_J_mol_K": 49.209,
+          "heat_capacity_J_mol_K": 59.551
         },
         {
           "T_K": 298.15,
           "enthalpy_increment_kJ_mol": 0.0,
-          "entropy_J_mol_K": 75.042
+          "entropy_J_mol_K": 75.042,
+          "heat_capacity_J_mol_K": 69.103
         },
         {
           "T_K": 300.0,
           "enthalpy_increment_kJ_mol": 0.128,
-          "entropy_J_mol_K": 75.47
+          "entropy_J_mol_K": 75.47,
+          "heat_capacity_J_mol_K": 69.245
         },
         {
           "T_K": 400.0,
           "enthalpy_increment_kJ_mol": 7.386,
-          "entropy_J_mol_K": 96.304
+          "entropy_J_mol_K": 96.304,
+          "heat_capacity_J_mol_K": 75.776
         },
         {
           "T_K": 500.0,
           "enthalpy_increment_kJ_mol": 15.262,
-          "entropy_J_mol_K": 113.855
+          "entropy_J_mol_K": 113.855,
+          "heat_capacity_J_mol_K": 81.496
         },
         {
           "T_K": 600.0,
           "enthalpy_increment_kJ_mol": 23.631,
-          "entropy_J_mol_K": 129.103
+          "entropy_J_mol_K": 129.103,
+          "heat_capacity_J_mol_K": 85.709
         },
         {
           "T_K": 700.0,
           "enthalpy_increment_kJ_mol": 32.365,
-          "entropy_J_mol_K": 142.56
+          "entropy_J_mol_K": 142.56,
+          "heat_capacity_J_mol_K": 88.851
         },
         {
           "T_K": 800.0,
           "enthalpy_increment_kJ_mol": 41.376,
-          "entropy_J_mol_K": 154.589
+          "entropy_J_mol_K": 154.589,
+          "heat_capacity_J_mol_K": 91.291
         },
         {
           "T_K": 900.0,
           "enthalpy_increment_kJ_mol": 50.607,
-          "entropy_J_mol_K": 165.458
+          "entropy_J_mol_K": 165.458,
+          "heat_capacity_J_mol_K": 93.266
         },
         {
           "T_K": 1000.0,
           "enthalpy_increment_kJ_mol": 60.018,
-          "entropy_J_mol_K": 175.373
+          "entropy_J_mol_K": 175.373,
+          "heat_capacity_J_mol_K": 94.918
         },
         {
           "T_K": 1100.0,
           "enthalpy_increment_kJ_mol": 71.34,
-          "entropy_J_mol_K": 186.205
+          "entropy_J_mol_K": 186.205,
+          "heat_capacity_J_mol_K": 96.353
         },
         {
           "T_K": 1200.0,
           "enthalpy_increment_kJ_mol": 81.04,
-          "entropy_J_mol_K": 194.645
+          "entropy_J_mol_K": 194.645,
+          "heat_capacity_J_mol_K": 97.629
         },
         {
           "T_K": 1300.0,
           "enthalpy_increment_kJ_mol": 102.786,
-          "entropy_J_mol_K": 212.098
+          "entropy_J_mol_K": 212.098,
+          "heat_capacity_J_mol_K": 98.788
         },
         {
           "T_K": 1400.0,
           "enthalpy_increment_kJ_mol": 112.719,
-          "entropy_J_mol_K": 219.459
+          "entropy_J_mol_K": 219.459,
+          "heat_capacity_J_mol_K": 99.86
         },
         {
           "T_K": 1600.0,
           "enthalpy_increment_kJ_mol": 132.891,
-          "entropy_J_mol_K": 232.923
+          "entropy_J_mol_K": 232.923,
+          "heat_capacity_J_mol_K": 101.822
         },
         {
           "T_K": 1700.0,
           "enthalpy_increment_kJ_mol": 143.119,
-          "entropy_J_mol_K": 239.124
+          "entropy_J_mol_K": 239.124,
+          "heat_capacity_J_mol_K": 102.734
         },
         {
           "T_K": 1800.0,
           "enthalpy_increment_kJ_mol": 153.437,
-          "entropy_J_mol_K": 245.021
+          "entropy_J_mol_K": 245.021,
+          "heat_capacity_J_mol_K": 103.617
         },
         {
           "T_K": 1900.0,
           "enthalpy_increment_kJ_mol": 163.841,
-          "entropy_J_mol_K": 250.646
+          "entropy_J_mol_K": 250.646,
+          "heat_capacity_J_mol_K": 104.47
         },
         {
           "T_K": 2000.0,
           "enthalpy_increment_kJ_mol": 174.33,
-          "entropy_J_mol_K": 256.026
+          "entropy_J_mol_K": 256.026,
+          "heat_capacity_J_mol_K": 105.307
         }
       ],
       "transition_rows": [
@@ -1085,6 +1270,7 @@
           "T_K": 1023.15,
           "enthalpy_increment_kJ_mol": 62.219,
           "entropy_J_mol_K": 177.549,
+          "heat_capacity_J_mol_K": 95.264,
           "label": "GAMMA <--> BETA",
           "source_line_number": 15,
           "raw_line": "1023.150\t95.264\t177.549\t116.737\t62.219\tGAMMA <--> BETA"
@@ -1093,6 +1279,7 @@
           "T_K": 1023.15,
           "enthalpy_increment_kJ_mol": 63.977,
           "entropy_J_mol_K": 179.266,
+          "heat_capacity_J_mol_K": 95.265,
           "label": "TRANSITION",
           "source_line_number": 16,
           "raw_line": "1023.150\t95.265\t179.266\t116.737\t63.977\tTRANSITION"
@@ -1101,6 +1288,7 @@
           "T_K": 1243.15,
           "enthalpy_increment_kJ_mol": 85.264,
           "entropy_J_mol_K": 198.103,
+          "heat_capacity_J_mol_K": 98.14,
           "label": "BETA <--> ALPHA",
           "source_line_number": 19,
           "raw_line": "1243.150\t98.140\t198.103\t129.516\t85.264\tBETA <--> ALPHA"
@@ -1109,6 +1297,7 @@
           "T_K": 1243.15,
           "enthalpy_increment_kJ_mol": 97.188,
           "entropy_J_mol_K": 207.695,
+          "heat_capacity_J_mol_K": 98.142,
           "label": "TRANSITION",
           "source_line_number": 20,
           "raw_line": "1243.150\t98.142\t207.695\t129.516\t97.188\tTRANSITION"
@@ -1117,6 +1306,7 @@
           "T_K": 1405.2,
           "enthalpy_increment_kJ_mol": 113.239,
           "entropy_J_mol_K": 219.829,
+          "heat_capacity_J_mol_K": 99.913,
           "label": "ALPHA <--> LIQUID",
           "source_line_number": 23,
           "raw_line": "1405.200\t99.913\t219.829\t139.243\t113.239\tALPHA <--> LIQUID"
@@ -1126,6 +1316,7 @@
         "T_K": 1405.2,
         "enthalpy_increment_kJ_mol": 113.239,
         "entropy_J_mol_K": 219.829,
+        "heat_capacity_J_mol_K": 99.913,
         "label": "ALPHA <--> LIQUID",
         "source_line_number": 23,
         "raw_line": "1405.200\t99.913\t219.829\t139.243\t113.239\tALPHA <--> LIQUID"
@@ -1151,132 +1342,158 @@
         {
           "T_K": 0.0,
           "enthalpy_increment_kJ_mol": -8.636,
-          "entropy_J_mol_K": 0.0
+          "entropy_J_mol_K": 0.0,
+          "heat_capacity_J_mol_K": 0.0
         },
         {
           "T_K": 100.0,
           "enthalpy_increment_kJ_mol": -7.95,
-          "entropy_J_mol_K": 10.142
+          "entropy_J_mol_K": 10.142,
+          "heat_capacity_J_mol_K": 18.502
         },
         {
           "T_K": 200.0,
           "enthalpy_increment_kJ_mol": -4.833,
-          "entropy_J_mol_K": 30.807
+          "entropy_J_mol_K": 30.807,
+          "heat_capacity_J_mol_K": 42.012
         },
         {
           "T_K": 298.15,
           "enthalpy_increment_kJ_mol": 0.0,
-          "entropy_J_mol_K": 50.292
+          "entropy_J_mol_K": 50.292,
+          "heat_capacity_J_mol_K": 55.103
         },
         {
           "T_K": 300.0,
           "enthalpy_increment_kJ_mol": 0.102,
-          "entropy_J_mol_K": 50.633
+          "entropy_J_mol_K": 50.633,
+          "heat_capacity_J_mol_K": 55.287
         },
         {
           "T_K": 400.0,
           "enthalpy_increment_kJ_mol": 6.043,
-          "entropy_J_mol_K": 67.671
+          "entropy_J_mol_K": 67.671,
+          "heat_capacity_J_mol_K": 62.835
         },
         {
           "T_K": 500.0,
           "enthalpy_increment_kJ_mol": 12.562,
-          "entropy_J_mol_K": 82.201
+          "entropy_J_mol_K": 82.201,
+          "heat_capacity_J_mol_K": 67.203
         },
         {
           "T_K": 600.0,
           "enthalpy_increment_kJ_mol": 19.429,
-          "entropy_J_mol_K": 94.712
+          "entropy_J_mol_K": 94.712,
+          "heat_capacity_J_mol_K": 69.931
         },
         {
           "T_K": 700.0,
           "enthalpy_increment_kJ_mol": 26.519,
-          "entropy_J_mol_K": 105.638
+          "entropy_J_mol_K": 105.638,
+          "heat_capacity_J_mol_K": 71.764
         },
         {
           "T_K": 800.0,
           "enthalpy_increment_kJ_mol": 33.764,
-          "entropy_J_mol_K": 115.311
+          "entropy_J_mol_K": 115.311,
+          "heat_capacity_J_mol_K": 73.078
         },
         {
           "T_K": 900.0,
           "enthalpy_increment_kJ_mol": 41.122,
-          "entropy_J_mol_K": 123.977
+          "entropy_J_mol_K": 123.977,
+          "heat_capacity_J_mol_K": 74.057
         },
         {
           "T_K": 1000.0,
           "enthalpy_increment_kJ_mol": 48.569,
-          "entropy_J_mol_K": 131.822
+          "entropy_J_mol_K": 131.822,
+          "heat_capacity_J_mol_K": 74.852
         },
         {
           "T_K": 1100.0,
           "enthalpy_increment_kJ_mol": 56.086,
-          "entropy_J_mol_K": 138.986
+          "entropy_J_mol_K": 138.986,
+          "heat_capacity_J_mol_K": 75.479
         },
         {
           "T_K": 1200.0,
           "enthalpy_increment_kJ_mol": 63.662,
-          "entropy_J_mol_K": 145.577
+          "entropy_J_mol_K": 145.577,
+          "heat_capacity_J_mol_K": 76.023
         },
         {
           "T_K": 1300.0,
           "enthalpy_increment_kJ_mol": 71.29,
-          "entropy_J_mol_K": 151.683
+          "entropy_J_mol_K": 151.683,
+          "heat_capacity_J_mol_K": 76.525
         },
         {
           "T_K": 1400.0,
           "enthalpy_increment_kJ_mol": 78.964,
-          "entropy_J_mol_K": 157.37
+          "entropy_J_mol_K": 157.37,
+          "heat_capacity_J_mol_K": 76.944
         },
         {
           "T_K": 1500.0,
           "enthalpy_increment_kJ_mol": 86.677,
-          "entropy_J_mol_K": 162.691
+          "entropy_J_mol_K": 162.691,
+          "heat_capacity_J_mol_K": 77.32
         },
         {
           "T_K": 1600.0,
           "enthalpy_increment_kJ_mol": 94.426,
-          "entropy_J_mol_K": 167.692
+          "entropy_J_mol_K": 167.692,
+          "heat_capacity_J_mol_K": 77.655
         },
         {
           "T_K": 1700.0,
           "enthalpy_increment_kJ_mol": 102.209,
-          "entropy_J_mol_K": 172.41
+          "entropy_J_mol_K": 172.41,
+          "heat_capacity_J_mol_K": 77.99
         },
         {
           "T_K": 1800.0,
           "enthalpy_increment_kJ_mol": 110.022,
-          "entropy_J_mol_K": 176.876
+          "entropy_J_mol_K": 176.876,
+          "heat_capacity_J_mol_K": 78.283
         },
         {
           "T_K": 1900.0,
           "enthalpy_increment_kJ_mol": 117.865,
-          "entropy_J_mol_K": 181.117
+          "entropy_J_mol_K": 181.117,
+          "heat_capacity_J_mol_K": 78.576
         },
         {
           "T_K": 2000.0,
           "enthalpy_increment_kJ_mol": 125.738,
-          "entropy_J_mol_K": 185.155
+          "entropy_J_mol_K": 185.155,
+          "heat_capacity_J_mol_K": 78.868
         },
         {
           "T_K": 2100.0,
           "enthalpy_increment_kJ_mol": 133.64,
-          "entropy_J_mol_K": 189.01
+          "entropy_J_mol_K": 189.01,
+          "heat_capacity_J_mol_K": 79.161
         },
         {
           "T_K": 2300.0,
           "enthalpy_increment_kJ_mol": 149.522,
-          "entropy_J_mol_K": 196.234
+          "entropy_J_mol_K": 196.234,
+          "heat_capacity_J_mol_K": 79.663
         },
         {
           "T_K": 2400.0,
           "enthalpy_increment_kJ_mol": 157.501,
-          "entropy_J_mol_K": 199.63
+          "entropy_J_mol_K": 199.63,
+          "heat_capacity_J_mol_K": 79.914
         },
         {
           "T_K": 2500.0,
           "enthalpy_increment_kJ_mol": 165.505,
-          "entropy_J_mol_K": 202.897
+          "entropy_J_mol_K": 202.897,
+          "heat_capacity_J_mol_K": 80.165
         }
       ],
       "transition_rows": [
@@ -1284,6 +1501,7 @@
           "T_K": 2130.0,
           "enthalpy_increment_kJ_mol": 136.016,
           "entropy_J_mol_K": 190.133,
+          "heat_capacity_J_mol_K": 79.228,
           "label": "CRYSTAL <--> LIQUID",
           "source_line_number": 26,
           "raw_line": "2130.000\t79.228\t190.133\t126.276\t136.016\tCRYSTAL <--> LIQUID"
@@ -1293,6 +1511,7 @@
         "T_K": 2130.0,
         "enthalpy_increment_kJ_mol": 136.016,
         "entropy_J_mol_K": 190.133,
+        "heat_capacity_J_mol_K": 79.228,
         "label": "CRYSTAL <--> LIQUID",
         "source_line_number": 26,
         "raw_line": "2130.000\t79.228\t190.133\t126.276\t136.016\tCRYSTAL <--> LIQUID"
@@ -1318,97 +1537,116 @@
         {
           "T_K": 298.15,
           "enthalpy_increment_kJ_mol": 0.0,
-          "entropy_J_mol_K": 94.14
+          "entropy_J_mol_K": 94.14,
+          "heat_capacity_J_mol_K": 83.68
         },
         {
           "T_K": 300.0,
           "enthalpy_increment_kJ_mol": 0.155,
-          "entropy_J_mol_K": 94.658
+          "entropy_J_mol_K": 94.658,
+          "heat_capacity_J_mol_K": 83.889
         },
         {
           "T_K": 400.0,
           "enthalpy_increment_kJ_mol": 8.968,
-          "entropy_J_mol_K": 119.958
+          "entropy_J_mol_K": 119.958,
+          "heat_capacity_J_mol_K": 91.546
         },
         {
           "T_K": 500.0,
           "enthalpy_increment_kJ_mol": 18.255,
-          "entropy_J_mol_K": 140.671
+          "entropy_J_mol_K": 140.671,
+          "heat_capacity_J_mol_K": 94.266
         },
         {
           "T_K": 600.0,
           "enthalpy_increment_kJ_mol": 27.834,
-          "entropy_J_mol_K": 158.126
+          "entropy_J_mol_K": 158.126,
+          "heat_capacity_J_mol_K": 97.404
         },
         {
           "T_K": 700.0,
           "enthalpy_increment_kJ_mol": 37.773,
-          "entropy_J_mol_K": 173.439
+          "entropy_J_mol_K": 173.439,
+          "heat_capacity_J_mol_K": 101.384
         },
         {
           "T_K": 800.0,
           "enthalpy_increment_kJ_mol": 48.111,
-          "entropy_J_mol_K": 187.239
+          "entropy_J_mol_K": 187.239,
+          "heat_capacity_J_mol_K": 105.395
         },
         {
           "T_K": 900.0,
           "enthalpy_increment_kJ_mol": 58.854,
-          "entropy_J_mol_K": 199.887
+          "entropy_J_mol_K": 199.887,
+          "heat_capacity_J_mol_K": 109.455
         },
         {
           "T_K": 1000.0,
           "enthalpy_increment_kJ_mol": 70.002,
-          "entropy_J_mol_K": 211.629
+          "entropy_J_mol_K": 211.629,
+          "heat_capacity_J_mol_K": 113.512
         },
         {
           "T_K": 1100.0,
           "enthalpy_increment_kJ_mol": 81.555,
-          "entropy_J_mol_K": 222.637
+          "entropy_J_mol_K": 222.637,
+          "heat_capacity_J_mol_K": 117.549
         },
         {
           "T_K": 1200.0,
           "enthalpy_increment_kJ_mol": 93.512,
-          "entropy_J_mol_K": 233.038
+          "entropy_J_mol_K": 233.038,
+          "heat_capacity_J_mol_K": 121.592
         },
         {
           "T_K": 1300.0,
           "enthalpy_increment_kJ_mol": 105.874,
-          "entropy_J_mol_K": 242.931
+          "entropy_J_mol_K": 242.931,
+          "heat_capacity_J_mol_K": 125.642
         },
         {
           "T_K": 1400.0,
           "enthalpy_increment_kJ_mol": 118.641,
-          "entropy_J_mol_K": 252.39
+          "entropy_J_mol_K": 252.39,
+          "heat_capacity_J_mol_K": 129.699
         },
         {
           "T_K": 1500.0,
           "enthalpy_increment_kJ_mol": 131.814,
-          "entropy_J_mol_K": 261.477
+          "entropy_J_mol_K": 261.477,
+          "heat_capacity_J_mol_K": 133.762
         },
         {
           "T_K": 1600.0,
           "enthalpy_increment_kJ_mol": 145.394,
-          "entropy_J_mol_K": 270.24
+          "entropy_J_mol_K": 270.24,
+          "heat_capacity_J_mol_K": 137.833
         },
         {
           "T_K": 1700.0,
           "enthalpy_increment_kJ_mol": 159.381,
-          "entropy_J_mol_K": 278.718
+          "entropy_J_mol_K": 278.718,
+          "heat_capacity_J_mol_K": 141.91
         },
         {
           "T_K": 1800.0,
           "enthalpy_increment_kJ_mol": 173.776,
-          "entropy_J_mol_K": 286.945
+          "entropy_J_mol_K": 286.945,
+          "heat_capacity_J_mol_K": 145.993
         },
         {
           "T_K": 1900.0,
           "enthalpy_increment_kJ_mol": 188.58,
-          "entropy_J_mol_K": 294.948
+          "entropy_J_mol_K": 294.948,
+          "heat_capacity_J_mol_K": 150.083
         },
         {
           "T_K": 2000.0,
           "enthalpy_increment_kJ_mol": 203.793,
-          "entropy_J_mol_K": 302.751
+          "entropy_J_mol_K": 302.751,
+          "heat_capacity_J_mol_K": 154.18
         }
       ],
       "transition_rows": [],

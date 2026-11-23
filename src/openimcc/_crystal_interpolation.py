@@ -38,3 +38,26 @@ def _linear_value_and_slope(
         value = left[1] + (right[1] - left[1]) * fraction
     slope = (right[1] - left[1]) / (right[0] - left[0])
     return value, slope
+
+
+def _linear_node_value_or_fallback(
+    nodes: Iterable[tuple[float, float]],
+    temperature_K: float,
+    fallback: float,
+) -> float:
+    """Interpolate a printed node column, falling back outside its coverage.
+
+    Tabulated sources with no printed Cp column retain their existing
+    enthalpy-secant value. Sparse printed columns use that same fallback only
+    where no printed Cp interval covers the requested temperature.
+    """
+    points = tuple(nodes)
+    if not points:
+        return fallback
+    try:
+        value, _ = _linear_value_and_slope(
+            points, temperature_K, slope_required=False
+        )
+    except ValueError:
+        return fallback
+    return value

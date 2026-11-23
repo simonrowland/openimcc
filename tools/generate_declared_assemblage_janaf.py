@@ -158,6 +158,15 @@ def _source_rows(
             ),
             "entropy_J_mol_K": float(row["entropy"]["value"]),
             **(
+                {
+                    "heat_capacity_J_mol_K": float(
+                        row["heat_capacity"]["value"]
+                    )
+                }
+                if row.get("heat_capacity", {}).get("value") is not None
+                else {}
+            ),
+            **(
                 {"source_line_number": row["source_line_number"]}
                 if "source_line_number" in row
                 else {}
@@ -179,7 +188,7 @@ def _source_rows(
         if len(fields) < 5:
             continue
         try:
-            temperature_K, _cp, entropy, _gibbs_function, h_increment = map(
+            temperature_K, cp, entropy, _gibbs_function, h_increment = map(
                 float, fields[:5]
             )
         except ValueError:
@@ -190,6 +199,7 @@ def _source_rows(
                 "T_K": temperature_K,
                 "enthalpy_increment_kJ_mol": h_increment,
                 "entropy_J_mol_K": entropy,
+                "heat_capacity_J_mol_K": cp,
                 "label": label,
                 "source_line_number": ambiguity.get("line_number"),
                 "raw_line": raw_line,
@@ -200,6 +210,7 @@ def _source_rows(
                     "T_K": temperature_K,
                     "enthalpy_increment_kJ_mol": h_increment,
                     "entropy_J_mol_K": entropy,
+                    "heat_capacity_J_mol_K": cp,
                     "source_line_number": ambiguity.get("line_number"),
                 }
             )
@@ -382,6 +393,10 @@ def _parse_janaf_text_table(table_id: str, raw: bytes) -> dict:
             continue
 
         try:
+            heat_capacity = float(fields[1])
+        except (IndexError, ValueError):
+            heat_capacity = None
+        try:
             entropy = float(fields[2])
             enthalpy_increment = float(fields[4])
         except (IndexError, ValueError):
@@ -401,6 +416,7 @@ def _parse_janaf_text_table(table_id: str, raw: bytes) -> dict:
         values.append(
             {
                 "temperature": {"value": temperature},
+                "heat_capacity": {"value": heat_capacity},
                 "enthalpy_increment": {"value": enthalpy_increment},
                 "entropy": {"value": entropy},
                 "formation_enthalpy": {"value": formation_enthalpy},
@@ -660,7 +676,9 @@ def build() -> dict[Path, str]:
             "columns. Runtime apparent G(T) = Hf(298.15 K) + [H(T)-H(298.15 K)] "
             "- T*S(T), converting kJ/mol enthalpies and J/(mol K) entropy to J/mol. "
             "Interpolate source enthalpy increment and entropy separately, linearly. "
-            "Also retain finite enthalpy-increment/entropy columns from identified "
+            "Retain printed Cp and interpolate it linearly within the selected "
+            "phase segment; use the H-increment secant only when a source lacks "
+            "printed Cp. Also retain finite thermochemistry from identified "
             "transition lines in parse_ambiguities; use the crystal-liquid row "
             "at its inclusive cap when one is printed."
         ),
@@ -730,8 +748,9 @@ def build() -> dict[Path, str]:
             "Bundle each source table's Hf(298.15 K), H(T)-H(298.15 K), and S(T) "
             "columns for the printed liquid segment. Runtime apparent G(T) = "
             "1000*(Hf(298.15 K) + Hinc) - T*S; interpolate Hinc and S linearly "
-            "and take Cp from the Hinc secant. Opening and cap transition rows "
-            "retain their liquid-side source values."
+            "and interpolate printed Cp linearly within the segment. Use the "
+            "Hinc secant only when the source lacks printed Cp. Opening and cap "
+            "transition rows retain their liquid-side source values."
         ),
         "phase_restriction_rule": (
             "Use the stable liquid-opening transition or the first printed "

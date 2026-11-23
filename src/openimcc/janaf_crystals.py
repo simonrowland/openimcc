@@ -12,7 +12,10 @@ from importlib import resources
 from types import MappingProxyType
 from typing import Any, Literal, Mapping, Sequence
 
-from openimcc._crystal_interpolation import _linear_value_and_slope
+from openimcc._crystal_interpolation import (
+    _linear_node_value_or_fallback,
+    _linear_value_and_slope,
+)
 
 
 _RESOURCE = "data/diagnostics/janaf-pure-oxide-crystals.json"
@@ -439,6 +442,14 @@ def _evaluate_janaf_liquid_species(
     entropy, _ = _linear_value_and_slope(
         ((node[0], node[2]) for node in nodes), temperature
     )
+    heat_capacity_nodes = [
+        (float(node["T_K"]), float(node["heat_capacity_J_mol_K"]))
+        for node in row["nodes"]
+        if node.get("heat_capacity_J_mol_K") is not None
+    ]
+    heat_capacity = _linear_node_value_or_fallback(
+        heat_capacity_nodes, temperature, 1000.0 * slope_kJ_molK
+    )
     formation_enthalpy = float(row["formation_enthalpy_298_kJ_mol"])
     enthalpy_app = formation_enthalpy + enthalpy_increment
     gibbs = _apparent_gibbs(formation_enthalpy, nodes, temperature)
@@ -451,7 +462,7 @@ def _evaluate_janaf_liquid_species(
         resource_sha256=resource_digest,
         formation_enthalpy_298_kJ_mol=formation_enthalpy,
         domain_K=domain,
-        Cp_J_molK=1000.0 * slope_kJ_molK,
+        Cp_J_molK=heat_capacity,
         S_J_molK=entropy,
         H_app_kJ_mol=enthalpy_app,
         G_J_mol=gibbs,

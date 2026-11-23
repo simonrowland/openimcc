@@ -824,11 +824,14 @@ class SpeciesThermo:
     """Thermodynamic properties returned by :func:`species_thermo`.
 
     ``source_row_id`` is the table row's Ref value; ``source_table_id`` names
-    the source table when provenance records one. ``derivatives_fit_implied``
-    is true for every condensate row because its Cp, S, and H_app are
-    derivatives of a fitted Gibbs-energy polynomial. JANAF-fitted condensates
-    fit Phi (the Gibbs polynomial) only. Gas Shomate rows fit Cp, H, and S,
-    so their derivatives are not fit-implied.
+    the source table when provenance records one. Tabulated crystal and liquid
+    fallbacks interpolate printed Cp linearly within the selected phase
+    segment; if a source has no printed Cp column, they retain the H secant.
+    ``derivatives_fit_implied`` is true for every condensate polynomial row
+    because its Cp, S, and H_app are derivatives of a fitted Gibbs-energy
+    polynomial. JANAF-fitted condensates fit Phi (the Gibbs polynomial) only.
+    Gas Shomate rows fit Cp, H, and S, so their derivatives are not
+    fit-implied.
 
     ``phase_identity`` is the curated crystal identity, or ``None`` when no
     source-backed identity matches the selected row.
@@ -2987,6 +2990,9 @@ def species_thermo(
     Cp, H and S directly, so their flag is false. For condensate rows the
     source-comparison gate therefore checks G_app only; derivative residuals
     are fit-implied information, not source-quantity gates.
+    Tabulated crystal and liquid fallbacks instead interpolate printed Cp
+    linearly within the selected segment, alongside the established H/S/G
+    interpolation. A table without a printed Cp column retains the H secant.
     The default FeO(l) row uses the D&G/Masson primary-measurement reduction;
     JANAF Fe-019 remains available through its explicit legacy condensate
     table. Na2O(l) is checked against Na-013. Al2O3(l) is a LAM-source
