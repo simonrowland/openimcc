@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import difflib
 import importlib.util
 import json
@@ -933,6 +934,12 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
 
         migrated_provenance = yaml.safe_load(migrated_path.read_text())
         committed_provenance = yaml.safe_load(committed_path.read_text())
+        with (
+            ROOT / "src/openimcc/data/gas/gas-shomate-default-v1.csv"
+        ).open(encoding="utf-8", newline="") as stream:
+            published_gas_v1_species = {
+                row["species_name"] for row in csv.DictReader(stream)
+            }
         for document in (migrated_provenance, committed_provenance):
             for note in (
                 "phosphorus_parent_channels",
@@ -958,6 +965,12 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                         "Na2O(l)", "K2O(l)", "CaO(l)", "MgO(l)",
                         "SiO2(l)", "Al2O3(l)",
                     }
+                )
+                # The migration baseline predates gas-pack v2, so its replay
+                # covers the published v1 species on both sides of the check.
+                and (
+                    row.get("table") != "gas"
+                    or row.get("species_name") in published_gas_v1_species
                 )
             ]
         committed_provenance["rows"] = [

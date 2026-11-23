@@ -48,7 +48,7 @@ GAS_DATA = ROOT / "src/openimcc/data/gas"
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 TABLE_FILES = ("gas-shomate-default-v1.csv", "condensate-default-v1.csv")
 # These pins cover the versioned default after the 1 bar correction, molecule
-# additions, and O-035 crystal promotion.
+# additions, O-035 crystal promotion, and the seam fix.
 PACKAGED_GAS_TABLE_DIGEST = (
     "a72b7eb724d174e99319dd717a61631748283a2957a85decb704b5d2eca84b20"
 )
@@ -56,7 +56,7 @@ PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "a8c12fb657b3104661cf726876fcd58781ebfc9f58be59f028eb3ab02a6e6d65"
 )
 PACKAGED_FULL_GAS_TABLE_DIGEST = (
-    "c55a9cb06ca5b2a39116f2b320163d5737e91fc019f3f4b6497090cc0c7df847"
+    "f049df6efc810f1821565acfe6a2966464153ecf4cb0bbdff9cdbbb8f5cb2543"
 )
 PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
     "493c67d5ba23b75767cc3ce4bd6e571bd2400162b3affdbbc581a7b0ae75362e"
@@ -66,8 +66,8 @@ PACKAGED_ENGINE_BINDING_DIGESTS = {
     "ext": "c06c7583ec660c78c4ab799b76f60ac9d53ccb9579bcb49b56421f6f3d958e0b",
 }
 PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
-    "v1": "2cb1e1e09e6375fc9bc61a37f355e29904489de94941edbe56c58d2e3a866cdf",
-    "ext": "1991d494c2b3f6189f01b9c6980ca388683763d74c84e208b84328b81c57cb1a",
+    "v1": "c52b8590d29b9e1d78c9f8ddda6c63619252faf6e73a6db858a3ef5c2ffd6b12",
+    "ext": "eee4849bdc31ee40538944e76bebaf5c2fde6b59e0740889ea01a1df4c2100aa",
 }
 ADDED_GAS_SPECIES = {
     "Si2O2(g)", "AlSiO(g)",

@@ -25,7 +25,8 @@ BASE_GAS = GAS_DIR / "gas-shomate.csv"
 BASE_OXIDE = GAS_DIR / "condensate.csv"
 CANDIDATE_GAS = GAS_DIR / "gas-shomate-oxide-molecule-candidate.csv"
 STANDARD_STATE_GAS = GAS_DIR / "gas-shomate-standard-state-candidate.csv"
-DEFAULT_GAS = GAS_DIR / "gas-shomate-default-v1.csv"
+PUBLISHED_GAS_V1 = GAS_DIR / "gas-shomate-default-v1.csv"
+PUBLISHED_CONDENSATE_V1 = GAS_DIR / "condensate-default-v1.csv"
 PROVENANCE = GAS_DIR / "PROVENANCE.yaml"
 
 
@@ -84,11 +85,11 @@ def test_candidate_builder_is_reproducible_and_keeps_default_bytes(
     assert build_gas_tables.build_oxide_molecule_candidate(BASE_GAS, rebuilt) == 7
     assert rebuilt.read_bytes() == CANDIDATE_GAS.read_bytes()
     assert CANDIDATE_GAS.read_bytes().startswith(BASE_GAS.read_bytes())
-    # The default combination has its own raw-byte pins after promotion.
-    assert hashlib.sha256(DEFAULT_GAS.read_bytes()).hexdigest() == (
+    # The published v1 combination has its own raw-byte pins after promotion.
+    assert hashlib.sha256(PUBLISHED_GAS_V1.read_bytes()).hexdigest() == (
         "7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36"
     )
-    assert hashlib.sha256((GAS_DIR / "condensate-default-v1.csv").read_bytes()).hexdigest() == (
+    assert hashlib.sha256(PUBLISHED_CONDENSATE_V1.read_bytes()).hexdigest() == (
         "1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b"
     )
 
@@ -98,11 +99,13 @@ def test_candidate_builder_is_reproducible_and_keeps_default_bytes(
     assert hashlib.sha256(BASE_OXIDE.read_bytes()).hexdigest() == (
         "1b9149eb9d53ffd7d96872b25b27144bca902a71b963fcec9b6bf9cec37127a0"
     )
-    default_pack = load_gas_datapack()
+    published_v1_pack = load_gas_datapack(
+        gas_path=PUBLISHED_GAS_V1, oxide_path=PUBLISHED_CONDENSATE_V1
+    )
     historical_default = load_gas_datapack(
         gas_path=BASE_GAS, oxide_path=BASE_OXIDE
     )
-    assert default_pack.gas_table_digest == (
+    assert published_v1_pack.gas_table_digest == (
         "4d069a8951cd11e0d2edb37420e3aa04e4927c51c6eee00bbc53368b20d6c492"
     )
     assert historical_default.gas_table_digest == (
@@ -121,7 +124,7 @@ def test_candidate_builder_is_reproducible_and_keeps_default_bytes(
 def test_default_combination_builder_applies_only_the_intended_gas_changes(
     tmp_path: Path,
 ) -> None:
-    rebuilt = tmp_path / DEFAULT_GAS.name
+    rebuilt = tmp_path / PUBLISHED_GAS_V1.name
     counts = build_gas_tables.build_default_combination_gas(
         BASE_GAS, STANDARD_STATE_GAS, CANDIDATE_GAS, rebuilt
     )
@@ -132,8 +135,8 @@ def test_default_combination_builder_applies_only_the_intended_gas_changes(
         "corrected_species": 27,
         "added_rows": 7,
     }
-    assert rebuilt.read_bytes() == DEFAULT_GAS.read_bytes()
-    assert DEFAULT_GAS.read_bytes() == CANDIDATE_GAS.read_bytes().replace(
+    assert rebuilt.read_bytes() == PUBLISHED_GAS_V1.read_bytes()
+    assert PUBLISHED_GAS_V1.read_bytes() == CANDIDATE_GAS.read_bytes().replace(
         BASE_GAS.read_bytes(), STANDARD_STATE_GAS.read_bytes(), 1
     )
 
