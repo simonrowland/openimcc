@@ -118,9 +118,9 @@ when absent, although they are present in the shipped packs as noted.
 | imcc_sf04_datapack_version | non-empty string | Yes | Datapack version. load_datapack() stores it as the loaded version and uses it in the published-core projection or the per-pack binding digest. |
 | merge_semantics | object | No | Describes how an extension overlays or carries forward published rows: mode, row counts, replacement counts, and rationale. It is not interpreted by load_datapack(). |
 | model | string | No | Human-readable model description. Retired extension records use IMCC-SF04-EXT; v1.0.2, ext-v4, and D066 packs use a longer equation/species-count description. Runtime identity comes from model_id, not this field. |
-| model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; the new excess-Gibbs candidate identity is required when `excess_gibbs` is present. |
+| model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; IMCC-SF04-D066-SR-CANDIDATE validates that frozen 38-row core plus its exact seven-row Sr suffix and nine-parent basis. The new excess-Gibbs candidate identity is required when `excess_gibbs` is present. |
 | pack_arithmetic | string | No | Prose describing how the pack's rows and coefficient revisions were assembled. It does not alter arithmetic. |
-| parents | array of strings | Yes | Ordered parent-oxide basis. The current loader requires exactly ["SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"], in that order. sp_extension adds S and P2O5 only on its own extension path. |
+| parents | array of strings | Yes | Ordered parent-oxide basis. Published, D066, and S/P-extension identities use ["SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"]. The opt-in Sr candidate appends SrO after those eight. |
 | parent_standard_candidates | object | No | Provenance for opt-in candidate parent-standard revisions, including source values, retained anchors, and construction details. The loader does not read this field; candidate coefficients and condensate tables carry the numerical changes. |
 | provenance_split | object | No | Pack-level provenance summary. v1.0.2 and ext-v4 use numeric class counts plus a note; retired ext-v1 through ext-v3 used prose `published`/`extension` mappings. It is descriptive; row-level provenance_class remains the audit record. |
 | rows | array of objects | Yes | Published-core or D066 reaction rows. Both current identities require the exact 38-row SF04 row set; inactive rows still count toward that set. The retired ext-v2 record had 39 rows and was not loadable by the current fixed production path. |
@@ -540,11 +540,14 @@ not silently repair a pack.
 1. The path must exist and contain valid JSON. A missing file, JSON decode
    failure, or JSON root that is not an object is a malformed-datapack refusal.
 2. imcc_sf04_datapack_version must be a non-empty string.
-3. parents must be a list exactly equal to the eight canonical parent names
-   and order shown in the top-level table.
+3. parents must match the canonical basis for the identity: the eight parent
+   names and order shown in the top-level table for published and D066 packs,
+   or those eight followed by SrO for the opt-in Sr candidate.
 4. If model_id is absent, it defaults to IMCC-SF04. The published identity may
    include sp_extension only as IMCC-SF04-EXT. IMCC-SF04-D066 may be loaded
    with or without sp_extension, and keeps its D066 identity in either case.
+   IMCC-SF04-D066-SR-CANDIDATE is a separate opt-in identity with the exact
+   seven-row Sr suffix and nine-parent basis; it does not alter the default.
 5. Published identities require exactly 38 core row objects and validate the
    active/inactive_reason fields before checking their canonical hash. D066
    uses its own structural check: the 38 complex names and row numbers must

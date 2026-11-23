@@ -19,6 +19,11 @@
 - Added the opt-in `sr-candidate` profile and a nine-parent loader identity so
   SrO is a full melt and gas parent only when the candidate is selected.
 
+### SrO candidate documentation
+
+- Documented the provisional fusion and formation estimates, source checks,
+  phase-diagram gaps, candidate served values, and unchanged default profile.
+
 ### Gas composition validation
 
 - Nonzero or invalid unsupported components in

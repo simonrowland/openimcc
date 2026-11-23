@@ -990,6 +990,28 @@ copies `gas-shomate-default-v1.csv`
 byte and appends fitted NIST-JANAF segments for 173 additional gas formulas.
 The v1 table remains available by passing its path to `load_gas_datapack`.
 
+### Opt-in SrO full-component candidate
+
+Use `load_profile("sr-candidate")` to select the digest-pinned
+`imcc-sf04-d066-sr-candidate-v1.json` melt pack with nine parent oxides,
+including full-component SrO. The profile keeps the default gas, condensate,
+and redox v6 packs. Pass it to both `evaluate()` and `evaluate_gas()`; the gas
+evaluator selects the nine-parent basis from this profile. The default
+`openimcc` profile and its SrO trace limit are unchanged.
+
+All seven Sr liquid associates use the provisional class-C fusion-entropy
+estimate (8.297530569 J mol⁻¹ formula atom⁻¹ K⁻¹), including the existing
+redox-v6 SrAl₂O₄, SrSiO₃, and Sr₂SiO₄ source rows. SrAl₄O₇ and SrAl₁₂O₁₉ use
+Jacob and Shreyas's printed crystal Gibbs functions; Sr₃Al₂O₆ and Sr₄Al₂O₇
+use the printed Brisi–Abbattista formation enthalpies with a separate
+provisional zero formation-entropy/zero formation-ΔCp estimate. The Sr₃Al₂O₆
+and Sr₄Al₂O₇ crystal formation Gibbs energies, as well as all seven liquid
+associate fusion terms, are provisional. No scored KEMS rows or Ye et al.'s
+optimized liquid interactions were used. The [candidate validation
+report](docs/sr-candidate.md) gives the source checks, entropy sensitivity,
+phase-diagram gaps, composition grid, served-value digests, and example Sr
+pressures.
+
 For example, `evaluate(composition, 1800, profile="published")` selects the
 published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
 selects its matching gas tables. The CLI accepts
