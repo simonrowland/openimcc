@@ -7,7 +7,10 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
 from openimcc.gas import (
+    ImccGasSpeciesNotFoundError,
     IMCC_PARENT_OXIDES,
     default_gas_database_path,
     evaluate_gas,
@@ -15,6 +18,7 @@ from openimcc.gas import (
     species_thermo,
 )
 from openimcc.profiles import load_profile
+from tools import build_gas_tables
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -144,7 +148,7 @@ def test_gas_pack_v2_preserves_served_gas_values() -> None:
     for temperature in (1200.0, 1500.0, 1800.0, 3000.0):
         old = species_thermo("HO", "g", temperature, base)
         new = species_thermo("HO", "g", temperature, candidate)
-        assert _hex(old.G_J_mol) == _hex(new.G_J_mol)
+        assert old == new
 
     new_rows = _gas_rows(GAS_V2)[len(_gas_rows(GAS_V1)):]
     for row in new_rows:
@@ -193,3 +197,30 @@ def test_published_janaf_rows_are_not_treated_as_high_temperature_candidates() -
         for _phase, species, _temperature in candidate._high_temperature_candidate_notices
     }
     assert new_species.isdisjoint(noticed_species)
+
+
+def test_gas_formula_lookup_uses_only_the_explicit_spelling_alias() -> None:
+    candidate = load_gas_datapack(gas_path=GAS_V2, oxide_path=CONDENSATE)
+    for formula in (
+        "HNC", "CNH", "HOCN", "HCNO", "OD", "SH", "DH", "C4NiO4",
+    ):
+        with pytest.raises(ImccGasSpeciesNotFoundError):
+            species_thermo(formula, "g", 1800.0, candidate)
+
+    for formula in ("HCN", "HNCO", "HS", "DO", "HD", "Ni(CO)4"):
+        rows = candidate.gas_df.loc[f"{formula}(g)"]
+        row = rows.iloc[0] if getattr(rows, "ndim", 1) == 2 else rows
+        temperature = (float(row["T_min"]) + float(row["T_max"])) / 2.0
+        result = species_thermo(formula, "g", temperature, candidate)
+        assert result.source_row_id == str(row["Ref"])
+
+
+def test_gas_pack_v2_closes_both_sis_same_reference_seams() -> None:
+    rows = [row for row in _gas_rows(GAS_V2) if row["species_name"] == "SiS(g)"]
+    assert len(rows) == 3
+    rows.sort(key=lambda row: float(row["T_min"]))
+    for left, right in zip(rows, rows[1:]):
+        assert float(left["T_max"]) == float(right["T_min"])
+        assert not build_gas_tables._shomate_join_open(
+            left, right, float(left["T_max"])
+        )

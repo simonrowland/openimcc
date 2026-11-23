@@ -984,7 +984,7 @@ model, so `evaluate_redox(..., profile="published")` refuses; use the
 cannot be combined with explicit pack arguments.
 
 The current packaged gas table is `gas-shomate-default-v2.csv`
-(`3cd1685fe73c804d7acc476799de0500d3e278e35074e6658f72c7414343d73d`). It
+(`36bce1368cd67457d61c48658a50ea5e584cddadc56ef4ae050a86664af33d72`). It
 copies `gas-shomate-default-v1.csv`
 (`7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36`) byte for
 byte and appends fitted NIST-JANAF segments for 173 additional gas formulas.
@@ -1011,7 +1011,8 @@ only to its 1200–1500 K fitted interval; its 1500–3000 K interval starts abo
 the fusion marker. Default vapour channels begin at 1200 K; no held-Cp segment
 is defined below that temperature. The added v2 `species_thermo(..., "g", T)`
 rows have their own declared NIST source intervals and do not add vapour
-channels.
+channels. Gas species lookup uses exact packaged formulas, with the explicit
+`HO` to `OH(g)` spelling alias retained for compatibility.
 
 The melt `evaluate` API also reports a `temperature-domain-extension` notice
 when an allowed evaluation falls below an active association row's declared

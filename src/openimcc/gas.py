@@ -472,6 +472,7 @@ _CONDENSATE_TABLE_RELPATH = Path("data") / "condensate-thermo-data.csv"
 _PACKAGED_DATA_PACKAGE = "openimcc.data.gas"
 _PACKAGED_GAS_NAME = "gas-shomate-default-v2.csv"
 _PACKAGED_CONDENSATE_NAME = "condensate-default-v1.csv"
+_GAS_SPECIES_SPELLING_ALIASES = {"HO": "OH"}
 _CRYSTAL_PHASE_IDENTITY_NAME = "condensate-phase-identity.json"
 _GAS_FORMATION_ENTHALPY_298_NAME = "gas-formation-enthalpy-298.json"
 _SOURCE_VALIDITY_TEXT_COLUMNS = (
@@ -3183,30 +3184,17 @@ def species_thermo(
             row = _nearest_interval_row(
                 active_pack.gas_df, row_name, T_K, allow_extrapolation
             )
-        except ImccGasSpeciesNotFoundError as missing_species:
-            formula_counts = _formula_element_counts(species)
-            if formula_counts is None:
-                raise
-            matching_rows = sorted(
-                {
-                    candidate
-                    for candidate in active_pack.gas_df.index
-                    if str(candidate).endswith("(g)")
-                    and _formula_element_counts(str(candidate)[:-3])
-                    == formula_counts
-                }
+        except ImccGasSpeciesNotFoundError:
+            alias = (
+                _GAS_SPECIES_SPELLING_ALIASES.get(species)
+                if isinstance(species, str)
+                else None
             )
-            if not matching_rows:
+            if alias is None:
                 raise
-            if len(matching_rows) > 1:
-                raise ImccGasSpeciesNotFoundError(
-                    "multiple gas rows in the active datapack share the "
-                    "composition of "
-                    f"{species!r}: {', '.join(matching_rows)}"
-                ) from missing_species
             row = _nearest_interval_row(
                 active_pack.gas_df,
-                matching_rows[0],
+                f"{alias}(g)",
                 T_K,
                 allow_extrapolation,
             )

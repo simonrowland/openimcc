@@ -2583,13 +2583,15 @@ def _pin_gas_same_ref_seams(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             raise ValueError(f"{key}: same-Ref gas rows lack source nodes")
         ordered = sorted(group, key=lambda row: float(row["T_min"]))
         joins = []
+        has_open_join = False
         for index, (left, right) in enumerate(zip(ordered, ordered[1:])):
             if abs(float(left["T_max"]) - float(right["T_min"])) > 1e-4:
                 continue
             temperature = float(left["T_max"])
+            joins.append((index, index + 1, temperature))
             if _shomate_join_open(left, right, temperature):
-                joins.append((index, index + 1, temperature))
-        if not joins:
+                has_open_join = True
+        if not has_open_join:
             continue
         def low_temperature_cp_match(left_index, right_index, temperature, width, ncoef):
             # The low-temperature gas rows are checked to share Cp at 1200 K.

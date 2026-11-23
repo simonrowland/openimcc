@@ -2795,7 +2795,7 @@ def test_species_thermo_extrapolation_reuses_gas_runtime_rows() -> None:
     assert liquid.authority
 
 
-def test_gas_formula_spelling_alias_uses_element_counts() -> None:
+def test_gas_formula_spelling_alias_uses_explicit_mapping() -> None:
     hydroxyl = species_thermo("OH", "g", 2000.0)
     alias = species_thermo("HO", "g", 2000.0)
 
@@ -2804,17 +2804,10 @@ def test_gas_formula_spelling_alias_uses_element_counts() -> None:
     assert alias.source_table_id == hydroxyl.source_table_id
 
 
-def test_gas_formula_spelling_alias_refuses_duplicate_compositions() -> None:
+def test_gas_formula_spelling_alias_refuses_unlisted_spellings() -> None:
     pack = load_gas_datapack()
-    alternate_name = pack.gas_df.loc[pack.gas_df.index == "OH(g)"].copy()
-    alternate_name.index = ["H1O1(g)"] * len(alternate_name)
-    duplicate_pack = replace(
-        pack, gas_df=pd.concat((pack.gas_df, alternate_name))
-    )
-
     with pytest.raises(ImccGasSpeciesNotFoundError) as refusal:
-        species_thermo("HO", "g", 2000.0, duplicate_pack)
-    assert "OH(g)" in str(refusal.value)
+        species_thermo("H1O1", "g", 2000.0, pack)
     assert "H1O1(g)" in str(refusal.value)
 
 

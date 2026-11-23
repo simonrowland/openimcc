@@ -37,7 +37,8 @@
 ### Gas formula spelling
 
 - `species_thermo("HO", "g", T)` now resolves the existing `OH(g)` row by
-  element counts and refuses when multiple pack rows share that composition.
+  the explicit `HO` to `OH` spelling alias. Other gas formulas must match a
+  packaged row exactly.
 
 ### Refractory melting limits
 
@@ -372,7 +373,7 @@
 | --- | --- | --- |
 | Melt | `imcc-sf04-d066-v4.json` | `5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29` |
 | Redox | `openimcc-redox-v6.json` | `a52b899af7fc93b5d950a82dabd6e6eaa89948b6bd45ab65c7f629969bc3c57e` |
-| Gas | `gas-shomate-default-v2.csv` | `3cd1685fe73c804d7acc476799de0500d3e278e35074e6658f72c7414343d73d` |
+| Gas | `gas-shomate-default-v2.csv` | `36bce1368cd67457d61c48658a50ea5e584cddadc56ef4ae050a86664af33d72` |
 | Condensate | `condensate-default-v1.csv` | `1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b` |
 
 - The versioned gas default includes the Bulletin 672 1 atm-to-1 bar entropy
