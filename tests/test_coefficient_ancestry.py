@@ -168,6 +168,7 @@ def _expected_row_ids(artifact: dict) -> set[str]:
         return {f"{row['row']}:{row['complex']}" for row in content["rows"]}
     if file in {
         "gas/gas-shomate-default-v1.csv",
+        "gas/gas-shomate-default-v2.csv",
         "gas/condensate-default-v1.csv",
     }:
         rows = csv.DictReader(path.read_text(encoding="utf-8").splitlines())
@@ -251,7 +252,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 38
+    assert len(entries) == 39
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -261,8 +262,13 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     melt = _artifact(entries, f"{profile.melt_pack.model_id}@{profile.melt_pack.version}")
     assert melt["runtime_digest"] == profile.melt_pack.binding_digest
 
-    gas = _artifact(entries, "gas-shomate-default-v1")
+    gas = _artifact(entries, "gas-shomate-default-v2")
     assert gas["runtime_digest"] == profile.gas_datapack.gas_table_digest
+
+    historical_gas = _artifact(entries, "gas-shomate-default-v1")
+    assert historical_gas["runtime_digest"] == (
+        "4d069a8951cd11e0d2edb37420e3aa04e4927c51c6eee00bbc53368b20d6c492"
+    )
 
     condensate = _artifact(entries, "condensate-default-v1")
     assert condensate["runtime_digest"] == profile.gas_datapack.condensate_table_digest

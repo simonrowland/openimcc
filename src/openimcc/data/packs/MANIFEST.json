@@ -5,8 +5,8 @@
       "sha256": "1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b"
     },
     "gas": {
-      "file": "gas-shomate-default-v1.csv",
-      "sha256": "7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36"
+      "file": "gas-shomate-default-v2.csv",
+      "sha256": "3cd1685fe73c804d7acc476799de0500d3e278e35074e6658f72c7414343d73d"
     },
     "melt": {
       "file": "imcc-sf04-d066-v4.json",
@@ -813,8 +813,17 @@
       "file": "gas-shomate-default-v1.csv",
       "kind": "gas",
       "n_rows": 685,
-      "role": "default",
+      "not_default_reason": "Retained for explicit loading and historical reproduction after the v2 gas default.",
+      "role": "reproduction",
       "sha256": "7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36"
+    },
+    {
+      "bytes": 270334,
+      "file": "gas-shomate-default-v2.csv",
+      "kind": "gas",
+      "n_rows": 1200,
+      "role": "default",
+      "sha256": "3cd1685fe73c804d7acc476799de0500d3e278e35074e6658f72c7414343d73d"
     },
     {
       "bytes": 168245,

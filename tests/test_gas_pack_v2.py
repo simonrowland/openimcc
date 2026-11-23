@@ -9,10 +9,12 @@ import sys
 
 from openimcc.gas import (
     IMCC_PARENT_OXIDES,
+    default_gas_database_path,
     evaluate_gas,
     load_gas_datapack,
     species_thermo,
 )
+from openimcc.profiles import load_profile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +59,14 @@ def test_gas_pack_v2_is_an_append_only_version() -> None:
     )
 
 
+def test_gas_pack_v2_is_the_default_and_v1_remains_selectable() -> None:
+    assert default_gas_database_path().name == GAS_V2.name
+    profile = load_profile("openimcc")
+    assert profile.gas_datapack.gas_path.name == GAS_V2.name
+    previous = load_gas_datapack(gas_path=GAS_V1, oxide_path=CONDENSATE)
+    assert previous.gas_path.name == GAS_V1.name
+
+
 def test_gas_pack_v2_sources_match_the_vendored_hashes() -> None:
     sidecar = ROOT / "data-src/janaf/gas-pack-additions.sha256"
     records = [line.split() for line in sidecar.read_text().splitlines()]
@@ -80,6 +90,28 @@ def test_gas_pack_v2_builder_check_mode_is_current() -> None:
         text=True,
     )
     assert "515 rows across 173 formulas; 0 fit exclusions" in result.stdout
+
+
+def test_packaged_generator_check_modes_are_current() -> None:
+    commands = (
+        ("tools/packmanifest.py", "--check"),
+        ("tools/build_coefficient_ancestry.py", "--check"),
+        ("tools/rebuild_barin_aluminate_crystals.py", "--check"),
+        ("tools/rebuild_rh_crystal_phases.py", "--check", "--species-only"),
+        ("tools/generate_declared_assemblage_janaf.py", "--check"),
+        ("tools/generate_elemental_reference_crystal_cards.py", "--check"),
+    )
+    for command in commands:
+        result = subprocess.run(
+            [sys.executable, *command],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, (
+            f"{' '.join(command)} failed:\n{result.stdout}{result.stderr}"
+        )
 
 
 def test_gas_pack_v2_preserves_served_gas_values() -> None:

@@ -26,6 +26,18 @@ from openimcc.gas import (
 from tools import build_gas_tables
 
 
+GAS_PACK_V2_TEXT_TABLE_IDS = frozenset(
+    table_id for _formula, table_id in build_gas_tables.GAS_PACK_V2_JANAF_TEXT_SOURCES
+)
+GAS_PACK_V2_SPECIES = frozenset(
+    f"{formula}(g)"
+    for formula, _table_id in build_gas_tables.GAS_PACK_V2_JANAF_TEXT_SOURCES
+) | frozenset(
+    f"{formula}(g)"
+    for formula, *_rest in build_gas_tables.GAS_PACK_V2_JANAF_YAML_SOURCES
+)
+
+
 ROOT = Path(__file__).resolve().parents[1]
 JANAF_DATA = ROOT / "data-src" / "janaf"
 NASA_DATA = ROOT / "data-src" / "nasa-glenn"
@@ -99,7 +111,12 @@ def _neutral_oxide_sources(
 ) -> dict[str, tuple[str, str]]:
     """Return source-table candidates: table ID -> (element, neutral gas)."""
     result = {}
-    paths = sorted(source_dir.glob("*.yaml")) + sorted(source_dir.glob("*.txt"))
+    paths = [
+        path
+        for path in sorted(source_dir.glob("*.yaml"))
+        + sorted(source_dir.glob("*.txt"))
+        if source_dir != JANAF_DATA or path.stem not in GAS_PACK_V2_TEXT_TABLE_IDS
+    ]
     for path in paths:
         if path.suffix == ".yaml":
             entry = _record(path.stem, source_dir)["table"]["index_entry"]
@@ -1250,7 +1267,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "B-005", "B-006", "B-007", "B-078", "B-079", "B-080",
         "B-093", "B-094", "B-096", "B-098", "Ga-005", "Ga-006", "Ga-007",
         "Hf-006", "Hf-007", "Hf-008", "Hg-004",
-    } | JANAF_CRYSTAL_TABLE_IDS | JANAF_LIQUID_TABLE_IDS
+    } | JANAF_CRYSTAL_TABLE_IDS | JANAF_LIQUID_TABLE_IDS | GAS_PACK_V2_TEXT_TABLE_IDS
     assert JANAF_CRYSTAL_YAML_TABLE_IDS <= {
         path.stem for path in JANAF_DATA.glob("*.yaml")
     }
@@ -1491,6 +1508,7 @@ def _c4_rows_cover_domain(
     gas_rows = pack.gas_df[
         (pack.gas_df["cation"] == element)
         & ~pack.gas_df.index.str.endswith(("+(g)", "-(g)"))
+        & ~pack.gas_df.index.isin(GAS_PACK_V2_SPECIES)
     ]
     if gas_rows.empty:
         return False

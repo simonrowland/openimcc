@@ -1267,14 +1267,27 @@ def build() -> dict[str, Any]:
         raise ValueError("the prose-citation sidecar references work IDs outside the vocabulary")
 
     sys.path.insert(0, str(ROOT / "src"))
+    from openimcc.gas import load_gas_datapack
     from openimcc.profiles import load_profile
 
     profile = load_profile("openimcc")
+    v1_gas_pack = load_gas_datapack(
+        gas_path=DATA / "gas/gas-shomate-default-v1.csv",
+        oxide_path=DATA / "gas/condensate-default-v1.csv",
+    )
     artifacts = [
         _melt_artifact(mapper, profile.melt_pack.binding_digest or "", sidecar),
         _table_artifact(
             relative_file="gas/gas-shomate-default-v1.csv",
             identity="gas-shomate-default-v1",
+            role="fitted",
+            mapper=mapper,
+            runtime_digest=v1_gas_pack.gas_table_digest,
+            sidecar=sidecar,
+        ),
+        _table_artifact(
+            relative_file="gas/gas-shomate-default-v2.csv",
+            identity="gas-shomate-default-v2",
             role="fitted",
             mapper=mapper,
             runtime_digest=profile.gas_datapack.gas_table_digest,

@@ -983,6 +983,13 @@ model, so `evaluate_redox(..., profile="published")` refuses; use the
 `openimcc` profile or choose explicit redox and melt packs instead. A profile
 cannot be combined with explicit pack arguments.
 
+The current packaged gas table is `gas-shomate-default-v2.csv`
+(`3cd1685fe73c804d7acc476799de0500d3e278e35074e6658f72c7414343d73d`). It
+copies `gas-shomate-default-v1.csv`
+(`7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36`) byte for
+byte and appends fitted NIST-JANAF segments for 173 additional gas formulas.
+The v1 table remains available by passing its path to `load_gas_datapack`.
+
 For example, `evaluate(composition, 1800, profile="published")` selects the
 published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
 selects its matching gas tables. The CLI accepts
@@ -1001,8 +1008,10 @@ FeO (1650 K), TiO2 (2130 K), Na2O (1405.2 K), WO3 (1745 K), BaO (2286 K), SrO
 (2938 K), ZrO2 (2950 K), Li2O (1843 K), Cu2O (1516.7 K), NbO2 (2175 K), Cr2O3
 (2603 K), V2O3 (2340 K), MgO (3105 K), and CaO (3200 K). The Na2O flag applies
 only to its 1200–1500 K fitted interval; its 1500–3000 K interval starts above
-the fusion marker. Gas tables begin at 1200 K; no held-Cp segment is defined
-below that temperature.
+the fusion marker. Default vapour channels begin at 1200 K; no held-Cp segment
+is defined below that temperature. The added v2 `species_thermo(..., "g", T)`
+rows have their own declared NIST source intervals and do not add vapour
+channels.
 
 The melt `evaluate` API also reports a `temperature-domain-extension` notice
 when an allowed evaluation falls below an active association row's declared

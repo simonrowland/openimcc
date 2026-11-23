@@ -314,7 +314,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
     monkeypatch.delenv("OPENIMCC_VAPOROCK_ROOT", raising=False)
     gas_path = default_gas_database_path()
     oxide_path = default_condensate_database_path()
-    assert gas_path.name == "gas-shomate-default-v1.csv"
+    assert gas_path.name == "gas-shomate-default-v2.csv"
     assert oxide_path.name == "condensate-default-v1.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
@@ -343,6 +343,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 2  # Os gas fit intervals.
         + 4  # Four Re2O7 constructed intervals.
         + 11  # Ten low JANAF halogen fits and the low Hg Burcat interval.
+        + 515  # Appended NIST-JANAF intervals in gas-pack v2.
     )
     assert len(gas_pack.oxide_df) == 262
 
@@ -730,6 +731,12 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         source[0] for source in build_gas_tables.TRACE_ION_GAS_BURCAT_SOURCES
     } | {
         source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
+    } | {
+        f"{formula}(g)"
+        for formula, _table_id in build_gas_tables.GAS_PACK_V2_JANAF_TEXT_SOURCES
+    } | {
+        f"{formula}(g)"
+        for formula, *_rest in build_gas_tables.GAS_PACK_V2_JANAF_YAML_SOURCES
     }
     high_rows = gas_pack.gas_df.loc[
         (gas_pack.gas_df["T_interval"].astype(int) == 1)
@@ -756,6 +763,8 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         + len(_RARE_EARTH_CHANNELS)
         + 6
         + 1  # Os(g) has one low interval; Re2O7(g) is excluded above.
+        + len(build_gas_tables.GAS_PACK_V2_JANAF_TEXT_SOURCES)
+        + len(build_gas_tables.GAS_PACK_V2_JANAF_YAML_SOURCES)
     )
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
@@ -777,7 +786,13 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
     } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {
         source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
-    } | {"Os(g)"}
+    } | {"Os(g)"} | {
+        f"{formula}(g)"
+        for formula, _table_id in build_gas_tables.GAS_PACK_V2_JANAF_TEXT_SOURCES
+    } | {
+        f"{formula}(g)"
+        for formula, *_rest in build_gas_tables.GAS_PACK_V2_JANAF_YAML_SOURCES
+    }
     neutral_high_rows = high_rows.loc[
         ~high_rows.index.isin(tuple(f"{species}(g)" for species in _ION_GAS_SPECIES))
     ]

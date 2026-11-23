@@ -808,6 +808,35 @@ _GAS_PROVENANCE_AUTHORITY = {
 _GAS_PROVENANCE_AUTHORITY.update(
     {"Si2O2": "published_fitted", "AlSiO": "published_fitted"}
 )
+_GAS_PROVENANCE_AUTHORITY.update(
+    {
+        species: "janaf_fitted"
+        for species in (
+            "AlBr", "AlCl", "AlCl3", "AlF", "AlH", "AlI", "Ar", "B10H14",
+            "B2", "B2H6", "B3N3H6", "B5H9", "BBr", "BBr3", "BCl", "BCl3",
+            "BF", "BF3", "BH", "BN", "BS", "BeC2", "BeCl", "BeF",
+            "BeH", "BrCl", "BrF", "BrF3", "BrF5", "C", "C2", "C2N2",
+            "C3O2", "CBr4", "CCl", "CCl4", "CF", "CF4", "CH", "CH4",
+            "CN", "CNBr", "CNCl", "CNF", "CNI", "COCl2", "COClF", "COF2",
+            "COS", "CP", "CS", "CS2", "Cl2O", "ClF", "ClF3", "ClO2",
+            "ClO3F", "Cs2", "CuCl", "CuF", "D", "D2O", "D2S", "DCl",
+            "DClO", "DF", "DO", "DS", "F2O", "Fe2Cl6", "FeCl", "FeCl2",
+            "FeCl3", "H2O2", "H2S", "HCN", "HClO", "HD", "HDO", "HNCO",
+            "HNO3", "HS", "He", "HgBr", "HgBr2", "HgCl", "HgCl2", "HgF",
+            "HgF2", "HgH", "HgI", "HgI2", "HgO", "IBr", "ICl", "IF",
+            "IF5", "IF7", "KH", "Kr", "Li2", "LiH", "MgH", "MoF6",
+            "N2O", "N2O4", "N2O5", "ND", "ND3", "NF3", "NH", "NH3",
+            "NO2Cl", "NOBr", "NOCl", "NOF", "NOI", "NS", "NaH", "Ne",
+            "Ni(CO)4", "O3", "PBr3", "PCl3", "PCl5", "PF3", "PH", "PH3",
+            "PN", "POBr3", "POCl3", "POF3", "PSBr3", "PSCl3", "PSF3", "Pb2",
+            "PbBr", "PbCl", "PbCl4", "PbF", "PbH", "PbI", "PbS", "Rb2",
+            "Rn", "S2Cl2", "SCl2", "SF6", "SO2Cl2", "SO2F2", "SOF2", "SiBr",
+            "SiBr4", "SiCl", "SiCl2", "SiCl4", "SiF", "SiF4", "SiH", "SiH4",
+            "SiI4", "SiN", "SiS", "TiBr4", "TiCl4", "TiF4", "TiI4", "WF6",
+            "Xe", "ZrBr4", "ZrCl4", "ZrF4", "ZrI4",
+        )
+    }
+)
 _GAS_PROVENANCE_AUTHORITY["Hg"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY["Au"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY["Pd"] = "published_fitted"

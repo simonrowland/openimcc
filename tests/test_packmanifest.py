@@ -250,6 +250,13 @@ def test_default_combination_has_one_reasoned_default_per_kind() -> None:
     }
     assert manifest["DEFAULT-COMBINATION"] == expected_combination
     assert expected_combination == packmanifest._runtime_default_combination()
+    gas_tables = {
+        entry["file"]: entry
+        for entry in manifest["tables"]
+        if entry["kind"] == "gas"
+    }
+    assert gas_tables["gas-shomate-default-v2.csv"]["role"] == "default"
+    assert gas_tables["gas-shomate-default-v1.csv"]["role"] == "reproduction"
     assert all(
         isinstance(entry.get("not_default_reason"), str)
         and entry["not_default_reason"].strip()

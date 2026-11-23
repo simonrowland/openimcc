@@ -15,6 +15,14 @@
   standard keep a liquid-standard activity of 1 and report the stable crystal
   and both thermochemistry source IDs in a melt notice.
 
+### Gas formula coverage
+
+- Added `gas-shomate-default-v2.csv` as the packaged gas default. It copies the
+  v1 table byte for byte and adds 515 fitted intervals for 173 formulas from
+  NIST-JANAF gas tables, noble-gas reference tables, and the vendored B2 and
+  Cs2 sources. No fit exclusions were needed; the `evaluate_gas` reaction set
+  is unchanged. The v1 table remains available for explicit loading.
+
 ### Liquid species thermochemistry
 
 - `species_thermo(..., "l", T)` now serves vendored non-parent JANAF and
@@ -364,7 +372,7 @@
 | --- | --- | --- |
 | Melt | `imcc-sf04-d066-v4.json` | `5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29` |
 | Redox | `openimcc-redox-v6.json` | `a52b899af7fc93b5d950a82dabd6e6eaa89948b6bd45ab65c7f629969bc3c57e` |
-| Gas | `gas-shomate-default-v1.csv` | `7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36` |
+| Gas | `gas-shomate-default-v2.csv` | `3cd1685fe73c804d7acc476799de0500d3e278e35074e6658f72c7414343d73d` |
 | Condensate | `condensate-default-v1.csv` | `1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b` |
 
 - The versioned gas default includes the Bulletin 672 1 atm-to-1 bar entropy

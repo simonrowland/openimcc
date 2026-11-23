@@ -56,7 +56,7 @@ PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "a8c12fb657b3104661cf726876fcd58781ebfc9f58be59f028eb3ab02a6e6d65"
 )
 PACKAGED_FULL_GAS_TABLE_DIGEST = (
-    "4d069a8951cd11e0d2edb37420e3aa04e4927c51c6eee00bbc53368b20d6c492"
+    "c55a9cb06ca5b2a39116f2b320163d5737e91fc019f3f4b6497090cc0c7df847"
 )
 PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
     "493c67d5ba23b75767cc3ce4bd6e571bd2400162b3affdbbc581a7b0ae75362e"
@@ -66,8 +66,8 @@ PACKAGED_ENGINE_BINDING_DIGESTS = {
     "ext": "c06c7583ec660c78c4ab799b76f60ac9d53ccb9579bcb49b56421f6f3d958e0b",
 }
 PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
-    "v1": "8c4e0d32bf4c9b73a00c6be5955ed95ebad4e8c9433d9f614593e5150a3196fb",
-    "ext": "b11c2172d400997974f1117ae916d59bc82d1b1c65d976e7233c635c955cf58c",
+    "v1": "2cb1e1e09e6375fc9bc61a37f355e29904489de94941edbe56c58d2e3a866cdf",
+    "ext": "1991d494c2b3f6189f01b9c6980ca388683763d74c84e208b84328b81c57cb1a",
 }
 ADDED_GAS_SPECIES = {
     "Si2O2(g)", "AlSiO(g)",
@@ -91,6 +91,17 @@ ADDED_GAS_SPECIES = {
     "Re(g)", "Re2O7(g)",
     "PS(g)",
 } | {species for species, _element in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES}
+
+
+def _gas_species_names(filename: str) -> set[str]:
+    with (GAS_DATA / filename).open(encoding="utf-8", newline="") as stream:
+        return {row["species_name"] for row in csv.DictReader(stream)}
+
+
+ADDED_GAS_SPECIES |= (
+    _gas_species_names("gas-shomate-default-v2.csv")
+    - _gas_species_names("gas-shomate-default-v1.csv")
+)
 ADDED_CONDENSATE_SPECIES = {
     "Ta2O5(l)", "BeO(l)", "Tl2O(l)",
     "Pt(cr)", "Pt(l)", "Ru(cr)", "Ru(l)",

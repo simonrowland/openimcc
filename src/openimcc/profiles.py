@@ -70,7 +70,7 @@ def load_profile(name: str) -> Profile:
         from openimcc.gas import load_gas_datapack
 
         gas = load_gas_datapack(
-            gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v1.csv",
+            gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v2.csv",
             oxide_path=_DATA_DIR / "gas" / "condensate-default-v1.csv",
         )
         return Profile(

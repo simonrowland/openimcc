@@ -55,6 +55,20 @@ PUBLISHED_DATA = ROOT / "data-src" / "published-thermo"
 LH84_DATA = ROOT / "data-src" / "lh84"
 LH87_DATA = ROOT / "data-src" / "lh87"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
+_GAS_PACK_V2_SPECIES = frozenset(
+    f"{formula}(g)"
+    for formula, _table_id in build_gas_tables.GAS_PACK_V2_JANAF_TEXT_SOURCES
+) | frozenset(
+    f"{formula}(g)"
+    for formula, *_rest in build_gas_tables.GAS_PACK_V2_JANAF_YAML_SOURCES
+)
+_GAS_PACK_V2_SOURCE_PATHS = frozenset(
+    f"data-src/janaf/{table_id}.txt"
+    for _formula, table_id in build_gas_tables.GAS_PACK_V2_JANAF_TEXT_SOURCES
+) | frozenset(
+    f"data-src/janaf/{table_id}.yaml"
+    for _formula, table_id, *_rest in build_gas_tables.GAS_PACK_V2_JANAF_YAML_SOURCES
+)
 
 # Exact compilation values present in the shipped gas and parent provenance.
 _COMPILATION_CLASS_BY_SOURCE_FILE = {
@@ -447,6 +461,8 @@ _COMPILATION_CLASS_BY_MISSING_SOURCE_IDENTITY = {
 def _compilation(row: dict[str, object]) -> str:
     source_path = row.get("source_path")
     if source_path:
+        if str(source_path) in _GAS_PACK_V2_SOURCE_PATHS:
+            return "JANAF"
         return _COMPILATION_CLASS_BY_SOURCE_FILE.get(
             Path(str(source_path)).name.casefold(), "other"
         )
@@ -1077,9 +1093,12 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = provenance["rows"]
     gas_records = [row for row in rows if row["table"] == "gas"]
+    legacy_gas_records = [
+        row for row in gas_records if row["species_name"] not in _GAS_PACK_V2_SPECIES
+    ]
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     gas_rows = {}
-    for row in gas_records:
+    for row in legacy_gas_records:
         if not (
             (
                 row["T_range_K"][0] >= 1500
@@ -1100,7 +1119,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             gas_rows[row["species_name"]] = row
     low_gas_rows = {
         row["species_name"].removesuffix("(g)"): row
-        for row in gas_records
+        for row in legacy_gas_records
         if row.get("T_interval") == 2 and row["species_name"] not in ion_species
     }
     oxide_rows = {}
@@ -1587,6 +1606,7 @@ def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> Non
     records = provenance["rows"]
     shipped_tables = {
         "gas-shomate-default-v1.csv": "gas",
+        "gas-shomate-default-v2.csv": "gas",
         "condensate-default-v1.csv": "condensate",
         "condensate-sio2-na2o-janaf-legacy.csv": "condensate",
     }
@@ -1650,7 +1670,8 @@ def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> Non
                         runtime_cp,
                     )
                 joined += 1
-    assert joined == 953
+    # The v2 table repeats its byte-identical v1 prefix and adds 515 rows.
+    assert joined == 953 + 1200
 
 
 def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
@@ -4383,6 +4404,7 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients(
         for row in provenance["rows"]
         if row["table"] == "gas"
         and row.get("T_interval") == 2
+        and row["species_name"] not in _GAS_PACK_V2_SPECIES
         and row["species_name"]
         not in {source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES}
     }
@@ -6748,19 +6770,25 @@ def test_compilation_controlled_vocabulary_census() -> None:
     assert len(_COMPILATION_CLASS_BY_MISSING_SOURCE_IDENTITY) == 3
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = provenance["rows"]
+    v2_source_rows = [
+        row for row in rows if row.get("source_path") in _GAS_PACK_V2_SOURCE_PATHS
+    ]
+    legacy_rows = [row for row in rows if row not in v2_source_rows]
     source_files = {
         Path(row["source_path"]).name.casefold()
-        for row in rows
+        for row in legacy_rows
         if row.get("source_path")
     }
     assert source_files == set(_COMPILATION_CLASS_BY_SOURCE_FILE)
+    assert len(v2_source_rows) == 515
+    assert all(_compilation(row) == "JANAF" for row in v2_source_rows)
     missing_source_identities = {
         (
             str(row.get("authority") or "").casefold(),
             str(row.get("table_id") or "").casefold(),
             str(row.get("source_table_id") or "").casefold(),
         )
-        for row in rows
+        for row in legacy_rows
         if not row.get("source_path")
     }
     assert missing_source_identities == set(
@@ -6777,7 +6805,7 @@ def test_compilation_controlled_vocabulary_census() -> None:
                 "source_table_id": source_table_id,
             }
         ) == expected
-    assert Counter(_compilation(row) for row in rows) == {
+    assert Counter(_compilation(row) for row in legacy_rows) == {
         "JANAF": 480,
         "NASA": 147,
         "Pankratz": 112,
@@ -10009,6 +10037,8 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell(
     per_row_max = {}
 
     for species_name, row in pack.gas_df.iterrows():
+        if species_name in _GAS_PACK_V2_SPECIES:
+            continue
         table_id = str(row["Ref"])
         if not (JANAF_DATA / f"{table_id}.yaml").is_file():
             # Na2O(g) and K2O(g) use NASA/LH84 source rows, not JANAF tables.
