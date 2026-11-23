@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Callable
 
@@ -62,6 +63,39 @@ def test_cached_feo_reference_rows_are_nested_immutable():
     )
 
     assert after.activity("MnO") == before.activity("MnO")
+
+
+def test_pure_alumina_below_melt_reports_stable_crystal_activity() -> None:
+    from openimcc.gas import R_J_MOL_K, species_thermo
+
+    temperature = 2000.0
+    result = evaluate({"Al2O3": 1.0}, temperature)
+    crystal_g = species_thermo("Al2O3", "cr", temperature).G_J_mol
+    liquid_g = species_thermo("Al2O3", "l", temperature).G_J_mol
+    crystal_activity = math.exp(
+        (crystal_g - liquid_g) / (R_J_MOL_K * temperature)
+    )
+
+    notice, = tuple(
+        notice
+        for notice in result.labels.notices
+        if notice.startswith("pure-oxide-crystal-stable:")
+    )
+    assert result.activity("Al2O3") == 1.0
+    assert "Al2O3 crystal is the stable phase" in notice
+    assert (
+        "exp((G_crystal−G_liquid)/RT)="
+        f"{crystal_activity:.12g}"
+    ) in notice
+
+
+def test_pure_alumina_above_melt_has_no_crystal_stability_notice() -> None:
+    result = evaluate({"Al2O3": 1.0}, 2400.0)
+
+    assert not any(
+        notice.startswith("pure-oxide-crystal-stable:")
+        for notice in result.labels.notices
+    )
 
 
 def _base_data() -> dict[str, Any]:

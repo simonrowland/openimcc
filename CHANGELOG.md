@@ -9,6 +9,12 @@
   that relied on positive unknown keys being dropped will now receive refusals;
   zero-valued unsupported keys remain ignored.
 
+### Pure-oxide phase notice
+
+- Pure in-basis oxides below their JANAF crystal–liquid temperature keep a
+  liquid-standard activity of 1 and report the stable crystal activity on that
+  standard in a melt notice.
+
 ### Liquid species thermochemistry
 
 - `species_thermo(..., "l", T)` now serves vendored non-parent JANAF and

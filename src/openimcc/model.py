@@ -3341,6 +3341,37 @@ def evaluate(
         notices.append(trace_notice)
     notices.extend(trace_activity_flags)
     notices.extend(trace_major_flags)
+
+    active_parent_indices = np.flatnonzero(vector > 0.0)
+    if len(active_parent_indices) == 1 and not trace_fractions:
+        oxide = parent_oxides[int(active_parent_indices[0])]
+        if oxide in _EXPECTED_PARENT_OXIDES:
+            from openimcc.janaf_crystals import _JANAF_OXIDE_PAIRS
+
+            oxide_pair = _JANAF_OXIDE_PAIRS.get(oxide)
+            if oxide_pair is not None and T_K < oxide_pair.transition_K:
+                try:
+                    from openimcc.gas import species_thermo
+
+                    crystal_g = species_thermo(oxide, "cr", T_K).G_J_mol
+                    liquid_g = species_thermo(oxide, "l", T_K).G_J_mol
+                    crystal_activity = math.exp(
+                        (crystal_g - liquid_g) / (_R_J_MOL_K * T_K)
+                    )
+                except (ImportError, ImccRefusal, OverflowError):
+                    # Optional gas thermochemistry may not cover every melt T;
+                    # a notice must not make a successful melt evaluation refuse.
+                    pass
+                else:
+                    notices.append(
+                        "pure-oxide-crystal-stable: "
+                        f"{oxide} crystal is the stable phase below its JANAF "
+                        f"crystal–liquid temperature of {oxide_pair.transition_K:g} K; "
+                        "the liquid-standard activity remains 1, and crystal "
+                        "activity on the liquid standard is "
+                        "exp((G_crystal−G_liquid)/RT)="
+                        f"{crystal_activity:.12g}"
+                    )
     if _melt_notice_score(
         "feo-hess-candidate", (model_id, binding_digest)
     ) == "scored":
