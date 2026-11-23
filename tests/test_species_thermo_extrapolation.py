@@ -1162,10 +1162,8 @@ def test_indexed_janaf_crystal_species_reconstruct_source_rows() -> None:
         cap_K = float(phase["crystal_transition_temperature_K"])
         crystal_liquid_transitions = [
             row for row in phase["transition_rows"]
-            if (
-                "<-->" in row["label"]
-                and "LIQUID" in row["label"].upper()
-                and "IDEAL GAS" not in row["label"].upper()
+            if janaf_crystals._is_crystal_to_liquid_transition_label(
+                row["label"]
             )
         ]
         if crystal_liquid_transitions:

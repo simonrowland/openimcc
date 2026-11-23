@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib import resources
@@ -19,6 +20,20 @@ _SPECIES_RESOURCE = "data/diagnostics/janaf-crystal-species.json"
 _LIQUID_RESOURCE = "data/diagnostics/janaf-pure-oxide-liquid-pairs.json"
 _LIQUID_SPECIES_RESOURCE = "data/diagnostics/janaf-liquid-species.json"
 _ANCHOR_TEMPERATURE_K = 298.15
+
+
+def _is_crystal_to_liquid_transition_label(label: str) -> bool:
+    upper = label.upper()
+    parts = upper.split("<-->", 1)
+    return (
+        len(parts) == 2
+        and "LIQUID" in parts[1]
+        and "IDEAL GAS" not in upper
+    )
+
+
+def _is_reference_title(title: str) -> bool:
+    return re.search(r"\bref\b", title, re.I) is not None
 
 
 @dataclass(frozen=True)

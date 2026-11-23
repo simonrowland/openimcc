@@ -13,7 +13,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from openimcc.janaf_crystals import _JANAF_OXIDE_PAIRS  # noqa: E402
+from openimcc.janaf_crystals import (  # noqa: E402
+    _JANAF_OXIDE_PAIRS,
+    _is_crystal_to_liquid_transition_label,
+)
 
 
 SOURCE = ROOT / "data-src" / "janaf"
@@ -451,11 +454,7 @@ def _extra_crystal_phases() -> list[dict]:
         transitions = prepared["transition_rows"]
         crystal_liquid_rows = [
             row for row in transitions
-            if (
-                "<-->" in row["label"]
-                and "LIQUID" in row["label"].upper()
-                and "IDEAL GAS" not in row["label"].upper()
-            )
+            if _is_crystal_to_liquid_transition_label(row["label"])
         ]
         cap_K = (
             min(float(row["T_K"]) for row in crystal_liquid_rows)
@@ -466,8 +465,7 @@ def _extra_crystal_phases() -> list[dict]:
             (
                 row for row in reversed(transitions)
                 if float(row["T_K"]) == cap_K
-                and "<-->" in row["label"]
-                and "LIQUID" in row["label"].upper()
+                and _is_crystal_to_liquid_transition_label(row["label"])
             ),
             None,
         )
@@ -521,7 +519,7 @@ def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
         if left == "GLASS" and right == "LIQUID":
             glass_opening_rows.append(row)
         if (
-            "LIQUID" in right
+            _is_crystal_to_liquid_transition_label(row["label"])
             and "LIQUID" not in left
             # The O-085 glass transition is not the stable crystal-to-liquid
             # boundary used by the liquid-reference species service.
@@ -624,8 +622,7 @@ def build() -> dict[Path, str]:
             (
                 row for row in transition_rows
                 if row["T_K"] == transition_K
-                and "<-->" in row["label"]
-                and "LIQUID" in row["label"].upper()
+                and _is_crystal_to_liquid_transition_label(row["label"])
             ),
             None,
         )

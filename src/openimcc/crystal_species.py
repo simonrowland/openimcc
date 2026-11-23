@@ -15,6 +15,8 @@ from openimcc._crystal_interpolation import _linear_value_and_slope
 from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
 from openimcc.diagnostics import _crystal_source_cap_excludes_candidate
 from openimcc.janaf_crystals import (
+    _is_crystal_to_liquid_transition_label,
+    _is_reference_title,
     _janaf_nodes_for_temperature,
     _load_crystal_species as _load_janaf_crystal_species,
     _load_phases as _load_janaf_phases,
@@ -74,6 +76,10 @@ def is_reference_polymorph(polymorph: str | None) -> bool:
 
 def is_element_formula(formula: str) -> bool:
     return re.fullmatch(r"[A-Z][a-z]?", formula) is not None
+
+
+def _format_temperature_window(label: str, low_K: float, high_K: float) -> str:
+    return f"{label} [{low_K:g}-{high_K:g} K]"
 
 
 @dataclass(frozen=True)
@@ -939,9 +945,7 @@ def _unnamed_element_reference_cap(
     references = [
         row
         for row in candidates
-        if re.search(
-            r"\bref\b", str(row.phase.get("source_title", "")), re.I
-        )
+        if _is_reference_title(str(row.phase.get("source_title", "")))
     ]
     if len(references) != 1 or candidate is references[0]:
         return None
@@ -950,11 +954,8 @@ def _unnamed_element_reference_cap(
     transition = reference.get("transition_row_at_cap")
     if not isinstance(transition, Mapping):
         return None
-    transition_label = str(transition.get("label", "")).upper()
-    if (
-        "<-->" not in transition_label
-        or "LIQUID" not in transition_label
-        or "IDEAL GAS" in transition_label
+    if not _is_crystal_to_liquid_transition_label(
+        str(transition.get("label", ""))
     ):
         return None
 
@@ -1170,7 +1171,12 @@ def evaluate_crystal_species(
     if not groups:
         return None
     dataset, candidates = groups[0]
-    labels = tuple(f"{candidate.label} [{candidate.interval_K[0]:g}-{candidate.interval_K[1]:g} K]" for candidate in candidates)
+    labels = tuple(
+        _format_temperature_window(
+            candidate.label, candidate.interval_K[0], candidate.interval_K[1]
+        )
+        for candidate in candidates
+    )
 
     named = None
     named_segment = None
@@ -1194,12 +1200,9 @@ def evaluate_crystal_species(
             or (
                 candidate.dataset == "JANAF crystal tables"
                 and (
-                    re.search(
-                        r"\bref\b",
-                        str(candidate.phase.get("source_title", "")),
-                        re.I,
+                    _is_reference_title(
+                        str(candidate.phase.get("source_title", ""))
                     )
-                    is not None
                     or (
                         len(candidates) == 1
                         and float(
@@ -1340,7 +1343,9 @@ def evaluate_crystal_species(
                     else item.interval_K[1]
                 )
                 available_windows.append(
-                    f"{item.label} [{item.interval_K[0]:g}-{window_high_K:g} K]"
+                    _format_temperature_window(
+                        item.label, item.interval_K[0], window_high_K
+                    )
                 )
             message = (
                 f"cannot serve {formula}(cr) at T={temperature_K:g} K: "
