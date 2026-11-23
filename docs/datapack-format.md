@@ -108,6 +108,7 @@ when absent, although they are present in the shipped packs as noted.
 
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
+| candidate_provenance | object | No | Pack-level sources, construction assumptions, validation checks, and uncertainty notes for the opt-in Sr candidate. The loader does not interpret this record, but it is covered by the candidate binding digest. |
 | created | string | No | Pack creation date, represented as an ISO-like date such as 2026-08-11. The loader does not parse it. |
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
 | excess_gibbs | object | Conditional | Opt-in analytical-parent or total-species pair excess-Gibbs terms. Accepted only with the new `IMCC-SF04-D066-EXCESS-CANDIDATE` identity; its full content participates in the canonical binding digest. Never add this section to a published pack. |
@@ -310,6 +311,7 @@ pack, but those fields are not required to construct the kernel datapack.
 | enthalpy_flag | string | No | Enthalpy-closure status for the row, such as not_closable. The loader preserves it as provenance. |
 | fit_metadata | object | No | Regression grid, point count, fit residuals, direct spot checks, or related fit diagnostics. |
 | flags | array of strings | No | Row-level evidence or policy flags, such as reference_unknown or kcaalsi2o7_out_of_liquid_domain. |
+| fusion_entropy_estimate_J_mol_K | number | No | Provisional class-C fusion-entropy estimate for the liquid associate, in J/(mol K). The Sr candidate uses 8.297530569 J/(mol formula atom K) times the complex's formula-atom count; the loader does not use this recorded construction input at runtime. |
 | fusion_transition_K | number | No | Fusion transition temperature used by the row's thermodynamic construction, in kelvin. |
 | inactive_reason | non-empty string | Required when active is false | Reason the core row is disabled. It is required only with active: false; the loader rejects it when active is true or absent. |
 | janaf_liquid_table_range_K | array of two numbers | No | Temperature range represented by the cited JANAF liquid table, in kelvin. |

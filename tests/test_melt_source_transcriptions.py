@@ -151,6 +151,7 @@ _STANDARD_STATE_REFITS = {
     1, 2, 7, 11, 12, 13, 14, 15, 17, 18, 20, 23, 24, 25, 26, 27, 28,
     29, 30, 31, 32, 33, 34, 36, 37, 38,
 }
+_SR_CANDIDATE_REFIT_ROWS = set(range(39, 46))
 EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
     "imcc-sf04-d066-ext-v1.json": {"k_translation": _K_TRANSLATED_ROWS},
     "imcc-sf04-d066-feo-hess-candidate.json": {
@@ -196,6 +197,16 @@ EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
         "hess_refit": {1, 3, 11, 12, 14},
         "feo_conversion": {19, 20, 21},
     },
+    # build_sr_candidate_pack.py loads the v4 pack and leaves its 38 rows
+    # unchanged, then appends seven Sr rows with the same 1001-point
+    # least-squares standard-state refit over 1700–2400 K.
+    "imcc-sf04-d066-sr-candidate-v1.json": {
+        "k_translation": _K_TRANSLATED_ROWS,
+        "standard_state_refit": _STANDARD_STATE_REFITS | _SR_CANDIDATE_REFIT_ROWS,
+        "feo_conversion": {19, 20, 21},
+        "fusion_refit": {3},
+        "sr_candidate_refit": _SR_CANDIDATE_REFIT_ROWS,
+    },
 }
 
 
@@ -208,6 +219,8 @@ def _recorded_transforms(pack_row: dict[str, Any]) -> set[str]:
     transforms = set()
     if pack_row.get("standard_state_refit"):
         transforms.add("standard_state_refit")
+    if "fusion_entropy_estimate_J_mol_K" in pack_row:
+        transforms.add("sr_candidate_refit")
     if pack_row.get("k_translation"):
         transforms.add("k_translation")
     if "Independent" in pack_row.get("source", "") and "Hess" in pack_row.get("source", ""):
@@ -291,6 +304,17 @@ def _assert_transform_reason(
         assert "Δlog10K" in pack_row["derivation"]
         assert "c0=27778.965828" in pack_row["derivation"]
         assert "c1=-10.961554232" in pack_row["derivation"]
+    elif transform == "sr_candidate_refit":
+        metadata = pack_row["standard_state_refit"]
+        assert pack_row["row"] in _SR_CANDIDATE_REFIT_ROWS
+        assert pack_row["fusion_entropy_estimate_J_mol_K"] > 0.0
+        assert metadata["parents"]
+        assert metadata["temperature_range_K"] == [1700.0, 2400.0]
+        assert metadata["fit_method"] == (
+            "least squares on 1001 evenly spaced pointwise re-referenced log10 K values"
+        )
+        assert pack_row["source_refs"]
+        assert pack_row["derivation"]
     else:  # pragma: no cover - the explicit map limits the accepted categories
         raise AssertionError(transform)
 
@@ -309,6 +333,7 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
             "hess_refit",
             "feo_conversion",
             "fusion_refit",
+            "sr_candidate_refit",
         }
         expected = {
             category: EXPECTED_D066_TRANSFORMS[entry["file"]].get(category, set())
@@ -325,6 +350,17 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
         assert observed == expected
 
         for pack_row in pack["rows"]:
+            if (
+                entry["file"] == "imcc-sf04-d066-sr-candidate-v1.json"
+                and pack_row["row"] in _SR_CANDIDATE_REFIT_ROWS
+            ):
+                assert _recorded_transforms(pack_row) == {
+                    "standard_state_refit",
+                    "sr_candidate_refit",
+                }
+                for transform in _recorded_transforms(pack_row):
+                    _assert_transform_reason(pack_row, transform)
+                continue
             source_row = _source_row_for_pack_row(pack_row["row"], fc87_rows, sf04_rows)
             _assert_pack_reaction_matches_source(pack_row, source_row)
             transforms = _recorded_transforms(pack_row)
@@ -338,3 +374,25 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
                 sorted(transforms),
                 "recorded transformation unexpectedly reproduces source coefficients",
             )
+
+
+def test_sr_candidate_keeps_v4_prefix_and_refits_its_seven_sr_rows() -> None:
+    candidate = json.loads(
+        (PACK_DIR / "imcc-sf04-d066-sr-candidate-v1.json").read_text(encoding="utf-8")
+    )
+    v4 = json.loads((PACK_DIR / "imcc-sf04-d066-v4.json").read_text(encoding="utf-8"))
+
+    assert candidate["rows"][:38] == v4["rows"]
+    sr_rows = candidate["rows"][38:]
+    assert [row["complex"] for row in sr_rows] == [
+        "SrAl2O4",
+        "SrAl4O7",
+        "SrAl12O19",
+        "Sr3Al2O6",
+        "Sr4Al2O7",
+        "SrSiO3",
+        "Sr2SiO4",
+    ]
+    assert {row["row"] for row in sr_rows} == _SR_CANDIDATE_REFIT_ROWS
+    assert all("sr_candidate_refit" in _recorded_transforms(row) for row in sr_rows)
+    assert all(row["T_domain_K"] == [1700.0, 2400.0] for row in sr_rows)
