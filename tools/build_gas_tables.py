@@ -34,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
+from openimcc.crystal_species import _formula_element_counts
 
 PUBLISHED_DATA = Path(__file__).resolve().parents[1] / "data-src/published-thermo"
 
@@ -220,6 +221,187 @@ TRACE_JANAF_GAS_SOURCES = (
     ("Cu2(g)", "Cu-018", "Cu", 2, 0),
     ("Zn(g)", "Zn-005", "Zn", 1, 0),
 )
+# New gas-pack inputs are kept separate from the existing default build.
+# The first field is the runtime formula name; the second is its NIST table ID.
+GAS_PACK_V2_JANAF_TEXT_SOURCES = (
+    ("AlBr", "Al-009"),
+    ("AlCl", "Al-014"),
+    ("AlCl3", "Al-028"),
+    ("AlF", "Al-033"),
+    ("AlH", "Al-056"),
+    ("AlI", "Al-063"),
+    ("Ar", "Ar-001"),
+    ("B10H14", "B-139"),
+    ("B2H6", "B-091"),
+    ("B3N3H6", "B-114"),
+    ("B5H9", "B-127"),
+    ("BBr", "B-009"),
+    ("BBr3", "B-020"),
+    ("BCl", "B-021"),
+    ("BCl3", "B-031"),
+    ("BeC2", "C-115"),
+    ("BeCl", "Be-010"),
+    ("BeF", "Be-018"),
+    ("BeH", "Be-030"),
+    ("BF", "B-032"),
+    ("BF3", "B-040"),
+    ("BH", "B-045"),
+    ("BN", "B-073"),
+    ("BrCl", "Br-005"),
+    ("BrF", "Br-006"),
+    ("BrF3", "Br-007"),
+    ("BrF5", "Br-008"),
+    ("BS", "B-081"),
+    ("C", "C-003"),
+    ("C2", "C-113"),
+    ("C2N2", "C-134"),
+    ("C3O2", "C-142"),
+    ("CBr4", "C-017"),
+    ("CCl", "C-018"),
+    ("CCl4", "C-028"),
+    ("CF", "C-030"),
+    ("CF4", "C-040"),
+    ("CH", "C-043"),
+    ("CH4", "C-067"),
+    ("Cl2O", "Cl-103"),
+    ("ClF", "Cl-015"),
+    ("ClF3", "Cl-021"),
+    ("ClO2", "Cl-061"),
+    ("ClO3F", "Cl-019"),
+    ("CN", "C-080"),
+    ("CNBr", "C-016"),
+    ("CNCl", "C-021"),
+    ("CNF", "C-032"),
+    ("CNI", "C-068"),
+    ("COCl2", "C-025"),
+    ("COClF", "C-019"),
+    ("COF2", "C-036"),
+    ("COS", "C-094"),
+    ("CP", "C-097"),
+    ("CS", "C-098"),
+    ("CS2", "C-099"),
+    ("CuCl", "Cl-012"),
+    ("CuF", "Cu-009"),
+    ("D", "D-001"),
+    ("D2O", "D-017"),
+    ("D2S", "D-018"),
+    ("DCl", "Cl-013"),
+    ("DClO", "Cl-014"),
+    ("DF", "D-004"),
+    ("DO", "D-010"),
+    ("DS", "D-011"),
+    ("F2O", "F-083"),
+    ("Fe2Cl6", "Cl-186"),
+    ("FeCl", "Cl-025"),
+    ("FeCl2", "Cl-084"),
+    ("FeCl3", "Cl-137"),
+    ("H2O2", "H-070"),
+    ("H2S", "H-080"),
+    ("HClO", "Cl-027"),
+    ("HCN", "C-052"),
+    ("HD", "D-005"),
+    ("HDO", "D-008"),
+    ("He", "He-001"),
+    ("HgBr", "Br-013"),
+    ("HgBr2", "Br-053"),
+    ("HgCl", "Cl-031"),
+    ("HgCl2", "Cl-089"),
+    ("HgF", "F-015"),
+    ("HgF2", "F-066"),
+    ("HgH", "H-004"),
+    ("HgI", "Hg-005"),
+    ("HgI2", "Hg-009"),
+    ("HgO", "Hg-011"),
+    ("HNCO", "C-053"),
+    ("HNO3", "H-030"),
+    ("HS", "H-046"),
+    ("IBr", "Br-014"),
+    ("ICl", "Cl-035"),
+    ("IF", "F-016"),
+    ("IF5", "F-146"),
+    ("IF7", "F-158"),
+    ("KH", "H-008"),
+    ("Kr", "Kr-001"),
+    ("Li2", "Li-013"),
+    ("LiH", "H-017"),
+    ("MgH", "H-023"),
+    ("MoF6", "F-153"),
+    ("N2O", "N-026"),
+    ("N2O4", "N-032"),
+    ("N2O5", "N-033"),
+    ("NaH", "H-032"),
+    ("ND", "D-009"),
+    ("ND3", "D-019"),
+    ("Ne", "Ne-001"),
+    ("NF3", "F-116"),
+    ("NH", "H-026"),
+    ("NH3", "H-083"),
+    ("Ni(CO)4", "C-147"),
+    ("NO2Cl", "Cl-052"),
+    ("NOBr", "Br-026"),
+    ("NOCl", "Cl-051"),
+    ("NOF", "F-030"),
+    ("NOI", "I-014"),
+    ("NS", "N-011"),
+    ("O3", "O-056"),
+    ("Pb2", "Pb-012"),
+    ("PbBr", "Br-032"),
+    ("PbCl", "Cl-063"),
+    ("PbCl4", "Cl-159"),
+    ("PbF", "F-044"),
+    ("PbH", "H-045"),
+    ("PbI", "I-018"),
+    ("PBr3", "Br-084"),
+    ("PbS", "Pb-011"),
+    ("PCl3", "Cl-141"),
+    ("PCl5", "Cl-177"),
+    ("PF3", "F-119"),
+    ("PH", "H-044"),
+    ("PH3", "H-088"),
+    ("PN", "N-010"),
+    ("POBr3", "Br-083"),
+    ("POCl3", "Cl-140"),
+    ("POF3", "F-118"),
+    ("PSBr3", "Br-085"),
+    ("PSCl3", "Cl-142"),
+    ("PSF3", "F-120"),
+    ("Rb2", "Rb-008"),
+    ("Rn", "Rn-001"),
+    ("S2Cl2", "Cl-117"),
+    ("SCl2", "Cl-114"),
+    ("SF6", "F-154"),
+    ("SiBr", "Br-033"),
+    ("SiBr4", "Br-097"),
+    ("SiCl", "Cl-068"),
+    ("SiCl2", "Cl-118"),
+    ("SiCl4", "Cl-160"),
+    ("SiF", "F-048"),
+    ("SiF4", "F-141"),
+    ("SiH", "H-047"),
+    ("SiH4", "H-093"),
+    ("SiI4", "I-064"),
+    ("SiN", "N-012"),
+    ("SiS", "S-009"),
+    ("SO2Cl2", "Cl-105"),
+    ("SO2F2", "F-087"),
+    ("SOF2", "F-084"),
+    ("TiBr4", "Br-101"),
+    ("TiCl4", "Cl-164"),
+    ("TiF4", "F-143"),
+    ("TiI4", "I-068"),
+    ("WF6", "F-157"),
+    ("Xe", "Xe-001"),
+    ("ZrBr4", "Br-103"),
+    ("ZrCl4", "Cl-168"),
+    ("ZrF4", "F-145"),
+    ("ZrI4", "I-070"),
+)
+GAS_PACK_V2_JANAF_YAML_SOURCES = (
+    ("B2", "B-083", "B", 2, 0),
+    ("Cs2", "Cs-018", "Cs", 2, 0),
+)
+
+
 # Mo/W JANAF tables are vendored as normalized YAML records. Keep them on the
 # same fit path and two-interval domain as the other optional trace channels.
 TRACE_JANAF_YAML_GAS_SOURCES = (
@@ -2959,6 +3141,158 @@ def _fit_janaf_text_row(
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
         **_shomate_source_fields(fit),
+    }
+
+
+def _gas_pack_v2_formula_metadata(formula: str) -> tuple[str, int, int]:
+    """Return the leading element, its count, and oxygen count for a gas formula."""
+    counts = _formula_element_counts(formula)
+    first = re.match(r"[A-Z][a-z]?", formula)
+    if counts is None or first is None:
+        raise ValueError(f"{formula}: unsupported gas formula syntax")
+    cation = first.group(0)
+    if any(int(count) != count for count in counts.values()):
+        raise ValueError(f"{formula}: non-integer atom counts are unsupported")
+    return cation, int(counts[cation]), int(counts.get("O", 0))
+
+
+def build_gas_pack_v2(
+    base_gas: Path,
+    source_dir: Path,
+    output: Path,
+    *,
+    check: bool = False,
+) -> dict[str, Any]:
+    """Append source-fitted JANAF gases to an immutable versioned gas table.
+
+    The fitting policy is the packaged gas builder's 500–1500 K and
+    1500–3000 K intervals, plus its existing 3000–6000 K high-temperature
+    interval where the source prints those nodes. The two 1500 K source tables
+    use only the low interval. Each published fit must stay within the existing
+    10 J/mol in-sample G residual gate. A failed formula is excluded whole so
+    one missing interval cannot leave a partial new entry.
+    """
+    base_bytes = base_gas.read_bytes()
+    base_text = base_bytes.decode("utf-8")
+    base_reader = csv.DictReader(io.StringIO(base_text, newline=""))
+    if tuple(base_reader.fieldnames or ()) != RUNTIME_COLUMNS:
+        raise ValueError(f"{base_gas} has an unexpected runtime gas-table header")
+    base_rows = list(base_reader)
+    existing_species = {row["species_name"] for row in base_rows}
+    defaults = _empty_source_validity_fields()
+    interval_specs = (
+        (2, LOW_FIT_T_MIN, LOW_FIT_T_MAX),
+        (1, FIT_T_MIN, FIT_T_MAX),
+        (3, 3000.0, 6000.0),
+    )
+    source_specs = [
+        (formula, table_id, "text", None)
+        for formula, table_id in GAS_PACK_V2_JANAF_TEXT_SOURCES
+    ] + [
+        (formula, table_id, "yaml", (cation, cat_num, oxy_num))
+        for formula, table_id, cation, cat_num, oxy_num
+        in GAS_PACK_V2_JANAF_YAML_SOURCES
+    ]
+    generated: list[dict[str, Any]] = []
+    exclusions: list[dict[str, str]] = []
+    included_formulas: list[str] = []
+    seen_species: set[str] = set()
+
+    for formula, table_id, source_kind, stored_metadata in source_specs:
+        species_name = f"{formula}(g)"
+        if species_name in existing_species or species_name in seen_species:
+            raise ValueError(f"{species_name}: gas-pack v2 would duplicate a formula")
+        if stored_metadata is None:
+            cation, cat_num, oxy_num = _gas_pack_v2_formula_metadata(formula)
+        else:
+            cation, cat_num, oxy_num = stored_metadata
+        if source_kind == "text":
+            source_rows = _janaf_text_source_rows(source_dir, table_id)
+            source_limit = max(source_rows)
+        else:
+            record = _load_record(source_dir / f"{table_id}.yaml")
+            source_limit = max(
+                float(_value(row, "temperature"))
+                for row in record["table"]["values"]
+                if _value(row, "temperature") is not None
+            )
+        species_rows: list[dict[str, Any]] = []
+        try:
+            for interval, fit_min, fit_max in interval_specs:
+                if source_limit < fit_max:
+                    continue
+                if source_kind == "text":
+                    row = _fit_janaf_text_row(
+                        source_dir,
+                        species_name,
+                        table_id,
+                        cation,
+                        cat_num,
+                        oxy_num,
+                        t_interval=interval,
+                        fit_t_min=fit_min,
+                        fit_t_max=fit_max,
+                    )
+                else:
+                    row = _fit_row(
+                        source_dir,
+                        species_name,
+                        table_id,
+                        cation,
+                        cat_num,
+                        oxy_num,
+                        t_interval=interval,
+                        fit_t_min=fit_min,
+                        fit_t_max=fit_max,
+                        minimum_rows=11 if interval == 2 else 13,
+                    )
+                residual = float(row["_max_residual_J_per_mol"])
+                if residual > 10.0:
+                    raise ValueError(
+                        f"{table_id} {fit_min:g}-{fit_max:g} K fit residual "
+                        f"{residual:.6g} J/mol exceeds 10"
+                    )
+                row.update(defaults)
+                species_rows.append(row)
+            if not species_rows:
+                raise ValueError(f"{table_id}: no complete 500-6000 K fit interval")
+            _OPEN_GAS_JOINS.clear()
+            species_rows = _pin_gas_same_ref_seams(species_rows)
+            if _OPEN_GAS_JOINS:
+                raise ValueError("; ".join(_OPEN_GAS_JOINS))
+            for row in species_rows:
+                residual = float(row["_max_residual_J_per_mol"])
+                if residual > 10.0:
+                    raise ValueError(
+                        f"{table_id} seam fit residual {residual:.6g} J/mol exceeds 10"
+                    )
+        except (KeyError, ValueError) as exc:
+            exclusions.append(
+                {"formula": formula, "table_id": table_id, "reason": str(exc)}
+            )
+            continue
+        generated.extend(species_rows)
+        included_formulas.append(formula)
+        seen_species.add(species_name)
+
+    buffer = io.StringIO(newline="")
+    writer = csv.writer(buffer, lineterminator="\n")
+    for row in generated:
+        writer.writerow(
+            [row.get(column, defaults.get(column, "")) for column in RUNTIME_COLUMNS]
+        )
+    prefix = base_bytes if base_bytes.endswith(b"\n") else base_bytes + b"\n"
+    expected = prefix + buffer.getvalue().encode("utf-8")
+    if check:
+        if not output.is_file() or output.read_bytes() != expected:
+            raise ValueError(f"{output}: gas-pack v2 differs from generated rows")
+    else:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(expected)
+    return {
+        "rows": len(generated),
+        "formulas": included_formulas,
+        "exclusions": exclusions,
     }
 
 
@@ -9425,6 +9759,26 @@ def main() -> None:
         help="combine the 1 bar correction and source-based oxide-molecule rows",
     )
     parser.add_argument(
+        "--gas-pack-v2",
+        action="store_true",
+        help="build or check the versioned NIST-JANAF gas-pack v2 table",
+    )
+    parser.add_argument(
+        "--gas-pack-v2-base",
+        type=Path,
+        default=repository / "src/openimcc/data/gas/gas-shomate-default-v1.csv",
+    )
+    parser.add_argument(
+        "--gas-pack-v2-output",
+        type=Path,
+        default=repository / "src/openimcc/data/gas/gas-shomate-default-v2.csv",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="check the selected generated artifact without writing it",
+    )
+    parser.add_argument(
         "--default-combination-output",
         type=Path,
         default=repository / "src/openimcc/data/gas/gas-shomate-default-v1.csv",
@@ -9450,6 +9804,28 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if args.gas_pack_v2:
+        report = build_gas_pack_v2(
+            args.gas_pack_v2_base,
+            args.source_dir,
+            args.gas_pack_v2_output,
+            check=args.check,
+        )
+        action = "checked" if args.check else "built"
+        print(
+            f"gas pack v2 {action}: {report['rows']} rows across "
+            f"{len(report['formulas'])} formulas; "
+            f"{len(report['exclusions'])} fit exclusions"
+        )
+        for exclusion in report["exclusions"]:
+            print(
+                f"excluded {exclusion['formula']} ({exclusion['table_id']}): "
+                f"{exclusion['reason']}",
+                file=sys.stderr,
+            )
+        return
+    if args.check:
+        parser.error("--check requires --gas-pack-v2")
     if args.default_combination:
         counts = build_default_combination_gas(
             packaged_gas,

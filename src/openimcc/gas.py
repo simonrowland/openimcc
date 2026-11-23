@@ -294,8 +294,8 @@ def _high_temperature_candidate_notice_records(
     table: "pd.DataFrame", table_name: str, table_path: Path, *, phase: str
 ) -> dict[tuple[str, str, float], _HighTemperatureNotice]:
     # Candidate markers identify rows even when a table was filtered down to a
-    # standalone interval. Also track continuations at the 3000 K source seam
-    # after the marker is reworded, while leaving standalone published rows out.
+    # standalone interval. A reworded 3000 K candidate keeps its JANAF/CEA
+    # namespace; plain source-table IDs remain published rows.
     source_window_species = {
         str(species)
         for species, row in table.iterrows()
@@ -312,7 +312,9 @@ def _high_temperature_candidate_notice_records(
         source_ref = str(row["Ref"])
         has_candidate_marker = "HT-CANDIDATE" in source_ref
         is_boundary_continuation = (
-            t_min >= 3000.0 and str(species) in candidate_species
+            t_min >= 3000.0
+            and str(species) in candidate_species
+            and source_ref.startswith(("JANAF-", "CEA-"))
         )
         if not has_candidate_marker and not is_boundary_continuation:
             continue
