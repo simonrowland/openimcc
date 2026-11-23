@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError, fields
+from dataclasses import FrozenInstanceError, fields, replace
 import struct
 from types import SimpleNamespace
 
@@ -21,6 +21,7 @@ from openimcc import (
     load_profile,
 )
 from openimcc.gas import (
+    IMCC_PARENT_OXIDES,
     evaluate_gas_oxygen_balance,
     evaluate_gas_saturation,
     gas_boiling_temperature,
@@ -78,6 +79,14 @@ def test_named_profiles_load(name: str, melt_version: str, has_redox: bool) -> N
         profile.name = "published"
 
 
+def test_default_and_published_profiles_use_imcc_parent_basis() -> None:
+    expected = tuple(IMCC_PARENT_OXIDES)
+
+    assert tuple(load_datapack().parent_oxides) == expected
+    assert tuple(load_profile("openimcc").melt_pack.parent_oxides) == expected
+    assert tuple(load_profile("published").melt_pack.parent_oxides) == expected
+
+
 def test_sr_candidate_profile_evaluates_full_parent_basis_and_sr_gas() -> None:
     profile = load_profile("sr-candidate")
     assert profile.melt_pack.parent_oxides[-1] == "SrO"
@@ -109,10 +118,14 @@ def test_sr_candidate_profile_evaluates_full_parent_basis_and_sr_gas() -> None:
         {"SrO": 100.0},
     ),
 )
+@pytest.mark.parametrize("profile_name", ("sr-candidate", "renamed-candidate"))
 def test_sr_candidate_gas_composition_matches_candidate_melt_activities(
     composition: dict[str, float],
+    profile_name: str,
 ) -> None:
     profile = load_profile("sr-candidate")
+    if profile_name != profile.name:
+        profile = replace(profile, name=profile_name)
     melt = evaluate(
         composition,
         2000.0,
@@ -138,14 +151,17 @@ def test_sr_candidate_gas_composition_matches_candidate_melt_activities(
     assert by_composition["Sr"] == pytest.approx(
         by_activity["Sr"], rel=1e-12, abs=0.0
     )
+    if composition == {"SrO": 50.0, "Al2O3": 50.0}:
+        assert by_composition["Sr"] == pytest.approx(7.488e-6, rel=1e-3)
 
 
-def test_default_profile_keeps_sro_trace_limit() -> None:
+@pytest.mark.parametrize("profile", (None, "openimcc"))
+def test_default_profile_keeps_sro_trace_limit(profile: str | None) -> None:
     with pytest.raises(ImccTraceLimitExceededError):
         evaluate(
             {"SrO": 50.0, "Al2O3": 50.0},
             2000.0,
-            profile="openimcc",
+            profile=profile,
             basis_type="wt",
         )
 

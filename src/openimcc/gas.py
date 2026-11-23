@@ -3960,20 +3960,22 @@ def evaluate_gas(
             else None
         )
     )
+    profile_parent_oxides = (
+        getattr(selected_profile.melt_pack, "parent_oxides", None)
+        if selected_profile is not None
+        else None
+    )
+    if profile_parent_oxides is not None:
+        profile_parent_oxides = tuple(profile_parent_oxides)
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
         parent_oxides = (
-            selected_profile.melt_pack.parent_oxides
-            if selected_profile is not None
-            and selected_profile.name == "sr-candidate"
-            else IMCC_PARENT_OXIDES
+            IMCC_PARENT_OXIDES
+            if profile_parent_oxides is None
+            else profile_parent_oxides
         )
-    candidate_melt_parents = (
-        set(selected_profile.melt_pack.parent_oxides)
-        if selected_profile is not None
-        and selected_profile.name == "sr-candidate"
-        else set()
-    )
+    profile_melt_parents = set(profile_parent_oxides or ())
+    profile_added_melt_parents = profile_melt_parents - set(IMCC_PARENT_OXIDES)
 
     omitted_channels: Mapping[str, str] = {}
     requested_channels: tuple[str, ...] | None = None
@@ -4127,9 +4129,9 @@ def evaluate_gas(
 
         declared_major_weights: dict[str, float] = {}
         composition_parents = (
-            selected_profile.melt_pack.parent_oxides
-            if candidate_melt_parents
-            else IMCC_PARENT_OXIDES
+            IMCC_PARENT_OXIDES
+            if profile_parent_oxides is None
+            else profile_parent_oxides
         )
         for oxide in composition_parents:
             if oxide not in composition_wt_pct:
@@ -4153,7 +4155,7 @@ def evaluate_gas(
         unsupported = {
             name: raw_amount
             for name, raw_amount in composition_wt_pct.items()
-            if name not in IMCC_PARENT_OXIDES
+            if name not in composition_parents
             and trace_component_rule(name) is None
         }
         unsupported_requires_refusal = False
@@ -4173,7 +4175,7 @@ def evaluate_gas(
             non_parent_composition = {
                 name: amount
                 for name, amount in composition_wt_pct.items()
-                if name not in IMCC_PARENT_OXIDES
+                if name not in composition_parents
             }
             # Delegate the refusal so this adapter reports the same typed
             # error, code, and complete non-parent key list as evaluate().
@@ -4216,11 +4218,11 @@ def evaluate_gas(
             for name, amount in composition_moles.items()
             if (
                 amount > 0.0
-                and name not in candidate_melt_parents
+                and name not in profile_melt_parents
                 and trace_component_rule(name) is not None
             )
         }
-        if trace_fractions or candidate_melt_parents:
+        if trace_fractions or profile_added_melt_parents:
             melt_result = evaluate_melt(
                 melt_composition,
                 T,
@@ -4229,7 +4231,7 @@ def evaluate_gas(
                 allow_extrapolation=True,
                 allow_out_of_envelope=True,
             )
-            if candidate_melt_parents:
+            if profile_added_melt_parents:
                 act.update(
                     {
                         name: melt_result.activity(name)

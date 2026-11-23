@@ -1670,11 +1670,12 @@ def _build_nu_vector(
 def _wt_to_mol(vector: np.ndarray, parent_oxides: Sequence[str]) -> np.ndarray:
     """Convert a mass-fraction vector (g) to a mole vector (mol)."""
     def molar_mass(oxide: str) -> float:
-        if oxide == "SrO":
-            return (
-                _OXIDE_MOLAR_MASS_G_MOL["Sr"]
-                + _OXIDE_MOLAR_MASS_G_MOL["O"]
-            )
+        molar_mass = _OXIDE_MOLAR_MASS_G_MOL.get(oxide)
+        if molar_mass is not None:
+            return molar_mass
+        trace_rule = trace_component_rule(oxide)
+        if trace_rule is not None:
+            return trace_rule.molar_mass_g_mol
         return _OXIDE_MOLAR_MASS_G_MOL[oxide]
 
     molar_masses = np.array(
@@ -2675,9 +2676,9 @@ def evaluate(
                 full_component_exempt,
             )
 
-    # X_Me2O = (n_Na2O + n_K2O) / sum(n_oxide) over the canonical
-    # D066 eight-oxide or candidate nine-oxide parent vector. Treat the
-    # boundary as inclusive within a 1e-5 relative comparison slack; decimal
+    # X_Me2O = (n_Na2O + n_K2O) / sum(n_oxide) over the selected pack's
+    # non-extension parent vector. Treat the boundary as inclusive within a
+    # 1e-5 relative comparison slack; decimal
     # wt% input for a printed X=0.5 can
     # arrive a few ppm above the ideal ratio after conversion. The 1e-5
     # cutoff accepts the measured 3.947e-6 rounding residual but still
@@ -2685,10 +2686,8 @@ def evaluate(
     alkali_mol = sum(
         float(vector[parent_oxides.index(name)]) for name in ("Na2O", "K2O")
     )
-    envelope_parent_oxides = (
-        parent_oxides
-        if model_id == _SR_CANDIDATE_MODEL_ID
-        else _EXPECTED_PARENT_OXIDES
+    envelope_parent_oxides = tuple(
+        name for name in parent_oxides if name not in extension_parents
     )
     canonical_oxide_mol = sum(
         float(vector[parent_oxides.index(name)])
