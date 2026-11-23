@@ -170,8 +170,10 @@ def _janaf_text_reference_row(
 
 
 @lru_cache(maxsize=None)
-def _janaf_element_reference_rows(element: str) -> tuple[dict[str, float], ...]:
-    table_id = _JANAF_ELEMENT_GAS_TABLES[element]
+def _janaf_element_reference_rows(
+    element: str, table_id: str | None = None
+) -> tuple[dict[str, float], ...]:
+    table_id = table_id or _JANAF_ELEMENT_GAS_TABLES[element]
     root = Path(__file__).parents[1] / "data-src/janaf"
     yaml_path = root / f"{table_id}.yaml"
     if yaml_path.exists():
@@ -204,6 +206,10 @@ def _janaf_element_reference_g_app_kJ_mol(
     element: str, temperature_K: float
 ) -> float:
     rows = _janaf_element_reference_rows(element)
+    if element == "Fe" and temperature_K > max(
+        row["T_K"] for row in rows if row["Hinc_kJ_mol"] is not None
+    ):
+        rows = _janaf_element_reference_rows("Fe", "Fe-006")
     anchor = next(
         row for row in rows
         if row["T_K"] == 298.15 and row["delta_fH_kJ_mol"] is not None
@@ -487,8 +493,8 @@ def test_janaf_liquid_nodes_match_printed_rows() -> None:
 
     assert len(data["rows"]) == 32
     new_table_ids = {
-        "Na-003", "Ga-003", "Ca-003", "Li-003", "Cu-002", "Si-002",
-        "Br-039", "Ni-002", "Fe-004", "Co-002", "I-025", "Ti-003",
+        "Na-003", "Ga-003", "Ca-004", "Li-003", "Cu-003", "Si-003",
+        "Br-039", "Ni-003", "Fe-006", "Co-003", "I-025", "Ti-004",
         "Cl-094", "F-034", "Na-024", "H-063", "H-075", "Cl-162",
         "B-126", "F-152", "C-146", "H-086",
     }
@@ -612,10 +618,59 @@ def test_janaf_liquid_nodes_match_printed_rows() -> None:
     water = next(row for row in data["rows"] if row["formula"] == "H2O")
     assert water["opening_row"] is None
     assert water["cap_row"]["label"] == "LIQUID <--> REAL GAS"
+    nickel_carbonyl = next(
+        row for row in data["rows"] if row["formula"] == "Ni(CO)4"
+    )
+    assert nickel_carbonyl["temperature_K"][0] == 170.0
+    assert [node["T_K"] for node in nickel_carbonyl["nodes"]][0] == 170.0
+    assert 100.0 not in {node["T_K"] for node in nickel_carbonyl["nodes"]}
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("Ni(CO)4", "l", 100.0)
     v2o5 = species_thermo("V2O5", "l", 1000.0)
     assert v2o5.H_app_kJ_mol == -1368.261
     assert v2o5.S_J_molK == 395.938
     assert v2o5.G_J_mol == pytest.approx(-1764199.0, abs=1e-9)
+
+
+@pytest.mark.parametrize(
+    ("formula", "table_id", "temperature_K", "enthalpy_kJ_mol", "entropy_J_molK"),
+    [
+        ("Ca", "Ca-004", 1200.0, 39.353, 94.247),
+        ("Cu", "Cu-003", 1500.0, 47.461, 87.240),
+        ("Si", "Si-003", 1800.0, 89.314, 93.357),
+        ("Ni", "Ni-003", 1800.0, 67.317, 97.343),
+        ("Fe", "Fe-006", 1900.0, 76.640, 102.082),
+        ("Co", "Co-003", 1900.0, 75.459, 102.167),
+        ("Ti", "Ti-004", 2000.0, 72.421, 98.944),
+    ],
+)
+def test_janaf_element_liquids_use_dedicated_liquid_tables(
+    formula, table_id, temperature_K, enthalpy_kJ_mol, entropy_J_molK
+) -> None:
+    result = species_thermo(formula, "l", temperature_K)
+    assert result.source_table_id == table_id
+    assert result.H_app_kJ_mol == pytest.approx(enthalpy_kJ_mol, abs=1e-12)
+    assert result.S_J_molK == pytest.approx(entropy_J_molK, abs=1e-12)
+
+
+def test_crystal_only_janaf_table_does_not_serve_liquid(monkeypatch) -> None:
+    root = Path(__file__).parents[1]
+    data = json.loads(
+        (
+            root / "src/openimcc/data/diagnostics/janaf-liquid-species.json"
+        ).read_text(encoding="utf-8")
+    )
+    crystal_only = deepcopy(
+        next(row for row in data["rows"] if row["formula"] == "Ca")
+    )
+    crystal_only["table_kind"] = "cr"
+    monkeypatch.setattr(
+        janaf_crystals,
+        "_load_liquid_species_rows",
+        lambda: ((crystal_only,), "crystal-only-test-resource"),
+    )
+    with pytest.raises(ImccGasSpeciesNotFoundError):
+        species_thermo("Ca", "l", 1200.0)
 
 
 def test_janaf_liquid_source_order_and_duplicate_tables_refuse(monkeypatch) -> None:

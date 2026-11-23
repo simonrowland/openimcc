@@ -115,16 +115,16 @@ LIQUID_SPECIES_SOURCES = (
     ("S", "S-001", "ref"),
     ("Na", "Na-003", "l"),
     ("Ga", "Ga-003", "l"),
-    ("Ca", "Ca-003", "cr"),
+    ("Ca", "Ca-004", "l"),
     ("Li", "Li-003", "l"),
-    ("Cu", "Cu-002", "cr"),
-    ("Si", "Si-002", "cr"),
+    ("Cu", "Cu-003", "l"),
+    ("Si", "Si-003", "l"),
     ("Br2", "Br-039", "cr,l"),
-    ("Ni", "Ni-002", "cr"),
-    ("Fe", "Fe-004", "cr"),
-    ("Co", "Co-002", "cr"),
+    ("Ni", "Ni-003", "l"),
+    ("Fe", "Fe-006", "l"),
+    ("Co", "Co-003", "l"),
     ("I2", "I-025", "l"),
-    ("Ti", "Ti-003", "cr"),
+    ("Ti", "Ti-004", "l"),
     ("MgCl2", "Cl-094", "l"),
     ("NaF", "F-034", "l"),
     ("Na2SO4", "Na-024", "l"),
@@ -510,6 +510,7 @@ def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
     )
     transitions = prepared["transition_rows"]
     opening_rows = []
+    glass_opening_rows = []
     cap_rows = []
     for row in transitions:
         if "<-->" not in row["label"]:
@@ -517,6 +518,8 @@ def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
         left, right = (
             part.strip().upper() for part in row["label"].split("<-->", 1)
         )
+        if left == "GLASS" and right == "LIQUID":
+            glass_opening_rows.append(row)
         if (
             "LIQUID" in right
             and "LIQUID" not in left
@@ -527,6 +530,8 @@ def _liquid_species_row(formula: str, table_id: str, table_kind: str) -> dict:
             opening_rows.append(row)
         if "LIQUID" in left and right in {"IDEAL GAS", "REAL GAS"}:
             cap_rows.append(row)
+    if not opening_rows and table_kind == "l":
+        opening_rows = glass_opening_rows
     if len(opening_rows) > 1:
         raise ValueError(
             f"{table_id} must have at most one stable liquid-opening transition; "

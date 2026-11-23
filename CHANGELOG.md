@@ -11,6 +11,7 @@
   printed 1000 K V2O5 node.
 - Added 12 JANAF element liquid fallbacks with their printed temperature windows.
 - Added 10 JANAF compound liquid fallbacks with their printed temperature windows.
+- Corrected seven elemental liquid fallbacks to use their dedicated JANAF liquid tables.
 
 ### Gas formula spelling
 
