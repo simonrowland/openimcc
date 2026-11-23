@@ -44,7 +44,9 @@ constructions and are re-referenced here.
 Jacob and Shreyas (2018, [doi:10.1007/s10853-017-1634-0](https://doi.org/10.1007/s10853-017-1634-0))
 print formation-from-crystalline-oxide relations `ΔG = A + B·T` for SrAl₄O₇
 and SrAl₁₂O₁₉. Recalculation at each printed temperature reproduces those
-relations:
+published equations as a transcription check. Because the tabulated values
+are evaluated from the same printed linear equations, this is not an
+independent reading or reconstruction from the underlying EMF measurements:
 
 | T (K) | ΔGform SrAl₄O₇ (J/mol) | ΔGform SrAl₁₂O₁₉ (J/mol) |
 |---:|---:|---:|
@@ -65,7 +67,7 @@ used by the builder:
 | 1300 | −4497.908 | −11850.363 |
 
 For Sr₃Al₂O₆ and α-Sr₄Al₂O₇, the allowed Brisi–Abbattista values transcribed
-as printed in Ye et al. (2007, Table 3) are respectively
+as printed in Ye et al. (2007, Tables 1 and 3) are respectively
 `ΔHform,ox(298.15 K) = −97.7 ± 4.2 kJ/mol` and
 `−81.4 ± 5.4 kJ/mol`. Those sources do not print formation entropy or heat
 capacity. Following the approved Neumann–Kopp estimate, the candidate uses
@@ -92,7 +94,10 @@ The resulting uncertainty sensitivity is:
 
 These are sensitivity bounds for the missing formation entropy under the
 zero-ΔCp assumption; they do not bound a missing formation heat-capacity
-function. The 298.15 K checks reproduce the two printed enthalpies exactly.
+function. For the provisional ΔSₒₓ = 0 Brisi rows, the 1800 K sensitivity
+bounds are ±1.77 dex for Sr₃Al₂O₆ and ±2.21 dex for Sr₄Al₂O₇. SrO-rich
+predictions depending on these complexes are highly uncertain. The 298.15 K
+checks reproduce the two printed enthalpies exactly.
 
 The other source crystal checks use the redox v6 Sr fragment. Its SrAl₂O₄
 source construction gives `Gcr(2233 K) = −3002.667 kJ/mol`; its SrSiO₃ and
@@ -112,7 +117,7 @@ The candidate SrO liquid standard reproduces JANAF O-014's absolute liquid G
 | 2200 | −0.334 |
 | 2400 | −0.182 |
 
-The maximum absolute gap is 0.335 J/mol.
+The maximum absolute gap is 0.334361 J/mol.
 
 ## Phase-diagram sanity checks
 

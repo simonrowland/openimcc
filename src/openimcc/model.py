@@ -104,7 +104,6 @@ _SR_CANDIDATE_ROWS = (
     "SrAl2O4", "SrAl4O7", "SrAl12O19", "Sr3Al2O6",
     "Sr4Al2O7", "SrSiO3", "Sr2SiO4",
 )
-_SR_OXIDE_MOLAR_MASS_G_MOL = 103.6194
 _D066_CORE_ROWS = (
     "Mg2SiO4", "MgSiO3", "MgAl2O4", "MgTiO3", "MgTi2O5", "Mg2TiO4",
     "Al6Si2O13", "CaAl2O4", "CaAl4O7", "Ca12Al14O33", "CaSiO3",
@@ -1672,7 +1671,10 @@ def _wt_to_mol(vector: np.ndarray, parent_oxides: Sequence[str]) -> np.ndarray:
     """Convert a mass-fraction vector (g) to a mole vector (mol)."""
     def molar_mass(oxide: str) -> float:
         if oxide == "SrO":
-            return _SR_OXIDE_MOLAR_MASS_G_MOL
+            return (
+                _OXIDE_MOLAR_MASS_G_MOL["Sr"]
+                + _OXIDE_MOLAR_MASS_G_MOL["O"]
+            )
         return _OXIDE_MOLAR_MASS_G_MOL[oxide]
 
     molar_masses = np.array(
@@ -2416,9 +2418,9 @@ def evaluate(
         kernel's `y` vector; pass the previous result's active entries after
         taking their natural logs to continue a time-stepped solve.
     profile:
-        Optional named profile (``"openimcc"`` or ``"published"``), or a
-        loaded :class:`openimcc.profiles.Profile`. It cannot be combined with
-        ``pack``.
+        Optional named profile (``"openimcc"``, ``"published"``, or
+        ``"sr-candidate"``), or a loaded :class:`openimcc.profiles.Profile`.
+        It cannot be combined with ``pack``.
 
     Returns
     -------

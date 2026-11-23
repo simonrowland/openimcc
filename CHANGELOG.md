@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Sr candidate composition gas path
+
+- Resolve composition-based gas inputs through the selected Sr candidate melt
+  profile and reuse the shared SrO molar mass while preserving default trace
+  handling.
+- Clarify the candidate thermochemistry checks and uncertainty in its report.
+
 ### SrO candidate source records
 
 - Added transcribed Jacob–Shreyas Sr-aluminate formation Gibbs energies and

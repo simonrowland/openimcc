@@ -10,6 +10,7 @@ import pytest
 
 from openimcc import (
     ImccLiquidStandardMismatchError,
+    ImccTraceLimitExceededError,
     PackStandardNotice,
     ProfileConflictError,
     ProfileRedoxUnavailableError,
@@ -99,6 +100,54 @@ def test_sr_candidate_profile_evaluates_full_parent_basis_and_sr_gas() -> None:
             )
             assert "Sr" in gas
             assert gas["Sr"] > 0.0
+
+
+@pytest.mark.parametrize(
+    "composition",
+    (
+        {"SrO": 50.0, "Al2O3": 50.0},
+        {"SrO": 100.0},
+    ),
+)
+def test_sr_candidate_gas_composition_matches_candidate_melt_activities(
+    composition: dict[str, float],
+) -> None:
+    profile = load_profile("sr-candidate")
+    melt = evaluate(
+        composition,
+        2000.0,
+        profile=profile,
+        basis_type="wt",
+        allow_out_of_envelope=True,
+    )
+    activities = {
+        name: melt.activity(name) for name in melt.parent_oxides
+    }
+    by_activity = evaluate_gas(
+        activities, 2000.0, 1e-10, profile=profile
+    )
+    by_composition = evaluate_gas(
+        {},
+        2000.0,
+        1e-10,
+        profile=profile,
+        composition_wt_pct=composition,
+    )
+
+    assert by_composition["Sr"] > 0.0
+    assert by_composition["Sr"] == pytest.approx(
+        by_activity["Sr"], rel=1e-12, abs=0.0
+    )
+
+
+def test_default_profile_keeps_sro_trace_limit() -> None:
+    with pytest.raises(ImccTraceLimitExceededError):
+        evaluate(
+            {"SrO": 50.0, "Al2O3": 50.0},
+            2000.0,
+            profile="openimcc",
+            basis_type="wt",
+        )
 
 
 def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit(

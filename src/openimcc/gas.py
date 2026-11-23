@@ -3857,13 +3857,15 @@ def evaluate_gas(
     composition_wt_pct:
         Optional melt composition keyed by oxide, in weight percent. This is
         used to resolve composition-scoped liquid-reference authority such as
-        the K2O(l) measured-pressure window. Registered trace components also
-        activate the melt-side major-bias gate: channels using a major whose
-        strict trace bound exceeds its cap are omitted with the parent, bound,
-        and cap recorded in the refusal. Nonzero or invalid components outside
-        the melt basis and registered trace set are refused with the melt
-        evaluator's typed error; finite numeric zero-valued unsupported keys
-        are ignored.
+        the K2O(l) measured-pressure window. With the ``sr-candidate`` profile,
+        the composition is also solved on that profile's melt basis and its
+        parent activities are used for gas pressures. Registered trace
+        components also activate the melt-side major-bias gate: channels using
+        a major whose strict trace bound exceeds its cap are omitted with the
+        parent, bound, and cap recorded in the refusal. Nonzero or invalid
+        components outside the melt basis and registered trace set are refused
+        with the melt evaluator's typed error; finite numeric zero-valued
+        unsupported keys are ignored.
     strict_pack_standards:
         If True, refuse when the selected melt pack has a known liquid-standard
         mismatch or missing declaration for the active tables.
@@ -3966,6 +3968,12 @@ def evaluate_gas(
             and selected_profile.name == "sr-candidate"
             else IMCC_PARENT_OXIDES
         )
+    candidate_melt_parents = (
+        set(selected_profile.melt_pack.parent_oxides)
+        if selected_profile is not None
+        and selected_profile.name == "sr-candidate"
+        else set()
+    )
 
     omitted_channels: Mapping[str, str] = {}
     requested_channels: tuple[str, ...] | None = None
@@ -4118,7 +4126,12 @@ def evaluate_gas(
         from openimcc.model import evaluate as evaluate_melt
 
         declared_major_weights: dict[str, float] = {}
-        for oxide in IMCC_PARENT_OXIDES:
+        composition_parents = (
+            selected_profile.melt_pack.parent_oxides
+            if candidate_melt_parents
+            else IMCC_PARENT_OXIDES
+        )
+        for oxide in composition_parents:
             if oxide not in composition_wt_pct:
                 continue
             raw_amount = composition_wt_pct[oxide]
@@ -4169,7 +4182,7 @@ def evaluate_gas(
         melt_composition = {
             name: amount
             for name, amount in composition_wt_pct.items()
-            if name in IMCC_PARENT_OXIDES or trace_component_rule(name) is not None
+            if name in composition_parents or trace_component_rule(name) is not None
         }
         composition_moles, _ = trace_fractions_from_wt(melt_composition)
         composition_moles = dict(composition_moles)
@@ -4201,9 +4214,13 @@ def evaluate_gas(
         trace_fractions = {
             name: amount / total_moles
             for name, amount in composition_moles.items()
-            if amount > 0.0 and trace_component_rule(name) is not None
+            if (
+                amount > 0.0
+                and name not in candidate_melt_parents
+                and trace_component_rule(name) is not None
+            )
         }
-        if trace_fractions:
+        if trace_fractions or candidate_melt_parents:
             melt_result = evaluate_melt(
                 melt_composition,
                 T,
@@ -4212,6 +4229,13 @@ def evaluate_gas(
                 allow_extrapolation=True,
                 allow_out_of_envelope=True,
             )
+            if candidate_melt_parents:
+                act.update(
+                    {
+                        name: melt_result.activity(name)
+                        for name in selected_profile.melt_pack.parent_oxides
+                    }
+                )
             major_bias_flags = {
                 item.major_oxide: item
                 for item in melt_result.labels.notices
