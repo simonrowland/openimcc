@@ -8,6 +8,12 @@
   Brisi–Abbattista Sr-aluminate formation enthalpies for the opt-in SrO melt
   candidate.
 
+### SrO candidate melt pack
+
+- Built and digest-pinned an opt-in nine-parent, 45-complex candidate melt
+  pack with seven Sr associations re-referenced to the v4 liquid standards.
+  The default pack remains unchanged.
+
 ### Gas composition validation
 
 - Nonzero or invalid unsupported components in
