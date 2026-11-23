@@ -98,6 +98,13 @@ _EXPECTED_PARENT_OXIDES = (
 _PUBLISHED_CORE_ROWS = 38
 
 _D066_MODEL_ID = "IMCC-SF04-D066"
+_SR_CANDIDATE_MODEL_ID = "IMCC-SF04-D066-SR-CANDIDATE"
+_SR_CANDIDATE_PARENT_OXIDES = _EXPECTED_PARENT_OXIDES + ("SrO",)
+_SR_CANDIDATE_ROWS = (
+    "SrAl2O4", "SrAl4O7", "SrAl12O19", "Sr3Al2O6",
+    "Sr4Al2O7", "SrSiO3", "Sr2SiO4",
+)
+_SR_OXIDE_MOLAR_MASS_G_MOL = 103.6194
 _D066_CORE_ROWS = (
     "Mg2SiO4", "MgSiO3", "MgAl2O4", "MgTiO3", "MgTi2O5", "Mg2TiO4",
     "Al6Si2O13", "CaAl2O4", "CaAl4O7", "Ca12Al14O33", "CaSiO3",
@@ -1598,6 +1605,51 @@ def _validate_d066_core(
     return rows, content_hash
 
 
+def _validate_sr_candidate(data: Mapping[str, Any]) -> tuple[list[dict[str, Any]], str]:
+    """Validate the frozen D066 prefix and the seven candidate-only Sr rows."""
+    rows = data.get("rows")
+    expected_count = len(_D066_CORE_ROWS) + len(_SR_CANDIDATE_ROWS)
+    if not isinstance(rows, list) or len(rows) != expected_count:
+        raise ImccMalformedDatapackError(
+            f"Sr candidate must contain exactly {expected_count} rows"
+        )
+    core_data = dict(data)
+    core_data["rows"] = rows[: len(_D066_CORE_ROWS)]
+    _validate_d066_core(core_data)
+    added = rows[len(_D066_CORE_ROWS):]
+    if any(not isinstance(row, dict) for row in added):
+        raise ImccMalformedDatapackError("Sr candidate rows must be objects")
+    _validate_active_row_metadata(added, label="Sr candidate")
+    if tuple(row.get("complex") for row in added) != _SR_CANDIDATE_ROWS:
+        raise ImccMalformedDatapackError(
+            "Sr candidate row set or order does not match the frozen candidate rows"
+        )
+    for index, row in enumerate(added, start=len(_D066_CORE_ROWS) + 1):
+        if type(row.get("row")) is not int or row["row"] != index:
+            raise ImccMalformedDatapackError(
+                f"Sr candidate row {row['complex']!r} must retain row number {index}"
+            )
+        if row.get("coverage") != "C-independent-thermochemistry":
+            raise ImccMalformedDatapackError(
+                f"Sr candidate row {row['complex']!r} has invalid coverage"
+            )
+        nu = row.get("nu")
+        if (
+            not isinstance(nu, dict)
+            or set(nu) - set(_SR_CANDIDATE_PARENT_OXIDES)
+        ):
+            raise ImccMalformedDatapackError(
+                f"Sr candidate row {row['complex']!r} has invalid parent stoichiometry"
+            )
+    try:
+        digest = _published_datapack_manifest_hash(data)
+    except (TypeError, ValueError) as exc:
+        raise ImccMalformedDatapackError(
+            "Sr candidate datapack cannot be canonically serialized"
+        ) from exc
+    return rows, digest
+
+
 def _build_nu_vector(
     parent_oxides: Sequence[str],
     nu: Mapping[str, Any],
@@ -1618,8 +1670,13 @@ def _build_nu_vector(
 
 def _wt_to_mol(vector: np.ndarray, parent_oxides: Sequence[str]) -> np.ndarray:
     """Convert a mass-fraction vector (g) to a mole vector (mol)."""
+    def molar_mass(oxide: str) -> float:
+        if oxide == "SrO":
+            return _SR_OXIDE_MOLAR_MASS_G_MOL
+        return _OXIDE_MOLAR_MASS_G_MOL[oxide]
+
     molar_masses = np.array(
-        [_OXIDE_MOLAR_MASS_G_MOL[name] for name in parent_oxides],
+        [molar_mass(name) for name in parent_oxides],
         dtype=float,
     )
     mol = vector / molar_masses
@@ -1677,15 +1734,20 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             "datapack missing 'imcc_sf04_datapack_version' string"
         )
 
+    model_id = data.get("model_id", "IMCC-SF04")
+    expected_parents = (
+        _SR_CANDIDATE_PARENT_OXIDES
+        if model_id == _SR_CANDIDATE_MODEL_ID
+        else _EXPECTED_PARENT_OXIDES
+    )
     base_parents = data.get("parents")
-    if not isinstance(base_parents, list) or base_parents != list(_EXPECTED_PARENT_OXIDES):
+    if not isinstance(base_parents, list) or base_parents != list(expected_parents):
         raise ImccMalformedDatapackError(
             f"datapack parents {base_parents!r} do not match expected "
-            f"{_EXPECTED_PARENT_OXIDES!r}"
+            f"{expected_parents!r}"
         )
     base_parents = tuple(base_parents)
 
-    model_id = data.get("model_id", "IMCC-SF04")
     has_excess_gibbs = "excess_gibbs" in data
     if has_excess_gibbs and model_id != _EXCESS_GIBBS_MODEL_ID:
         raise ImccMalformedDatapackError(
@@ -1700,7 +1762,10 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     extension_parents: tuple[str, ...] = ()
     extension_rows: list[dict[str, Any]] = []
     if sp_extension is None:
-        if model_id not in {"IMCC-SF04", _D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
+        if model_id not in {
+            "IMCC-SF04", _D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID,
+            _SR_CANDIDATE_MODEL_ID,
+        }:
             raise ImccMalformedDatapackError(
                 f"model_id {model_id!r} requires a recognized extension section"
             )
@@ -1715,7 +1780,14 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
                 "model_id='IMCC-SF04-D066'"
             )
 
-    if model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
+    if model_id == _SR_CANDIDATE_MODEL_ID:
+        if sp_extension is not None or has_excess_gibbs:
+            raise ImccMalformedDatapackError(
+                "the Sr candidate cannot be combined with another extension section"
+            )
+        rows, _candidate_digest = _validate_sr_candidate(data)
+        published_manifest_sha256 = None
+    elif model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
         rows, _d066_manifest_sha256 = _validate_d066_core(data)
         published_manifest_sha256 = None
     else:
@@ -1971,11 +2043,15 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     )
     extension_species = tuple(str(row["complex"]) for row in extension_rows)
     extension_names = set(extension_parents) | set(extension_species)
-    if model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
+    if model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID, _SR_CANDIDATE_MODEL_ID}:
         coverage = {
             name: (
                 _SP_EXTENSION_TIER if name in extension_names else
-                "D-carried-published"
+                (
+                    "C-independent-thermochemistry"
+                    if model_id == _SR_CANDIDATE_MODEL_ID and name == "SrO"
+                    else "D-carried-published"
+                )
             )
             for name in parents
         }
@@ -2427,7 +2503,10 @@ def evaluate(
             if float(composition.get(name, 0.0)) != 0.0
             and trace_component_rule(name) is None
         )
-    elif len(composition) > len(_EXPECTED_PARENT_OXIDES):
+    elif (
+        model_id != _SR_CANDIDATE_MODEL_ID
+        and len(composition) > len(_EXPECTED_PARENT_OXIDES)
+    ):
         supplied_sp_names.update(_SP_EXTENSION_PARENTS)
     if extra_mol:
         supplied_sp_names.update(
@@ -2595,21 +2674,29 @@ def evaluate(
             )
 
     # X_Me2O = (n_Na2O + n_K2O) / sum(n_oxide) over the canonical
-    # 8-oxide mol vector. Treat the boundary as inclusive within a 1e-5
-    # relative comparison slack; decimal wt% input for a printed X=0.5 can
+    # D066 eight-oxide or candidate nine-oxide parent vector. Treat the
+    # boundary as inclusive within a 1e-5 relative comparison slack; decimal
+    # wt% input for a printed X=0.5 can
     # arrive a few ppm above the ideal ratio after conversion. The 1e-5
     # cutoff accepts the measured 3.947e-6 rounding residual but still
     # refuses a composition at X=0.50001.
     alkali_mol = sum(
         float(vector[parent_oxides.index(name)]) for name in ("Na2O", "K2O")
     )
+    envelope_parent_oxides = (
+        parent_oxides
+        if model_id == _SR_CANDIDATE_MODEL_ID
+        else _EXPECTED_PARENT_OXIDES
+    )
     canonical_oxide_mol = sum(
         float(vector[parent_oxides.index(name)])
-        for name in _EXPECTED_PARENT_OXIDES
+        for name in envelope_parent_oxides
     )
     if canonical_oxide_mol <= 0.0:
         raise ImccCompositionIncompleteError(
-            "canonical 8-oxide composition total is zero"
+            "candidate parent-oxide composition total is zero"
+            if model_id == _SR_CANDIDATE_MODEL_ID
+            else "canonical 8-oxide composition total is zero"
         )
     x_me2o = alkali_mol / canonical_oxide_mol
     outside_validated_envelope = x_me2o > 0.5 * (1.0 + _ENVELOPE_RELATIVE_SLACK)

@@ -61,7 +61,7 @@ class Profile:
 
 
 def load_profile(name: str) -> Profile:
-    """Load the ``openimcc`` default profile or the published SF04 profile.
+    """Load an openimcc, Sr candidate, or published SF04 profile.
 
     The returned frozen object can be reused across evaluations without
     reloading its packs.
@@ -83,6 +83,26 @@ def load_profile(name: str) -> Profile:
                 "and the v6 Cr, Sr, Li, Zn, and Yb redox pack."
             ),
         )
+    if name == "sr-candidate":
+        from openimcc.gas import load_gas_datapack
+
+        gas = load_gas_datapack(
+            gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v2.csv",
+            oxide_path=_DATA_DIR / "gas" / "condensate-default-v1.csv",
+        )
+        return Profile(
+            name="sr-candidate",
+            melt_pack=load_datapack(
+                _PACKS_DIR / "imcc-sf04-d066-sr-candidate-v1.json"
+            ),
+            gas_datapack=gas,
+            redox_pack_path=_PACKS_DIR / "openimcc-redox-v6.json",
+            provenance=(
+                "Opt-in provisional SrO full-component candidate melt pack, "
+                "versioned openimcc gas and condensate tables, and the v6 "
+                "Cr, Sr, Li, Zn, and Yb redox pack."
+            ),
+        )
     if name == "published":
         from openimcc.gas import load_gas_datapack
 
@@ -102,7 +122,8 @@ def load_profile(name: str) -> Profile:
             ),
         )
     raise ProfileError(
-        f"unknown profile {name!r}; expected 'openimcc' or 'published'"
+        f"unknown profile {name!r}; expected 'openimcc', 'published', or "
+        "'sr-candidate'"
     )
 
 
@@ -110,5 +131,7 @@ def _resolve_profile(profile: str | Profile) -> Profile:
     if isinstance(profile, Profile):
         return profile
     if not isinstance(profile, str):
-        raise ProfileError("profile must be 'openimcc', 'published', or a Profile")
+        raise ProfileError(
+            "profile must be 'openimcc', 'published', 'sr-candidate', or a Profile"
+        )
     return load_profile(profile)

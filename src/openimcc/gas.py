@@ -3960,7 +3960,12 @@ def evaluate_gas(
     )
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
-        parent_oxides = IMCC_PARENT_OXIDES
+        parent_oxides = (
+            selected_profile.melt_pack.parent_oxides
+            if selected_profile is not None
+            and selected_profile.name == "sr-candidate"
+            else IMCC_PARENT_OXIDES
+        )
 
     omitted_channels: Mapping[str, str] = {}
     requested_channels: tuple[str, ...] | None = None

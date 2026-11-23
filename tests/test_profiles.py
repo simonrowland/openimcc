@@ -54,6 +54,7 @@ _PUBLISHED_GAS_STANDARD_NOTICES = [
     ("name", "melt_version", "has_redox"),
     [
         ("openimcc", "1.0.6-d066-v4", True),
+        ("sr-candidate", "1.0.0-d066-sr-candidate-v1", True),
         ("published", "1.0.2", False),
     ],
 )
@@ -74,6 +75,30 @@ def test_named_profiles_load(name: str, melt_version: str, has_redox: bool) -> N
         assert profile.redox_pack_path.name == "openimcc-redox-v6.json"
     with pytest.raises(FrozenInstanceError):
         profile.name = "published"
+
+
+def test_sr_candidate_profile_evaluates_full_parent_basis_and_sr_gas() -> None:
+    profile = load_profile("sr-candidate")
+    assert profile.melt_pack.parent_oxides[-1] == "SrO"
+    assert len(profile.melt_pack.kernel_datapack.reactions) == 44
+    for temperature in (1700.0, 2400.0):
+        for composition in (
+            {"SrO": 1.0},
+            {"SrO": 0.5, "Al2O3": 0.5},
+            {"SrO": 0.3, "Al2O3": 0.3, "SiO2": 0.4},
+        ):
+            melt = evaluate(composition, temperature, profile=profile)
+            activities = {
+                name: melt.activity(name) for name in melt.parent_oxides
+            }
+            gas = evaluate_gas(
+                activities,
+                temperature,
+                1e-10,
+                profile=profile,
+            )
+            assert "Sr" in gas.species_pressures_bar
+            assert gas.species_pressures_bar["Sr"] > 0.0
 
 
 def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit(

@@ -14,6 +14,11 @@
   pack with seven Sr associations re-referenced to the v4 liquid standards.
   The default pack remains unchanged.
 
+### SrO candidate profile
+
+- Added the opt-in `sr-candidate` profile and a nine-parent loader identity so
+  SrO is a full melt and gas parent only when the candidate is selected.
+
 ### Gas composition validation
 
 - Nonzero or invalid unsupported components in
