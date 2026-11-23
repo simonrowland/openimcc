@@ -1,0 +1,49 @@
+{
+  "schema": "openimcc.sr_candidate_thermochemistry.v1",
+  "source_policy": "Only the listed printed values are transcribed. No optimized SrO-Al2O3 liquid interaction parameters are included.",
+  "sources": {
+    "jacob_shreyas_2018": {
+      "citation": "Jacob, K. T.; Shreyas, V. (2018), Thermodynamic properties of SrAl12O19 and SrAl4O7, Journal of Materials Science 53(3), 1723-1730.",
+      "doi": "10.1007/s10853-017-1634-0",
+      "method": "SrF2 solid-electrolyte EMF measurements",
+      "printed_temperature_range_K": [1000, 1300],
+      "unit": "J mol^-1",
+      "formation_reactions_from_crystalline_oxides": {
+        "SrAl4O7": {
+          "reaction": "SrO(cr) + 2 Al2O3(cr) = SrAl4O7(cr)",
+          "delta_G_A_J_per_mol": -80187,
+          "delta_G_B_J_per_mol_K": -25.376,
+          "reported_uncertainty_J_per_mol": 240,
+          "equation": "Delta G = A + B*T_K"
+        },
+        "SrAl12O19": {
+          "reaction": "SrO(cr) + 6 Al2O3(cr) = SrAl12O19(cr)",
+          "delta_G_A_J_per_mol": -83386,
+          "delta_G_B_J_per_mol_K": -25.744,
+          "reported_uncertainty_J_per_mol": 280,
+          "equation": "Delta G = A + B*T_K"
+        }
+      }
+    },
+    "brisi_abbattista_1960": {
+      "citation": "Brisi, C.; Abbattista, F. (1960), Searches on the heats of formation of the strontium aluminates, Annali di Chimica 50, 165-169; values transcribed in Ye et al. (2007), Thermodynamic description of SrO-Al2O3 system and comparison with similar systems, Journal of Phase Equilibria and Diffusion 28(4), 362-368.",
+      "doi": "10.1007/s11669-007-9086-x",
+      "transcription_locator": "Ye et al. (2007), Table 3, Brisi et al. row",
+      "unit": "kJ mol^-1",
+      "formation_enthalpies_from_oxides_at_298_15_K": {
+        "Sr3Al2O6": {
+          "reaction": "3 SrO(cr) + Al2O3(cr) = Sr3Al2O6(cr)",
+          "delta_H_kJ_per_mol": -97.7,
+          "reported_uncertainty_kJ_per_mol": 4.2
+        },
+        "Sr4Al2O7_alpha": {
+          "complex": "Sr4Al2O7",
+          "phase": "alpha",
+          "reaction": "4 SrO(cr) + Al2O3(cr) = alpha-Sr4Al2O7(cr)",
+          "delta_H_kJ_per_mol": -81.4,
+          "reported_uncertainty_kJ_per_mol": 5.4
+        }
+      }
+    }
+  }
+}

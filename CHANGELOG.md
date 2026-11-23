@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### SrO candidate source records
+
+- Added transcribed Jacob–Shreyas Sr-aluminate formation Gibbs energies and
+  Brisi–Abbattista Sr-aluminate formation enthalpies for the opt-in SrO melt
+  candidate.
+
 ### Gas composition validation
 
 - Nonzero or invalid unsupported components in
