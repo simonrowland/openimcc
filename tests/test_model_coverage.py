@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable
 
@@ -66,7 +67,8 @@ def test_cached_feo_reference_rows_are_nested_immutable():
 
 
 def test_pure_alumina_below_melt_reports_stable_crystal_activity() -> None:
-    from openimcc.gas import R_J_MOL_K, species_thermo
+    from openimcc._constants import R_J_MOL_K
+    from openimcc.gas import species_thermo
 
     temperature = 2000.0
     result = evaluate({"Al2O3": 1.0}, temperature)
@@ -83,6 +85,8 @@ def test_pure_alumina_below_melt_reports_stable_crystal_activity() -> None:
     )
     assert result.activity("Al2O3") == 1.0
     assert "Al2O3 crystal is the stable phase" in notice
+    assert "crystal source=" in notice
+    assert "liquid source=" in notice
     assert (
         "exp((G_crystal−G_liquid)/RT)="
         f"{crystal_activity:.12g}"
@@ -96,6 +100,45 @@ def test_pure_alumina_above_melt_has_no_crystal_stability_notice() -> None:
         notice.startswith("pure-oxide-crystal-stable:")
         for notice in result.labels.notices
     )
+
+
+@pytest.mark.parametrize("temperature", ("2000", Decimal("2000")))
+def test_pure_alumina_notice_accepts_numeric_temperature_types(
+    temperature: str | Decimal,
+) -> None:
+    result = evaluate({"Al2O3": 1.0}, temperature)
+
+    assert result.activity("Al2O3") == 1.0
+    assert any(
+        notice.startswith("pure-oxide-crystal-stable:")
+        for notice in result.labels.notices
+    )
+
+
+def test_pure_iron_oxide_notice_names_served_thermochemistry_sources() -> None:
+    from openimcc._constants import R_J_MOL_K
+    from openimcc.gas import species_thermo
+
+    temperature = 1600.0
+    result = evaluate({"FeO": 1.0}, temperature)
+    crystal = species_thermo("FeO", "cr", temperature)
+    liquid = species_thermo("FeO", "l", temperature)
+    crystal_activity = math.exp(
+        (crystal.G_J_mol - liquid.G_J_mol) / (R_J_MOL_K * temperature)
+    )
+    notice, = tuple(
+        notice
+        for notice in result.labels.notices
+        if notice.startswith("pure-oxide-crystal-stable:")
+    )
+
+    assert crystal_activity < 1.0
+    assert f"{crystal_activity:.12g}" in notice
+    crystal_source = crystal.source_table_id or crystal.source_row_id
+    liquid_source = liquid.source_table_id or liquid.source_row_id
+    assert f"crystal source={crystal_source}" in notice
+    assert f"liquid source={liquid_source}" in notice
+    assert "1650 K" not in notice
 
 
 def _base_data() -> dict[str, Any]:

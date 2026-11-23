@@ -4,16 +4,16 @@
 
 ### Gas composition validation
 
-- Positive unsupported components in `evaluate_gas(composition_wt_pct=...)`
-  now use the melt evaluator's typed domain or trace-limit refusal. Callers
-  that relied on positive unknown keys being dropped will now receive refusals;
-  zero-valued unsupported keys remain ignored.
+- Nonzero or invalid unsupported components in
+  `evaluate_gas(composition_wt_pct=...)` now use the melt evaluator's typed
+  refusal. Callers that relied on unsupported keys being dropped will now
+  receive refusals; finite numeric zero-valued unsupported keys remain ignored.
 
 ### Pure-oxide phase notice
 
-- Pure in-basis oxides below their JANAF crystal–liquid temperature keep a
-  liquid-standard activity of 1 and report the stable crystal activity on that
-  standard in a melt notice.
+- Pure in-basis oxides with crystal activity below 1 on the served liquid
+  standard keep a liquid-standard activity of 1 and report the stable crystal
+  and both thermochemistry source IDs in a melt notice.
 
 ### Liquid species thermochemistry
 

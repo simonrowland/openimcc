@@ -25,6 +25,7 @@ import pytest
 import yaml
 
 from openimcc import (
+    ImccCompositionIncompleteError,
     EvidenceReference,
     ImccComponentOutsideDomainError,
     ImccTraceLimitExceededError,
@@ -1258,6 +1259,60 @@ def test_gas_composition_refuses_positive_unsupported_oxides(
         )
 
     assert refused.value.code == "imcc_component_outside_domain"
+
+
+@pytest.mark.parametrize(
+    "amount",
+    (
+        "fifty",
+        "50 %",
+        -5.0,
+        float("nan"),
+        False,
+    ),
+)
+def test_gas_composition_refuses_invalid_unsupported_amounts(
+    gas_pack: ImccGasDatapack,
+    amount: object,
+) -> None:
+    composition = {"BaO": amount, "Al2O3": 50.0}
+    refusal_types = (
+        ImccComponentOutsideDomainError,
+        ImccCompositionIncompleteError,
+    )
+    with pytest.raises(refusal_types) as melt_refused:
+        evaluate(composition, 2000.0, basis_type="wt")
+
+    with pytest.raises(refusal_types) as gas_refused:
+        evaluate_gas(
+            {"Al2O3": 1.0},
+            2000.0,
+            1.0e-10,
+            gas_pack,
+            composition_wt_pct=composition,
+        )
+
+    assert gas_refused.value.code == melt_refused.value.code
+    assert str(gas_refused.value) == str(melt_refused.value)
+
+
+def test_gas_composition_refusal_lists_all_non_parent_keys(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    composition = {"BaO": 50.0, "SrO": 1.0, "Al2O3": 49.0}
+    with pytest.raises(ImccComponentOutsideDomainError) as melt_refused:
+        evaluate(composition, 2000.0, basis_type="wt")
+
+    with pytest.raises(ImccComponentOutsideDomainError) as gas_refused:
+        evaluate_gas(
+            {"Al2O3": 1.0},
+            2000.0,
+            1.0e-10,
+            gas_pack,
+            composition_wt_pct=composition,
+        )
+
+    assert str(gas_refused.value) == str(melt_refused.value)
 
 
 def test_gas_composition_ignores_zero_unsupported_key(

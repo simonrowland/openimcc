@@ -3349,29 +3349,42 @@ def evaluate(
             from openimcc.janaf_crystals import _JANAF_OXIDE_PAIRS
 
             oxide_pair = _JANAF_OXIDE_PAIRS.get(oxide)
-            if oxide_pair is not None and T_K < oxide_pair.transition_K:
+            if oxide_pair is not None:
                 try:
                     from openimcc.gas import species_thermo
 
-                    crystal_g = species_thermo(oxide, "cr", T_K).G_J_mol
-                    liquid_g = species_thermo(oxide, "l", T_K).G_J_mol
+                    temperature = float(T_K)
+                    crystal_thermo = species_thermo(oxide, "cr", temperature)
+                    liquid_thermo = species_thermo(oxide, "l", temperature)
                     crystal_activity = math.exp(
-                        (crystal_g - liquid_g) / (_R_J_MOL_K * T_K)
+                        (crystal_thermo.G_J_mol - liquid_thermo.G_J_mol)
+                        / (_R_J_MOL_K * temperature)
                     )
                 except (ImportError, ImccRefusal, OverflowError):
                     # Optional gas thermochemistry may not cover every melt T;
                     # a notice must not make a successful melt evaluation refuse.
                     pass
                 else:
-                    notices.append(
-                        "pure-oxide-crystal-stable: "
-                        f"{oxide} crystal is the stable phase below its JANAF "
-                        f"crystal–liquid temperature of {oxide_pair.transition_K:g} K; "
-                        "the liquid-standard activity remains 1, and crystal "
-                        "activity on the liquid standard is "
-                        "exp((G_crystal−G_liquid)/RT)="
-                        f"{crystal_activity:.12g}"
-                    )
+                    if crystal_activity < 1.0:
+                        crystal_source = (
+                            crystal_thermo.source_table_id
+                            or crystal_thermo.source_row_id
+                        )
+                        liquid_source = (
+                            liquid_thermo.source_table_id
+                            or liquid_thermo.source_row_id
+                        )
+                        notices.append(
+                            "pure-oxide-crystal-stable: "
+                            f"{oxide} crystal is the stable phase against the served "
+                            f"{liquid_source} liquid standard; "
+                            "the liquid-standard activity remains 1, and crystal "
+                            "activity on the liquid standard is "
+                            "exp((G_crystal−G_liquid)/RT)="
+                            f"{crystal_activity:.12g}; "
+                            f"crystal source={crystal_source}, "
+                            f"liquid source={liquid_source}"
+                        )
     if _melt_notice_score(
         "feo-hess-candidate", (model_id, binding_digest)
     ) == "scored":
