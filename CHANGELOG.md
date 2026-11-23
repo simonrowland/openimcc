@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Gas composition validation
+
+- Positive unsupported components in `evaluate_gas(composition_wt_pct=...)`
+  now use the melt evaluator's typed domain or trace-limit refusal. Callers
+  that relied on positive unknown keys being dropped will now receive refusals;
+  zero-valued unsupported keys remain ignored.
+
 ### Liquid species thermochemistry
 
 - `species_thermo(..., "l", T)` now serves vendored non-parent JANAF and

@@ -26,6 +26,7 @@ import yaml
 
 from openimcc import (
     EvidenceReference,
+    ImccComponentOutsideDomainError,
     ImccTraceLimitExceededError,
     LiquidReferenceAuthority,
     evaluate,
@@ -1234,6 +1235,74 @@ def test_trace_only_gas_composition_obeys_melt_trace_limit(
             gas_species=("Na", "Cr"),
             composition_wt_pct=composition,
         )
+
+
+@pytest.mark.parametrize(
+    "composition",
+    (
+        {"BaO": 50.0, "Al2O3": 50.0},
+        {"CeO2": 50.0, "Al2O3": 50.0},
+    ),
+)
+def test_gas_composition_refuses_positive_unsupported_oxides(
+    gas_pack: ImccGasDatapack,
+    composition: dict[str, float],
+) -> None:
+    with pytest.raises(ImccComponentOutsideDomainError) as refused:
+        evaluate_gas(
+            {"Al2O3": 1.0},
+            2000.0,
+            1.0e-10,
+            gas_pack,
+            composition_wt_pct=composition,
+        )
+
+    assert refused.value.code == "imcc_component_outside_domain"
+
+
+def test_gas_composition_ignores_zero_unsupported_key(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {"Al2O3": 1.0}
+    baseline = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-10,
+        gas_pack,
+        composition_wt_pct={"Al2O3": 100.0},
+    )
+    with_zero_bao = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-10,
+        gas_pack,
+        composition_wt_pct={"BaO": 0.0, "Al2O3": 100.0},
+    )
+
+    assert dict(with_zero_bao) == dict(baseline)
+
+
+def test_in_basis_gas_composition_preserves_binary_pressures(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    composition = {"CaO": 50.0, "Al2O3": 50.0}
+    melt = evaluate(
+        composition,
+        2000.0,
+        basis_type="wt",
+        allow_extrapolation=True,
+    )
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    gas = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-10,
+        gas_pack,
+        composition_wt_pct=composition,
+    )
+
+    assert gas["Ca"].hex() == "0x1.119614804ed19p-17"
+    assert gas["Al"].hex() == "0x1.2a5e5bff17417p-33"
 
 
 def test_o2_pin_is_never_domain_flagged_at_3200_k(

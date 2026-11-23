@@ -59,6 +59,11 @@ there they accompany the extrapolated compilation-bridge authority and band.
 `evaluate_gas` accepts an optional `composition_wt_pct` mapping keyed by oxide
 to resolve composition-scoped records; calls without it leave the scope
 unresolved and retain the flag.
+Positive keys outside the melt basis and registered trace set are refused
+with the same typed domain error as `evaluate()`; traces above their caps use
+the same trace-limit refusal. Zero-valued unsupported keys are ignored.
+Supplying activities without a composition mapping remains an activity-only
+path and does not run this validation.
 SiO₂(l)'s certified range narrowed to the measured 1500–1800 K interval.
 From 1200–1500 K and 1800–3000 K it is corroborated by calculation, with
 respective ±0.05 and ±0.06 dex log₁₀-pressure bands and a notice; those process

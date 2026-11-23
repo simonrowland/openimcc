@@ -89,6 +89,11 @@ major oxide with a strict trace `bias_bound_dex` above 0.01 are also omitted.
 Each omission names the affected major, its bound, and the 0.01 dex cap. This
 is a deliberate validity gate for trace-bearing compositions; it does not
 change the caller-supplied major activities or the retained silicon channels.
+Positive composition keys outside the melt basis and registered trace set are
+refused with the melt evaluator's typed component-domain error; known traces
+above their caps use its trace-limit error. Zero-valued unsupported keys are
+ignored. Calls that supply activities without `composition_wt_pct` do not
+enter this composition-validation path.
 
 `openimcc.element_to_parent_oxide(element, amount_mol)` converts moles of a
 registered element to its parent-oxide formula-unit amount and returns the

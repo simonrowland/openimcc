@@ -3864,7 +3864,9 @@ def evaluate_gas(
         the K2O(l) measured-pressure window. Registered trace components also
         activate the melt-side major-bias gate: channels using a major whose
         strict trace bound exceeds its cap are omitted with the parent, bound,
-        and cap recorded in the refusal.
+        and cap recorded in the refusal. Positive components outside the melt
+        basis and registered trace set are refused with the melt evaluator's
+        typed component-domain error; zero-valued unsupported keys are ignored.
     strict_pack_standards:
         If True, refuse when the selected melt pack has a known liquid-standard
         mismatch or missing declaration for the active tables.
@@ -4132,6 +4134,27 @@ def evaluate_gas(
             raise ImccCompositionIncompleteError(
                 "composition contains negative values"
             )
+
+        unsupported_positive = {}
+        for name, raw_amount in composition_wt_pct.items():
+            if (
+                name in IMCC_PARENT_OXIDES
+                or trace_component_rule(name) is not None
+                or name in {"Li", "Zn"}
+            ):
+                continue
+            try:
+                amount = float(raw_amount)
+            except (OverflowError, TypeError, ValueError):
+                continue
+            if amount > 0.0:
+                unsupported_positive[name] = raw_amount
+        if unsupported_positive:
+            from openimcc.model import evaluate as evaluate_melt
+
+            # Delegate the refusal so this adapter reports the same typed
+            # domain error and code as evaluate() for unsupported positives.
+            evaluate_melt(unsupported_positive, T, basis_type="wt")
 
         melt_composition = {
             name: amount
