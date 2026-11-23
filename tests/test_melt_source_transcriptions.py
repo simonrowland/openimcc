@@ -198,9 +198,16 @@ EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
         "feo_conversion": {19, 20, 21},
     },
     # build_sr_candidate_pack.py loads the v4 pack and leaves its 38 rows
-    # unchanged, then appends seven Sr rows with the same 1001-point
-    # least-squares standard-state refit over 1700–2400 K.
+    # unchanged, then appends seven Sr rows re-referenced over a versioned
+    # 1001-point least-squares interval.
     "imcc-sf04-d066-sr-candidate-v1.json": {
+        "k_translation": _K_TRANSLATED_ROWS,
+        "standard_state_refit": _STANDARD_STATE_REFITS | _SR_CANDIDATE_REFIT_ROWS,
+        "feo_conversion": {19, 20, 21},
+        "fusion_refit": {3},
+        "sr_candidate_refit": _SR_CANDIDATE_REFIT_ROWS,
+    },
+    "imcc-sf04-d066-sr-candidate-v2.json": {
         "k_translation": _K_TRANSLATED_ROWS,
         "standard_state_refit": _STANDARD_STATE_REFITS | _SR_CANDIDATE_REFIT_ROWS,
         "feo_conversion": {19, 20, 21},
@@ -309,7 +316,7 @@ def _assert_transform_reason(
         assert pack_row["row"] in _SR_CANDIDATE_REFIT_ROWS
         assert pack_row["fusion_entropy_estimate_J_mol_K"] > 0.0
         assert metadata["parents"]
-        assert metadata["temperature_range_K"] == [1700.0, 2400.0]
+        assert metadata["temperature_range_K"] == pack_row["T_domain_K"]
         assert metadata["fit_method"] == (
             "least squares on 1001 evenly spaced pointwise re-referenced log10 K values"
         )
@@ -351,7 +358,10 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
 
         for pack_row in pack["rows"]:
             if (
-                entry["file"] == "imcc-sf04-d066-sr-candidate-v1.json"
+                entry["file"] in {
+                    "imcc-sf04-d066-sr-candidate-v1.json",
+                    "imcc-sf04-d066-sr-candidate-v2.json",
+                }
                 and pack_row["row"] in _SR_CANDIDATE_REFIT_ROWS
             ):
                 assert _recorded_transforms(pack_row) == {
@@ -396,3 +406,37 @@ def test_sr_candidate_keeps_v4_prefix_and_refits_its_seven_sr_rows() -> None:
     assert {row["row"] for row in sr_rows} == _SR_CANDIDATE_REFIT_ROWS
     assert all("sr_candidate_refit" in _recorded_transforms(row) for row in sr_rows)
     assert all(row["T_domain_K"] == [1700.0, 2400.0] for row in sr_rows)
+
+
+def test_sr_candidate_v2_keeps_v4_prefix_and_extends_its_seven_sr_rows() -> None:
+    candidate = json.loads(
+        (PACK_DIR / "imcc-sf04-d066-sr-candidate-v2.json").read_text(encoding="utf-8")
+    )
+    v1 = json.loads(
+        (PACK_DIR / "imcc-sf04-d066-sr-candidate-v1.json").read_text(encoding="utf-8")
+    )
+    v4 = json.loads((PACK_DIR / "imcc-sf04-d066-v4.json").read_text(encoding="utf-8"))
+
+    assert candidate["imcc_sf04_datapack_version"] == "1.0.0-d066-sr-candidate-v2"
+    assert candidate["sources"] == v1["sources"]
+    assert candidate["rows"][:38] == v4["rows"]
+    sr_rows = candidate["rows"][38:]
+    assert {row["row"] for row in sr_rows} == _SR_CANDIDATE_REFIT_ROWS
+    assert [
+        (
+            row["complex"], row["source"], row["source_refs"],
+            row["T_domain_paper_demonstrated_K"],
+        )
+        for row in candidate["rows"][38:]
+    ] == [
+        (
+            row["complex"], row["source"], row["source_refs"],
+            row["T_domain_paper_demonstrated_K"],
+        )
+        for row in v1["rows"][38:]
+    ]
+    assert all(row["T_domain_K"] == [1700.0, 3000.0] for row in sr_rows)
+    assert all(
+        row["standard_state_refit"]["temperature_range_K"] == [1700.0, 3000.0]
+        for row in sr_rows
+    )

@@ -56,7 +56,8 @@ _PUBLISHED_GAS_STANDARD_NOTICES = [
     ("name", "melt_version", "has_redox"),
     [
         ("openimcc", "1.0.6-d066-v4", True),
-        ("sr-candidate", "1.0.0-d066-sr-candidate-v1", True),
+        ("sr-candidate", "1.0.0-d066-sr-candidate-v2", True),
+        ("sr-candidate-v1", "1.0.0-d066-sr-candidate-v1", True),
         ("published", "1.0.2", False),
     ],
 )
@@ -109,6 +110,36 @@ def test_sr_candidate_profile_evaluates_full_parent_basis_and_sr_gas() -> None:
             )
             assert "Sr" in gas
             assert gas["Sr"] > 0.0
+
+
+def test_sr_candidate_v2_flags_rows_outside_their_paper_windows() -> None:
+    profile = load_profile("sr-candidate")
+    melt = evaluate(
+        {"SrO": 0.3, "Al2O3": 0.3, "SiO2": 0.4},
+        3000.0,
+        profile=profile,
+    )
+
+    paper_flag, = tuple(
+        flag
+        for flag in melt.labels.flags
+        if flag.startswith("paper-demonstrated-window:")
+    )
+    for complex_name in (
+        "SrAl2O4",
+        "SrAl4O7",
+        "SrAl12O19",
+        "Sr3Al2O6",
+        "Sr4Al2O7",
+        "SrSiO3",
+        "Sr2SiO4",
+    ):
+        assert complex_name in paper_flag
+
+
+def test_sr_candidate_v1_remains_selectable() -> None:
+    profile = load_profile("sr-candidate-v1")
+    assert profile.melt_pack.version == "1.0.0-d066-sr-candidate-v1"
 
 
 @pytest.mark.parametrize(

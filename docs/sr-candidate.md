@@ -1,14 +1,15 @@
 # SrO full-component candidate
 
-`load_profile("sr-candidate")` selects the opt-in melt pack
-`imcc-sf04-d066-sr-candidate-v1.json`. Its model identity is
-`IMCC-SF04-D066-SR-CANDIDATE`, its version is `1.0.0-d066-sr-candidate-v1`,
+`load_profile("sr-candidate")` selects the opt-in 3000 K melt pack
+`imcc-sf04-d066-sr-candidate-v2.json`. Its model identity is
+`IMCC-SF04-D066-SR-CANDIDATE`, its version is `1.0.0-d066-sr-candidate-v2`,
 and its parent basis is the D066 eight oxides followed by SrO. The 38 D066 core
 rows are unchanged; seven Sr associations bring the candidate to 45 source
 rows (44 active in the solve because the existing out-of-domain KCaAlSi₂O₇
-row remains inactive).
+row remains inactive). `load_profile("sr-candidate-v1")` keeps the immutable
+v1 pack selectable with its original 2400 K domain.
 
-The named profile uses the existing default gas and condensate tables and the
+Both named profiles use the existing default gas and condensate tables and the
 existing redox v6 pack. `evaluate_gas(..., profile="sr-candidate")` takes its
 parent basis from the profile. The `openimcc` default profile and its SrO trace
 limit are unchanged. The manifest's `DEFAULT-COMBINATION` still selects
@@ -16,13 +17,37 @@ limit are unchanged. The manifest's `DEFAULT-COMBINATION` still selects
 
 ## Construction and source windows
 
-Each candidate `log10 K = A + B/T` row was refit by least squares to 1001
-evenly spaced pointwise values from 1700 through 2400 K, using the same `[1,
-1/T]` basis as the v4 standard-state refits. The absolute liquid-associate G
-was re-referenced to the candidate's parent liquid standards. The candidate
-SrO liquid standard is NIST-JANAF O-014; the crystal input is O-013. SrO is a
-gas reaction parent in the existing gas data and is added to the melt basis
-only by this candidate identity.
+The v1 candidate `log10 K = A + B/T` rows were refit by least squares to 1001
+evenly spaced pointwise values from 1700 through 2400 K. V2 uses the same
+method, sources, and `[1, 1/T]` basis through 3000 K. The absolute
+liquid-associate G was re-referenced to the candidate's parent liquid
+standards. The candidate SrO liquid standard is NIST-JANAF O-014; the crystal
+input is O-013. SrO is a gas reaction parent in the existing gas data and is
+added to the melt basis only by this candidate identity. The O-014 reference
+and the redox-v6 SrAl₂O₄, SrSiO₃, and Sr₂SiO₄ liquid references declare ranges
+through 3000 K. The four new aluminate continuations use the provisional
+class-C fusion construction and retain their narrower source windows in
+`T_domain_paper_demonstrated_K`; evaluation reports those windows with the
+`paper-demonstrated-window` flag.
+
+The 1700–2400 K table compares the original and wider-window coefficients by
+their maximum absolute difference in `log10 K`. The final column is each v2
+row's maximum absolute residual over its full 1700–3000 K fit window.
+
+| Complex | max absolute Δlog10 K, 1700–2400 K (dex) | v2 max fit residual, 1700–3000 K (dex) |
+|---|---:|---:|
+| SrAl₂O₄ | 0.000694 | 0.002190 |
+| SrAl₄O₇ | 0.000492 | 0.001927 |
+| SrAl₁₂O₁₉ | 0.000649 | 0.002273 |
+| Sr₃Al₂O₆ | 0.001054 | 0.005023 |
+| Sr₄Al₂O₇ | 0.002283 | 0.007956 |
+| SrSiO₃ | 0.005453 | 0.009044 |
+| Sr₂SiO₄ | 0.006132 | 0.011184 |
+
+Sr₂SiO₄ slightly exceeds the builder's 0.01 dex residual flag threshold. This
+is a fit-form residual from representing the source Gibbs curve with `A+B/T`,
+not a least-squares solver instability; the value and flag are recorded in the
+pack metadata.
 
 | Complex | Source crystal window represented by `T_domain_paper_demonstrated_K` | Fusion/decomposition marker (K) | Class-C `ΔS_fus` (J mol⁻¹ K⁻¹) |
 |---|---:|---:|---:|
@@ -163,19 +188,32 @@ With `fO2 = 1e-10` bar-relative, `evaluate_gas()` returns `p(Sr)` (bar):
 No Stolyarova, Vorozhtcov, Lopatin, Shugurov, Tyurnina, or Balabanova KEMS
 row was compared or used to select these parameters.
 
-## Served values
+## V1 served values
 
 The profile reports these immutable pack and engine identities:
 
 | Served value | Value |
 |---|---|
-| Profile | `sr-candidate` |
+| Profile | `sr-candidate-v1` |
 | Melt file | `imcc-sf04-d066-sr-candidate-v1.json` |
 | Melt SHA-256 | `b597601f0cf04c7235ab6964c37d4600e1172b17fb33c47a698c086b929d0a99` |
 | Melt binding digest | `c3eb1090b56cba8b6e07c0dd4d261efcb8f1801f10e1153ac523bf5a0324f4ef` |
 | Engine binding digest | `07e9374a4ea0b4cdda201a87bbf18164fe6f7c3e4465225be3aac6c47023f14d` |
 | Gas table | `gas-shomate-default-v2.csv`, `f049df6efc810f1821565acfe6a2966464153ecf4cb0bbdff9cdbbb8f5cb2543` |
 | Condensate table | `condensate-default-v1.csv`, `493c67d5ba23b75767cc3ce4bd6e571bd2400162b3affdbbc581a7b0ae75362e` |
+| Redox pack | `openimcc-redox-v6.json`, canonical digest `4beed3886a70ddda484fd2da46c1da74c8a0ea23dd8e6125cca4ecdadaf7cdbc` |
+
+## V2 served values
+
+| Served value | Value |
+|---|---|
+| Profile | `sr-candidate` |
+| Melt file | `imcc-sf04-d066-sr-candidate-v2.json` |
+| Melt SHA-256 | `4cb29b0f7fc06ccd93743a2b60ebc1bec1b0bea89623d12dfef7bc3b4551335d` |
+| Melt binding digest | `5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17` |
+| Declared Sr candidate row domain | 1700–3000 K |
+| Gas table | `gas-shomate-default-v2.csv` |
+| Condensate table | `condensate-default-v1.csv` |
 | Redox pack | `openimcc-redox-v6.json`, canonical digest `4beed3886a70ddda484fd2da46c1da74c8a0ea23dd8e6125cca4ecdadaf7cdbc` |
 
 The openimcc default remains selected by `DEFAULT-COMBINATION` and keeps its

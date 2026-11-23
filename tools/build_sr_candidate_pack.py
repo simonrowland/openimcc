@@ -24,13 +24,21 @@ from openimcc.redox_pack import load_redox_pack, species_gibbs_j_mol
 
 
 PACKS = ROOT / "src/openimcc/data/packs"
-DESTINATION = PACKS / "imcc-sf04-d066-sr-candidate-v1.json"
+DESTINATIONS = {
+    "v1": PACKS / "imcc-sf04-d066-sr-candidate-v1.json",
+    "v2": PACKS / "imcc-sf04-d066-sr-candidate-v2.json",
+}
 BASE = PACKS / "imcc-sf04-d066-v4.json"
 REDOX = PACKS / "openimcc-redox-v6.json"
 SOURCE = ROOT / "data-src/sr-candidate/thermochemistry.json"
 JANAF = ROOT / "data-src/janaf"
 FIT_LOW_K = 1700.0
 FIT_HIGH_K = 2400.0
+FIT_HIGH_K_BY_VERSION = {"v1": FIT_HIGH_K, "v2": 3000.0}
+PACK_VERSION_BY_VERSION = {
+    "v1": "1.0.0-d066-sr-candidate-v1",
+    "v2": "1.0.0-d066-sr-candidate-v2",
+}
 R_J_MOL_K = 8.31446261815324
 LN10 = math.log(10.0)
 CLASS_C_J_MOL_ATOM_K = 8.297530569005671
@@ -176,9 +184,16 @@ def _nu_for(name: str) -> dict[str, float]:
     }[name]
 
 
-def _row(name: str, index: int, source: dict, gas_pack, redox_pack) -> dict:
+def _row(
+    name: str,
+    index: int,
+    source: dict,
+    gas_pack,
+    redox_pack,
+    fit_high_K: float = FIT_HIGH_K,
+) -> dict:
     nu = _nu_for(name)
-    temperatures = np.linspace(FIT_LOW_K, FIT_HIGH_K, 1001)
+    temperatures = np.linspace(FIT_LOW_K, fit_high_K, 1001)
     y = []
     for temperature in temperatures:
         product_g = _product_gibbs(name, float(temperature), gas_pack, redox_pack, source)
@@ -228,7 +243,7 @@ def _row(name: str, index: int, source: dict, gas_pack, redox_pack) -> dict:
         "A": float(coefficients[0]),
         "B": float(coefficients[1]),
         "source": source_refs[0],
-        "T_domain_K": [FIT_LOW_K, FIT_HIGH_K],
+        "T_domain_K": [FIT_LOW_K, fit_high_K],
         "T_domain_basis": "Opt-in candidate evaluation interval; source and continuation limits are retained in T_domain_paper_demonstrated_K.",
         "provenance_class": "C-independent-thermochemistry",
         "derivation": description,
@@ -250,7 +265,7 @@ def _row(name: str, index: int, source: dict, gas_pack, redox_pack) -> dict:
         "source_refs": source_refs,
         "standard_state_refit": {
             "parents": nu,
-            "temperature_range_K": [FIT_LOW_K, FIT_HIGH_K],
+            "temperature_range_K": [FIT_LOW_K, fit_high_K],
             "fit_method": "least squares on 1001 evenly spaced pointwise re-referenced log10 K values",
             "max_abs_residual_dex": float(np.max(np.abs(residual))),
             "flag_over_0_01_dex": bool(np.max(np.abs(residual)) > 0.01),
@@ -265,7 +280,11 @@ def _row(name: str, index: int, source: dict, gas_pack, redox_pack) -> dict:
     return row
 
 
-def build() -> dict:
+def build(version: str = "v1") -> dict:
+    if version not in DESTINATIONS:
+        raise ValueError(f"unknown Sr candidate version {version!r}")
+    fit_high_K = FIT_HIGH_K_BY_VERSION[version]
+    pack_version = PACK_VERSION_BY_VERSION[version]
     pack = json.loads(BASE.read_text(encoding="utf-8"))
     source = json.loads(SOURCE.read_text(encoding="utf-8"))
     gas_pack = load_gas_datapack()
@@ -287,7 +306,11 @@ def build() -> dict:
             "Sr4Al2O7_plus_minus_kJ_mol": temperature * brisi_entropy_bounds["Sr4Al2O7"] / 1000.0,
             "Sr4Al2O7_plus_minus_log10K_dex": brisi_entropy_bounds["Sr4Al2O7"] / (R_J_MOL_K * LN10),
         }
-        for temperature in (1800, 2000, 2200, 2400)
+        for temperature in (
+            (1800, 2000, 2200, 2400)
+            if version == "v1"
+            else (1800, 2000, 2200, 2400, 3000)
+        )
     ]
     jacob_rows = measured_entropies
     jacob_reproduction = {}
@@ -307,7 +330,7 @@ def build() -> dict:
         source_g = _janaf_props("O-014", float(temperature))[3]
         fitted_g = species_thermo("SrO", "l", float(temperature), gas_pack).G_J_mol
         janaf_gaps[str(temperature)] = fitted_g - source_g
-    pack["imcc_sf04_datapack_version"] = "1.0.0-d066-sr-candidate-v1"
+    pack["imcc_sf04_datapack_version"] = pack_version
     pack["model_id"] = "IMCC-SF04-D066-SR-CANDIDATE"
     pack["model"] = (
         "Opt-in associated-solution candidate with nine full parent oxides, "
@@ -326,7 +349,12 @@ def build() -> dict:
         "status": "opt-in provisional candidate; not the default",
         "source_policy": source["source_policy"],
         "basis": "SrO is a full component only under this candidate model identity.",
-        "reference_fit": "Each row is refit to this pack's liquid standards by least squares on 1001 evenly spaced temperatures from 1700 to 2400 K, using pointwise log10 K and the basis [1, 1/T].",
+        "reference_fit": (
+            "Each row is refit to this pack's liquid standards by least squares "
+            "on 1001 evenly spaced temperatures from "
+            f"{FIT_LOW_K:g} to {fit_high_K:g} K, using pointwise log10 K and "
+            "the basis [1, 1/T]."
+        ),
         "fusion": "All seven liquid associates use the class-C estimate 8.297530569 J mol^-1 formula atom^-1 K^-1 times total formula atoms. This is provisional. Liquid Cp for the four newly built aluminates is the additive parent liquid Cp at the selected fusion marker.",
         "brisi_entropies": {
             "assumption": "For Sr3Al2O6 and alpha-Sr4Al2O7, only ΔH_form,ox(298.15 K) is printed. Use ΔG_form,ox(T)=ΔH_form,ox(298.15 K), equivalent to ΔS_form,ox=ΔCp_form,ox=0 (Neumann-Kopp). This is provisional and separate from fusion.",
@@ -377,31 +405,38 @@ def build() -> dict:
     })
     names = ["SrAl2O4", "SrAl4O7", "SrAl12O19", "Sr3Al2O6", "Sr4Al2O7", "SrSiO3", "Sr2SiO4"]
     pack["rows"].extend(
-        _row(name, 38 + index, source, gas_pack, redox_pack)
+        _row(name, 38 + index, source, gas_pack, redox_pack, fit_high_K)
         for index, name in enumerate(names, start=1)
     )
     pack["errata"].append({
-        "version": "1.0.0-d066-sr-candidate-v1",
-        "change": "Adds a digest-pinned opt-in nine-parent candidate with seven independent Sr complexes; the default D066 v4 pack is unchanged.",
+        "version": pack_version,
+        "change": (
+            "Adds a digest-pinned opt-in nine-parent candidate with seven "
+            "independent Sr complexes; the default D066 v4 pack is unchanged."
+            if version == "v1"
+            else "Refits the seven Sr candidate rows through 3000 K; v1 and the default D066 v4 pack are unchanged."
+        ),
     })
     return pack
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--version", choices=tuple(DESTINATIONS), default="v1")
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--write", action="store_true")
     mode.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    generated = json.dumps(build(), indent=2, ensure_ascii=False) + "\n"
+    destination = DESTINATIONS[args.version]
+    generated = json.dumps(build(args.version), indent=2, ensure_ascii=False) + "\n"
     if args.write:
-        DESTINATION.write_text(generated, encoding="utf-8")
-        print(f"wrote {DESTINATION.relative_to(ROOT)}")
+        destination.write_text(generated, encoding="utf-8")
+        print(f"wrote {destination.relative_to(ROOT)}")
         return 0
-    if not DESTINATION.exists() or DESTINATION.read_text(encoding="utf-8") != generated:
-        print(f"{DESTINATION.relative_to(ROOT)} is stale; run with --write")
+    if not destination.exists() or destination.read_text(encoding="utf-8") != generated:
+        print(f"{destination.relative_to(ROOT)} is stale; run with --write")
         return 1
-    print(f"{DESTINATION.relative_to(ROOT)} is current")
+    print(f"{destination.relative_to(ROOT)} is current")
     return 0
 
 

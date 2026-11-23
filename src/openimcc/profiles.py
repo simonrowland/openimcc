@@ -83,17 +83,18 @@ def load_profile(name: str) -> Profile:
                 "and the v6 Cr, Sr, Li, Zn, and Yb redox pack."
             ),
         )
-    if name == "sr-candidate":
+    if name in {"sr-candidate", "sr-candidate-v1"}:
         from openimcc.gas import load_gas_datapack
 
+        pack_version = "v2" if name == "sr-candidate" else "v1"
         gas = load_gas_datapack(
             gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v2.csv",
             oxide_path=_DATA_DIR / "gas" / "condensate-default-v1.csv",
         )
         return Profile(
-            name="sr-candidate",
+            name=name,
             melt_pack=load_datapack(
-                _PACKS_DIR / "imcc-sf04-d066-sr-candidate-v1.json"
+                _PACKS_DIR / f"imcc-sf04-d066-sr-candidate-{pack_version}.json"
             ),
             gas_datapack=gas,
             redox_pack_path=_PACKS_DIR / "openimcc-redox-v6.json",
@@ -123,7 +124,7 @@ def load_profile(name: str) -> Profile:
         )
     raise ProfileError(
         f"unknown profile {name!r}; expected 'openimcc', 'published', or "
-        "'sr-candidate'"
+        "'sr-candidate' or 'sr-candidate-v1'"
     )
 
 
@@ -132,6 +133,7 @@ def _resolve_profile(profile: str | Profile) -> Profile:
         return profile
     if not isinstance(profile, str):
         raise ProfileError(
-            "profile must be 'openimcc', 'published', 'sr-candidate', or a Profile"
+            "profile must be 'openimcc', 'published', 'sr-candidate', "
+            "'sr-candidate-v1', or a Profile"
         )
     return load_profile(profile)

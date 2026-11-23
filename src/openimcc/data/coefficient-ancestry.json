@@ -28176,8 +28176,8 @@
     {
       "identity": "liquid-standards-v2",
       "file": "data/liquid-standards.json",
-      "digest": "f2efd9d6ca32071a7386eefa3afbe4c41e7eebcaeca8ee032426bfecaacde24e",
-      "runtime_digest": "f2efd9d6ca32071a7386eefa3afbe4c41e7eebcaeca8ee032426bfecaacde24e",
+      "digest": "0b781198f23610ae49014e33852a0a64f91f812b2b502c263276d227543b70c7",
+      "runtime_digest": "0b781198f23610ae49014e33852a0a64f91f812b2b502c263276d227543b70c7",
       "rows": [
         {
           "id": "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75:standard:SiO2",
@@ -28868,6 +28868,168 @@
         },
         {
           "id": "c3eb1090b56cba8b6e07c0dd4d261efcb8f1801f10e1153ac523bf5a0324f4ef:diagnostic:KCaAlSi2O7",
+          "label": "KCaAlSi2O7",
+          "sources": []
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:SiO2",
+          "label": "SiO2",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "O-035"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:MgO",
+          "label": "MgO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Mg-009"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:CaO",
+          "label": "CaO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Ca-028"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:Al2O3",
+          "label": "Al2O3",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Al-100"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:TiO2",
+          "label": "TiO2",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "O-044"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:Na2O",
+          "label": "Na2O",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Na-012"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Na-013"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:K2O",
+          "label": "K2O",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "K-012"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "D066 K-row translation record preserves the absolute complex Gibbs energy"
+            }
+          ],
+          "basis": "translation-record"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:FeO",
+          "label": "FeO",
+          "sources": [
+            {
+              "work_id": "darken-gurry-1946-iron-oxygen-ii",
+              "role": "selected",
+              "citation": "Darken & Gurry (1946), Tables IIIA/B/VI"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:SrO",
+          "label": "SrO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "O-014"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:override:K2SiO3:K2O",
+          "label": "K2SiO3/K2O",
+          "sources": [],
+          "basis": "best available"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:override:K2Si2O5:K2O",
+          "label": "K2Si2O5/K2O",
+          "sources": [],
+          "basis": "best available"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:override:K2Si4O9:K2O",
+          "label": "K2Si4O9/K2O",
+          "sources": [],
+          "basis": "best available"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:override:KCaAlSi2O7:K2O",
+          "label": "KCaAlSi2O7/K2O",
+          "sources": [],
+          "basis": "best available"
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:diagnostic:K2SiO3",
+          "label": "K2SiO3",
+          "sources": []
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:diagnostic:K2Si2O5",
+          "label": "K2Si2O5",
+          "sources": []
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:diagnostic:K2Si4O9",
+          "label": "K2Si4O9",
+          "sources": []
+        },
+        {
+          "id": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:diagnostic:KCaAlSi2O7",
           "label": "KCaAlSi2O7",
           "sources": []
         },
@@ -32407,6 +32569,80 @@
           "reason": "The row has no source citation to resolve to a vocabulary work ID."
         },
         {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:SiO2",
+          "citation": "Richet, Bottinga & Tequi (1984)",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:SiO2",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:Na2O",
+          "citation": "Richet, Bottinga & Tequi (1984)",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:Na2O",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:standard:FeO",
+          "citation": "Masson (1965), Eq. 17",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:override:K2SiO3:K2O",
+          "citation": "disclosed reference-unknown marker",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:override:K2Si2O5:K2O",
+          "citation": "disclosed reference-unknown marker",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:override:K2Si4O9:K2O",
+          "citation": "disclosed reference-unknown marker",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:override:KCaAlSi2O7:K2O",
+          "citation": "disclosed reference-unknown marker",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:diagnostic:K2SiO3",
+          "citation": "No source citation is recorded in the row provenance.",
+          "reason": "The row has no source citation to resolve to a vocabulary work ID."
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:diagnostic:K2Si2O5",
+          "citation": "No source citation is recorded in the row provenance.",
+          "reason": "The row has no source citation to resolve to a vocabulary work ID."
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:diagnostic:K2Si4O9",
+          "citation": "No source citation is recorded in the row provenance.",
+          "reason": "The row has no source citation to resolve to a vocabulary work ID."
+        },
+        {
+          "row": "5c3baee0e827e93464860f059552a52d11680227c38f2c315fb45d9f6c1bdb17:diagnostic:KCaAlSi2O7",
+          "citation": "No source citation is recorded in the row provenance.",
+          "reason": "The row has no source citation to resolve to a vocabulary work ID."
+        },
+        {
           "row": "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf:standard:SiO2",
           "citation": "Richet, Bottinga & Tequi (1984)",
           "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
@@ -33405,10 +33641,10 @@
       ],
       "complete": false,
       "counts": {
-        "rows": 336,
-        "mapped_rows": 222,
-        "unmapped_citations": 224,
-        "rows_with_unmapped": 200
+        "rows": 353,
+        "mapped_rows": 231,
+        "unmapped_citations": 237,
+        "rows_with_unmapped": 211
       }
     },
     {
