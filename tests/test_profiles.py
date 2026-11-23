@@ -97,8 +97,8 @@ def test_sr_candidate_profile_evaluates_full_parent_basis_and_sr_gas() -> None:
                 1e-10,
                 profile=profile,
             )
-            assert "Sr" in gas.species_pressures_bar
-            assert gas.species_pressures_bar["Sr"] > 0.0
+            assert "Sr" in gas
+            assert gas["Sr"] > 0.0
 
 
 def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit(

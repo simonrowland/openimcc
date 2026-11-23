@@ -24,6 +24,10 @@
 - Documented the provisional fusion and formation estimates, source checks,
   phase-diagram gaps, candidate served values, and unchanged default profile.
 
+### SrO candidate gas test
+
+- Check the returned Sr pressure through the gas result mapping.
+
 ### Gas composition validation
 
 - Nonzero or invalid unsupported components in
