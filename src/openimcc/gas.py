@@ -4637,8 +4637,8 @@ def evaluate_gas(
             return _P2O5AssociatesIncompleteRefusal(
                 species,
                 "associates_incomplete: only Mg3(PO4)2 and Ca3(PO4)2 are "
-                "represented; the predicted P2O5 activity is near or above "
-                "its mole fraction, so P-bearing volatility is not supported",
+                "represented, and no held-out phosphate-capacity or volatility "
+                "set has scored this profile; P-bearing volatility remains gated",
                 triggers=("P2O5", "Mg3(PO4)2", "Ca3(PO4)2"),
             )
         elements = channel_elements(species)

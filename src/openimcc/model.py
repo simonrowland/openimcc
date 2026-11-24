@@ -1714,6 +1714,7 @@ def _d066_core_liquid_standards_digest(pack: ImccLoadedDatapack) -> str | None:
             for parent in _EXPECTED_PARENT_OXIDES
             if parent in declared.row_overrides.get(row_name, {})
         }
+    # Standard ids and bases suffice because they resolve through shared packaged tables.
     material = {
         "parent_standards": {
             parent: declared.standards[parent] for parent in _EXPECTED_PARENT_OXIDES

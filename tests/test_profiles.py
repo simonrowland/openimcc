@@ -143,9 +143,9 @@ def test_sr_candidate_v1_remains_selectable() -> None:
     assert profile.melt_pack.version == "1.0.0-d066-sr-candidate-v1"
 
 
-def test_p2o5_candidate_solves_kreep_majors_and_ships_p_gas() -> None:
+def test_p2o5_candidate_solves_kreep_majors_and_gates_unvalidated_p_gas() -> None:
     from openimcc._constants import MOLAR_MASS_G_MOL
-    from openimcc.gas import evaluate_gas
+    from openimcc.gas import ImccP2O5AssociatesIncompleteError, evaluate_gas
 
     profile = load_profile("p2o5-candidate")
     composition = {
@@ -160,17 +160,29 @@ def test_p2o5_candidate_solves_kreep_majors_and_ships_p_gas() -> None:
         "MnO": 0.16,
         "P2O5": 1.5,
     }
-    melt = evaluate(composition, 2000.0, profile=profile, basis_type="wt")
+    melts = {
+        temperature: evaluate(
+            composition, temperature, profile=profile, basis_type="wt"
+        )
+        for temperature in (1700.0, 2000.0, 2300.0)
+    }
+    melt = melts[2000.0]
     assert profile.melt_pack.parent_oxides[-1] == "P2O5"
     assert "P2O5" in melt.parent_oxides
     assert "MnO" in melt.parent_oxides
     assert all(melt.activity(parent) >= 0.0 for parent in melt.parent_oxides)
+    assert profile.melt_pack._p2o5_channel_status == "associates_incomplete"
     mole_amounts = {
         oxide: mass / MOLAR_MASS_G_MOL[oxide]
         for oxide, mass in composition.items()
     }
     p2o5_mole_fraction = mole_amounts["P2O5"] / sum(mole_amounts.values())
     assert melt.activity("P2O5") / p2o5_mole_fraction < 1.0e-3
+    p2o5_activities = [melts[t].activity("P2O5") for t in (1700.0, 2000.0, 2300.0)]
+    assert p2o5_activities == pytest.approx(
+        [2.8802036e-11, 6.8340384e-10, 6.0259858e-9], rel=1.0e-5
+    )
+    assert p2o5_activities[0] < p2o5_activities[1] < p2o5_activities[2]
 
     gas = evaluate_gas(
         {}, 2000.0, 1.0e-10, profile=profile, composition_wt_pct=composition
@@ -179,20 +191,24 @@ def test_p2o5_candidate_solves_kreep_majors_and_ships_p_gas() -> None:
     assert gas["Na"] > 0.0
     assert "SiO" not in gas.omitted_channels
     assert "Na" not in gas.omitted_channels
-    assert len(gas) == 41
-    assert not gas.omitted_channels
+    assert len(gas) == 34
     p_channels = {"P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10"}
-    assert p_channels.isdisjoint(gas.omitted_channels)
-    assert all(gas[species] > 0.0 for species in p_channels)
-    explicit_p2 = evaluate_gas(
-        {},
-        2000.0,
-        1.0e-10,
-        profile=profile,
-        composition_wt_pct=composition,
-        gas_species=("P2",),
+    assert p_channels.issubset(gas.omitted_channels)
+    assert all(
+        gas.omitted_channels[species].code == "p2o5_associates_incomplete"
+        for species in p_channels
     )
-    assert explicit_p2["P2"] == pytest.approx(gas["P2"], rel=1e-12)
+    assert all("held-out" in gas.omitted_channels[species].reason for species in p_channels)
+    assert all(species not in gas for species in p_channels)
+    with pytest.raises(ImccP2O5AssociatesIncompleteError, match="associates_incomplete"):
+        evaluate_gas(
+            {},
+            2000.0,
+            1.0e-10,
+            profile=profile,
+            composition_wt_pct=composition,
+            gas_species=("P2",),
+        )
 
 
 def test_p2o5_candidate_keeps_d066_prefix_and_associate_windows() -> None:

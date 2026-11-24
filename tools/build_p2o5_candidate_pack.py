@@ -35,6 +35,7 @@ R_J_MOL_K = 8.31446261815324
 LN10 = math.log(10.0)
 PARENT_ORDER = ("SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O", "P2O5")
 CLASS_C_J_MOL_ATOM_K = 8.297530569005671
+CALCIUM_BOILING_K = 1757.0
 
 
 def _digest(value: object) -> str:
@@ -173,6 +174,17 @@ def _parent_formation_g(
     return _janaf_formation_g(table_id, temperature_K)
 
 
+def _element_reference_thermo(element: str, temperature_K: float, gas_pack):
+    """Return the JANAF elemental reference phase as an absolute thermo row."""
+    if element == "Ca":
+        phase = "l" if temperature_K < CALCIUM_BOILING_K else "g"
+    elif element in {"P2", "O2"}:
+        phase = "g"
+    else:
+        raise ValueError(f"unsupported elemental reference {element!r}")
+    return species_thermo(element, phase, temperature_K, gas_pack)
+
+
 def _mg_crystal_hess_298_kj_mol(source: dict) -> float:
     mg_rows = source["janaf_pages"]["Mg-038"]["values"]
     mg_hf = next(float(row[5]) for row in mg_rows if float(row[0]) == 298.15)
@@ -183,34 +195,45 @@ def _mg_crystal_hess_298_kj_mol(source: dict) -> float:
     return mg_hf - 3.0 * mgo_hf - p2o5_hf / formula_units
 
 
-def _ca_crystal_formation_g(source: dict, temperature_K: float) -> float:
+def _ca_crystal_absolute_thermo(
+    source: dict, temperature_K: float, gas_pack
+) -> tuple[float, float]:
+    """Return whitlockite absolute H and S, anchored to its 1600 K row."""
     rows = source["whitlockite"]["values"]
-    points = [(float(row[0]), float(row[6]) * 1000.0) for row in rows]
-    if temperature_K <= 1600.0:
-        for (low_t, low_g), (high_t, high_g) in zip(points, points[1:]):
-            if low_t <= temperature_K <= high_t:
-                fraction = (temperature_K - low_t) / (high_t - low_t)
-                return low_g + fraction * (high_g - low_g)
-        raise ValueError(f"Whitlockite table does not cover {temperature_K:g} K")
-
-    # Above 1600 K the crystal Cp is held at its printed 330.54 J mol^-1 K^-1.
-    # The formation enthalpy changes by 4.1 kJ/mol from 1500 to 1600 K, so
-    # ΔCp_form = ΔH_form/ΔT = 41.0 J mol^-1 K^-1. With that held constant,
-    # H(T)=H0+ΔCp_form(T-T0), S(T)=S0+ΔCp_form ln(T/T0), and G=H-TS, preserving
-    # the R&H elemental reference. Units are J/mol and J/(mol K). Sanity:
-    # G(1600 K) rejoins the printed -2816.6 kJ/mol formation value.
     last = rows[-1]
-    previous = rows[-2]
     reference_T = float(last[0])
-    delta_h_ref = float(last[5]) * 1000.0
-    delta_g_ref = float(last[6]) * 1000.0
-    delta_s_ref = (delta_h_ref - delta_g_ref) / reference_T
-    delta_cp = (float(last[5]) - float(previous[5])) * 1000.0 / (
-        reference_T - float(previous[0])
+    if temperature_K < reference_T:
+        raise ValueError(
+            f"absolute Whitlockite continuation starts at {reference_T:g} K"
+        )
+
+    # Premise: the printed 1600 K R&H row gives formation Gibbs energy and
+    # absolute whitlockite entropy. Add 3 G(Ca,l)+G(P2,g)+4 G(O2,g) to put its
+    # Gibbs energy on an absolute scale, then H0=G0+T0*S0. This is J/mol; the
+    # entropy is J/(mol K). Sanity: G0 minus the elemental terms returns the
+    # printed -2816.6 kJ/mol formation Gibbs value exactly.
+    element_g = (
+        3.0 * _element_reference_thermo("Ca", reference_T, gas_pack).G_J_mol
+        + _element_reference_thermo("P2", reference_T, gas_pack).G_J_mol
+        + 4.0 * _element_reference_thermo("O2", reference_T, gas_pack).G_J_mol
     )
-    enthalpy = delta_h_ref + delta_cp * (temperature_K - reference_T)
-    entropy = delta_s_ref + delta_cp * math.log(temperature_K / reference_T)
-    return enthalpy - temperature_K * entropy
+    gibbs_0 = float(last[6]) * 1000.0 + element_g
+    entropy_0 = float(last[2])
+    enthalpy_0 = gibbs_0 + reference_T * entropy_0
+
+    # The original formation route continued R&H ΔCp_form=41 J mol^-1 K^-1,
+    # then subtracted JANAF Ca-028 ΔGf. Ca-028 changes its elemental calcium
+    # reference from liquid to gas at about 1757 K, while the R&H continuation
+    # has no matching phase change. Three unmatched Ca reference terms create
+    # a spurious reaction entropy. Continue absolute H and S instead, with the
+    # printed crystal Cp=330.54 J mol^-1 K^-1: H=H0+Cp(T-T0),
+    # S=S0+Cp ln(T/T0), and G=H-TS. Units remain J/mol and J/(mol K).
+    # Sanity at 2083.15 K: the corrected reaction entropy including class-C
+    # fusion is about +55.5 J mol^-1 K^-1, not +298 J mol^-1 K^-1.
+    delta_cp = float(last[1])
+    enthalpy = enthalpy_0 + delta_cp * (temperature_K - reference_T)
+    entropy = entropy_0 + delta_cp * math.log(temperature_K / reference_T)
+    return enthalpy, entropy
 
 
 def _fit(points: np.ndarray) -> tuple[float, float, float, float]:
@@ -234,14 +257,14 @@ def _reaction_fit(
     temperatures: np.ndarray,
     jung_hudon: dict,
 ) -> tuple[float, float, float, float]:
-    # Premise: each input here is a formation Gibbs energy from one common
-    # elemental reference: JANAF Mg-039 (or the R&H formation rows), JANAF
-    # Mg-009/Ca-028 liquid oxide, and Jung–Hudon P2O5(l) converted by
-    # _p2o5_formation_g. In ΔGf(product)-3ΔGf(MO)-ΔGf(P2O5), the three Mg/Ca,
-    # two P, and eight O elemental chemical potentials cancel exactly. This
-    # avoids mixing JANAF ΔGf with the enthalpy-anchored absolute G returned by
-    # species_thermo. log10(K)=-ΔG°/(RT ln10); J/mol divided by J/mol is
-    # dimensionless. Sanity: the 298.15 K Mg crystal Hess cycle is -436.407 kJ/mol.
+    # Premise: this formation-G route is used for the Mg3(PO4)2 row only.
+    # JANAF Mg-039, Mg-009, and P-012/Jung–Hudon all follow the same
+    # temperature-dependent elemental references, so in ΔGf(product)-3ΔGf(MgO)
+    # -ΔGf(P2O5) the three Mg, two P, and eight O elemental terms cancel.
+    # This also cancels the Mg(l)-to-Mg(g) switch below 1700 K. Convert
+    # Jung–Hudon P2O5(l) with _p2o5_formation_g. J/mol divided by RTln10
+    # (J/mol) gives dimensionless log10(K). Sanity: the crystal Hess cycle is
+    # -436.407 kJ/mol and the liquid fit has ΔH≈-414.6 kJ/mol.
     values = []
     for temperature in temperatures:
         product = product_gibbs(float(temperature))
@@ -253,6 +276,27 @@ def _reaction_fit(
         log_k = -(product - parents) / (R_J_MOL_K * float(temperature) * LN10)
         values.append((float(temperature), log_k))
     return _fit(np.asarray(values, dtype=float))
+
+
+def _reaction_delta_g_fit(
+    reaction_delta_g, temperatures: np.ndarray
+) -> tuple[float, float, float, float]:
+    """Fit log10 K directly from an absolute standard reaction Gibbs function."""
+    # Premise: K=exp(-ΔG°rxn/RT), so log10(K)=-ΔG°rxn/(RT ln 10). The
+    # numerator and RT are both J/mol, leaving dimensionless log10(K). Sanity:
+    # the Ca row reproduces its linear fit to within 2.2e-14 dex.
+    points = np.asarray(
+        [
+            (
+                float(temperature),
+                -reaction_delta_g(float(temperature))
+                / (R_J_MOL_K * float(temperature) * LN10),
+            )
+            for temperature in temperatures
+        ],
+        dtype=float,
+    )
+    return _fit(points)
 
 
 def _row(
@@ -344,22 +388,23 @@ def build() -> dict:
     tm = float(melting["temperature_K"])
     ca_parents = {"CaO": 3.0, "P2O5": 1.0}
 
-    def ca_crystal_reaction_g(temperature: float) -> float:
-        product = _ca_crystal_formation_g(source, temperature)
-        return product - math.fsum(
-            coefficient * _parent_formation_g(oxide, temperature, jung_hudon)
-            for oxide, coefficient in ca_parents.items()
+    def ca_crystal_reaction_thermo(
+        temperature: float,
+    ) -> tuple[float, float]:
+        product_h, product_s = _ca_crystal_absolute_thermo(
+            source, temperature, gas_pack
         )
+        cao = species_thermo("CaO", "l", temperature, gas_pack)
+        p2o5 = species_thermo("P2O5", "l", temperature, gas_pack)
+        delta_h = (
+            product_h
+            - 3.0 * cao.H_app_kJ_mol * 1000.0
+            - p2o5.H_app_kJ_mol * 1000.0
+        )
+        delta_s = product_s - 3.0 * cao.S_J_molK - p2o5.S_J_molK
+        return delta_h - temperature * delta_s, delta_s
 
-    delta_g_fusion = ca_crystal_reaction_g(tm)
-    # Premise: the crystal reaction entropy is -d(ΔG)/dT at Tm. A symmetric
-    # finite difference cancels first-order truncation error; with h in kelvin,
-    # the quotient has J mol^-1 K^-1. Sanity: this is evaluated at ±0.01 K
-    # around the independently sourced 2083.15 K melting marker.
-    step = 0.01
-    solid_reaction_entropy = -(
-        ca_crystal_reaction_g(tm + step) - ca_crystal_reaction_g(tm - step)
-    ) / (2.0 * step)
+    solid_reaction_g, solid_reaction_entropy = ca_crystal_reaction_thermo(tm)
     # Premise: class-C uses a molar entropy per formula atom. Ca3(PO4)2 has
     # 3+2+8=13 atoms, so ΔSfus = 13 × 8.297530569 J mol^-1 K^-1; units remain
     # J mol^-1 K^-1. Sanity: the estimate is 107.868 J mol^-1 K^-1.
@@ -379,30 +424,16 @@ def build() -> dict:
     if not math.isfinite(cp_liquid) or cp_liquid <= 0.0:
         raise ValueError("additive Ca-phosphate liquid Cp must be positive and finite")
 
-    def ca_liquid_formation_g(temperature: float) -> float:
-        # Premise: at Tm the crystal and liquid chemical potentials agree.
-        # Class-C ΔSfus raises the product entropy, while the additive liquid
-        # Cp makes ΔCp for M3(PO4)2(l)-3MO(l)-P2O5(l) exactly zero. Algebra:
-        # ΔG_rxn,l(T)=ΔG_rxn,cr(Tm)+(Tm-T)(ΔS_rxn,cr+ΔSfus). Units are J/mol.
-        # Sanity: at Tm the liquid and crystal reaction Gibbs energies match.
-        return (
-            delta_g_fusion
-            + (tm - temperature) * liquid_reaction_entropy
-            + math.fsum(
-                coefficient
-                * _parent_formation_g(oxide, temperature, jung_hudon)
-                for oxide, coefficient in ca_parents.items()
-            )
-        )
+    def ca_liquid_reaction_g(temperature: float) -> float:
+        # Premise: liquid product and crystal Gibbs energies meet at Tm. The
+        # additive parent liquid Cp assumption makes ΔCp_rxn=0, so ΔS_rxn,l is
+        # constant and ΔG_rxn,l(T)=ΔG_rxn,cr(Tm)+(Tm-T)(ΔS_rxn,cr+ΔSfus).
+        # Multiplying K by molar entropy gives J/mol; sanity at Tm recovers the
+        # absolute crystal reaction Gibbs energy. No formation-G reference is
+        # continued across the calcium boiling transition.
+        return solid_reaction_g + (tm - temperature) * liquid_reaction_entropy
 
-    # _reaction_fit expects product Gf and subtracts parent Gf. The Ca liquid
-    # construction above returns product Gf by adding the parent functions.
-    ca = _reaction_fit(
-        ca_parents,
-        ca_liquid_formation_g,
-        temperatures,
-        jung_hudon,
-    )
+    ca = _reaction_delta_g_fit(ca_liquid_reaction_g, temperatures)
 
     row_mg = _row(
         name="Mg3(PO4)2",
@@ -437,9 +468,12 @@ def build() -> dict:
             "JANAF-P2-GAS",
         ],
         derivation=(
-            "Whitlockite crystal formation Gibbs function to 1600 K; constant-Cp "
-            "crystal continuation to 2083.15 K; class-C fusion entropy and additive "
-            "CaO(l)+P2O5(l) liquid Cp; then refit to the candidate parent standards."
+            "Whitlockite R&H formation-G row at 1600 K is converted to absolute "
+            "G with 3 Ca(l)+P2(g)+4 O2(g), then continued with absolute Cp; "
+            "CaO(l) and Jung-Hudon P2O5(l) use absolute H-TS. This avoids mixing "
+            "the JANAF Ca liquid-to-gas reference change near 1757 K into the "
+            "R&H formation continuation. Class-C fusion entropy and additive "
+            "parent liquid Cp remain provisional."
         ),
         flags=[
             "constant_cp_crystal_continuation_above_1600_K",
@@ -470,12 +504,12 @@ def build() -> dict:
     pack["candidate_provenance"] = {
         "status": "opt-in provisional candidate; not the default",
         "fit_interval_K": [FIT_LOW_K, FIT_HIGH_K],
-        "p_channel_status": "shipped_with_provisional_associates",
+        "p_channel_status": "associates_incomplete",
         "p_channel_status_basis": (
-            "With all Gibbs terms on the same JANAF elemental reference, the "
-            "two-associate KREEP check places a(P2O5) many orders below "
-            "x(P2O5); P channels are enabled with the provisional Ca3(PO4)2 "
-            "flags retained."
+            "Only Mg3(PO4)2 and Ca3(PO4)2 are represented, and no held-out "
+            "phosphate-capacity or volatility set has scored this candidate. "
+            "P-bearing channels remain gated even when the KREEP activity "
+            "screen places a(P2O5) well below x(P2O5)."
         ),
         "source_file": "data-src/p2o5-candidate/thermochemistry.json",
         "d066_core_compatibility": {
@@ -487,12 +521,21 @@ def build() -> dict:
         },
         "parent_standard": "P2O5(l) is the existing Jung–Hudon 1-bar gas/condensate record; its numeric uncertainty remains a typed gap.",
         "formation_from_oxides_derivation": (
-            "For 3 MO(l)+P2O5(l)=M3(PO4)2(l), use ΔGf°(product), JANAF ΔGf°(MO,l), "
-            "and ΔGf°(P2O5,l)=ΔrG°[P2(g)+5/2O2(g)→P2O5(l)]+ΔGf°(P2,g). "
-            "JANAF ΔGf°(O2,g)=0. The 3 M, 2 P, and 8 O elemental chemical potentials cancel from "
-            "ΔGf°(product)-3ΔGf°(MO)-ΔGf°(P2O5); the P2 term is explicit so the elemental-P "
-            "reference matches the JANAF phosphate row. Convert Jung–Hudon's inferred 1 atm "
-            "equation to 1 bar with Δνgas=-3.5. Gibbs energies are J/mol and log10K=-ΔG°/(RTln10) is dimensionless."
+            "The Mg3(PO4)2 row uses JANAF ΔGf°(Mg3P2O8), ΔGf°(MgO,l), and "
+            "ΔGf°(P2O5,l)=ΔrG°[P2(g)+5/2O2(g)→P2O5(l)]+ΔGf°(P2,g). "
+            "JANAF ΔGf°(O2,g)=0; the three Mg, two P, and eight O elemental "
+            "potentials cancel. Convert Jung–Hudon's inferred 1 atm equation "
+            "to 1 bar with Δνgas=-3.5. Gibbs energies are J/mol and "
+            "log10K=-ΔG°/(RTln10) is dimensionless. Ca3(PO4)2 instead uses "
+            "absolute G=H-TS to avoid mixing its R&H anchor with the JANAF Ca "
+            "liquid-to-gas reference switch near 1757 K."
+        ),
+        "mg_element_reference_handling": (
+            "The Mg elemental reference changes from liquid to gas near 1363 K, "
+            "below the fit interval. Mg3P2O8, MgO, and P2O5 formation Gibbs "
+            "functions all use JANAF's temperature-dependent elemental references, "
+            "so the three Mg terms cancel at every fit temperature; absolute-route "
+            "entropy and logK checks cover 1700, 2000, and 2300 K."
         ),
         "mg_crystal_hess_check_298_kJ_mol": mg_hess_298,
         "mg3_po4_2": {
@@ -511,10 +554,16 @@ def build() -> dict:
             "crystal_source_window_K": [298.15, 1600.0],
             "rhombohedral_to_monoclinic_K": 1373.0,
             "constant_cp_crystal_J_mol_K": 330.54,
-            "constant_cp_formation_reference_J_mol_K": 41.0,
+            "absolute_reference_anchor": (
+                "Convert the printed 1600 K R&H formation Gibbs value to absolute "
+                "G using 3 Ca(l)+P2(g)+4 O2(g), set H=G+T*S from the printed "
+                "absolute entropy, and continue with crystal Cp. This avoids "
+                "mixing R&H and JANAF calcium references across the Ca boiling point."
+            ),
             "melting_temperature_K": tm,
             "melting_source": melting["citation"],
             "fusion_entropy_J_mol_K": fusion_entropy,
+            "liquid_reaction_entropy_J_mol_K": liquid_reaction_entropy,
             "liquid_cp_J_mol_K_at_fusion": cp_liquid,
             "provisional": ["crystal continuation above 1600 K", "class-C fusion entropy", "additive parent liquid Cp", "liquid association below the melting point"],
             "fit_max_abs_residual_dex": ca[2],
@@ -528,6 +577,7 @@ def build() -> dict:
             "K phosphates",
             "Fe3(PO4)2",
             "apatite",
+            "held-out phosphate-capacity and volatility scoring data",
         ],
     }
     pack["sources"].update(

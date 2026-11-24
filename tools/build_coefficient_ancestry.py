@@ -1066,11 +1066,11 @@ def _p2o5_candidate_artifact(
     ]
     ca_parameters = [
         ("formation_delta_h_ox", ca_reaction, True,
-         "The printed 298–1600 K crystal Gibbs table is continued above 1600 K at constant Cp."),
+         "At 1600 K, the printed R&H formation Gibbs value is converted to absolute H with JANAF Ca(l), P2(g), and O2(g) references; absolute crystal Cp is continued above 1600 K to avoid carrying the Ca boiling reference switch."),
         ("formation_delta_s_ox", ca_reaction, True,
-         "The printed crystal formation entropy is continued above 1600 K at constant Cp."),
+         "The printed 1600 K absolute crystal entropy is continued with Cp/T; the R&H formation reference is not extended across JANAF's Ca(l)-to-Ca(g) switch near 1757 K."),
         ("formation_delta_cp_ox", ca_reaction, True,
-         "Constant-Cp continuation above the last printed 1600 K crystal row is assumed."),
+         "Absolute crystal Cp=330.54 J mol^-1 K^-1 is held above 1600 K after converting the R&H anchor to JANAF elemental Gibbs references at 1600 K."),
         ("fusion_temperature_marker", [(melting, "selected")], False,
          "Welch and Gutt report the congruent Ca3(PO4)2 melting marker at 1810 °C."),
         ("fusion_entropy", [(f"{8.297530569:.9f} J mol^-1 formula atom^-1 K^-1 × 13 atoms", "derived")], True,

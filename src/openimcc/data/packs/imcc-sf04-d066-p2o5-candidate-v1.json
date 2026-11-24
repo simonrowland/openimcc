@@ -2852,8 +2852,8 @@
         "K2O": 0.0,
         "P2O5": 1.0
       },
-      "A": 15.585333210699956,
-      "B": 11143.825534719568,
+      "A": 2.902103306818392,
+      "B": 33640.6475483165,
       "source": "ROBIE-HEMINGWAY-1995",
       "T_domain_K": [
         1700.0,
@@ -2861,7 +2861,7 @@
       ],
       "T_domain_basis": "Opt-in candidate fit domain; each associate retains its source window and continuation flags.",
       "provenance_class": "C-independent-thermochemistry",
-      "derivation": "Whitlockite crystal formation Gibbs function to 1600 K; constant-Cp crystal continuation to 2083.15 K; class-C fusion entropy and additive CaO(l)+P2O5(l) liquid Cp; then refit to the candidate parent standards.",
+      "derivation": "Whitlockite R&H formation-G row at 1600 K is converted to absolute G with 3 Ca(l)+P2(g)+4 O2(g), then continued with absolute Cp; CaO(l) and Jung-Hudon P2O5(l) use absolute H-TS. This avoids mixing the JANAF Ca liquid-to-gas reference change near 1757 K into the R&H formation continuation. Class-C fusion entropy and additive parent liquid Cp remain provisional.",
       "T_domain_paper_demonstrated_K": [
         298.15,
         1600.0
@@ -2908,8 +2908,8 @@
           2300.0
         ],
         "fit_method": "least squares on 1001 evenly spaced pointwise re-referenced log10 K values",
-        "max_abs_residual_dex": 1.7763568394002505e-14,
-        "rms_residual_dex": 7.648955946829044e-15,
+        "max_abs_residual_dex": 2.1316282072803006e-14,
+        "rms_residual_dex": 1.3630239975826677e-14,
         "flag_over_0_01_dex": false
       }
     }
@@ -3016,8 +3016,8 @@
       1700.0,
       2300.0
     ],
-    "p_channel_status": "shipped_with_provisional_associates",
-    "p_channel_status_basis": "With all Gibbs terms on the same JANAF elemental reference, the two-associate KREEP check places a(P2O5) many orders below x(P2O5); P channels are enabled with the provisional Ca3(PO4)2 flags retained.",
+    "p_channel_status": "associates_incomplete",
+    "p_channel_status_basis": "Only Mg3(PO4)2 and Ca3(PO4)2 are represented, and no held-out phosphate-capacity or volatility set has scored this candidate. P-bearing channels remain gated even when the KREEP activity screen places a(P2O5) well below x(P2O5).",
     "source_file": "data-src/p2o5-candidate/thermochemistry.json",
     "d066_core_compatibility": {
       "declared": true,
@@ -3027,7 +3027,8 @@
       "basis": "The copied D066 rows, their row-level standard-state refits, and common liquid-standard records match D066 v4 by content digest."
     },
     "parent_standard": "P2O5(l) is the existing Jung–Hudon 1-bar gas/condensate record; its numeric uncertainty remains a typed gap.",
-    "formation_from_oxides_derivation": "For 3 MO(l)+P2O5(l)=M3(PO4)2(l), use ΔGf°(product), JANAF ΔGf°(MO,l), and ΔGf°(P2O5,l)=ΔrG°[P2(g)+5/2O2(g)→P2O5(l)]+ΔGf°(P2,g). JANAF ΔGf°(O2,g)=0. The 3 M, 2 P, and 8 O elemental chemical potentials cancel from ΔGf°(product)-3ΔGf°(MO)-ΔGf°(P2O5); the P2 term is explicit so the elemental-P reference matches the JANAF phosphate row. Convert Jung–Hudon's inferred 1 atm equation to 1 bar with Δνgas=-3.5. Gibbs energies are J/mol and log10K=-ΔG°/(RTln10) is dimensionless.",
+    "formation_from_oxides_derivation": "The Mg3(PO4)2 row uses JANAF ΔGf°(Mg3P2O8), ΔGf°(MgO,l), and ΔGf°(P2O5,l)=ΔrG°[P2(g)+5/2O2(g)→P2O5(l)]+ΔGf°(P2,g). JANAF ΔGf°(O2,g)=0; the three Mg, two P, and eight O elemental potentials cancel. Convert Jung–Hudon's inferred 1 atm equation to 1 bar with Δνgas=-3.5. Gibbs energies are J/mol and log10K=-ΔG°/(RTln10) is dimensionless. Ca3(PO4)2 instead uses absolute G=H-TS to avoid mixing its R&H anchor with the JANAF Ca liquid-to-gas reference switch near 1757 K.",
+    "mg_element_reference_handling": "The Mg elemental reference changes from liquid to gas near 1363 K, below the fit interval. Mg3P2O8, MgO, and P2O5 formation Gibbs functions all use JANAF's temperature-dependent elemental references, so the three Mg terms cancel at every fit temperature; absolute-route entropy and logK checks cover 1700, 2000, and 2300 K.",
     "mg_crystal_hess_check_298_kJ_mol": -436.4069999999999,
     "mg3_po4_2": {
       "tables": [
@@ -3055,10 +3056,11 @@
       ],
       "rhombohedral_to_monoclinic_K": 1373.0,
       "constant_cp_crystal_J_mol_K": 330.54,
-      "constant_cp_formation_reference_J_mol_K": 41.0,
+      "absolute_reference_anchor": "Convert the printed 1600 K R&H formation Gibbs value to absolute G using 3 Ca(l)+P2(g)+4 O2(g), set H=G+T*S from the printed absolute entropy, and continue with crystal Cp. This avoids mixing R&H and JANAF calcium references across the Ca boiling point.",
       "melting_temperature_K": 2083.15,
       "melting_source": "Welch, J. H. and Gutt, W. (1961), 874. High-temperature studies of the system calcium oxide–phosphorus pentoxide, Journal of the Chemical Society, 4442–4444.",
       "fusion_entropy_J_mol_K": 107.86789739707372,
+      "liquid_reaction_entropy_J_mol_K": 55.56006457373236,
       "liquid_cp_J_mol_K_at_fusion": 320.40267314171933,
       "provisional": [
         "crystal continuation above 1600 K",
@@ -3066,8 +3068,8 @@
         "additive parent liquid Cp",
         "liquid association below the melting point"
       ],
-      "fit_max_abs_residual_dex": 1.7763568394002505e-14,
-      "fit_rms_residual_dex": 7.648955946829044e-15
+      "fit_max_abs_residual_dex": 2.1316282072803006e-14,
+      "fit_rms_residual_dex": 1.3630239975826677e-14
     },
     "typed_gaps": [
       "Jung–Hudon P2O5(l) numeric uncertainty",
@@ -3076,7 +3078,8 @@
       "Na phosphates",
       "K phosphates",
       "Fe3(PO4)2",
-      "apatite"
+      "apatite",
+      "held-out phosphate-capacity and volatility scoring data"
     ]
   }
 }

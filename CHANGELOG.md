@@ -8,12 +8,16 @@
   per-row source windows, and parameter-level coefficient ancestry. The
   default and published packs remain unchanged.
 - Put the phosphate associate and oxide Gibbs energies on one JANAF elemental
-  reference after a Gibbs-convention mismatch produced impossible negative
-  association constants. The corrected KREEP activity is many orders below
-  its mole fraction, so P-bearing gas channels ship with the provisional Ca
-  associate flags.
+  reference for Mg. Rebuilt the Ca3(PO4)2 association from absolute Gibbs
+  functions anchored at the 1600 K Whitlockite row, avoiding a calcium
+  liquid-to-gas elemental reference mismatch near 1757 K. The corrected KREEP
+  a(P2O5) rises with temperature and stays well below x(P2O5); P-bearing gas
+  channels remain gated because formal fixed-composition P2 pressure exceeds
+  1 bar at 2000 K and the incomplete associate model has no held-out
+  phosphate-capacity or volatility score.
 - Enabled the MnO association graft for candidate packs whose D066 core rows
-  and common-parent liquid standards match v4 by content digest.
+  and common-parent liquid standards match v4 by content digest. Standard IDs
+  resolve through the shared packaged tables.
 
 ### Sr candidate coefficient ancestry
 
