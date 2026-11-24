@@ -488,6 +488,7 @@ _SR_CANDIDATE_FILES = (
     "imcc-sf04-d066-sr-candidate-v2.json",
 )
 _P2O5_CANDIDATE_FILE = "imcc-sf04-d066-p2o5-candidate-v1.json"
+_D066_CORE_ROW_COUNT = 38
 _JANAF_DOI = "10.18434/T42S31"
 _YE_DOI = "10.1007/s11669-007-9086-x"
 _JANAF_SRO_CRYSTAL = (
@@ -855,6 +856,111 @@ def _sr_candidate_parameter_specs(
     return parameters
 
 
+def _validate_candidate_core_rows(
+    path: Path,
+    candidate_rows: list[dict[str, Any]],
+    *,
+    candidate_name: str,
+    expected_row_count: int,
+    compare_fields: tuple[str, ...] | None = None,
+) -> None:
+    default_rows = _json(DATA / "packs" / "imcc-sf04-d066-v4.json")["rows"]
+    if (
+        len(default_rows) != _D066_CORE_ROW_COUNT
+        or len(candidate_rows) != expected_row_count
+    ):
+        raise ValueError(
+            f"unexpected row count in {candidate_name} candidate pack {path.name}"
+        )
+    for default_row, candidate_row in zip(
+        default_rows, candidate_rows[:_D066_CORE_ROW_COUNT]
+    ):
+        matches = (
+            default_row == candidate_row
+            if compare_fields is None
+            else all(
+                default_row.get(key) == candidate_row.get(key)
+                for key in compare_fields
+            )
+        )
+        if matches:
+            continue
+        if compare_fields is None:
+            raise ValueError(f"D066 core row {default_row.get('row')} differs from v4")
+        raise ValueError(
+            f"base row {default_row.get('row')} differs from the default pack; "
+            "its ancestry must be reviewed before reuse"
+        )
+
+
+def _default_candidate_artifact_rows(
+    default_melt_artifact: dict[str, Any],
+) -> list[dict[str, Any]]:
+    unmapped_by_row: dict[str, list[dict[str, Any]]] = {}
+    for item in default_melt_artifact["unmapped"]:
+        unmapped_by_row.setdefault(item["row"], []).append(dict(item))
+    return [
+        {
+            **source_row,
+            "sources": [dict(source) for source in source_row["sources"]],
+            "unmapped": unmapped_by_row.get(source_row["id"], []),
+        }
+        for source_row in default_melt_artifact["rows"]
+    ]
+
+
+def _candidate_parent_standard_rows(
+    standards: tuple[str, ...],
+    parent_specs: dict[str, list[tuple[str, str]]],
+    mapper: SourceMapper,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    parent_standards = []
+    parent_unmapped = []
+    for standard in standards:
+        parent_row = _row(f"parent_standard:{standard}", standard)
+        sources = _candidate_parameter_sources(
+            parent_row, "parent_liquid_standard", parent_specs[standard], mapper
+        )
+        parent_standards.append({"standard": standard, "sources": sources})
+        parent_unmapped.extend(parent_row["unmapped"])
+    return parent_standards, parent_unmapped
+
+
+def _finish_candidate_artifact(
+    *,
+    path: Path,
+    raw: bytes,
+    pack: dict[str, Any],
+    runtime_digest: str,
+    mapper: SourceMapper,
+    rows: list[dict[str, Any]],
+    parent_standards: list[dict[str, Any]],
+    parent_unmapped: list[dict[str, Any]],
+) -> dict[str, Any]:
+    artifact = _finish_artifact(
+        identity=f"{pack['model_id']}@{pack['imcc_sf04_datapack_version']}",
+        file="data/packs/" + path.name,
+        raw=raw,
+        rows=rows,
+        runtime_digest=runtime_digest,
+        mapper=mapper,
+    )
+    artifact["parent_standards"] = parent_standards
+    artifact["unmapped"].extend(parent_unmapped)
+    artifact["work_ids"] = sorted(
+        set(artifact["work_ids"])
+        | {
+            source["work_id"]
+            for standard in parent_standards
+            for source in standard["sources"]
+            if source["work_id"] is not None
+        }
+    )
+    artifact["complete"] = not artifact["unmapped"]
+    artifact["counts"]["unmapped_citations"] = len(artifact["unmapped"])
+    return artifact
+
+
 def _sr_candidate_artifact(
     *,
     path: Path,
@@ -864,33 +970,15 @@ def _sr_candidate_artifact(
 ) -> dict[str, Any]:
     raw = path.read_bytes()
     pack = json.loads(raw)
-    default_path = DATA / "packs" / "imcc-sf04-d066-v4.json"
-    default_rows = _json(default_path)["rows"]
     candidate_rows = pack["rows"]
-    if len(default_rows) != 38 or len(candidate_rows) != 45:
-        raise ValueError(f"unexpected row count in Sr candidate pack {path.name}")
-    for default_row, candidate_row in zip(default_rows, candidate_rows[:38]):
-        if any(
-            default_row.get(key) != candidate_row.get(key)
-            for key in ("row", "complex", "nu", "A", "B")
-        ):
-            raise ValueError(
-                f"base row {default_row.get('row')} differs from the default pack; "
-                "its ancestry must be reviewed before reuse"
-            )
-
-    unmapped_by_row: dict[str, list[dict[str, Any]]] = {}
-    for item in default_melt_artifact["unmapped"]:
-        unmapped_by_row.setdefault(item["row"], []).append(dict(item))
-    rows = []
-    for source_row in default_melt_artifact["rows"]:
-        rows.append(
-            {
-                **source_row,
-                "sources": [dict(source) for source in source_row["sources"]],
-                "unmapped": unmapped_by_row.get(source_row["id"], []),
-            }
-        )
+    _validate_candidate_core_rows(
+        path,
+        candidate_rows,
+        candidate_name="Sr",
+        expected_row_count=45,
+        compare_fields=("row", "complex", "nu", "A", "B"),
+    )
+    rows = _default_candidate_artifact_rows(default_melt_artifact)
 
     atom_counts = {
         "SrAl2O4": 7,
@@ -941,40 +1029,25 @@ def _sr_candidate_artifact(
             (_JANAF_ALUMINA_LIQUID, "anchor"),
         ],
     }
-    parent_standards = []
-    parent_unmapped = []
-    for standard in ("Na2O", "SiO2", "SrO", "Al2O3"):
-        if standard not in used_parents:
-            continue
-        parent_row = _row(f"parent_standard:{standard}", standard)
-        sources = _candidate_parameter_sources(
-            parent_row, "parent_liquid_standard", parent_specs[standard], mapper
-        )
-        parent_standards.append({"standard": standard, "sources": sources})
-        parent_unmapped.extend(parent_row["unmapped"])
-
-    artifact = _finish_artifact(
-        identity=f"{pack['model_id']}@{pack['imcc_sf04_datapack_version']}",
-        file="data/packs/" + path.name,
+    parent_standards, parent_unmapped = _candidate_parent_standard_rows(
+        tuple(
+            standard
+            for standard in ("Na2O", "SiO2", "SrO", "Al2O3")
+            if standard in used_parents
+        ),
+        parent_specs,
+        mapper,
+    )
+    return _finish_candidate_artifact(
+        path=path,
         raw=raw,
-        rows=rows,
+        pack=pack,
         runtime_digest=runtime_digest,
         mapper=mapper,
+        rows=rows,
+        parent_standards=parent_standards,
+        parent_unmapped=parent_unmapped,
     )
-    artifact["parent_standards"] = parent_standards
-    artifact["unmapped"].extend(parent_unmapped)
-    artifact["work_ids"] = sorted(
-        set(artifact["work_ids"])
-        | {
-            source["work_id"]
-            for standard in parent_standards
-            for source in standard["sources"]
-            if source["work_id"] is not None
-        }
-    )
-    artifact["complete"] = not artifact["unmapped"]
-    artifact["counts"]["unmapped_citations"] = len(artifact["unmapped"])
-    return artifact
 
 
 def _p2o5_candidate_artifact(
@@ -986,28 +1059,14 @@ def _p2o5_candidate_artifact(
 ) -> dict[str, Any]:
     raw = path.read_bytes()
     pack = json.loads(raw)
-    default_rows = _json(DATA / "packs" / "imcc-sf04-d066-v4.json")["rows"]
     candidate_rows = pack["rows"]
-    if len(default_rows) != 38 or len(candidate_rows) != 40:
-        raise ValueError(f"unexpected row count in P2O5 candidate pack {path.name}")
-    for default_row, candidate_row in zip(default_rows, candidate_rows[:38]):
-        if default_row != candidate_row:
-            raise ValueError(
-                f"D066 core row {default_row.get('row')} differs from v4"
-            )
-
-    unmapped_by_row: dict[str, list[dict[str, Any]]] = {}
-    for item in default_melt_artifact["unmapped"]:
-        unmapped_by_row.setdefault(item["row"], []).append(dict(item))
-    rows = []
-    for source_row in default_melt_artifact["rows"]:
-        rows.append(
-            {
-                **source_row,
-                "sources": [dict(source) for source in source_row["sources"]],
-                "unmapped": unmapped_by_row.get(source_row["id"], []),
-            }
-        )
+    _validate_candidate_core_rows(
+        path,
+        candidate_rows,
+        candidate_name="P2O5",
+        expected_row_count=40,
+    )
+    rows = _default_candidate_artifact_rows(default_melt_artifact)
 
     janaf = (
         "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, "
@@ -1109,43 +1168,24 @@ def _p2o5_candidate_artifact(
         _missing_provenance(row)
         rows.append(row)
 
-    parent_standards = []
-    parent_unmapped = []
     parent_specs = {
         "MgO": [(janaf_mgo, "anchor")],
         "CaO": [(janaf_cao, "anchor")],
         "P2O5": [(jung_hudon, "anchor"), (janaf_p2, "derived")],
     }
-    for standard in ("MgO", "CaO", "P2O5"):
-        parent_row = _row(f"parent_standard:{standard}", standard)
-        sources = _candidate_parameter_sources(
-            parent_row, "parent_liquid_standard", parent_specs[standard], mapper
-        )
-        parent_standards.append({"standard": standard, "sources": sources})
-        parent_unmapped.extend(parent_row["unmapped"])
-
-    artifact = _finish_artifact(
-        identity=f"{pack['model_id']}@{pack['imcc_sf04_datapack_version']}",
-        file="data/packs/" + path.name,
+    parent_standards, parent_unmapped = _candidate_parent_standard_rows(
+        ("MgO", "CaO", "P2O5"), parent_specs, mapper
+    )
+    return _finish_candidate_artifact(
+        path=path,
         raw=raw,
-        rows=rows,
+        pack=pack,
         runtime_digest=runtime_digest,
         mapper=mapper,
+        rows=rows,
+        parent_standards=parent_standards,
+        parent_unmapped=parent_unmapped,
     )
-    artifact["parent_standards"] = parent_standards
-    artifact["unmapped"].extend(parent_unmapped)
-    artifact["work_ids"] = sorted(
-        set(artifact["work_ids"])
-        | {
-            source["work_id"]
-            for standard in parent_standards
-            for source in standard["sources"]
-            if source["work_id"] is not None
-        }
-    )
-    artifact["complete"] = not artifact["unmapped"]
-    artifact["counts"]["unmapped_citations"] = len(artifact["unmapped"])
-    return artifact
 
 
 def _table_artifact(

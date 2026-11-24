@@ -60,6 +60,22 @@ class Profile:
         return load_redox_pack(self.redox_pack_path)
 
 
+def _candidate_profile(name: str, filename: str, provenance: str) -> Profile:
+    from openimcc.gas import load_gas_datapack
+
+    gas = load_gas_datapack(
+        gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v2.csv",
+        oxide_path=_DATA_DIR / "gas" / "condensate-default-v1.csv",
+    )
+    return Profile(
+        name=name,
+        melt_pack=load_datapack(_PACKS_DIR / filename),
+        gas_datapack=gas,
+        redox_pack_path=_PACKS_DIR / "openimcc-redox-v6.json",
+        provenance=provenance,
+    )
+
+
 def load_profile(name: str) -> Profile:
     """Load an openimcc, candidate, or published SF04 profile.
 
@@ -84,41 +100,21 @@ def load_profile(name: str) -> Profile:
             ),
         )
     if name in {"sr-candidate", "sr-candidate-v1"}:
-        from openimcc.gas import load_gas_datapack
-
         pack_version = "v2" if name == "sr-candidate" else "v1"
-        gas = load_gas_datapack(
-            gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v2.csv",
-            oxide_path=_DATA_DIR / "gas" / "condensate-default-v1.csv",
-        )
-        return Profile(
-            name=name,
-            melt_pack=load_datapack(
-                _PACKS_DIR / f"imcc-sf04-d066-sr-candidate-{pack_version}.json"
-            ),
-            gas_datapack=gas,
-            redox_pack_path=_PACKS_DIR / "openimcc-redox-v6.json",
-            provenance=(
+        return _candidate_profile(
+            name,
+            f"imcc-sf04-d066-sr-candidate-{pack_version}.json",
+            (
                 "Opt-in provisional SrO full-component candidate melt pack, "
                 "versioned openimcc gas and condensate tables, and the v6 "
                 "Cr, Sr, Li, Zn, and Yb redox pack."
             ),
         )
     if name == "p2o5-candidate":
-        from openimcc.gas import load_gas_datapack
-
-        gas = load_gas_datapack(
-            gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v2.csv",
-            oxide_path=_DATA_DIR / "gas" / "condensate-default-v1.csv",
-        )
-        return Profile(
-            name=name,
-            melt_pack=load_datapack(
-                _PACKS_DIR / "imcc-sf04-d066-p2o5-candidate-v1.json"
-            ),
-            gas_datapack=gas,
-            redox_pack_path=_PACKS_DIR / "openimcc-redox-v6.json",
-            provenance=(
+        return _candidate_profile(
+            name,
+            "imcc-sf04-d066-p2o5-candidate-v1.json",
+            (
                 "Opt-in provisional P2O5 full-component candidate melt pack, "
                 "versioned openimcc gas and condensate tables, and the v6 "
                 "Cr, Sr, Li, Zn, and Yb redox pack."

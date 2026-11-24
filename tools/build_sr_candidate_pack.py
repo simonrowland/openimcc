@@ -21,6 +21,15 @@ if str(SRC) not in sys.path:
 
 from openimcc.gas import load_gas_datapack, species_thermo
 from openimcc.redox_pack import load_redox_pack, species_gibbs_j_mol
+from candidate_pack import (
+    CLASS_C_J_MOL_ATOM_K,
+    add_write_check_arguments,
+    candidate_row,
+    fit_log10_k,
+    load_d066_pack,
+    serialize_candidate_pack,
+    write_or_check_candidate_pack,
+)
 
 
 PACKS = ROOT / "src/openimcc/data/packs"
@@ -41,7 +50,6 @@ PACK_VERSION_BY_VERSION = {
 }
 R_J_MOL_K = 8.31446261815324
 LN10 = math.log(10.0)
-CLASS_C_J_MOL_ATOM_K = 8.297530569005671
 _LIQUID_CACHE: dict[tuple[str, float], tuple[float, float]] = {}
 
 
@@ -202,9 +210,7 @@ def _row(
             for oxide, coefficient in nu.items()
         )
         y.append((parent_g - product_g) / (R_J_MOL_K * temperature * LN10))
-    design = np.column_stack((np.ones(len(temperatures)), 1.0 / temperatures))
-    coefficients, *_ = np.linalg.lstsq(design, np.asarray(y), rcond=None)
-    residual = np.asarray(y) - design @ coefficients
+    coefficients = fit_log10_k(temperatures, y)
     paper_domains = {
         "SrAl2O4": [932.0, 2233.0],
         "SrAl4O7": [1000.0, 1300.0],
@@ -232,51 +238,39 @@ def _row(
         if name in ("SrAl2O4", "SrSiO3", "Sr2SiO4")
         else "Crystal Gibbs function plus provisional class-C fusion entropy and additive parent-liquid Cp."
     )
-    row = {
-        "row": index,
-        "complex": name,
-        "reaction": " + ".join(
-            f"{coefficient:g} {oxide}(liq)" for oxide, coefficient in nu.items()
-        ) + f" = {name}(liq)",
-        "nu": {parent: nu.get(parent, 0) for parent in
-               ("SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O", "SrO")},
-        "A": float(coefficients[0]),
-        "B": float(coefficients[1]),
-        "source": source_refs[0],
-        "T_domain_K": [FIT_LOW_K, fit_high_K],
-        "T_domain_basis": "Opt-in candidate evaluation interval; source and continuation limits are retained in T_domain_paper_demonstrated_K.",
-        "provenance_class": "C-independent-thermochemistry",
-        "derivation": description,
-        "T_domain_paper_demonstrated_K": paper_domains,
-        "coverage": "C-independent-thermochemistry",
-        "fit_residual": None,
-        "accuracy_band": None,
-        "band_basis": {
-            "kind": "none",
-            "explanation": "No row-specific numerical uncertainty band is claimed; provisional assumptions are itemized in candidate_provenance.",
-            "provenance": None,
+    row = candidate_row(
+        name=name,
+        index=index,
+        parent_oxides=nu,
+        nu={
+            parent: nu.get(parent, 0)
+            for parent in (
+                "SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O", "SrO"
+            )
         },
-        "independent_check": {
-            "status": "not_found", "equilibrium": None, "primary_source": None,
-            "conditions": None, "measured_value": None, "predicted_value": None,
-            "miss": None, "miss_to_band_ratio": None,
-            "reason": "No row-specific liquid equilibrium measurement was used as a fitting target.",
-        },
-        "source_refs": source_refs,
-        "standard_state_refit": {
-            "parents": nu,
-            "temperature_range_K": [FIT_LOW_K, fit_high_K],
-            "fit_method": "least squares on 1001 evenly spaced pointwise re-referenced log10 K values",
-            "max_abs_residual_dex": float(np.max(np.abs(residual))),
-            "flag_over_0_01_dex": bool(np.max(np.abs(residual)) > 0.01),
-        },
-        "fusion_entropy_estimate_J_mol_K": round(
-            CLASS_C_J_MOL_ATOM_K * {
-                "SrAl2O4": 7, "SrAl4O7": 12, "SrAl12O19": 32,
-                "Sr3Al2O6": 11, "Sr4Al2O7": 13, "SrSiO3": 5, "Sr2SiO4": 7,
-            }[name], 9
-        ),
-    }
+        coefficients=coefficients,
+        fit_low_K=FIT_LOW_K,
+        fit_high_K=fit_high_K,
+        paper_domain=paper_domains,
+        source_refs=source_refs,
+        derivation=description,
+        domain_basis="Opt-in candidate evaluation interval; source and continuation limits are retained in T_domain_paper_demonstrated_K.",
+        band_explanation="No row-specific numerical uncertainty band is claimed; provisional assumptions are itemized in candidate_provenance.",
+        independent_check_reason="No row-specific liquid equilibrium measurement was used as a fitting target.",
+    )
+    row["fusion_entropy_estimate_J_mol_K"] = round(
+        CLASS_C_J_MOL_ATOM_K
+        * {
+            "SrAl2O4": 7,
+            "SrAl4O7": 12,
+            "SrAl12O19": 32,
+            "Sr3Al2O6": 11,
+            "Sr4Al2O7": 13,
+            "SrSiO3": 5,
+            "Sr2SiO4": 7,
+        }[name],
+        9,
+    )
     return row
 
 
@@ -285,7 +279,7 @@ def build(version: str = "v1") -> dict:
         raise ValueError(f"unknown Sr candidate version {version!r}")
     fit_high_K = FIT_HIGH_K_BY_VERSION[version]
     pack_version = PACK_VERSION_BY_VERSION[version]
-    pack = json.loads(BASE.read_text(encoding="utf-8"))
+    pack, _original_rows = load_d066_pack(BASE)
     source = json.loads(SOURCE.read_text(encoding="utf-8"))
     gas_pack = load_gas_datapack()
     redox_pack = load_redox_pack(REDOX)
@@ -423,21 +417,11 @@ def build(version: str = "v1") -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", choices=tuple(DESTINATIONS), default="v1")
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--write", action="store_true")
-    mode.add_argument("--check", action="store_true")
+    add_write_check_arguments(parser)
     args = parser.parse_args()
     destination = DESTINATIONS[args.version]
-    generated = json.dumps(build(args.version), indent=2, ensure_ascii=False) + "\n"
-    if args.write:
-        destination.write_text(generated, encoding="utf-8")
-        print(f"wrote {destination.relative_to(ROOT)}")
-        return 0
-    if not destination.exists() or destination.read_text(encoding="utf-8") != generated:
-        print(f"{destination.relative_to(ROOT)} is stale; run with --write")
-        return 1
-    print(f"{destination.relative_to(ROOT)} is current")
-    return 0
+    generated = serialize_candidate_pack(build(args.version))
+    return write_or_check_candidate_pack(destination, generated, write=args.write)
 
 
 if __name__ == "__main__":

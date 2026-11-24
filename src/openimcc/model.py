@@ -1614,47 +1614,87 @@ def _validate_d066_core(
     return rows, content_hash
 
 
-def _validate_sr_candidate(data: Mapping[str, Any]) -> tuple[list[dict[str, Any]], str]:
-    """Validate the frozen D066 prefix and the seven candidate-only Sr rows."""
+def _validate_candidate(
+    data: Mapping[str, Any],
+    *,
+    label: str,
+    expected_candidate_rows: tuple[str, ...],
+    candidate_parent_oxides: tuple[str, ...],
+    validate_flags: bool = False,
+    validate_core_compatibility: bool = False,
+) -> tuple[list[dict[str, Any]], str]:
+    """Validate a frozen D066 prefix and its candidate-only rows."""
     rows = data.get("rows")
-    expected_count = len(_D066_CORE_ROWS) + len(_SR_CANDIDATE_ROWS)
+    expected_count = len(_D066_CORE_ROWS) + len(expected_candidate_rows)
     if not isinstance(rows, list) or len(rows) != expected_count:
         raise ImccMalformedDatapackError(
-            f"Sr candidate must contain exactly {expected_count} rows"
+            f"{label} must contain exactly {expected_count} rows"
         )
     core_data = dict(data)
     core_data["rows"] = rows[: len(_D066_CORE_ROWS)]
     _validate_d066_core(core_data)
     added = rows[len(_D066_CORE_ROWS):]
     if any(not isinstance(row, dict) for row in added):
-        raise ImccMalformedDatapackError("Sr candidate rows must be objects")
-    _validate_active_row_metadata(added, label="Sr candidate")
-    if tuple(row.get("complex") for row in added) != _SR_CANDIDATE_ROWS:
+        raise ImccMalformedDatapackError(f"{label} rows must be objects")
+    _validate_active_row_metadata(added, label=label)
+    if tuple(row.get("complex") for row in added) != expected_candidate_rows:
         raise ImccMalformedDatapackError(
-            "Sr candidate row set or order does not match the frozen candidate rows"
+            f"{label} row set or order does not match the frozen candidate rows"
         )
     for index, row in enumerate(added, start=len(_D066_CORE_ROWS) + 1):
         if type(row.get("row")) is not int or row["row"] != index:
             raise ImccMalformedDatapackError(
-                f"Sr candidate row {row['complex']!r} must retain row number {index}"
+                f"{label} row {row['complex']!r} must retain row number {index}"
             )
         if row.get("coverage") != "C-independent-thermochemistry":
             raise ImccMalformedDatapackError(
-                f"Sr candidate row {row['complex']!r} has invalid coverage"
+                f"{label} row {row['complex']!r} has invalid coverage"
             )
         nu = row.get("nu")
         if (
             not isinstance(nu, dict)
-            or set(nu) - set(_SR_CANDIDATE_PARENT_OXIDES)
+            or set(nu) - set(candidate_parent_oxides)
         ):
             raise ImccMalformedDatapackError(
-                f"Sr candidate row {row['complex']!r} has invalid parent stoichiometry"
+                f"{label} row {row['complex']!r} has invalid parent stoichiometry"
+            )
+        if validate_flags:
+            flags = row.get("flags", [])
+            if not isinstance(flags, list) or not all(
+                isinstance(flag, str) for flag in flags
+            ):
+                raise ImccMalformedDatapackError(
+                    f"{label} row {row['complex']!r} flags must be strings"
+                )
+
+    if validate_core_compatibility:
+        compatibility = (
+            data.get("candidate_provenance", {}).get("d066_core_compatibility")
+            if isinstance(data.get("candidate_provenance"), dict)
+            else None
+        )
+        if (
+            not isinstance(compatibility, dict)
+            or compatibility.get("declared") is not True
+        ):
+            raise ImccMalformedDatapackError(
+                f"{label} must declare its D066 core content compatibility"
+            )
+        row_digest, standards_digest = _d066_core_content_digests(data)
+        if (
+            compatibility.get("row_count") != _PUBLISHED_CORE_ROWS
+            or compatibility.get("rows_1_38_sha256") != row_digest
+            or compatibility.get("existing_parent_liquid_standards_sha256")
+            != standards_digest
+        ):
+            raise ImccMalformedDatapackError(
+                f"{label} D066 compatibility digests do not match its content"
             )
     try:
         digest = _published_datapack_manifest_hash(data)
     except (TypeError, ValueError) as exc:
         raise ImccMalformedDatapackError(
-            "Sr candidate datapack cannot be canonically serialized"
+            f"{label} datapack cannot be canonically serialized"
         ) from exc
     return rows, digest
 
@@ -1730,72 +1770,6 @@ def _d066_core_liquid_standards_digest(pack: ImccLoadedDatapack) -> str | None:
         material, sort_keys=True, ensure_ascii=False, separators=(",", ":")
     ).encode("utf-8")
     return hashlib.sha256(serialized).hexdigest()
-
-
-def _validate_p2o5_candidate(data: Mapping[str, Any]) -> tuple[list[dict[str, Any]], str]:
-    """Validate the frozen D066 prefix and two phosphate candidate rows."""
-    rows = data.get("rows")
-    expected_count = len(_D066_CORE_ROWS) + len(_P2O5_CANDIDATE_ROWS)
-    if not isinstance(rows, list) or len(rows) != expected_count:
-        raise ImccMalformedDatapackError(
-            f"P2O5 candidate must contain exactly {expected_count} rows"
-        )
-    core_data = dict(data)
-    core_data["rows"] = rows[:len(_D066_CORE_ROWS)]
-    _validate_d066_core(core_data)
-    added = rows[len(_D066_CORE_ROWS):]
-    if any(not isinstance(row, dict) for row in added):
-        raise ImccMalformedDatapackError("P2O5 candidate rows must be objects")
-    _validate_active_row_metadata(added, label="P2O5 candidate")
-    if tuple(row.get("complex") for row in added) != _P2O5_CANDIDATE_ROWS:
-        raise ImccMalformedDatapackError(
-            "P2O5 candidate row set or order does not match the frozen candidate rows"
-        )
-    for index, row in enumerate(added, start=len(_D066_CORE_ROWS) + 1):
-        if type(row.get("row")) is not int or row["row"] != index:
-            raise ImccMalformedDatapackError(
-                f"P2O5 candidate row {row['complex']!r} must retain row number {index}"
-            )
-        if row.get("coverage") != "C-independent-thermochemistry":
-            raise ImccMalformedDatapackError(
-                f"P2O5 candidate row {row['complex']!r} has invalid coverage"
-            )
-        nu = row.get("nu")
-        if not isinstance(nu, dict) or set(nu) - set(_P2O5_CANDIDATE_PARENT_OXIDES):
-            raise ImccMalformedDatapackError(
-                f"P2O5 candidate row {row['complex']!r} has invalid parent stoichiometry"
-            )
-        flags = row.get("flags", [])
-        if not isinstance(flags, list) or not all(isinstance(flag, str) for flag in flags):
-            raise ImccMalformedDatapackError(
-                f"P2O5 candidate row {row['complex']!r} flags must be strings"
-            )
-
-    compatibility = (
-        data.get("candidate_provenance", {}).get("d066_core_compatibility")
-        if isinstance(data.get("candidate_provenance"), dict)
-        else None
-    )
-    if not isinstance(compatibility, dict) or compatibility.get("declared") is not True:
-        raise ImccMalformedDatapackError(
-            "P2O5 candidate must declare its D066 core content compatibility"
-        )
-    row_digest, standards_digest = _d066_core_content_digests(data)
-    if (
-        compatibility.get("row_count") != _PUBLISHED_CORE_ROWS
-        or compatibility.get("rows_1_38_sha256") != row_digest
-        or compatibility.get("existing_parent_liquid_standards_sha256") != standards_digest
-    ):
-        raise ImccMalformedDatapackError(
-            "P2O5 candidate D066 compatibility digests do not match its content"
-        )
-    try:
-        digest = _published_datapack_manifest_hash(data)
-    except (TypeError, ValueError) as exc:
-        raise ImccMalformedDatapackError(
-            "P2O5 candidate datapack cannot be canonically serialized"
-        ) from exc
-    return rows, digest
 
 
 def _build_nu_vector(
@@ -1941,14 +1915,26 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             raise ImccMalformedDatapackError(
                 "the Sr candidate cannot be combined with another extension section"
             )
-        rows, _candidate_digest = _validate_sr_candidate(data)
+        rows, _candidate_digest = _validate_candidate(
+            data,
+            label="Sr candidate",
+            expected_candidate_rows=_SR_CANDIDATE_ROWS,
+            candidate_parent_oxides=_SR_CANDIDATE_PARENT_OXIDES,
+        )
         published_manifest_sha256 = None
     elif model_id == _P2O5_CANDIDATE_MODEL_ID:
         if sp_extension is not None or has_excess_gibbs:
             raise ImccMalformedDatapackError(
                 "the P2O5 candidate cannot be combined with another extension section"
             )
-        rows, _candidate_digest = _validate_p2o5_candidate(data)
+        rows, _candidate_digest = _validate_candidate(
+            data,
+            label="P2O5 candidate",
+            expected_candidate_rows=_P2O5_CANDIDATE_ROWS,
+            candidate_parent_oxides=_P2O5_CANDIDATE_PARENT_OXIDES,
+            validate_flags=True,
+            validate_core_compatibility=True,
+        )
         published_manifest_sha256 = None
     elif model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
         rows, _d066_manifest_sha256 = _validate_d066_core(data)

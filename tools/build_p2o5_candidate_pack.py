@@ -4,9 +4,7 @@
 from __future__ import annotations
 
 import argparse
-import copy
 from functools import lru_cache
-import hashlib
 import json
 import math
 from pathlib import Path
@@ -21,6 +19,17 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from openimcc.gas import load_gas_datapack, species_thermo
+from openimcc.model import _d066_core_content_digests
+from candidate_pack import (
+    CLASS_C_J_MOL_ATOM_K,
+    add_write_check_arguments,
+    assert_core_rows_byte_equal,
+    candidate_row,
+    fit_log10_k,
+    load_d066_pack,
+    serialize_candidate_pack,
+    write_or_check_candidate_pack,
+)
 
 
 PACKS = ROOT / "src/openimcc/data/packs"
@@ -34,53 +43,7 @@ FIT_HIGH_K = 2300.0
 R_J_MOL_K = 8.31446261815324
 LN10 = math.log(10.0)
 PARENT_ORDER = ("SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O", "P2O5")
-CLASS_C_J_MOL_ATOM_K = 8.297530569005671
 CALCIUM_BOILING_K = 1757.0
-
-
-def _digest(value: object) -> str:
-    return hashlib.sha256(
-        json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
-
-
-def _array_item_texts(raw: str, key: str) -> list[str]:
-    """Return exact JSON source slices for each item in a named array."""
-    marker = f'"{key}"'
-    marker_start = raw.index(marker)
-    array_start = raw.index("[", marker_start + len(marker))
-    decoder = json.JSONDecoder()
-    cursor = array_start + 1
-    items = []
-    while True:
-        while cursor < len(raw) and raw[cursor].isspace():
-            cursor += 1
-        if cursor >= len(raw) or raw[cursor] == "]":
-            return items
-        _value, end = decoder.raw_decode(raw, cursor)
-        items.append(raw[cursor:end])
-        cursor = end
-        while cursor < len(raw) and raw[cursor].isspace():
-            cursor += 1
-        if cursor < len(raw) and raw[cursor] == ",":
-            cursor += 1
-        elif cursor < len(raw) and raw[cursor] == "]":
-            return items
-        else:
-            raise ValueError(f"malformed {key} array while checking source bytes")
-
-
-def _compatibility_material(pack: dict) -> tuple[str, str]:
-    base_rows = pack["rows"][:38]
-    row_digest = _digest(base_rows)
-    standards = pack.get("parent_standard_candidates", {})
-    standard_material = {
-        "parents": pack["parents"][:8],
-        "parent_standard_candidates": standards,
-        "feo_liquid_candidate": pack.get("feo_liquid_candidate"),
-        "row_standard_state_refits": [row.get("standard_state_refit") for row in base_rows],
-    }
-    return row_digest, _digest(standard_material)
 
 
 def _parent_cp(oxide: str, temperature_K: float, gas_pack) -> float:
@@ -236,21 +199,6 @@ def _ca_crystal_absolute_thermo(
     return enthalpy, entropy
 
 
-def _fit(points: np.ndarray) -> tuple[float, float, float, float]:
-    # Premise: log10(K)=A+B/T is linear in regressors [1,1/T]. A is
-    # dimensionless, B has units K, and the least-squares residual is dex.
-    # Sanity: A+B/2000 reproduces the fitted 2000 K value for the source grid.
-    design = np.column_stack((np.ones(len(points)), 1.0 / points[:, 0]))
-    coefficients, *_ = np.linalg.lstsq(design, points[:, 1], rcond=None)
-    residual = points[:, 1] - design @ coefficients
-    return (
-        float(coefficients[0]),
-        float(coefficients[1]),
-        float(np.max(np.abs(residual))),
-        float(np.sqrt(np.mean(residual**2))),
-    )
-
-
 def _reaction_fit(
     parent_oxides: dict[str, float],
     product_gibbs,
@@ -275,7 +223,8 @@ def _reaction_fit(
         )
         log_k = -(product - parents) / (R_J_MOL_K * float(temperature) * LN10)
         values.append((float(temperature), log_k))
-    return _fit(np.asarray(values, dtype=float))
+    points = np.asarray(values, dtype=float)
+    return fit_log10_k(points[:, 0], points[:, 1])
 
 
 def _reaction_delta_g_fit(
@@ -296,7 +245,7 @@ def _reaction_delta_g_fit(
         ],
         dtype=float,
     )
-    return _fit(points)
+    return fit_log10_k(points[:, 0], points[:, 1])
 
 
 def _row(
@@ -310,59 +259,29 @@ def _row(
     derivation: str,
     flags: list[str],
 ) -> dict:
-    intercept, slope, max_residual, rms_residual = coefficients
-    return {
-        "row": index,
-        "complex": name,
-        "reaction": " + ".join(
-            f"{amount:g} {oxide}(liq)" for oxide, amount in parent_oxides.items()
-        ) + f" = {name}(liq)",
-        "nu": {parent: parent_oxides.get(parent, 0.0) for parent in PARENT_ORDER},
-        "A": intercept,
-        "B": slope,
-        "source": source_refs[0],
-        "T_domain_K": [FIT_LOW_K, FIT_HIGH_K],
-        "T_domain_basis": "Opt-in candidate fit domain; each associate retains its source window and continuation flags.",
-        "provenance_class": "C-independent-thermochemistry",
-        "derivation": derivation,
-        "T_domain_paper_demonstrated_K": paper_domain,
-        "coverage": "C-independent-thermochemistry",
-        "flags": flags,
-        "fit_residual": None,
-        "accuracy_band": None,
-        "band_basis": {
-            "kind": "none",
-            "explanation": "No row-specific uncertainty interval is claimed; provisional constructions are listed in candidate_provenance.",
-            "provenance": None,
-        },
-        "independent_check": {
-            "status": "not_found",
-            "equilibrium": None,
-            "primary_source": None,
-            "conditions": None,
-            "measured_value": None,
-            "predicted_value": None,
-            "miss": None,
-            "miss_to_band_ratio": None,
-            "reason": "No independent liquid association equilibrium was used as a fitting target.",
-        },
-        "source_refs": source_refs,
-        "standard_state_refit": {
-            "parents": parent_oxides,
-            "temperature_range_K": [FIT_LOW_K, FIT_HIGH_K],
-            "fit_method": "least squares on 1001 evenly spaced pointwise re-referenced log10 K values",
-            "max_abs_residual_dex": max_residual,
-            "rms_residual_dex": rms_residual,
-            "flag_over_0_01_dex": bool(max_residual > 0.01),
-        },
-    }
+    return candidate_row(
+        name=name,
+        index=index,
+        parent_oxides=parent_oxides,
+        nu={parent: parent_oxides.get(parent, 0.0) for parent in PARENT_ORDER},
+        coefficients=coefficients,
+        fit_low_K=FIT_LOW_K,
+        fit_high_K=FIT_HIGH_K,
+        paper_domain=paper_domain,
+        source_refs=source_refs,
+        derivation=derivation,
+        domain_basis="Opt-in candidate fit domain; each associate retains its source window and continuation flags.",
+        band_explanation="No row-specific uncertainty interval is claimed; provisional constructions are listed in candidate_provenance.",
+        independent_check_reason="No independent liquid association equilibrium was used as a fitting target.",
+        flags=flags,
+        include_rms_residual=True,
+    )
 
 
 def build() -> dict:
-    pack = json.loads(BASE.read_text(encoding="utf-8"))
+    pack, original_rows = load_d066_pack(BASE)
     source = json.loads(SOURCE.read_text(encoding="utf-8"))
     jung_hudon = json.loads(JUNG_HUDON.read_text(encoding="utf-8"))
-    original_rows = copy.deepcopy(pack["rows"])
     if len(original_rows) != 38:
         raise ValueError("D066 v4 must contain exactly 38 rows")
     mg_hess_298 = _mg_crystal_hess_298_kj_mol(source)
@@ -483,7 +402,7 @@ def build() -> dict:
         ],
     )
 
-    row_digest, standard_digest = _compatibility_material(pack)
+    row_digest, standard_digest = _d066_core_content_digests(pack)
     pack["imcc_sf04_datapack_version"] = "1.0.0-d066-p2o5-candidate-v1"
     pack["model_id"] = "IMCC-SF04-D066-P2O5-CANDIDATE"
     pack["model"] = (
@@ -640,24 +559,16 @@ def build() -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--write", action="store_true")
-    mode.add_argument("--check", action="store_true")
+    add_write_check_arguments(parser)
     args = parser.parse_args()
-    generated = json.dumps(build(), indent=2, ensure_ascii=False) + "\n"
-    base_rows = _array_item_texts(BASE.read_text(encoding="utf-8"), "rows")
-    candidate_rows = _array_item_texts(generated, "rows")
-    if len(base_rows) != 38 or candidate_rows[:38] != base_rows:
-        raise AssertionError("candidate rows 1–38 are not byte-equal to D066 v4")
-    if args.write:
-        DESTINATION.write_text(generated, encoding="utf-8")
-        print(f"wrote {DESTINATION.relative_to(ROOT)}")
-        return 0
-    if not DESTINATION.exists() or DESTINATION.read_text(encoding="utf-8") != generated:
-        print(f"{DESTINATION.relative_to(ROOT)} is stale; run with --write")
-        return 1
-    print(f"{DESTINATION.relative_to(ROOT)} is current")
-    return 0
+    generated = serialize_candidate_pack(build())
+    assert_core_rows_byte_equal(
+        BASE,
+        generated,
+        expected_count=38,
+        message="candidate rows 1–38 are not byte-equal to D066 v4",
+    )
+    return write_or_check_candidate_pack(DESTINATION, generated, write=args.write)
 
 
 if __name__ == "__main__":
