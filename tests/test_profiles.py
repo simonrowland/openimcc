@@ -163,7 +163,9 @@ def test_p2o5_candidate_solves_kreep_majors_and_refuses_p_gas() -> None:
         "P2O5": 1.5,
     }
     melt = evaluate(composition, 2000.0, profile=profile, basis_type="wt")
-    assert melt.parent_oxides[-1] == "P2O5"
+    assert profile.melt_pack.parent_oxides[-1] == "P2O5"
+    assert "P2O5" in melt.parent_oxides
+    assert "MnO" in melt.parent_oxides
     assert all(melt.activity(parent) >= 0.0 for parent in melt.parent_oxides)
 
     gas = evaluate_gas(

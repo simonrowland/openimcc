@@ -1067,6 +1067,9 @@ class ImccLoadedDatapack:
     _feo_liquid_candidate: Any = field(
         default=_NO_FEO_LIQUID_CANDIDATE, repr=False, compare=False
     )
+    _d066_core_row_digest: str | None = field(
+        default=None, repr=False, compare=False
+    )
     _p2o5_channel_status: str | None = field(
         default=None, repr=False, compare=False
     )
@@ -1691,6 +1694,43 @@ def _d066_core_content_digests(data: Mapping[str, Any]) -> tuple[str, str]:
     return digest(rows[:_PUBLISHED_CORE_ROWS]), digest(standard_material)
 
 
+def _d066_core_liquid_standards_digest(pack: ImccLoadedDatapack) -> str | None:
+    """Digest runtime common-parent liquid standards by their declared content."""
+    from openimcc.standards import pack_liquid_standards
+
+    declared = pack_liquid_standards(pack)
+    if any(parent not in declared.standards for parent in _EXPECTED_PARENT_OXIDES):
+        return None
+    row_standards: dict[str, dict[str, str]] = {}
+    row_bases: dict[str, dict[str, str | None]] = {}
+    for row_name in _D066_CORE_ROWS:
+        merged = dict(declared.standards)
+        merged.update(declared.row_overrides.get(row_name, {}))
+        row_standards[row_name] = {
+            parent: merged[parent] for parent in _EXPECTED_PARENT_OXIDES
+        }
+        row_bases[row_name] = {
+            parent: declared.row_override_basis.get(row_name, {}).get(parent)
+            for parent in _EXPECTED_PARENT_OXIDES
+            if parent in declared.row_overrides.get(row_name, {})
+        }
+    material = {
+        "parent_standards": {
+            parent: declared.standards[parent] for parent in _EXPECTED_PARENT_OXIDES
+        },
+        "parent_standard_basis": {
+            parent: declared.standard_basis.get(parent)
+            for parent in _EXPECTED_PARENT_OXIDES
+        },
+        "row_standards": row_standards,
+        "row_override_basis": row_bases,
+    }
+    serialized = json.dumps(
+        material, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(serialized).hexdigest()
+
+
 def _validate_p2o5_candidate(data: Mapping[str, Any]) -> tuple[list[dict[str, Any]], str]:
     """Validate the frozen D066 prefix and two phosphate candidate rows."""
     rows = data.get("rows")
@@ -2298,6 +2338,14 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             if isinstance(data.get("feo_liquid_candidate"), dict)
             else data.get("feo_liquid_candidate", _FEO_LIQUID_CANDIDATE_ABSENT)
         ),
+        _d066_core_row_digest=(
+            _d066_core_content_digests(data)[0]
+            if model_id in {
+                _D066_MODEL_ID, _SR_CANDIDATE_MODEL_ID,
+                _P2O5_CANDIDATE_MODEL_ID,
+            }
+            else None
+        ),
         _p2o5_channel_status=(
             data.get("candidate_provenance", {}).get("p_channel_status")
             if isinstance(data.get("candidate_provenance"), dict)
@@ -2353,9 +2401,20 @@ def _with_mno_associations(
         melt_pack.model_id != "IMCC-SF04-D066"
         or melt_pack.version != "1.0.6-d066-v4"
     ):
-        raise RedoxInputError(
-            "Mn associates require the D066 v4 liquid-oxide standards"
+        d066_v4 = load_datapack()
+        candidate_compatible = (
+            len(melt_pack.parent_oxides) > len(_EXPECTED_PARENT_OXIDES)
+            and tuple(melt_pack.parent_oxides[:8]) == tuple(d066_v4.parent_oxides)
+            and melt_pack._d066_core_row_digest == d066_v4._d066_core_row_digest
+            and melt_pack._d066_core_row_digest is not None
+            and _d066_core_liquid_standards_digest(melt_pack)
+            == _d066_core_liquid_standards_digest(d066_v4)
         )
+        if not candidate_compatible:
+            raise RedoxInputError(
+                "Mn associations require D066 v4 core rows and existing-parent "
+                "liquid standards identical by content"
+            )
 
     registry = {
         str(parent["parent_oxide"]): parent
@@ -2388,7 +2447,9 @@ def _with_mno_associations(
             continue
         standard = str(record.get("parent_standard_state", ""))
         expected = (
-            "pure liquid MnO at 1 bar" if name == "MnO" else "liquid oxide"
+            "liquid oxide"
+            if name in _EXPECTED_PARENT_OXIDES
+            else f"pure liquid {name} at 1 bar"
         )
         if standard != expected:
             raise RedoxInputError(
