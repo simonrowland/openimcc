@@ -1226,9 +1226,13 @@ magnesium sulfate decomposition, see
 [`evaluate_subsolidus_reactions`](docs/subsolidus-reactions.md).
 
 That API also supports ferric sulfate (`Fe2(SO4)3`), ferrous sulfate
-(`FeSO4`), brucite (`Mg(OH)2`), and portlandite (`Ca(OH)2`). Sulfate drivers
-are SO2 with oxygen supplied as a fugacity; hydroxide drivers are H2O. Other
-host IDs remain `unknown_host` where a source grid or closed reaction is
+(`FeSO4`), brucite (`Mg(OH)2`), portlandite (`Ca(OH)2`), calcite, magnesite,
+siderite, and dolomite's first decomposition stage. Siderite uses the balanced
+hematite reaction with O2 supplied as a fugacity; carbonate drivers are CO2.
+Dolomite's resulting calcite uses the calcite reaction for its second stage.
+Mg(ClO4)2 remains `unknown_host` because the permitted sources lack a usable
+high-temperature condensed-phase Gibbs or H/S table. Other host IDs remain
+`unknown_host` where a source grid or closed reaction is
 missing: gypsum and bassanite lack a usable ΔfG(T) grid; goethite has one
 OCR-disputed reference row; jarosite has no table in these compilations;
 Na2SO4 stays solid or melts without a useful oxide-decomposition ceiling;

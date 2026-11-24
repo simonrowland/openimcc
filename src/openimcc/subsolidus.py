@@ -55,6 +55,18 @@ GasSpeciesId = str
 # ΔfG°(Ca(OH)2); Q=(pH2O/p°)a(CaO)/a(host). Gibbs terms are J/mol reaction,
 # and RT ln(Q) is J/mol. The 1-bar dehydration crossing is about 794 K, just
 # under 800 K; JANAF nodes give pH2O,eq ≈ 0.129 bar at 700 K.
+#
+# Carbonate premise: carbonate solids and every product use absolute G=H−TS,
+# with solid enthalpy anchored at 298.15 K and gas/oxide H,S taken from their
+# JANAF tables. Algebra: G(T)=ΔfH(298.15)+T[(H−H298)/T]−TS, then
+# ΔrG°=ΣνᵢGᵢ; this avoids changing elemental reference phases between R&H and
+# JANAF. The enthalpy term is kJ/mol×1000 for JANAF or J/mol/K×K for R&H;
+# TS and ΔrG° are J/mol reaction, so RT ln(Q) has matching units. The calcite
+# 1-bar CO2 crossing is ≈1162 K (about 1.17×10³ K), and magnesite is ≈682 K.
+# Siderite is modeled as FeCO3 + 1/4 O2 → 1/2 Fe2O3 + CO2, so ν(O2)=-1/4
+# in product-positive convention and Q=(pCO2/p°)(fO2/p°)^-1/4. Oxygen is
+# consumed on the hematite path; FeO + CO2 is not the stable oxidizing/neutral
+# product path, and the module accepts oxygen fugacity explicitly.
 
 
 class HostInventory(TypedDict):
@@ -233,6 +245,30 @@ _REACTIONS = {
         (("Ca(OH)2", "portlandite", -1.0), ("CaO", "crystal", 1.0), ("H2O", "gas", 1.0)),
         "Ca(OH)2",
     ),
+    "calcite": (
+        "calcite_decarbonation",
+        "CO2",
+        (("calcite", "calcite", -1.0), ("CaO", "crystal", 1.0), ("CO2", "gas", 1.0)),
+        "CaCO3",
+    ),
+    "magnesite": (
+        "magnesite_decarbonation",
+        "CO2",
+        (("magnesite", "magnesite", -1.0), ("MgO", "crystal", 1.0), ("CO2", "gas", 1.0)),
+        "MgCO3",
+    ),
+    "siderite": (
+        "siderite_oxidative_decarbonation",
+        "CO2",
+        (("siderite", "siderite", -1.0), ("Fe2O3", "hematite", 0.5), ("CO2", "gas", 1.0), ("O2", "gas", -0.25)),
+        "FeCO3",
+    ),
+    "dolomite": (
+        "dolomite_first_stage_decarbonation",
+        "CO2",
+        (("dolomite", "dolomite", -1.0), ("calcite", "calcite", 1.0), ("MgO", "crystal", 1.0), ("CO2", "gas", 1.0)),
+        "CaMg(CO3)2",
+    ),
 }
 
 _REACTION_ALGEBRA_GAS_TERMS = {
@@ -243,8 +279,25 @@ _REACTION_ALGEBRA_GAS_TERMS = {
     "FeSO4": (("SO2", 1.0), ("O2", 0.25)),
     "Mg(OH)2": (("H2O", 1.0),),
     "Ca(OH)2": (("H2O", 1.0),),
+    "calcite": (("CO2", 1.0),),
+    "magnesite": (("CO2", 1.0),),
+    "siderite": (("CO2", 1.0), ("O2", -0.25)),
+    "dolomite": (("CO2", 1.0),),
 }
-_JANAF_REACTION_HOSTS = frozenset(("Fe2(SO4)3", "FeSO4", "Mg(OH)2", "Ca(OH)2"))
+_REACTION_THERMO_SPECIES = {
+    "calcite": {"CaO": "CaO_absolute", "CO2": "CO2_absolute"},
+    "magnesite": {"MgO": "MgO_absolute", "CO2": "CO2_absolute"},
+    "siderite": {
+        "Fe2O3": "Fe2O3_absolute",
+        "CO2": "CO2_absolute",
+        "O2": "O2_absolute",
+    },
+    "dolomite": {"MgO": "MgO_absolute", "CO2": "CO2_absolute"},
+}
+_GENERAL_GAS_ALGEBRA_HOSTS = frozenset((
+    "Fe2(SO4)3", "FeSO4", "Mg(OH)2", "Ca(OH)2",
+    "calcite", "magnesite", "siderite", "dolomite",
+))
 
 
 def _reaction_requires_oxygen_fugacity(
@@ -353,6 +406,7 @@ def evaluate_subsolidus_reactions(
             continue
         reaction_id, driver, terms_raw, formula = _REACTIONS[host_id]
         expected = data[host_id]
+        thermo_species = _REACTION_THERMO_SPECIES.get(host_id, {})
         stoich: tuple[StoichTerm, ...] = tuple({
             "species_id": species, "phase": phase, "nu_mol_per_mol_rxn": nu,
             "activity": None,
@@ -435,7 +489,9 @@ def evaluate_subsolidus_reactions(
                 continue
         else:
             source_species = dict.fromkeys(
-                species for species, _phase, _nu in terms_raw if species in data
+                thermo_species.get(species, species)
+                for species, _phase, _nu in terms_raw
+                if thermo_species.get(species, species) in data
             )
             for species in source_species:
                 if species == host_id:
@@ -447,9 +503,9 @@ def evaluate_subsolidus_reactions(
 
             gas_species = tuple(
                 dict.fromkeys(
-                    species
+                    thermo_species.get(species, species)
                     for species, phase, _nu in terms_raw
-                    if phase == "gas" and species not in data
+                    if phase == "gas" and thermo_species.get(species, species) not in data
                 )
             )
             if gas_species:
@@ -538,9 +594,11 @@ def evaluate_subsolidus_reactions(
                 }
             else:
                 delta_g0 = sum(
-                    nu * _node_value(data[species], temperature_K)
+                    nu * _node_value(
+                        data[thermo_species.get(species, species)], temperature_K
+                    )
                     for species, _phase, nu in terms_raw
-                    if species in data
+                    if thermo_species.get(species, species) in data
                 )
                 ln_kp = -delta_g0 / (R_J_MOL_K * temperature_K)
                 activity_by_species = {}
@@ -619,7 +677,7 @@ def evaluate_subsolidus_reactions(
             ))
             continue
 
-        if host_id in _JANAF_REACTION_HOSTS:
+        if host_id in _GENERAL_GAS_ALGEBRA_HOSTS:
             driver_nu = next(
                 nu
                 for species, phase, nu in terms_raw
@@ -659,7 +717,7 @@ def evaluate_subsolidus_reactions(
             ))
             continue
 
-        if host_id in _JANAF_REACTION_HOSTS:
+        if host_id in _GENERAL_GAS_ALGEBRA_HOSTS:
             log_q = 0.0
             for species, phase, nu in terms_raw:
                 if phase == "gas":
@@ -690,7 +748,7 @@ def evaluate_subsolidus_reactions(
             "diffusion_limited_equilibrium_upper_bound", "info",
             "Equilibrium extent is a thermodynamic ceiling; no solid-release rate law is modeled.",
         )]
-        # Gibbs identity: the reaction function uses formation rows from R&H and JANAF.
+        # Gibbs identity follows the source route selected for this host.
         results.append(_base_result(
             reaction_id, "supported", stoich, driver, sources, notices, joint_interval,
             delta_g0=delta_g0, log_k=log10_k,

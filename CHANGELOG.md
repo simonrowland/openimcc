@@ -8,6 +8,12 @@
   (`Mg(OH)2`), and portlandite (`Ca(OH)2`). The sulfate reactions use JANAF
   formation-Gibbs rows for hematite and SO2, with oxygen as a fugacity; the
   hydroxides release H2O.
+- Added absolute-Gibbs ceilings for calcite, magnesite, siderite, and the first
+  dolomite decomposition stage, with R&H carbonate rows and JANAF oxide and gas
+  rows. Siderite consumes O2 in `FeCO3 + 1/4 O2 → 1/2 Fe2O3 + CO2`; dolomite's calcite
+  intermediate uses the calcite reaction for its second stage. Mg(ClO4)2 stays
+  a typed gap because the permitted sources lack a usable high-temperature
+  condensed-phase Gibbs or H/S table.
 - Kept gypsum and bassanite as `unknown_host` because neither has a usable
   temperature-dependent formation-Gibbs grid; goethite has only one
   OCR-disputed reference row, and jarosite has no table in these compilations.

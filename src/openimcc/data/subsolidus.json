@@ -1,5 +1,5 @@
 {
-  "source_note": "Formation Gibbs energies in this file are in J/mol formula. R&H nodes are transcribed from the printed formation tables; JANAF nodes are formation Gibbs values from exact gas or crystal tables.",
+  "source_note": "Existing formation Gibbs nodes are in J/mol formula. Carbonate reactions use appended absolute Gibbs nodes G=H−TS in J/mol formula, with enthalpy anchored at 298.15 K.",
   "species": {
     "FeS_troilite": {
       "formula": "FeS",
@@ -805,6 +805,440 @@
         [
           1000.0,
           -192590.0
+        ]
+      ]
+    },
+    "calcite": {
+      "formula": "CaCO3",
+      "phase": "calcite",
+      "source_id": "Robie-Hemingway-1995",
+      "row_or_table": "USGS Bulletin 2131, calcite high-temperature table, printed p. 268; absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; 1 bar",
+      "doi": "10.3133/b2131",
+      "valid_temperature_K": [
+        298.15,
+        1200.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -1234743.3
+        ],
+        [
+          300.0,
+          -1234913.0
+        ],
+        [
+          400.0,
+          -1245472.0
+        ],
+        [
+          500.0,
+          -1258465.0
+        ],
+        [
+          600.0,
+          -1273550.0
+        ],
+        [
+          700.0,
+          -1290476.0
+        ],
+        [
+          800.0,
+          -1309032.0
+        ],
+        [
+          900.0,
+          -1329071.0
+        ],
+        [
+          1000.0,
+          -1350450.0
+        ],
+        [
+          1100.0,
+          -1373082.0
+        ],
+        [
+          1200.0,
+          -1396868.0
+        ]
+      ]
+    },
+    "magnesite": {
+      "formula": "MgCO3",
+      "phase": "magnesite",
+      "source_id": "Robie-Hemingway-1995",
+      "row_or_table": "USGS Bulletin 2131, magnesite high-temperature table, printed p. 271; absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; 1 bar",
+      "doi": "10.3133/b2131",
+      "valid_temperature_K": [
+        298.15,
+        1000.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -1132706.6
+        ],
+        [
+          300.0,
+          -1132827.0
+        ],
+        [
+          400.0,
+          -1140612.0
+        ],
+        [
+          500.0,
+          -1150670.0
+        ],
+        [
+          600.0,
+          -1162722.0
+        ],
+        [
+          700.0,
+          -1176573.0
+        ],
+        [
+          800.0,
+          -1192052.0
+        ],
+        [
+          900.0,
+          -1209033.0
+        ],
+        [
+          1000.0,
+          -1227420.0
+        ]
+      ]
+    },
+    "siderite": {
+      "formula": "FeCO3",
+      "phase": "siderite",
+      "source_id": "Robie-Hemingway-1995",
+      "row_or_table": "USGS Bulletin 2131, siderite high-temperature table, printed p. 270; absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; 1 bar",
+      "doi": "10.3133/b2131",
+      "valid_temperature_K": [
+        298.15,
+        600.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -784364.4
+        ],
+        [
+          300.0,
+          -784541.0
+        ],
+        [
+          400.0,
+          -795444.0
+        ],
+        [
+          500.0,
+          -808715.0
+        ],
+        [
+          600.0,
+          -824042.0
+        ]
+      ]
+    },
+    "dolomite": {
+      "formula": "CaMg(CO3)2",
+      "phase": "dolomite",
+      "source_id": "Robie-Hemingway-1995",
+      "row_or_table": "USGS Bulletin 2131, dolomite high-temperature table, printed p. 269; absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; 1 bar",
+      "doi": "10.3133/b2131",
+      "valid_temperature_K": [
+        298.15,
+        1100.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -2370766.9
+        ],
+        [
+          300.0,
+          -2371057.0
+        ],
+        [
+          400.0,
+          -2389184.0
+        ],
+        [
+          500.0,
+          -2411915.0
+        ],
+        [
+          600.0,
+          -2438686.0
+        ],
+        [
+          700.0,
+          -2469071.0
+        ],
+        [
+          800.0,
+          -2502684.0
+        ],
+        [
+          900.0,
+          -2539267.0
+        ],
+        [
+          1000.0,
+          -2578570.0
+        ],
+        [
+          1100.0,
+          -2620400.0
+        ]
+      ]
+    },
+    "CaO_absolute": {
+      "formula": "CaO",
+      "phase": "crystal",
+      "source_id": "NIST-JANAF-4th",
+      "row_or_table": "Ca-027, Calcium Oxide (CaO)  |  Ca1O1(cr); absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; p\u00b0 = 0.1 MPa (as published by JANAF)",
+      "doi": "10.18434/T42S31",
+      "valid_temperature_K": [
+        298.15,
+        1200.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -646481.9
+        ],
+        [
+          300.0,
+          -646552.9
+        ],
+        [
+          400.0,
+          -651062.0
+        ],
+        [
+          500.0,
+          -656741.0
+        ],
+        [
+          600.0,
+          -663405.2
+        ],
+        [
+          700.0,
+          -670911.9
+        ],
+        [
+          800.0,
+          -679157.4
+        ],
+        [
+          900.0,
+          -688059.8
+        ],
+        [
+          1000.0,
+          -697552.0
+        ],
+        [
+          1100.0,
+          -707583.9
+        ],
+        [
+          1200.0,
+          -718108.2
+        ]
+      ]
+    },
+    "MgO_absolute": {
+      "formula": "MgO",
+      "phase": "crystal",
+      "source_id": "NIST-JANAF-4th",
+      "row_or_table": "Mg-008, Magnesium Oxide (MgO)  |  Mg1O1(cr); absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; p\u00b0 = 0.1 MPa (as published by JANAF)",
+      "doi": "10.18434/T42S31",
+      "valid_temperature_K": [
+        298.15,
+        1100.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -609268.4
+        ],
+        [
+          300.0,
+          -609318.2
+        ],
+        [
+          400.0,
+          -612625.2
+        ],
+        [
+          500.0,
+          -616997.5
+        ],
+        [
+          600.0,
+          -622284.6
+        ],
+        [
+          700.0,
+          -628363.0
+        ],
+        [
+          800.0,
+          -635139.8
+        ],
+        [
+          900.0,
+          -642539.8
+        ],
+        [
+          1000.0,
+          -650502.0
+        ],
+        [
+          1100.0,
+          -658978.1
+        ]
+      ]
+    },
+    "Fe2O3_absolute": {
+      "formula": "Fe2O3",
+      "phase": "hematite",
+      "source_id": "NIST-JANAF-4th",
+      "row_or_table": "Fe-030, Iron Oxide, Hematite (Fe2O3); absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; p\u00b0 = 0.1 MPa, as published by JANAF",
+      "doi": "10.18434/T42S31",
+      "valid_temperature_K": [
+        298.15,
+        600.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -851561.3
+        ],
+        [
+          300.0,
+          -851723.9
+        ],
+        [
+          400.0,
+          -862179.6
+        ],
+        [
+          500.0,
+          -875645.0
+        ],
+        [
+          600.0,
+          -891752.0
+        ]
+      ]
+    },
+    "CO2_absolute": {
+      "formula": "CO2",
+      "phase": "gas",
+      "source_id": "NIST-JANAF-4th",
+      "row_or_table": "C-095, Carbon Dioxide (CO2)  |  C1O2(g); absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; p\u00b0 = 0.1 MPa (as published by JANAF)",
+      "doi": "10.18434/T42S31",
+      "valid_temperature_K": [
+        298.15,
+        1200.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -457265.0
+        ],
+        [
+          300.0,
+          -457660.5
+        ],
+        [
+          400.0,
+          -479644.6
+        ],
+        [
+          500.0,
+          -502667.5
+        ],
+        [
+          600.0,
+          -526584.8
+        ],
+        [
+          700.0,
+          -551293.0
+        ],
+        [
+          800.0,
+          -576711.2
+        ],
+        [
+          900.0,
+          -602772.5
+        ],
+        [
+          1000.0,
+          -629424.0
+        ],
+        [
+          1100.0,
+          -656618.8
+        ],
+        [
+          1200.0,
+          -684317.0
+        ]
+      ]
+    },
+    "O2_absolute": {
+      "formula": "O2",
+      "phase": "gas",
+      "source_id": "NIST-JANAF-4th",
+      "row_or_table": "O-029, Oxygen (O2)  |  O2(ref); absolute Gibbs energy H\u2212TS",
+      "standard_state": "absolute Gibbs energy G=H\u2212TS; enthalpy anchored at 298.15 K; p\u00b0 = 0.1 MPa (as published by JANAF)",
+      "doi": "10.18434/T42S31",
+      "valid_temperature_K": [
+        298.15,
+        600.0
+      ],
+      "nodes": [
+        [
+          298.15,
+          -61164.6
+        ],
+        [
+          300.0,
+          -61544.7
+        ],
+        [
+          400.0,
+          -82523.4
+        ],
+        [
+          500.0,
+          -104262.5
+        ],
+        [
+          600.0,
+          -126626.6
         ]
       ]
     }

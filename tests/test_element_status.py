@@ -71,7 +71,10 @@ JANAF_CRYSTAL_TABLE_IDS = frozenset({
     "P-006", "P-007", "S-001", "S-002", "S-003", "K-001",
     "K-002", "Zn-001", "Zn-002", "Pb-001", "Pb-002",
 })
-JANAF_CRYSTAL_YAML_TABLE_IDS = frozenset({"B-095", "O-065", "O-085"})
+JANAF_CRYSTAL_YAML_TABLE_IDS = frozenset({
+    "B-095", "Ca-027", "Mg-008", "O-065", "O-085",
+})
+JANAF_SUBSOLIDUS_YAML_TABLE_IDS = frozenset({"C-095"})
 JANAF_LIQUID_TABLE_IDS = frozenset({
     "Na-003", "Ga-003", "Li-003", "Br-039", "I-025", "Cl-094",
     "F-034", "Na-024", "H-063", "H-075", "Cl-162", "B-126",
@@ -81,7 +84,8 @@ JANAF_LIQUID_TABLE_IDS = frozenset({
 RH_CRYSTAL_TABLE_IDS = frozenset({
     "USGS-B2131-p127", "USGS-B2131-p128", "USGS-B2131-p129",
     "USGS-B2131-p132", "USGS-B2131-p133", "USGS-B2131-p266",
-    "USGS-B2131-p267", "USGS-B2131-p268", "USGS-B2131-p316",
+    "USGS-B2131-p267", "USGS-B2131-p268", "USGS-B2131-p269",
+    "USGS-B2131-p270", "USGS-B2131-p271", "USGS-B2131-p316",
     "USGS-B2131-p338", "USGS-B2131-p345", "USGS-B2131-p350",
     "USGS-B2131-p351", "USGS-B2131-p366", "USGS-B2131-p367",
     "USGS-B2131-p373", "USGS-B2131-p374", "USGS-B2131-p67",
@@ -1230,6 +1234,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     }
     assert not JANAF_CRYSTAL_TABLE_IDS & ionisation_source_ids
     assert not JANAF_CRYSTAL_YAML_TABLE_IDS & ionisation_source_ids
+    assert not JANAF_SUBSOLIDUS_YAML_TABLE_IDS & ionisation_source_ids
     assert not RH_CRYSTAL_TABLE_IDS & ionisation_source_ids
     # These crystal cards establish metal reference H/S/Cp, not gas ionisation.
     assert not ELEMENTAL_REFERENCE_CRYSTAL_CARD_IDS & ionisation_source_ids
@@ -1271,6 +1276,9 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "Fe-031", "Fe-022", "Ca-020", "H-057",
     } | JANAF_CRYSTAL_TABLE_IDS | JANAF_LIQUID_TABLE_IDS | GAS_PACK_V2_TEXT_TABLE_IDS
     assert JANAF_CRYSTAL_YAML_TABLE_IDS <= {
+        path.stem for path in JANAF_DATA.glob("*.yaml")
+    }
+    assert JANAF_SUBSOLIDUS_YAML_TABLE_IDS <= {
         path.stem for path in JANAF_DATA.glob("*.yaml")
     }
     assert set(measured) == {
@@ -1983,6 +1991,39 @@ def test_robie_hemingway_element_tables_are_in_the_crystal_inventory() -> None:
     } <= RH_CRYSTAL_TABLE_IDS
 
 
+def test_robie_hemingway_carbonate_tables_are_in_the_crystal_inventory() -> None:
+    source = json.loads(
+        (
+            ROOT / "data-src" / "robie-hemingway-1995-usgs-b2131"
+            / "crystal-tables.json"
+        ).read_text(encoding="utf-8")
+    )
+    expected_pages = {
+        "calcite": 268,
+        "dolomite": 269,
+        "siderite": 270,
+        "magnesite": 271,
+    }
+    actual_pages = {
+        phase["id"]: int(phase["printed_page"])
+        for phase in source["phases"]
+        if phase["id"] in expected_pages
+    }
+
+    assert actual_pages == expected_pages
+    assert {
+        f"USGS-B2131-p{page}" for page in actual_pages.values()
+    } <= RH_CRYSTAL_TABLE_IDS
+
+
+def test_subsolidus_janaf_tables_are_in_the_source_inventory() -> None:
+    yaml_table_ids = {path.stem for path in JANAF_DATA.glob("*.yaml")}
+    assert {"Ca-027", "Mg-008"} <= JANAF_CRYSTAL_YAML_TABLE_IDS
+    assert {"C-095"} <= JANAF_SUBSOLIDUS_YAML_TABLE_IDS
+    assert JANAF_CRYSTAL_YAML_TABLE_IDS <= yaml_table_ids
+    assert JANAF_SUBSOLIDUS_YAML_TABLE_IDS <= yaml_table_ids
+
+
 def test_janaf_liquid_species_tables_are_in_the_element_inventory() -> None:
     data = json.loads(
         (
@@ -2003,6 +2044,7 @@ def test_janaf_liquid_species_tables_are_in_the_element_inventory() -> None:
     assert table_ids <= (
         JANAF_CRYSTAL_TABLE_IDS
         | JANAF_CRYSTAL_YAML_TABLE_IDS
+        | JANAF_SUBSOLIDUS_YAML_TABLE_IDS
         | JANAF_LIQUID_TABLE_IDS
     )
 

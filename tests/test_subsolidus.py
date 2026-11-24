@@ -82,6 +82,10 @@ def _janaf_row(table_id: str, temperature_K: float) -> dict[str, float]:
         headings = lines[1].split("\t")
         for line in lines[2:]:
             cells = line.split("\t")
+            if len(cells) == 6:
+                trailing_values = cells[-1].split()
+                if len(trailing_values) == 3:
+                    cells = cells[:-1] + trailing_values
             if len(cells) != len(headings):
                 continue
             try:
@@ -124,6 +128,22 @@ def _janaf_absolute_gibbs_J(table_id: str, temperature_K: float) -> float:
     )
 
 
+def _rh_absolute_gibbs_J(phase_id: str, temperature_K: float) -> float:
+    source_path = (
+        Path(__file__).resolve().parents[1]
+        / "data-src" / "robie-hemingway-1995-usgs-b2131" / "crystal-tables.json"
+    )
+    source = json.loads(source_path.read_text(encoding="utf-8"))
+    phase = next(row for row in source["phases"] if row["id"] == phase_id)
+    row = next(row for row in phase["rows"] if row["T_K"] == temperature_K)
+    enthalpy_298 = phase["rows"][0]["formation_enthalpy_kJ_mol"]
+    return (
+        enthalpy_298 * 1000.0
+        + row["H_minus_H298_over_T_J_mol_K"] * temperature_K
+        - temperature_K * row["S_J_mol_K"]
+    )
+
+
 def _raw_subsolidus_record(name: str) -> str:
     path = Path(subsolidus.__file__).with_name("data") / "subsolidus.json"
     text = path.read_text()
@@ -135,23 +155,43 @@ def _raw_subsolidus_record(name: str) -> str:
 
 
 def test_supported_reactions_are_atom_balanced_and_have_one_driver():
+    formulas = {
+        "FeS_troilite": {"Fe": 1, "S": 1},
+        "Fe": {"Fe": 1},
+        "S2": {"S": 2},
+        "CaSO4": {"Ca": 1, "S": 1, "O": 4},
+        "CaO": {"Ca": 1, "O": 1},
+        "MgSO4": {"Mg": 1, "S": 1, "O": 4},
+        "MgO": {"Mg": 1, "O": 1},
+        "Fe2(SO4)3": {"Fe": 2, "S": 3, "O": 12},
+        "FeSO4": {"Fe": 1, "S": 1, "O": 4},
+        "Fe2O3": {"Fe": 2, "O": 3},
+        "Mg(OH)2": {"Mg": 1, "O": 2, "H": 2},
+        "Ca(OH)2": {"Ca": 1, "O": 2, "H": 2},
+        "H2O": {"H": 2, "O": 1},
+        "SO2": {"S": 1, "O": 2},
+        "O2": {"O": 2},
+        "calcite": {"Ca": 1, "C": 1, "O": 3},
+        "magnesite": {"Mg": 1, "C": 1, "O": 3},
+        "siderite": {"Fe": 1, "C": 1, "O": 3},
+        "dolomite": {"Ca": 1, "Mg": 1, "C": 2, "O": 6},
+        "CO2": {"C": 1, "O": 2},
+    }
     cases = [
-        (_host("FeS_troilite", "FeS", "troilite"), {"Fe": 0, "S": 0, "O": 0}),
-        (_host("CaSO4", "CaSO4", "anhydrite"), {"Ca": 0, "S": 0, "O": 0}),
-        (_host("MgSO4", "MgSO4", "crystalline anhydrous magnesium sulfate"), {"Mg": 0, "S": 0, "O": 0}),
-        (_host("Fe2(SO4)3", "Fe2(SO4)3", "crystal"), {"Fe": 0, "S": 0, "O": 0}),
-        (_host("FeSO4", "FeSO4", "crystal"), {"Fe": 0, "S": 0, "O": 0}),
-        (_host("Mg(OH)2", "Mg(OH)2", "brucite"), {"Mg": 0, "H": 0, "O": 0}),
-        (_host("Ca(OH)2", "Ca(OH)2", "portlandite"), {"Ca": 0, "H": 0, "O": 0}),
+        (_host("FeS_troilite", "FeS", "troilite"), {"Fe": 0, "S": 0, "O": 0}, 800.0, {"S2": 1e-8}),
+        (_host("CaSO4", "CaSO4", "anhydrite"), {"Ca": 0, "S": 0, "O": 0}, 800.0, {"SO2": 1e-8, "O2": 2e4}),
+        (_host("MgSO4", "MgSO4", "crystalline anhydrous magnesium sulfate"), {"Mg": 0, "S": 0, "O": 0}, 800.0, {"SO2": 1e-8, "O2": 2e4}),
+        (_host("Fe2(SO4)3", "Fe2(SO4)3", "crystal"), {"Fe": 0, "S": 0, "O": 0}, 800.0, {"SO2": 1e-8, "O2": 2e4}),
+        (_host("FeSO4", "FeSO4", "crystal"), {"Fe": 0, "S": 0, "O": 0}, 800.0, {"SO2": 1e-8, "O2": 2e4}),
+        (_host("Mg(OH)2", "Mg(OH)2", "brucite"), {"Mg": 0, "H": 0, "O": 0}, 800.0, {"H2O": 1e5}),
+        (_host("Ca(OH)2", "Ca(OH)2", "portlandite"), {"Ca": 0, "H": 0, "O": 0}, 800.0, {"H2O": 1e5}),
+        (_host("calcite", "CaCO3", "calcite"), {"Ca": 0, "C": 0, "O": 0}, 800.0, {"CO2": 1e5}),
+        (_host("magnesite", "MgCO3", "magnesite"), {"Mg": 0, "C": 0, "O": 0}, 600.0, {"CO2": 1e5}),
+        (_host("siderite", "FeCO3", "siderite"), {"Fe": 0, "C": 0, "O": 0}, 500.0, {"CO2": 1e5, "O2": 1e5}),
+        (_host("dolomite", "CaMg(CO3)2", "dolomite"), {"Ca": 0, "Mg": 0, "C": 0, "O": 0}, 600.0, {"CO2": 1e5}),
     ]
-    for host, expected in cases:
-        if host["species_id"] == "FeS_troilite":
-            pressures = {"S2": 1e-8}
-        elif host["species_id"] in {"Mg(OH)2", "Ca(OH)2"}:
-            pressures = {"H2O": 1e5}
-        else:
-            pressures = {"SO2": 1e-8, "O2": 2e4}
-        result = _evaluate(host, 800.0, pressures)
+    for host, expected, temperature, pressures in cases:
+        result = _evaluate(host, temperature, pressures)
         assert result["status"] == "supported"
         assert "diffusion_limited_equilibrium_upper_bound" in {
             notice["code"] for notice in result["notices"]
@@ -159,23 +199,72 @@ def test_supported_reactions_are_atom_balanced_and_have_one_driver():
         terms = result["stoichiometry"]
         assert len(result["equilibrium_gas_partial_pressures_Pa"]) == 1
         assert set(result["equilibrium_gas_partial_pressures_Pa"]) == {result["driving_gas_species_id"]}
+        assert result["driving_gas_species_id"] in pressures
         balance = {element: 0.0 for element in expected}
         for term in terms:
-            formula = {"FeS_troilite": {"Fe": 1, "S": 1}, "Fe": {"Fe": 1}, "S2": {"S": 2},
-                       "CaSO4": {"Ca": 1, "S": 1, "O": 4}, "CaO": {"Ca": 1, "O": 1},
-                       "MgSO4": {"Mg": 1, "S": 1, "O": 4}, "MgO": {"Mg": 1, "O": 1},
-                       "Fe2(SO4)3": {"Fe": 2, "S": 3, "O": 12},
-                       "FeSO4": {"Fe": 1, "S": 1, "O": 4},
-                       "Fe2O3": {"Fe": 2, "O": 3},
-                       "Mg(OH)2": {"Mg": 1, "O": 2, "H": 2},
-                       "Ca(OH)2": {"Ca": 1, "O": 2, "H": 2},
-                       "H2O": {"H": 2, "O": 1},
-                       "SO2": {"S": 1, "O": 2}, "O2": {"O": 2}}[term["species_id"]]
-            for element, count in formula.items():
+            for element, count in formulas[term["species_id"]].items():
                 balance[element] += term["nu_mol_per_mol_rxn"] * count
         assert balance == pytest.approx(expected, rel=1.0e-13, abs=0.0)
-        assert all(term["nu_mol_per_mol_rxn"] in {-1.0, -0.5, 0.25, 0.5, 1.0, 1.5, 3.0} for term in terms)
+        assert all(term["nu_mol_per_mol_rxn"] in {-1.0, -0.5, -0.25, 0.25, 0.5, 1.0, 1.5, 3.0} for term in terms)
         assert result["extent_bound_mol_rxn"] <= host["remaining_mol"]
+
+
+def test_siderite_requires_oxygen_fugacity_and_uses_hematite_path():
+    host = _host("siderite", "FeCO3", "siderite")
+    missing = _evaluate(host, 500.0, {"CO2": 1e5})
+    assert missing["status"] == "missing_required_pressure"
+    assert missing["equilibrium_gas_partial_pressures_Pa"] is None
+
+    supported = _evaluate(host, 500.0, {"CO2": 1e5}, oxygen=1e5)
+    assert supported["status"] == "supported"
+    assert [
+        (term["species_id"], term["nu_mol_per_mol_rxn"])
+        for term in supported["stoichiometry"]
+    ] == [("siderite", -1.0), ("Fe2O3", 0.5), ("CO2", 1.0), ("O2", -0.25)]
+
+
+def test_siderite_has_no_one_bar_co2_crossing_in_its_source_range():
+    host = _host("siderite", "FeCO3", "siderite")
+    temperatures = [
+        node[0] for node in subsolidus._data()["species"]["siderite"]["nodes"]
+    ]
+    pressures = {"CO2": STANDARD_PRESSURE_PA, "O2": STANDARD_PRESSURE_PA}
+    equilibrium_pressures = [
+        _evaluate(host, temperature, pressures)["equilibrium_gas_partial_pressures_Pa"]["CO2"]
+        for temperature in temperatures
+    ]
+    assert all(pressure > STANDARD_PRESSURE_PA for pressure in equilibrium_pressures)
+
+
+@pytest.mark.parametrize(
+    ("host_id", "temperature_pair", "expected_crossing"),
+    [
+        ("calcite", (1100.0, 1200.0), 1161.5),
+        ("magnesite", (600.0, 700.0), 681.8),
+        ("dolomite", (600.0, 700.0), 693.9),
+    ],
+)
+def test_carbonate_one_bar_co2_crossings(host_id, temperature_pair, expected_crossing):
+    formula, phase = {
+        "calcite": ("CaCO3", "calcite"),
+        "magnesite": ("MgCO3", "magnesite"),
+        "dolomite": ("CaMg(CO3)2", "dolomite"),
+    }[host_id]
+    host = _host(host_id, formula, phase)
+    values = [
+        _evaluate(host, temperature, {"CO2": STANDARD_PRESSURE_PA})[
+            "delta_rG0_J_per_mol_rxn"
+        ]
+        for temperature in temperature_pair
+    ]
+    t0, t1 = temperature_pair
+    g0, g1 = values
+    crossing = t0 + (t1 - t0) * (-g0) / (g1 - g0)
+    assert crossing == pytest.approx(expected_crossing, abs=0.2)
+    at_crossing = _evaluate(host, crossing, {"CO2": STANDARD_PRESSURE_PA})
+    assert at_crossing["equilibrium_gas_partial_pressures_Pa"]["CO2"] == pytest.approx(
+        STANDARD_PRESSURE_PA, rel=1e-8
+    )
 
 
 @pytest.mark.parametrize(
@@ -426,6 +515,7 @@ def test_unknown_host_and_wrong_phase_do_not_dispatch_by_formula():
         ("chlorapatite", "Ca5(PO4)3Cl"),
         ("fluorapatite", "Ca5(PO4)3F"),
         ("hydroxyapatite", "Ca5(PO4)3OH"),
+        ("Mg(ClO4)2", "Mg(ClO4)2"),
     ],
 )
 def test_typed_gap_hosts_remain_unknown(species_id, formula):
@@ -481,12 +571,86 @@ def test_janaf_reaction_formation_gibbs_matches_absolute_gibbs(
         )
 
 
+@pytest.mark.parametrize(
+    ("host_id", "temperatures", "source_tables"),
+    [
+        ("calcite", (298.15, 700.0, 1200.0), {"calcite": "rh:calcite", "CaO": "Ca-027", "CO2": "C-095"}),
+        ("magnesite", (298.15, 700.0, 1000.0), {"magnesite": "rh:magnesite", "MgO": "Mg-008", "CO2": "C-095"}),
+        ("siderite", (298.15, 400.0, 600.0), {"siderite": "rh:siderite", "Fe2O3": "Fe-030", "CO2": "C-095", "O2": "O-029"}),
+        ("dolomite", (298.15, 700.0, 1100.0), {"dolomite": "rh:dolomite", "calcite": "rh:calcite", "MgO": "Mg-008", "CO2": "C-095"}),
+    ],
+)
+def test_carbonate_absolute_gibbs_matches_fixed_reference_formation_gibbs(
+    host_id, temperatures, source_tables,
+):
+    formulas = {
+        "calcite": {"Ca": 1, "C": 1, "O": 3},
+        "magnesite": {"Mg": 1, "C": 1, "O": 3},
+        "siderite": {"Fe": 1, "C": 1, "O": 3},
+        "dolomite": {"Ca": 1, "Mg": 1, "C": 2, "O": 6},
+        "CaO": {"Ca": 1, "O": 1},
+        "MgO": {"Mg": 1, "O": 1},
+        "Fe2O3": {"Fe": 2, "O": 3},
+        "CO2": {"C": 1, "O": 2},
+        "O2": {"O": 2},
+    }
+    element_reference_tables = {
+        "Ca": "Ca-003", "Mg": "Mg-002", "Fe": "Fe-004",
+        "C": "C-002", "O": "O-029",
+    }
+    host_formula, host_phase = {
+        "calcite": ("CaCO3", "calcite"),
+        "magnesite": ("MgCO3", "magnesite"),
+        "siderite": ("FeCO3", "siderite"),
+        "dolomite": ("CaMg(CO3)2", "dolomite"),
+    }[host_id]
+    pressures = {"CO2": STANDARD_PRESSURE_PA}
+    if host_id == "siderite":
+        pressures["O2"] = STANDARD_PRESSURE_PA
+    host = _host(host_id, host_formula, host_phase)
+    terms = subsolidus._REACTIONS[host_id][2]
+
+    for temperature in temperatures:
+        element_g = {
+            element: _janaf_absolute_gibbs_J(table_id, temperature)
+            for element, table_id in element_reference_tables.items()
+        }
+        absolute_delta_g = 0.0
+        fixed_reference_delta_g = 0.0
+        for species, _phase, nu in terms:
+            table_id = source_tables[species]
+            absolute_g = (
+                _rh_absolute_gibbs_J(table_id.removeprefix("rh:"), temperature)
+                if table_id.startswith("rh:")
+                else _janaf_absolute_gibbs_J(table_id, temperature)
+            )
+            absolute_delta_g += nu * absolute_g
+            formation_g = absolute_g - sum(
+                count * element_g[element]
+                for element, count in formulas[species].items()
+            )
+            fixed_reference_delta_g += nu * formation_g
+
+        result = _evaluate(host, temperature, pressures)
+        assert result["status"] == "supported"
+        assert result["delta_rG0_J_per_mol_rxn"] == pytest.approx(absolute_delta_g, abs=0.5)
+        assert fixed_reference_delta_g == pytest.approx(absolute_delta_g, abs=1e-6)
+
+
 def test_existing_subsolidus_records_remain_byte_identical() -> None:
     expected_sha256 = {
         "FeS_troilite": "d11368b1a6b27d23d2e35454d677cf039eeded99a96769fbdcabdcf1cc5202d6",
         "CaSO4": "3128d3f2b39d2f9068d87ee45bd864ff081c0ba36786940ea50f99152ce1f331",
         "MgSO4": "2a8b79cdf96609ce879945bc092dd6b5cbc608c8b978f4655f4c50f3dcdb76b5",
         "SO2": "ab98e0b0ee43e83eec1765d45a7342d722afd318ed828f4e434a1250302a2312",
+        "Fe2(SO4)3": "8269228a5dcb14a8f8671db998022fd34e5c7dd38b391642ec1ea759bdd3e642",
+        "FeSO4": "d5e83c4c8acbf948c6fa27a14dd10d085e9ae496bc95bbdd83001d1171c2293c",
+        "Mg(OH)2": "20da55d4526823fb9786f0e027a13138079de43fecd35e067772b80136586a46",
+        "Ca(OH)2": "b08e56445d49c79c3e015dc892efabeeb11a339b345d45b41adddd868aa53893",
+        "CaO": "ae7951f61b6d9bab59021380b502065d4149db151677db2e633c19050dc990ea",
+        "MgO": "bad77680143dc62fac3af25f092e6c27c5b07c27aa3d94f1039a93cae5404547",
+        "Fe2O3": "01a11a267b5984924faf1c51260c8bebbf303eaff5c1e4ef1751a6907e27ce6d",
+        "H2O": "4c038316243b07e79db32ed3a7b509f1ccd08425e232b77c62d5f662c05b741f",
     }
 
     for name, digest in expected_sha256.items():
