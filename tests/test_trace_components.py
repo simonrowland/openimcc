@@ -2085,7 +2085,10 @@ def test_gas_trace_parents_use_gas_standards_or_refuse(packaged_gas_pack) -> Non
             "Li": 1.42369622857686e-06,
             "Zn": 0.022852842899383257,
         }[element]
-        assert element_only[species] == baseline_pressure
+        # Pinned to a fixed value, so allow a few-ulp platform difference in
+        # the solver's floating-point path (Studio boxes differ in the last
+        # digit); any real change in the pressure is far larger than 1e-12.
+        assert element_only[species] == pytest.approx(baseline_pressure, rel=1e-12)
         assert oxide_moles * oxide_mass == pytest.approx(
             element_amount * oxide_mass / (cations_per_oxide * element_mass)
         )
