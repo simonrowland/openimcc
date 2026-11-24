@@ -124,8 +124,8 @@ transcribed here, so that check is **awaiting data**.
 The activity screen alone does not validate P-bearing volatility. Only Mg and
 Ca phosphates are represented, and no held-out phosphate-capacity or volatility
 set has scored this candidate. The pack therefore sets
-`_p2o5_channel_status = "associates_incomplete"`: P, P2, P4, PO, PO2, P4O6, and
-P4O10 are omitted from default gas results with reason code
+`_p2o5_channel_status = "associates_incomplete"`: P, P2, P4, PO, PO2, P4O6,
+P4O10, and PS are omitted from default gas results with reason code
 `p2o5_associates_incomplete`. Explicit requests raise the typed
 `ImccP2O5AssociatesIncompleteError`.
 

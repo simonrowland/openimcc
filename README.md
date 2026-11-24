@@ -1022,12 +1022,14 @@ default and published packs are unchanged. The phosphate source windows and
 provisional Ca construction are documented in
 [the P2O5 candidate report](docs/p2o5-candidate.md).
 
-On the representative KREEP check, the corrected two-associate `a(P2O5)` is
-7.9–8.8 orders of magnitude below `x(P2O5)`, so the profile returns
-P-bearing gas channels with the provisional associate flags. The gas
-calculation at fixed composition can exceed 1 bar at high temperature, which
-the gas contract treats as complete volatilisation. The opt-in profile does
-not change the default trace handling.
+On the representative KREEP check, `a(P2O5)` is 8.4, 7.0, and 6.0 orders of
+magnitude below `x(P2O5)` at 1700, 2000, and 2300 K, rising with temperature.
+The profile returns every parent activity and the non-phosphorus gas channels.
+P-bearing gas channels (P, P2, P4, PO, PO2, P4O6, P4O10, and PS) stay refused
+with reason `p2o5_associates_incomplete`: only Mg and Ca phosphates are
+represented, and no held-out phosphate-capacity or volatility data have scored
+the candidate yet. The opt-in profile does not change the default trace
+handling.
 
 For example, `evaluate(composition, 1800, profile="published")` selects the
 published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
