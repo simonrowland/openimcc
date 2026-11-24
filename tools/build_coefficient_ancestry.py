@@ -544,6 +544,11 @@ _FIELDS_LIQUIDUS = (
     "congruent melting temperatures, pp. 585–588, "
     "DOI 10.1111/j.1151-2916.1972.tb13448.x"
 )
+_ESKOLA_SILICATE_MELTING = (
+    "Eskola, P. (1922), The Silicates of Strontium and Barium, American "
+    "Journal of Science, 5th series, 4(23), 331–375; SrSiO3 melting "
+    "Table I, p. 335."
+)
 _CLASS_C_FUSION_ENTROPY = (
     f"Seventeen measured class-C crystal/liquid pairs recorded in the Sr "
     f"thermochemistry fragment from NIST-JANAF, "
@@ -593,6 +598,14 @@ def _sr_candidate_parameter_specs(
         (_JANAF_ALUMINA_LIQUID, "anchor"),
     ]
     provisional_oxide_assumption = complex_name in {"Sr3Al2O6", "Sr4Al2O7"}
+    jacob_out_of_window = complex_name in {"SrAl4O7", "SrAl12O19"}
+    silicate_crystal_continuation = complex_name in {"SrSiO3", "Sr2SiO4"}
+    formation_entropy_provisional = (
+        provisional_oxide_assumption
+        or jacob_out_of_window
+        or silicate_crystal_continuation
+    )
+    formation_cp_provisional = formation_entropy_provisional
 
     if complex_name == "SrAl2O4":
         formation_enthalpy = [(_BRISI_VIA_YE, "derived"), *oxide_sources]
@@ -604,9 +617,11 @@ def _sr_candidate_parameter_specs(
             "The 2233 K assessed marker is selected among competing phase-diagram "
             "values and is identified as provisional in its source fragment."
         )
+        marker_temperature = 2233
         liquid_cp_basis = (
-            "The redox v6 SrAl2O4 source estimates liquid Cp by adding the SrO(l) "
-            "and Al2O3(l) parent values."
+            "Redox v6 adds SrO(l) and Al2O3(l) Cp. JANAF Al-100 liquid nodes "
+            "begin at 2500 K; the generated constant-Cp supercooled continuation "
+            "is used at 2233 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K."
         )
     elif complex_name in {"SrAl4O7", "SrAl12O19"}:
         formation_enthalpy = [(_JACOB_SHREYAS, "derived"), *oxide_sources]
@@ -618,13 +633,16 @@ def _sr_candidate_parameter_specs(
             "The experimental marker is transcribed through Ye et al. Table 4; "
             "the candidate source does not flag this marker as provisional."
         )
+        marker_temperature = 2053 if complex_name == "SrAl4O7" else 2063
         liquid_cp_basis = (
-            "The candidate estimates liquid Cp additively from the SrO(l) and "
-            "Al2O3(l) parent standards."
+            f"Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 "
+            f"constant-Cp supercooled branch below its first complete liquid "
+            f"nodes at 2500 K; it is used at Tfus={marker_temperature} K and "
+            "through the v1/v2 fit ranges 1700–2400/1700–3000 K."
         )
     elif provisional_oxide_assumption:
         formation_enthalpy = [(_BRISI_VIA_YE, "derived"), *oxide_sources]
-        bound_source = (_JACOB_SHREYAS, "derived")
+        bound_source = (_JACOB_SHREYAS, "diagnostic")
         formation_entropy = [
             (_BRISI_VIA_YE, "derived"),
             bound_source,
@@ -641,48 +659,86 @@ def _sr_candidate_parameter_specs(
             "The experimental marker is transcribed through Ye et al. Table 4; "
             "the candidate source does not flag this marker as provisional."
         )
+        marker_temperature = 2009 if complex_name == "Sr3Al2O6" else 2073
         liquid_cp_basis = (
-            "The candidate estimates liquid Cp additively from the SrO(l) and "
-            "Al2O3(l) parent standards."
+            f"Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 "
+            f"constant-Cp supercooled branch below its first complete liquid "
+            f"nodes at 2500 K; it is used at Tfus={marker_temperature} K and "
+            "through the v1/v2 fit ranges 1700–2400/1700–3000 K."
         )
     elif complex_name in {"SrSiO3", "Sr2SiO4"}:
         formation_enthalpy = [(_HUNTELAAR_FORMATION, "derived")]
         formation_entropy = [(_HUNTELAAR_CRYSTAL_CP, "derived")]
         formation_cp = [(_HUNTELAAR_CRYSTAL_CP, "derived")]
         fusion_marker = [(_FIELDS_LIQUIDUS, "derived")]
+        if complex_name == "SrSiO3":
+            fusion_marker.append((_ESKOLA_SILICATE_MELTING, "diagnostic"))
         marker_provisional = False
         marker_basis = (
             "The congruent melting marker is reported as measured in the cited "
             "phase-equilibrium source."
         )
+        marker_temperature = 1853.15 if complex_name == "SrSiO3" else 2598.15
         parent_liquid_sources = [
             (_JANAF_SRO_LIQUID, "anchor"),
             (_JANAF_SILICA_LIQUID, "anchor"),
         ]
         liquid_cp_basis = (
-            "The redox v6 Sr-silicate source estimates liquid Cp by adding the "
-            "SrO(l) and SiO2(l) parent values."
+            "Redox v6 adds SrO(l) and SiO2(l) Cp. Richet et al. measured the "
+            "silica liquid Cp over 900–1800 K; it is extended above 1800 K and "
+            "used at Tfus=1853.15/2598.15 K and through the v1/v2 fit ranges "
+            "1700–2400/1700–3000 K."
         )
     else:
         raise ValueError(f"unexpected Sr candidate complex: {complex_name}")
 
     if provisional_oxide_assumption:
         delta_s_basis = (
-            "Only formation enthalpy is printed; ΔS_ox = 0 is assumed and "
-            "flagged provisional in the candidate provenance."
+            f"Brisi prints only formation ΔH at 298.15 K; ΔS_ox=0 is assumed "
+            f"through Tfus={marker_temperature} K and the v1/v2 fit ranges "
+            "1700–2400/1700–3000 K, so this value is provisional."
         )
         delta_cp_basis = (
-            "Only formation enthalpy is printed; ΔCp_ox = 0 is assumed and "
-            "flagged provisional in the candidate provenance."
+            f"Brisi prints only formation ΔH at 298.15 K; ΔCp_ox=0 is assumed "
+            f"through Tfus={marker_temperature} K and the v1/v2 fit ranges "
+            "1700–2400/1700–3000 K, so this value is provisional."
+        )
+    elif jacob_out_of_window:
+        delta_s_basis = (
+            f"Jacob & Shreyas fit ΔG=A+BT over 1000–1300 K; the resulting ΔS_ox "
+            f"is used at Tfus={marker_temperature} K and in the v1/v2 pack "
+            "ranges 1700–2400/1700–3000 K, outside the fitted range, so this "
+            "continuation is provisional."
+        )
+        delta_cp_basis = (
+            f"The linear Jacob & Shreyas fit over 1000–1300 K implies ΔCp_ox=0; "
+            f"that value is used at Tfus={marker_temperature} K and in the v1/v2 "
+            "pack ranges 1700–2400/1700–3000 K, outside the fitted range, so "
+            "this continuation is provisional."
+        )
+    elif silicate_crystal_continuation:
+        delta_s_basis = (
+            f"Huntelaar crystal Cp is measured through 1000 K; redox v6 holds "
+            f"Cp(1000 K) constant to Tfus={marker_temperature:g} K; this "
+            "formation entropy is used over v1/v2 pack ranges 1700–2400/1700–"
+            "3000 K, so the continuation is provisional."
+        )
+        delta_cp_basis = (
+            f"Huntelaar crystal Cp is measured through 1000 K; redox v6 holds "
+            f"Cp(1000 K) constant to Tfus={marker_temperature:g} K; this "
+            "formation heat-capacity term is used over v1/v2 pack ranges "
+            "1700–2400/1700–3000 K, so the continuation is provisional."
         )
     else:
         delta_s_basis = (
-            "The crystalline formation entropy follows the cited measured or "
-            "assessed thermochemical relation."
+            "Ye et al.'s assessed SrAl2O4 formation relation covers 932–2233 K; "
+            "JANAF O-013 and Al-096 crystal values are printed at the 2233 K "
+            "fusion marker used by this row."
         )
         delta_cp_basis = (
-            "The crystalline formation heat-capacity term follows the cited "
-            "thermochemical relation and oxide functions."
+            "Ye et al.'s assessed SrAl2O4 formation relation covers 932–2233 K; "
+            "JANAF O-013 and Al-096 crystal values are printed through the "
+            "2233 K fusion marker used by this row."
         )
 
     parent_names = {
@@ -706,6 +762,31 @@ def _sr_candidate_parameter_specs(
             (_JANAF_SILICA_LIQUID, "anchor"),
         ],
     }
+    parent_provisional = {
+        "SrO": False,
+        "Al2O3": complex_name in {
+            "SrAl2O4", "SrAl4O7", "SrAl12O19", "Sr3Al2O6", "Sr4Al2O7"
+        },
+        "SiO2": silicate_crystal_continuation,
+    }
+    parent_basis = {
+        "SrO": (
+            "JANAF O-013 crystal values cover the fusion markers; O-014 liquid "
+            "nodes are printed through 3100 K, covering the v1/v2 fit ranges "
+            "1700–2400/1700–3000 K."
+        ),
+        "Al2O3": (
+            "JANAF Al-096 crystal values cover the fusion marker, but Al-100's "
+            "first complete liquid nodes are 2500–3000 K; its generated "
+            "constant-Cp supercooled continuation is used below 2500 K across "
+            "the v1/v2 fit ranges 1700–2400/1700–3000 K."
+        ),
+        "SiO2": (
+            "The O-035 crystal branch is printed at its 1996 K fusion anchor; "
+            "Richet et al. measured liquid Cp over 900–1800 K and it is extended "
+            "above 1800 K across the v1/v2 fit ranges 1700–2400/1700–3000 K."
+        ),
+    }
     parameters = [
         {
             "parameter": "formation_delta_h_ox",
@@ -719,13 +800,13 @@ def _sr_candidate_parameter_specs(
         {
             "parameter": "formation_delta_s_ox",
             "citations": formation_entropy,
-            "provisional": provisional_oxide_assumption,
+            "provisional": formation_entropy_provisional,
             "provisional_basis": delta_s_basis,
         },
         {
             "parameter": "formation_delta_cp_ox",
             "citations": formation_cp,
-            "provisional": provisional_oxide_assumption,
+            "provisional": formation_cp_provisional,
             "provisional_basis": delta_cp_basis,
         },
         {
@@ -746,7 +827,10 @@ def _sr_candidate_parameter_specs(
             "provisional": True,
             "provisional_basis": (
                 f"Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by "
-                f"{atom_count} atoms; the class-C estimate is provisional."
+                f"{atom_count} atoms, calibrated from 17 measured class-C JANAF "
+                f"pairs at their fusion points and applied at Tfus="
+                f"{marker_temperature:g} K over v1/v2 pack ranges "
+                "1700–2400/1700–3000 K; this class estimate is provisional."
             ),
         },
         {
@@ -761,11 +845,8 @@ def _sr_candidate_parameter_specs(
             {
                 "parameter": f"parent_liquid_standard_{parent}",
                 "citations": parent_citations[parent],
-                "provisional": False,
-                "provisional_basis": (
-                    f"The {parent} parent liquid reference follows the cited "
-                    "standard-source record and is not marked provisional."
-                ),
+                "provisional": parent_provisional[parent],
+                "provisional_basis": parent_basis[parent],
             }
         )
     return parameters

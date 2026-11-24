@@ -39776,7 +39776,7 @@
             {
               "parameter": "formation_delta_s_ox",
               "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional_basis": "Ye et al.'s assessed SrAl2O4 formation relation covers 932–2233 K; JANAF O-013 and Al-096 crystal values are printed at the 2233 K fusion marker used by this row.",
               "sources": [
                 {
                   "work_id": null,
@@ -39798,7 +39798,7 @@
             {
               "parameter": "formation_delta_cp_ox",
               "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional_basis": "Ye et al.'s assessed SrAl2O4 formation relation covers 932–2233 K; JANAF O-013 and Al-096 crystal values are printed through the 2233 K fusion marker used by this row.",
               "sources": [
                 {
                   "work_id": null,
@@ -39837,7 +39837,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 7 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 7 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2233 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -39849,7 +39849,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The redox v6 SrAl2O4 source estimates liquid Cp by adding the SrO(l) and Al2O3(l) parent values.",
+              "provisional_basis": "Redox v6 adds SrO(l) and Al2O3(l) Cp. JANAF Al-100 liquid nodes begin at 2500 K; the generated constant-Cp supercooled continuation is used at 2233 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -39866,7 +39866,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -39882,8 +39882,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -39964,8 +39964,8 @@
             },
             {
               "parameter": "formation_delta_s_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional": true,
+              "provisional_basis": "Jacob & Shreyas fit ΔG=A+BT over 1000–1300 K; the resulting ΔS_ox is used at Tfus=2053 K and in the v1/v2 pack ranges 1700–2400/1700–3000 K, outside the fitted range, so this continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -39986,8 +39986,8 @@
             },
             {
               "parameter": "formation_delta_cp_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional": true,
+              "provisional_basis": "The linear Jacob & Shreyas fit over 1000–1300 K implies ΔCp_ox=0; that value is used at Tfus=2053 K and in the v1/v2 pack ranges 1700–2400/1700–3000 K, outside the fitted range, so this continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40021,7 +40021,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 12 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 12 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2053 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40033,7 +40033,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The candidate estimates liquid Cp additively from the SrO(l) and Al2O3(l) parent standards.",
+              "provisional_basis": "Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 constant-Cp supercooled branch below its first complete liquid nodes at 2500 K; it is used at Tfus=2053 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40050,7 +40050,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40066,8 +40066,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40148,8 +40148,8 @@
             },
             {
               "parameter": "formation_delta_s_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional": true,
+              "provisional_basis": "Jacob & Shreyas fit ΔG=A+BT over 1000–1300 K; the resulting ΔS_ox is used at Tfus=2063 K and in the v1/v2 pack ranges 1700–2400/1700–3000 K, outside the fitted range, so this continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40170,8 +40170,8 @@
             },
             {
               "parameter": "formation_delta_cp_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional": true,
+              "provisional_basis": "The linear Jacob & Shreyas fit over 1000–1300 K implies ΔCp_ox=0; that value is used at Tfus=2063 K and in the v1/v2 pack ranges 1700–2400/1700–3000 K, outside the fitted range, so this continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40205,7 +40205,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 32 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 32 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2063 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40217,7 +40217,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The candidate estimates liquid Cp additively from the SrO(l) and Al2O3(l) parent standards.",
+              "provisional_basis": "Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 constant-Cp supercooled branch below its first complete liquid nodes at 2500 K; it is used at Tfus=2063 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40234,7 +40234,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40250,8 +40250,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40333,7 +40333,7 @@
             {
               "parameter": "formation_delta_s_ox",
               "provisional": true,
-              "provisional_basis": "Only formation enthalpy is printed; ΔS_ox = 0 is assumed and flagged provisional in the candidate provenance.",
+              "provisional_basis": "Brisi prints only formation ΔH at 298.15 K; ΔS_ox=0 is assumed through Tfus=2009 K and the v1/v2 fit ranges 1700–2400/1700–3000 K, so this value is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40342,7 +40342,7 @@
                 },
                 {
                   "work_id": null,
-                  "role": "derived",
+                  "role": "diagnostic",
                   "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K"
                 },
                 {
@@ -40360,7 +40360,7 @@
             {
               "parameter": "formation_delta_cp_ox",
               "provisional": true,
-              "provisional_basis": "Only formation enthalpy is printed; ΔCp_ox = 0 is assumed and flagged provisional in the candidate provenance.",
+              "provisional_basis": "Brisi prints only formation ΔH at 298.15 K; ΔCp_ox=0 is assumed through Tfus=2009 K and the v1/v2 fit ranges 1700–2400/1700–3000 K, so this value is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40369,7 +40369,7 @@
                 },
                 {
                   "work_id": null,
-                  "role": "derived",
+                  "role": "diagnostic",
                   "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K"
                 },
                 {
@@ -40399,7 +40399,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 11 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 11 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2009 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40411,7 +40411,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The candidate estimates liquid Cp additively from the SrO(l) and Al2O3(l) parent standards.",
+              "provisional_basis": "Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 constant-Cp supercooled branch below its first complete liquid nodes at 2500 K; it is used at Tfus=2009 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40428,7 +40428,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40444,8 +40444,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40527,7 +40527,7 @@
             {
               "parameter": "formation_delta_s_ox",
               "provisional": true,
-              "provisional_basis": "Only formation enthalpy is printed; ΔS_ox = 0 is assumed and flagged provisional in the candidate provenance.",
+              "provisional_basis": "Brisi prints only formation ΔH at 298.15 K; ΔS_ox=0 is assumed through Tfus=2073 K and the v1/v2 fit ranges 1700–2400/1700–3000 K, so this value is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40536,7 +40536,7 @@
                 },
                 {
                   "work_id": null,
-                  "role": "derived",
+                  "role": "diagnostic",
                   "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K"
                 },
                 {
@@ -40554,7 +40554,7 @@
             {
               "parameter": "formation_delta_cp_ox",
               "provisional": true,
-              "provisional_basis": "Only formation enthalpy is printed; ΔCp_ox = 0 is assumed and flagged provisional in the candidate provenance.",
+              "provisional_basis": "Brisi prints only formation ΔH at 298.15 K; ΔCp_ox=0 is assumed through Tfus=2073 K and the v1/v2 fit ranges 1700–2400/1700–3000 K, so this value is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40563,7 +40563,7 @@
                 },
                 {
                   "work_id": null,
-                  "role": "derived",
+                  "role": "diagnostic",
                   "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K"
                 },
                 {
@@ -40593,7 +40593,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 13 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 13 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2073 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40605,7 +40605,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The candidate estimates liquid Cp additively from the SrO(l) and Al2O3(l) parent standards.",
+              "provisional_basis": "Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 constant-Cp supercooled branch below its first complete liquid nodes at 2500 K; it is used at Tfus=2073 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40622,7 +40622,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40638,8 +40638,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40700,8 +40700,8 @@
             },
             {
               "parameter": "formation_delta_s_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional": true,
+              "provisional_basis": "Huntelaar crystal Cp is measured through 1000 K; redox v6 holds Cp(1000 K) constant to Tfus=1853.15 K; this formation entropy is used over v1/v2 pack ranges 1700–2400/1700–3000 K, so the continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40712,8 +40712,8 @@
             },
             {
               "parameter": "formation_delta_cp_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional": true,
+              "provisional_basis": "Huntelaar crystal Cp is measured through 1000 K; redox v6 holds Cp(1000 K) constant to Tfus=1853.15 K; this formation heat-capacity term is used over v1/v2 pack ranges 1700–2400/1700–3000 K, so the continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40731,13 +40731,18 @@
                   "work_id": null,
                   "role": "derived",
                   "citation": "Fields et al. (1972), J. Am. Ceram. Soc. 55(12), phase diagram and congruent melting temperatures, pp. 585–588, DOI 10.1111/j.1151-2916.1972.tb13448.x"
+                },
+                {
+                  "work_id": null,
+                  "role": "diagnostic",
+                  "citation": "Eskola, P. (1922), The Silicates of Strontium and Barium, American Journal of Science, 5th series, 4(23), 331–375; SrSiO3 melting Table I, p. 335."
                 }
               ]
             },
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 5 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 5 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=1853.15 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40749,7 +40754,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The redox v6 Sr-silicate source estimates liquid Cp by adding the SrO(l) and SiO2(l) parent values.",
+              "provisional_basis": "Redox v6 adds SrO(l) and SiO2(l) Cp. Richet et al. measured the silica liquid Cp over 900–1800 K; it is extended above 1800 K and used at Tfus=1853.15/2598.15 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40766,7 +40771,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40782,8 +40787,8 @@
             },
             {
               "parameter": "parent_liquid_standard_SiO2",
-              "provisional": false,
-              "provisional_basis": "The SiO2 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "The O-035 crystal branch is printed at its 1996 K fusion anchor; Richet et al. measured liquid Cp over 900–1800 K and it is extended above 1800 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": null,
@@ -40849,8 +40854,8 @@
             },
             {
               "parameter": "formation_delta_s_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional": true,
+              "provisional_basis": "Huntelaar crystal Cp is measured through 1000 K; redox v6 holds Cp(1000 K) constant to Tfus=2598.15 K; this formation entropy is used over v1/v2 pack ranges 1700–2400/1700–3000 K, so the continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40861,8 +40866,8 @@
             },
             {
               "parameter": "formation_delta_cp_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional": true,
+              "provisional_basis": "Huntelaar crystal Cp is measured through 1000 K; redox v6 holds Cp(1000 K) constant to Tfus=2598.15 K; this formation heat-capacity term is used over v1/v2 pack ranges 1700–2400/1700–3000 K, so the continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -40886,7 +40891,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 7 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 7 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2598.15 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40898,7 +40903,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The redox v6 Sr-silicate source estimates liquid Cp by adding the SrO(l) and SiO2(l) parent values.",
+              "provisional_basis": "Redox v6 adds SrO(l) and SiO2(l) Cp. Richet et al. measured the silica liquid Cp over 900–1800 K; it is extended above 1800 K and used at Tfus=1853.15/2598.15 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40915,7 +40920,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -40931,8 +40936,8 @@
             },
             {
               "parameter": "parent_liquid_standard_SiO2",
-              "provisional": false,
-              "provisional_basis": "The SiO2 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "The O-035 crystal branch is printed at its 1996 K fusion anchor; Richet et al. measured liquid Cp over 900–1800 K and it is extended above 1800 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": null,
@@ -41727,7 +41732,7 @@
           "parameter": "formation_delta_s_ox",
           "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
-          "role": "derived"
+          "role": "diagnostic"
         },
         {
           "row": "42:Sr3Al2O6",
@@ -41741,7 +41746,7 @@
           "parameter": "formation_delta_cp_ox",
           "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
-          "role": "derived"
+          "role": "diagnostic"
         },
         {
           "row": "42:Sr3Al2O6",
@@ -41769,7 +41774,7 @@
           "parameter": "formation_delta_s_ox",
           "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
-          "role": "derived"
+          "role": "diagnostic"
         },
         {
           "row": "43:Sr4Al2O7",
@@ -41783,7 +41788,7 @@
           "parameter": "formation_delta_cp_ox",
           "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
-          "role": "derived"
+          "role": "diagnostic"
         },
         {
           "row": "43:Sr4Al2O7",
@@ -41819,6 +41824,13 @@
           "citation": "Fields et al. (1972), J. Am. Ceram. Soc. 55(12), phase diagram and congruent melting temperatures, pp. 585–588, DOI 10.1111/j.1151-2916.1972.tb13448.x",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
           "role": "derived"
+        },
+        {
+          "row": "44:SrSiO3",
+          "parameter": "fusion_temperature_marker",
+          "citation": "Eskola, P. (1922), The Silicates of Strontium and Barium, American Journal of Science, 5th series, 4(23), 331–375; SrSiO3 melting Table I, p. 335.",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "diagnostic"
         },
         {
           "row": "44:SrSiO3",
@@ -41881,7 +41893,7 @@
       "counts": {
         "rows": 45,
         "mapped_rows": 45,
-        "unmapped_citations": 146,
+        "unmapped_citations": 147,
         "rows_with_unmapped": 42
       },
       "parent_standards": [
@@ -42532,7 +42544,7 @@
             {
               "parameter": "formation_delta_s_ox",
               "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional_basis": "Ye et al.'s assessed SrAl2O4 formation relation covers 932–2233 K; JANAF O-013 and Al-096 crystal values are printed at the 2233 K fusion marker used by this row.",
               "sources": [
                 {
                   "work_id": null,
@@ -42554,7 +42566,7 @@
             {
               "parameter": "formation_delta_cp_ox",
               "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional_basis": "Ye et al.'s assessed SrAl2O4 formation relation covers 932–2233 K; JANAF O-013 and Al-096 crystal values are printed through the 2233 K fusion marker used by this row.",
               "sources": [
                 {
                   "work_id": null,
@@ -42593,7 +42605,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 7 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 7 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2233 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42605,7 +42617,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The redox v6 SrAl2O4 source estimates liquid Cp by adding the SrO(l) and Al2O3(l) parent values.",
+              "provisional_basis": "Redox v6 adds SrO(l) and Al2O3(l) Cp. JANAF Al-100 liquid nodes begin at 2500 K; the generated constant-Cp supercooled continuation is used at 2233 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42622,7 +42634,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42638,8 +42650,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42720,8 +42732,8 @@
             },
             {
               "parameter": "formation_delta_s_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional": true,
+              "provisional_basis": "Jacob & Shreyas fit ΔG=A+BT over 1000–1300 K; the resulting ΔS_ox is used at Tfus=2053 K and in the v1/v2 pack ranges 1700–2400/1700–3000 K, outside the fitted range, so this continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -42742,8 +42754,8 @@
             },
             {
               "parameter": "formation_delta_cp_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional": true,
+              "provisional_basis": "The linear Jacob & Shreyas fit over 1000–1300 K implies ΔCp_ox=0; that value is used at Tfus=2053 K and in the v1/v2 pack ranges 1700–2400/1700–3000 K, outside the fitted range, so this continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -42777,7 +42789,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 12 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 12 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2053 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42789,7 +42801,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The candidate estimates liquid Cp additively from the SrO(l) and Al2O3(l) parent standards.",
+              "provisional_basis": "Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 constant-Cp supercooled branch below its first complete liquid nodes at 2500 K; it is used at Tfus=2053 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42806,7 +42818,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42822,8 +42834,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42904,8 +42916,8 @@
             },
             {
               "parameter": "formation_delta_s_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional": true,
+              "provisional_basis": "Jacob & Shreyas fit ΔG=A+BT over 1000–1300 K; the resulting ΔS_ox is used at Tfus=2063 K and in the v1/v2 pack ranges 1700–2400/1700–3000 K, outside the fitted range, so this continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -42926,8 +42938,8 @@
             },
             {
               "parameter": "formation_delta_cp_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional": true,
+              "provisional_basis": "The linear Jacob & Shreyas fit over 1000–1300 K implies ΔCp_ox=0; that value is used at Tfus=2063 K and in the v1/v2 pack ranges 1700–2400/1700–3000 K, outside the fitted range, so this continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -42961,7 +42973,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 32 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 32 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2063 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42973,7 +42985,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The candidate estimates liquid Cp additively from the SrO(l) and Al2O3(l) parent standards.",
+              "provisional_basis": "Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 constant-Cp supercooled branch below its first complete liquid nodes at 2500 K; it is used at Tfus=2063 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -42990,7 +43002,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43006,8 +43018,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43089,7 +43101,7 @@
             {
               "parameter": "formation_delta_s_ox",
               "provisional": true,
-              "provisional_basis": "Only formation enthalpy is printed; ΔS_ox = 0 is assumed and flagged provisional in the candidate provenance.",
+              "provisional_basis": "Brisi prints only formation ΔH at 298.15 K; ΔS_ox=0 is assumed through Tfus=2009 K and the v1/v2 fit ranges 1700–2400/1700–3000 K, so this value is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -43098,7 +43110,7 @@
                 },
                 {
                   "work_id": null,
-                  "role": "derived",
+                  "role": "diagnostic",
                   "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K"
                 },
                 {
@@ -43116,7 +43128,7 @@
             {
               "parameter": "formation_delta_cp_ox",
               "provisional": true,
-              "provisional_basis": "Only formation enthalpy is printed; ΔCp_ox = 0 is assumed and flagged provisional in the candidate provenance.",
+              "provisional_basis": "Brisi prints only formation ΔH at 298.15 K; ΔCp_ox=0 is assumed through Tfus=2009 K and the v1/v2 fit ranges 1700–2400/1700–3000 K, so this value is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -43125,7 +43137,7 @@
                 },
                 {
                   "work_id": null,
-                  "role": "derived",
+                  "role": "diagnostic",
                   "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K"
                 },
                 {
@@ -43155,7 +43167,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 11 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 11 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2009 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43167,7 +43179,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The candidate estimates liquid Cp additively from the SrO(l) and Al2O3(l) parent standards.",
+              "provisional_basis": "Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 constant-Cp supercooled branch below its first complete liquid nodes at 2500 K; it is used at Tfus=2009 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43184,7 +43196,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43200,8 +43212,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43283,7 +43295,7 @@
             {
               "parameter": "formation_delta_s_ox",
               "provisional": true,
-              "provisional_basis": "Only formation enthalpy is printed; ΔS_ox = 0 is assumed and flagged provisional in the candidate provenance.",
+              "provisional_basis": "Brisi prints only formation ΔH at 298.15 K; ΔS_ox=0 is assumed through Tfus=2073 K and the v1/v2 fit ranges 1700–2400/1700–3000 K, so this value is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -43292,7 +43304,7 @@
                 },
                 {
                   "work_id": null,
-                  "role": "derived",
+                  "role": "diagnostic",
                   "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K"
                 },
                 {
@@ -43310,7 +43322,7 @@
             {
               "parameter": "formation_delta_cp_ox",
               "provisional": true,
-              "provisional_basis": "Only formation enthalpy is printed; ΔCp_ox = 0 is assumed and flagged provisional in the candidate provenance.",
+              "provisional_basis": "Brisi prints only formation ΔH at 298.15 K; ΔCp_ox=0 is assumed through Tfus=2073 K and the v1/v2 fit ranges 1700–2400/1700–3000 K, so this value is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -43319,7 +43331,7 @@
                 },
                 {
                   "work_id": null,
-                  "role": "derived",
+                  "role": "diagnostic",
                   "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K"
                 },
                 {
@@ -43349,7 +43361,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 13 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 13 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2073 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43361,7 +43373,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The candidate estimates liquid Cp additively from the SrO(l) and Al2O3(l) parent standards.",
+              "provisional_basis": "Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 constant-Cp supercooled branch below its first complete liquid nodes at 2500 K; it is used at Tfus=2073 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43378,7 +43390,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43394,8 +43406,8 @@
             },
             {
               "parameter": "parent_liquid_standard_Al2O3",
-              "provisional": false,
-              "provisional_basis": "The Al2O3 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "JANAF Al-096 crystal values cover the fusion marker, but Al-100's first complete liquid nodes are 2500–3000 K; its generated constant-Cp supercooled continuation is used below 2500 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43456,8 +43468,8 @@
             },
             {
               "parameter": "formation_delta_s_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional": true,
+              "provisional_basis": "Huntelaar crystal Cp is measured through 1000 K; redox v6 holds Cp(1000 K) constant to Tfus=1853.15 K; this formation entropy is used over v1/v2 pack ranges 1700–2400/1700–3000 K, so the continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -43468,8 +43480,8 @@
             },
             {
               "parameter": "formation_delta_cp_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional": true,
+              "provisional_basis": "Huntelaar crystal Cp is measured through 1000 K; redox v6 holds Cp(1000 K) constant to Tfus=1853.15 K; this formation heat-capacity term is used over v1/v2 pack ranges 1700–2400/1700–3000 K, so the continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -43487,13 +43499,18 @@
                   "work_id": null,
                   "role": "derived",
                   "citation": "Fields et al. (1972), J. Am. Ceram. Soc. 55(12), phase diagram and congruent melting temperatures, pp. 585–588, DOI 10.1111/j.1151-2916.1972.tb13448.x"
+                },
+                {
+                  "work_id": null,
+                  "role": "diagnostic",
+                  "citation": "Eskola, P. (1922), The Silicates of Strontium and Barium, American Journal of Science, 5th series, 4(23), 331–375; SrSiO3 melting Table I, p. 335."
                 }
               ]
             },
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 5 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 5 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=1853.15 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43505,7 +43522,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The redox v6 Sr-silicate source estimates liquid Cp by adding the SrO(l) and SiO2(l) parent values.",
+              "provisional_basis": "Redox v6 adds SrO(l) and SiO2(l) Cp. Richet et al. measured the silica liquid Cp over 900–1800 K; it is extended above 1800 K and used at Tfus=1853.15/2598.15 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43522,7 +43539,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43538,8 +43555,8 @@
             },
             {
               "parameter": "parent_liquid_standard_SiO2",
-              "provisional": false,
-              "provisional_basis": "The SiO2 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "The O-035 crystal branch is printed at its 1996 K fusion anchor; Richet et al. measured liquid Cp over 900–1800 K and it is extended above 1800 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": null,
@@ -43605,8 +43622,8 @@
             },
             {
               "parameter": "formation_delta_s_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation entropy follows the cited measured or assessed thermochemical relation.",
+              "provisional": true,
+              "provisional_basis": "Huntelaar crystal Cp is measured through 1000 K; redox v6 holds Cp(1000 K) constant to Tfus=2598.15 K; this formation entropy is used over v1/v2 pack ranges 1700–2400/1700–3000 K, so the continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -43617,8 +43634,8 @@
             },
             {
               "parameter": "formation_delta_cp_ox",
-              "provisional": false,
-              "provisional_basis": "The crystalline formation heat-capacity term follows the cited thermochemical relation and oxide functions.",
+              "provisional": true,
+              "provisional_basis": "Huntelaar crystal Cp is measured through 1000 K; redox v6 holds Cp(1000 K) constant to Tfus=2598.15 K; this formation heat-capacity term is used over v1/v2 pack ranges 1700–2400/1700–3000 K, so the continuation is provisional.",
               "sources": [
                 {
                   "work_id": null,
@@ -43642,7 +43659,7 @@
             {
               "parameter": "fusion_entropy",
               "provisional": true,
-              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 7 atoms; the class-C estimate is provisional.",
+              "provisional_basis": "Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by 7 atoms, calibrated from 17 measured class-C JANAF pairs at their fusion points and applied at Tfus=2598.15 K over v1/v2 pack ranges 1700–2400/1700–3000 K; this class estimate is provisional.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43654,7 +43671,7 @@
             {
               "parameter": "liquid_cp",
               "provisional": true,
-              "provisional_basis": "The redox v6 Sr-silicate source estimates liquid Cp by adding the SrO(l) and SiO2(l) parent values.",
+              "provisional_basis": "Redox v6 adds SrO(l) and SiO2(l) Cp. Richet et al. measured the silica liquid Cp over 900–1800 K; it is extended above 1800 K and used at Tfus=1853.15/2598.15 K and through the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43671,7 +43688,7 @@
             {
               "parameter": "parent_liquid_standard_SrO",
               "provisional": false,
-              "provisional_basis": "The SrO parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional_basis": "JANAF O-013 crystal values cover the fusion markers; O-014 liquid nodes are printed through 3100 K, covering the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": "janaf-4th",
@@ -43687,8 +43704,8 @@
             },
             {
               "parameter": "parent_liquid_standard_SiO2",
-              "provisional": false,
-              "provisional_basis": "The SiO2 parent liquid reference follows the cited standard-source record and is not marked provisional.",
+              "provisional": true,
+              "provisional_basis": "The O-035 crystal branch is printed at its 1996 K fusion anchor; Richet et al. measured liquid Cp over 900–1800 K and it is extended above 1800 K across the v1/v2 fit ranges 1700–2400/1700–3000 K.",
               "sources": [
                 {
                   "work_id": null,
@@ -44483,7 +44500,7 @@
           "parameter": "formation_delta_s_ox",
           "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
-          "role": "derived"
+          "role": "diagnostic"
         },
         {
           "row": "42:Sr3Al2O6",
@@ -44497,7 +44514,7 @@
           "parameter": "formation_delta_cp_ox",
           "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
-          "role": "derived"
+          "role": "diagnostic"
         },
         {
           "row": "42:Sr3Al2O6",
@@ -44525,7 +44542,7 @@
           "parameter": "formation_delta_s_ox",
           "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
-          "role": "derived"
+          "role": "diagnostic"
         },
         {
           "row": "43:Sr4Al2O7",
@@ -44539,7 +44556,7 @@
           "parameter": "formation_delta_cp_ox",
           "citation": "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs functions measured over 1000–1300 K",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
-          "role": "derived"
+          "role": "diagnostic"
         },
         {
           "row": "43:Sr4Al2O7",
@@ -44575,6 +44592,13 @@
           "citation": "Fields et al. (1972), J. Am. Ceram. Soc. 55(12), phase diagram and congruent melting temperatures, pp. 585–588, DOI 10.1111/j.1151-2916.1972.tb13448.x",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
           "role": "derived"
+        },
+        {
+          "row": "44:SrSiO3",
+          "parameter": "fusion_temperature_marker",
+          "citation": "Eskola, P. (1922), The Silicates of Strontium and Barium, American Journal of Science, 5th series, 4(23), 331–375; SrSiO3 melting Table I, p. 335.",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "diagnostic"
         },
         {
           "row": "44:SrSiO3",
@@ -44637,7 +44661,7 @@
       "counts": {
         "rows": 45,
         "mapped_rows": 45,
-        "unmapped_citations": 146,
+        "unmapped_citations": 147,
         "rows_with_unmapped": 42
       },
       "parent_standards": [

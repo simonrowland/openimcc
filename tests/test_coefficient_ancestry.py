@@ -420,6 +420,42 @@ def test_sr_candidate_artifacts_have_parameter_level_ancestry() -> None:
         "fusion_entropy",
         "liquid_cp",
     }
+    expected_provisional = {
+        ("39:SrAl2O4", "fusion_temperature_marker"),
+        ("39:SrAl2O4", "fusion_entropy"),
+        ("39:SrAl2O4", "liquid_cp"),
+        ("39:SrAl2O4", "parent_liquid_standard_Al2O3"),
+        ("40:SrAl4O7", "formation_delta_s_ox"),
+        ("40:SrAl4O7", "formation_delta_cp_ox"),
+        ("40:SrAl4O7", "fusion_entropy"),
+        ("40:SrAl4O7", "liquid_cp"),
+        ("40:SrAl4O7", "parent_liquid_standard_Al2O3"),
+        ("41:SrAl12O19", "formation_delta_s_ox"),
+        ("41:SrAl12O19", "formation_delta_cp_ox"),
+        ("41:SrAl12O19", "fusion_entropy"),
+        ("41:SrAl12O19", "liquid_cp"),
+        ("41:SrAl12O19", "parent_liquid_standard_Al2O3"),
+        ("42:Sr3Al2O6", "formation_delta_s_ox"),
+        ("42:Sr3Al2O6", "formation_delta_cp_ox"),
+        ("42:Sr3Al2O6", "fusion_entropy"),
+        ("42:Sr3Al2O6", "liquid_cp"),
+        ("42:Sr3Al2O6", "parent_liquid_standard_Al2O3"),
+        ("43:Sr4Al2O7", "formation_delta_s_ox"),
+        ("43:Sr4Al2O7", "formation_delta_cp_ox"),
+        ("43:Sr4Al2O7", "fusion_entropy"),
+        ("43:Sr4Al2O7", "liquid_cp"),
+        ("43:Sr4Al2O7", "parent_liquid_standard_Al2O3"),
+        ("44:SrSiO3", "formation_delta_s_ox"),
+        ("44:SrSiO3", "formation_delta_cp_ox"),
+        ("44:SrSiO3", "fusion_entropy"),
+        ("44:SrSiO3", "liquid_cp"),
+        ("44:SrSiO3", "parent_liquid_standard_SiO2"),
+        ("45:Sr2SiO4", "formation_delta_s_ox"),
+        ("45:Sr2SiO4", "formation_delta_cp_ox"),
+        ("45:Sr2SiO4", "fusion_entropy"),
+        ("45:Sr2SiO4", "liquid_cp"),
+        ("45:Sr2SiO4", "parent_liquid_standard_SiO2"),
+    }
     for version in ("v1", "v2"):
         filename = f"imcc-sf04-d066-sr-candidate-{version}.json"
         pack_path = ROOT / "src" / "openimcc" / "data" / "packs" / filename
@@ -461,6 +497,13 @@ def test_sr_candidate_artifacts_have_parameter_level_ancestry() -> None:
             if int(row["id"].split(":", 1)[0]) >= 39
         }
         assert len(rows) == 7
+        provisional = {
+            (row["id"], parameter["parameter"])
+            for row in rows.values()
+            for parameter in row["parameters"]
+            if parameter["provisional"]
+        }
+        assert provisional == expected_provisional
         for row_number, row in enumerate(
             candidate_pack["rows"][38:], start=39
         ):
@@ -487,13 +530,6 @@ def test_sr_candidate_artifacts_have_parameter_level_ancestry() -> None:
                 for parameter in parameters
                 for source in parameter["sources"]
             )
-            assert by_name["fusion_entropy"]["provisional"] is True
-            assert by_name["liquid_cp"]["provisional"] is True
-            if row_id in {"42:Sr3Al2O6", "43:Sr4Al2O7"}:
-                assert by_name["formation_delta_s_ox"]["provisional"] is True
-                assert by_name["formation_delta_cp_ox"]["provisional"] is True
-            if row_id == "39:SrAl2O4":
-                assert by_name["fusion_temperature_marker"]["provisional"] is True
 
             unmapped_parameters = {
                 (item.get("parameter"), item["citation"])
@@ -506,7 +542,41 @@ def test_sr_candidate_artifacts_have_parameter_level_ancestry() -> None:
                         assert (
                             parameter["parameter"], source["citation"]
                         ) in unmapped_parameters
-                        assert "DOI " in source["citation"]
+                        if "Eskola" in source["citation"]:
+                            assert "Table I, p. 335" in source["citation"]
+                        else:
+                            assert "DOI " in source["citation"]
+
+        for row_id in ("42:Sr3Al2O6", "43:Sr4Al2O7"):
+            for parameter_name in ("formation_delta_s_ox", "formation_delta_cp_ox"):
+                parameter = next(
+                    item
+                    for item in rows[row_id]["parameters"]
+                    if item["parameter"] == parameter_name
+                )
+                assert any(
+                    "Jacob & Shreyas" in source["citation"]
+                    and source["role"] == "diagnostic"
+                    for source in parameter["sources"]
+                )
+
+        sr_silicate_marker = next(
+            item
+            for item in rows["44:SrSiO3"]["parameters"]
+            if item["parameter"] == "fusion_temperature_marker"
+        )
+        eskola = next(
+            source for source in sr_silicate_marker["sources"]
+            if "Eskola" in source["citation"]
+        )
+        assert eskola["work_id"] is None
+        assert eskola["role"] == "diagnostic"
+        assert any(
+            item["row"] == "44:SrSiO3"
+            and item["parameter"] == "fusion_temperature_marker"
+            and item["citation"] == eskola["citation"]
+            for item in artifact["unmapped"]
+        )
 
         parent_standards = {
             source["standard"]: source
