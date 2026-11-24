@@ -614,8 +614,9 @@ def _sr_candidate_parameter_specs(
         fusion_marker = [(_YE_TABLE_4, "selected"), (_GANITS_VIA_YE, "selected")]
         marker_provisional = True
         marker_basis = (
-            "The 2233 K assessed marker is selected among competing phase-diagram "
-            "values and is identified as provisional in its source fragment."
+            "Ye et al. Table 4 lists competing experimental markers at 2063, "
+            "2238, and 2288 K; this row selects the assessed 2233 K value, so "
+            "the selected marker is provisional."
         )
         marker_temperature = 2233
         liquid_cp_basis = (
@@ -629,11 +630,11 @@ def _sr_candidate_parameter_specs(
         formation_cp = [(_JACOB_SHREYAS, "derived"), *oxide_sources]
         fusion_marker = [(_GANITS_VIA_YE, "selected")]
         marker_provisional = False
-        marker_basis = (
-            "The experimental marker is transcribed through Ye et al. Table 4; "
-            "the candidate source does not flag this marker as provisional."
-        )
         marker_temperature = 2053 if complex_name == "SrAl4O7" else 2063
+        marker_basis = (
+            f"Ye et al. Table 4 reports the Ganits experimental fusion marker at "
+            f"{marker_temperature} K."
+        )
         liquid_cp_basis = (
             f"Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 "
             f"constant-Cp supercooled branch below its first complete liquid "
@@ -655,11 +656,11 @@ def _sr_candidate_parameter_specs(
         ]
         fusion_marker = [(_GANITS_VIA_YE, "selected")]
         marker_provisional = False
-        marker_basis = (
-            "The experimental marker is transcribed through Ye et al. Table 4; "
-            "the candidate source does not flag this marker as provisional."
-        )
         marker_temperature = 2009 if complex_name == "Sr3Al2O6" else 2073
+        marker_basis = (
+            f"Ye et al. Table 4 reports the Ganits experimental fusion marker at "
+            f"{marker_temperature} K."
+        )
         liquid_cp_basis = (
             f"Additive SrO(l)+Al2O3(l) Cp uses the generated JANAF Al-100 "
             f"constant-Cp supercooled branch below its first complete liquid "
@@ -686,8 +687,8 @@ def _sr_candidate_parameter_specs(
         liquid_cp_basis = (
             "Redox v6 adds SrO(l) and SiO2(l) Cp. Richet et al. measured the "
             "silica liquid Cp over 900–1800 K; it is extended above 1800 K and "
-            "used at Tfus=1853.15/2598.15 K and through the v1/v2 fit ranges "
-            "1700–2400/1700–3000 K."
+            f"used at Tfus={marker_temperature:g} K and through the v1/v2 fit "
+            "ranges 1700–2400/1700–3000 K."
         )
     else:
         raise ValueError(f"unexpected Sr candidate complex: {complex_name}")
@@ -782,7 +783,8 @@ def _sr_candidate_parameter_specs(
             "the v1/v2 fit ranges 1700–2400/1700–3000 K."
         ),
         "SiO2": (
-            "The O-035 crystal branch is printed at its 1996 K fusion anchor; "
+            "The O-035 crystal function is interpolated between its printed "
+            "1900 and 2000 K nodes to the 1996 K fusion anchor; "
             "Richet et al. measured liquid Cp over 900–1800 K and it is extended "
             "above 1800 K across the v1/v2 fit ranges 1700–2400/1700–3000 K."
         ),

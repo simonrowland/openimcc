@@ -26,6 +26,12 @@ also listed in the artifact's `unmapped` collection. The Sr candidate artifacts
 use this field for rows 39–45 and record the parent liquid standards at the
 artifact level.
 
+A parameter is firm when its value is printed or measured at the temperatures
+where it is used—including a printed assessed function evaluated inside its
+stated window and printed JANAF cells unless the table text marks them
+estimated—and is provisional when it comes from a continuation, extrapolation,
+estimate, or assumption beyond that.
+
 The generator reads structured citation fields directly. Citations that appear
 only in derivation or construction prose are curated by row in
 `tools/coefficient-ancestry-prose-citations.json`; rows without an additional
