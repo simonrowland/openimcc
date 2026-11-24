@@ -21,9 +21,7 @@ if str(SRC) not in sys.path:
 from openimcc.gas import load_gas_datapack, species_thermo
 from openimcc.model import _d066_core_content_digests
 from candidate_pack import (
-    CLASS_C_J_MOL_ATOM_K,
     add_write_check_arguments,
-    assert_core_rows_byte_equal,
     candidate_row,
     fit_log10_k,
     load_d066_pack,
@@ -45,6 +43,48 @@ LN10 = math.log(10.0)
 PARENT_ORDER = ("SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O", "P2O5")
 CALCIUM_BOILING_K = 1757.0
 
+
+
+def _array_item_texts(raw: str, key: str) -> list[str]:
+    """Return exact JSON source slices for each item in a named array."""
+    marker = f'"{key}"'
+    marker_start = raw.index(marker)
+    array_start = raw.index("[", marker_start + len(marker))
+    decoder = json.JSONDecoder()
+    cursor = array_start + 1
+    items = []
+    while True:
+        while cursor < len(raw) and raw[cursor].isspace():
+            cursor += 1
+        if cursor >= len(raw) or raw[cursor] == "]":
+            return items
+        _value, end = decoder.raw_decode(raw, cursor)
+        items.append(raw[cursor:end])
+        cursor = end
+        while cursor < len(raw) and raw[cursor].isspace():
+            cursor += 1
+        if cursor < len(raw) and raw[cursor] == ",":
+            cursor += 1
+        elif cursor < len(raw) and raw[cursor] == "]":
+            return items
+        else:
+            raise ValueError(f"malformed {key} array while checking source bytes")
+
+
+def assert_core_rows_byte_equal(
+    base_path: Path,
+    generated: str,
+    *,
+    expected_count: int,
+    message: str,
+) -> None:
+    base_rows = _array_item_texts(base_path.read_text(encoding="utf-8"), "rows")
+    candidate_rows = _array_item_texts(generated, "rows")
+    if (
+        len(base_rows) != expected_count
+        or candidate_rows[:expected_count] != base_rows
+    ):
+        raise AssertionError(message)
 
 def _parent_cp(oxide: str, temperature_K: float, gas_pack) -> float:
     return float(species_thermo(oxide, "l", temperature_K, gas_pack).Cp_J_molK)
