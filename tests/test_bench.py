@@ -603,6 +603,16 @@ def test_research_overlay_controlled_vocabulary_census() -> None:
         for version in versions
     }
     assert new_lookups == old_lookups
+    # Pin the research-overlay versions explicitly: deleting one from both
+    # tables would otherwise leave the comparison above green while the
+    # version silently stops being treated as an overlay.
+    assert {
+        version for version, overlay in _PACK_OVERLAY_BY_VERSION.items() if overlay
+    } == {"1.0.3-d066-ext-v1", "1.0.2-ext-sp-2"}
+    assert set(_PACK_OVERLAY_MODEL_BY_VERSION) == {
+        "1.0.3-d066-ext-v1",
+        "1.0.2-ext-sp-2",
+    }
     for entry in entries:
         pack = json.loads((pack_dir / entry["file"]).read_text(encoding="utf-8"))
         model = pack.get("model_id") or pack.get("model")
