@@ -580,24 +580,16 @@ def test_janaf_reaction_formation_gibbs_matches_absolute_gibbs(
         ("dolomite", (298.15, 700.0, 1100.0), {"dolomite": "rh:dolomite", "calcite": "rh:calcite", "MgO": "Mg-008", "CO2": "C-095"}),
     ],
 )
-def test_carbonate_absolute_gibbs_matches_fixed_reference_formation_gibbs(
+def test_carbonate_runtime_gibbs_matches_absolute_route(
     host_id, temperatures, source_tables,
 ):
-    formulas = {
-        "calcite": {"Ca": 1, "C": 1, "O": 3},
-        "magnesite": {"Mg": 1, "C": 1, "O": 3},
-        "siderite": {"Fe": 1, "C": 1, "O": 3},
-        "dolomite": {"Ca": 1, "Mg": 1, "C": 2, "O": 6},
-        "CaO": {"Ca": 1, "O": 1},
-        "MgO": {"Mg": 1, "O": 1},
-        "Fe2O3": {"Fe": 2, "O": 3},
-        "CO2": {"C": 1, "O": 2},
-        "O2": {"O": 2},
-    }
-    element_reference_tables = {
-        "Ca": "Ca-003", "Mg": "Mg-002", "Fe": "Fe-004",
-        "C": "C-002", "O": "O-029",
-    }
+    # Reaction Gibbs energy rebuilt independently from absolute G = H - T*S of
+    # each species (R&H rows and JANAF tables) must match the evaluator. A
+    # fixed-reference formation sum would equal this identically for an
+    # atom-balanced reaction (elemental terms cancel), so it cannot detect a
+    # mixed reference; that guard is the pinned crossing in
+    # test_carbonate_one_bar_co2_crossings (mixing each table's published
+    # formation Gibbs energy moves calcite from 1161.5 K to about 1150.9 K).
     host_formula, host_phase = {
         "calcite": ("CaCO3", "calcite"),
         "magnesite": ("MgCO3", "magnesite"),
@@ -611,12 +603,7 @@ def test_carbonate_absolute_gibbs_matches_fixed_reference_formation_gibbs(
     terms = subsolidus._REACTIONS[host_id][2]
 
     for temperature in temperatures:
-        element_g = {
-            element: _janaf_absolute_gibbs_J(table_id, temperature)
-            for element, table_id in element_reference_tables.items()
-        }
         absolute_delta_g = 0.0
-        fixed_reference_delta_g = 0.0
         for species, _phase, nu in terms:
             table_id = source_tables[species]
             absolute_g = (
@@ -625,16 +612,10 @@ def test_carbonate_absolute_gibbs_matches_fixed_reference_formation_gibbs(
                 else _janaf_absolute_gibbs_J(table_id, temperature)
             )
             absolute_delta_g += nu * absolute_g
-            formation_g = absolute_g - sum(
-                count * element_g[element]
-                for element, count in formulas[species].items()
-            )
-            fixed_reference_delta_g += nu * formation_g
 
         result = _evaluate(host, temperature, pressures)
         assert result["status"] == "supported"
         assert result["delta_rG0_J_per_mol_rxn"] == pytest.approx(absolute_delta_g, abs=0.5)
-        assert fixed_reference_delta_g == pytest.approx(absolute_delta_g, abs=1e-6)
 
 
 def test_existing_subsolidus_records_remain_byte_identical() -> None:

@@ -59,7 +59,7 @@ reactions do. No source row is extrapolated.
 | --- | --- | --- |
 | Calcite | 1162 K (about 889 °C) | Limestone decomposition onset near 925 °C under pure CO2; the crossing is lower. [TGA and in-situ XRD study](https://doi.org/10.1039/C5CP05596B) |
 | Magnesite | 682 K (about 409 °C) | Rapid mass-loss onset at 590–600 °C in 10 vol% CO2; the crossing is lower. [Gong et al. (2025), TG/DSC](https://doi.org/10.1016/j.cjche.2025.07.014) |
-| Siderite | No crossing in 298.15–600 K at 1 bar O2; equilibrium CO2 pressure remains above 1 bar. | Oxidizing-atmosphere TGA/DSC decomposition begins at 330 °C for the earliest sample. [Kądziołka-Gaweł et al. (2023)](https://doi.org/10.3390/min13081066) |
+| Siderite | No crossing in 298.15–600 K at 1 bar O2: oxidative decomposition is favoured throughout, with equilibrium CO2 pressure from about 4×10¹⁴ bar at 298.15 K to 1.5×10¹⁰ bar at 600 K. The evaluator returns that pressure and the full-inventory extent, not a stability ceiling. | Oxidizing-atmosphere TGA/DSC decomposition begins at 330 °C for the earliest sample. [Kądziołka-Gaweł et al. (2023)](https://doi.org/10.3390/min13081066) |
 | Dolomite, first stage | 694 K (about 421 °C) | The first stage starts near 700 °C under pure CO2; the crossing is lower. [TGA and in-situ XRD study](https://doi.org/10.1039/C5CP05596B) |
 
 These are comparisons only; no thermochemical values are fitted to the
