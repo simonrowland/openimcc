@@ -3857,9 +3857,9 @@ def evaluate_gas(
     composition_wt_pct:
         Optional melt composition keyed by oxide, in weight percent. This is
         used to resolve composition-scoped liquid-reference authority such as
-        the K2O(l) measured-pressure window. With the ``sr-candidate`` profile,
-        the composition is also solved on that profile's melt basis and its
-        parent activities are used for gas pressures. Registered trace
+        the K2O(l) measured-pressure window. When a profile is selected, the
+        composition is solved on its melt-pack basis and the resulting parent
+        activities are used for gas pressures. Registered trace
         components also activate the melt-side major-bias gate: channels using
         a major whose strict trace bound exceeds its cap are omitted with the
         parent, bound, and cap recorded in the refusal. Nonzero or invalid

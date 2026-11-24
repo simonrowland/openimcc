@@ -162,28 +162,29 @@ transition markers and liquid associates remain provisional.
 
 ## Melt and gas examples
 
-At 2000 K the candidate returns the following parent activities:
+At 2000 K the v2 candidate returns the following parent activities:
 
 | Composition (mole fractions) | a(SrO) | a(Al₂O₃) |
 |---|---:|---:|
-| SrO 0.25, Al₂O₃ 0.75 | 1.32130e−4 | 0.308284 |
-| SrO 0.50, Al₂O₃ 0.50 | 0.0591594 | 0.0119361 |
-| SrO 0.75, Al₂O₃ 0.25 | 0.197756 | 0.00115226 |
-| SrO 0.30, Al₂O₃ 0.30, SiO₂ 0.40 | 1.17303e−4 | 0.162817 |
+| SrO 0.25, Al₂O₃ 0.75 | 1.32113e−4 | 0.308283 |
+| SrO 0.50, Al₂O₃ 0.50 | 0.0591526 | 0.0119359 |
+| SrO 0.75, Al₂O₃ 0.25 | 0.197737 | 0.00115219 |
+| SrO 0.30, Al₂O₃ 0.30, SiO₂ 0.40 | 1.17231e−4 | 0.162844 |
 
-With `fO2 = 1e-10` bar-relative, `evaluate_gas()` returns `p(Sr)` (bar):
+With `fO2 = 1e-10` bar-relative, `evaluate_gas()` on the v2 profile returns
+`p(Sr)` (bar):
 
 | T (K) | Composition | p(Sr) (bar) |
 |---:|---|---:|
 | 1700 | pure SrO | 1.25388e−7 |
-| 1700 | SrO/Al₂O₃ 0.5/0.5 | 3.76692e−9 |
-| 1700 | SrO/Al₂O₃/SiO₂ 0.3/0.3/0.4 | 4.50882e−12 |
+| 1700 | SrO/Al₂O₃ 0.5/0.5 | 3.76938e−9 |
+| 1700 | SrO/Al₂O₃/SiO₂ 0.3/0.3/0.4 | 4.54513e−12 |
 | 2000 | pure SrO | 1.28977e−4 |
-| 2000 | SrO/Al₂O₃ 0.5/0.5 | 7.63021e−6 |
-| 2000 | SrO/Al₂O₃/SiO₂ 0.3/0.3/0.4 | 1.51295e−8 |
+| 2000 | SrO/Al₂O₃ 0.5/0.5 | 7.62934e−6 |
+| 2000 | SrO/Al₂O₃/SiO₂ 0.3/0.3/0.4 | 1.51201e−8 |
 | 2400 | pure SrO | 8.27720e−2 |
-| 2400 | SrO/Al₂O₃ 0.5/0.5 | 8.97331e−3 |
-| 2400 | SrO/Al₂O₃/SiO₂ 0.3/0.3/0.4 | 3.43382e−5 |
+| 2400 | SrO/Al₂O₃ 0.5/0.5 | 8.96619e−3 |
+| 2400 | SrO/Al₂O₃/SiO₂ 0.3/0.3/0.4 | 3.40103e−5 |
 
 No Stolyarova, Vorozhtcov, Lopatin, Shugurov, Tyurnina, or Balabanova KEMS
 row was compared or used to select these parameters.

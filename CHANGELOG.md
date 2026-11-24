@@ -25,6 +25,9 @@
 - Built and digest-pinned an opt-in nine-parent, 45-complex candidate melt
   pack with seven Sr associations re-referenced to the v4 liquid standards.
   The default pack remains unchanged.
+- Added v2 with the same seven Sr rows refit over 1700–3000 K. The original v1
+  pack is unchanged and remains available through `load_profile("sr-candidate-v1")`;
+  `load_profile("sr-candidate")` selects v2.
 
 ### SrO candidate profile
 

@@ -993,10 +993,11 @@ The v1 table remains available by passing its path to `load_gas_datapack`.
 ### Opt-in SrO full-component candidate
 
 Use `load_profile("sr-candidate")` to select the digest-pinned
-`imcc-sf04-d066-sr-candidate-v1.json` melt pack with nine parent oxides,
-including full-component SrO. The profile keeps the default gas, condensate,
-and redox v6 packs. Pass it to both `evaluate()` and `evaluate_gas()`; the gas
-evaluator selects the nine-parent basis from this profile. The default
+`imcc-sf04-d066-sr-candidate-v2.json` melt pack with nine parent oxides,
+including full-component SrO. `load_profile("sr-candidate-v1")` selects the
+unchanged v1 pack. Both profiles keep the default gas, condensate, and redox v6
+packs. Pass the selected profile to both `evaluate()` and `evaluate_gas()`; the
+gas evaluator selects the nine-parent basis from its melt pack. The default
 `openimcc` profile and its SrO trace limit are unchanged.
 
 All seven Sr liquid associates use the provisional class-C fusion-entropy
