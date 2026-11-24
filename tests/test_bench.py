@@ -588,7 +588,7 @@ def test_unsupported_observable_is_not_coerced(tmp_path: Path) -> None:
 
 
 def test_research_overlay_controlled_vocabulary_census() -> None:
-    assert len(_PACK_OVERLAY_BY_VERSION) == 34
+    assert len(_PACK_OVERLAY_BY_VERSION) == 35
     packs = [
         json.loads(path.read_text(encoding="utf-8"))
         for path in sorted((_REPO_ROOT / "src/openimcc/data/packs").glob("*.json"))
