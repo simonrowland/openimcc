@@ -30,6 +30,32 @@ GasSpeciesId = str
 # At 800 K the troilite source node ΔfG°=-111.4 kJ/mol gives pS2,eq about
 # 2.84e-10 Pa for unit solid activities, a useful scale/sign check.
 
+# Fe2(SO4)3 premise: JANAF Fe-031, Fe-030, and O-034 all give formation Gibbs
+# energies from the same elemental reference. Algebra: ΔrG° = ΔfG°(Fe2O3) +
+# 3ΔfG°(SO2) - ΔfG°(Fe2(SO4)3); ΔfG°(O2)=0. Q=(pSO2/p°)^3(fO2/p°)^1.5
+# a(Fe2O3)/a(host). Each Gibbs term and ΔrG° is J/mol reaction; RT and the
+# logarithm of dimensionless pressure/activity ratios are also J/mol. In air,
+# the 1-bar SO2 crossing is about 1030 K, inside the scoped 1000–1100 K band;
+# JANAF nodes give pSO2,eq ≈ 7.5 Pa at 800 K and 0.40 bar at 1000 K.
+#
+# FeSO4 premise: JANAF Fe-022 and Fe-030 with the same O-034 formation row.
+# Algebra: ΔrG° = 1/2 ΔfG°(Fe2O3) + ΔfG°(SO2) - ΔfG°(FeSO4), with
+# ΔfG°(O2)=0; Q=(pSO2/p°)(fO2/p°)^1/4 a(Fe2O3)^1/2/a(host). Units are J/mol
+# reaction for Gibbs values and dimensionless for Q. At 1000 K in air,
+# pSO2,eq ≈ 1.40 bar, matching the sourced sulfate decomposition scale.
+#
+# Brucite premise: JANAF H-057, Mg-008, and H-064 share their elemental
+# formation reference. Algebra: ΔrG° = ΔfG°(MgO) + ΔfG°(H2O) -
+# ΔfG°(Mg(OH)2); Q=(pH2O/p°)a(MgO)/a(host). Gibbs terms are J/mol reaction,
+# and RT ln(Q) is J/mol. The 1-bar dehydration crossing is about 542 K, within
+# the scoped 500–600 K band; JANAF nodes give pH2O,eq ≈ 0.236 bar at 500 K.
+#
+# Portlandite premise: JANAF Ca-020, Ca-027, and H-064 share their elemental
+# formation reference. Algebra: ΔrG° = ΔfG°(CaO) + ΔfG°(H2O) -
+# ΔfG°(Ca(OH)2); Q=(pH2O/p°)a(CaO)/a(host). Gibbs terms are J/mol reaction,
+# and RT ln(Q) is J/mol. The 1-bar dehydration crossing is about 794 K, just
+# under 800 K; JANAF nodes give pH2O,eq ≈ 0.129 bar at 700 K.
+
 
 class HostInventory(TypedDict):
     species_id: str
@@ -183,13 +209,42 @@ _REACTIONS = {
         (("MgSO4", "crystalline anhydrous magnesium sulfate", -1.0), ("MgO", "crystal", 1.0), ("SO2", "gas", 1.0), ("O2", "gas", 0.5)),
         "MgSO4",
     ),
+    "Fe2(SO4)3": (
+        "ferric_sulfate_decomposition",
+        "SO2",
+        (("Fe2(SO4)3", "crystal", -1.0), ("Fe2O3", "hematite", 1.0), ("SO2", "gas", 3.0), ("O2", "gas", 1.5)),
+        "Fe2(SO4)3",
+    ),
+    "FeSO4": (
+        "ferrous_sulfate_decomposition",
+        "SO2",
+        (("FeSO4", "crystal", -1.0), ("Fe2O3", "hematite", 0.5), ("SO2", "gas", 1.0), ("O2", "gas", 0.25)),
+        "FeSO4",
+    ),
+    "Mg(OH)2": (
+        "brucite_dehydration",
+        "H2O",
+        (("Mg(OH)2", "brucite", -1.0), ("MgO", "crystal", 1.0), ("H2O", "gas", 1.0)),
+        "Mg(OH)2",
+    ),
+    "Ca(OH)2": (
+        "portlandite_dehydration",
+        "H2O",
+        (("Ca(OH)2", "portlandite", -1.0), ("CaO", "crystal", 1.0), ("H2O", "gas", 1.0)),
+        "Ca(OH)2",
+    ),
 }
 
 _REACTION_ALGEBRA_GAS_TERMS = {
     "FeS_troilite": (("S2", 0.5),),
     "CaSO4": (("SO2", 1.0), ("O2", 0.5)),
     "MgSO4": (("SO2", 1.0), ("O2", 0.5)),
+    "Fe2(SO4)3": (("SO2", 3.0), ("O2", 1.5)),
+    "FeSO4": (("SO2", 1.0), ("O2", 0.25)),
+    "Mg(OH)2": (("H2O", 1.0),),
+    "Ca(OH)2": (("H2O", 1.0),),
 }
+_JANAF_REACTION_HOSTS = frozenset(("Fe2(SO4)3", "FeSO4", "Mg(OH)2", "Ca(OH)2"))
 
 
 def _reaction_requires_oxygen_fugacity(
@@ -242,7 +297,7 @@ def evaluate_subsolidus_reactions(
     condensed_phase_activities: Mapping[SpeciesId, float],
     oxygen_fugacity_Pa: float | None = None,
 ) -> Sequence[ReactionEquilibrium]:
-    """Evaluate troilite and sulfate reaction equilibrium at ``temperature_K``.
+    """Evaluate supported subsolidus host reactions at ``temperature_K``.
 
     Pressures are Pa, activities are dimensionless, Gibbs energy is J/mol of
     reaction as written, and extent is mol of reaction. Gas standard pressure
@@ -330,7 +385,7 @@ def evaluate_subsolidus_reactions(
             sources.append(_source(iron))
             interval_low = max(interval_low, iron["valid_temperature_K"][0])
             interval_high = min(interval_high, iron["valid_temperature_K"][1])
-        else:
+        elif host_id in {"CaSO4", "MgSO4"}:
             oxide_id = "CaO" if host_id == "CaSO4" else "MgO"
             sources.extend((_source(data[oxide_id]), _source(data["SO2"])))
             interval_low = max(
@@ -378,6 +433,61 @@ def evaluate_subsolidus_reactions(
                     None,
                 ))
                 continue
+        else:
+            source_species = dict.fromkeys(
+                species for species, _phase, _nu in terms_raw if species in data
+            )
+            for species in source_species:
+                if species == host_id:
+                    continue
+                record = data[species]
+                sources.append(_source(record))
+                interval_low = max(interval_low, record["valid_temperature_K"][0])
+                interval_high = min(interval_high, record["valid_temperature_K"][1])
+
+            gas_species = tuple(
+                dict.fromkeys(
+                    species
+                    for species, phase, _nu in terms_raw
+                    if phase == "gas" and species not in data
+                )
+            )
+            if gas_species:
+                try:
+                    from .gas import load_gas_datapack, species_thermo
+                    datapack = load_gas_datapack()
+                    for name in gas_species:
+                        table_rows = datapack.gas_df.loc[f"{name}(g)"]
+                        if not hasattr(table_rows, "columns"):
+                            table_rows = table_rows.to_frame().T
+                        lows = [float(v) for v in table_rows["T_min"]]
+                        highs = [float(v) for v in table_rows["T_max"]]
+                        interval_low = max(interval_low, min(lows))
+                        interval_high = min(interval_high, max(highs))
+                    if interval_low <= temperature_K <= interval_high:
+                        active_lows = []
+                        active_highs = []
+                        for name in gas_species:
+                            row = species_thermo(name, "g", temperature_K, datapack)
+                            active_lows.append(row.T_min)
+                            active_highs.append(row.T_max)
+                            if row.source_row_id not in {s["source_id"] for s in sources}:
+                                sources.append({
+                                    "source_id": row.source_row_id,
+                                    "row_or_table": f"JANAF gas {row.source_row_id}",
+                                    "standard_state": "ideal gas, 1 bar; JANAF standard Gibbs function",
+                                    "valid_temperature_K": (row.T_min, row.T_max),
+                                    "doi": "10.18434/T42S31",
+                                })
+                        interval_low = max(interval_low, *active_lows)
+                        interval_high = min(interval_high, *active_highs)
+                except ImccGasSpeciesNotFoundError as exc:
+                    results.append(_base_result(
+                        reaction_id, "thermochemistry_missing", stoich, driver, sources,
+                        (_notice("thermochemistry_missing", "unavailable", str(exc), expected["source_id"]),),
+                        None,
+                    ))
+                    continue
 
         joint_interval = (float(interval_low), float(interval_high))
         if not interval_low <= temperature_K <= interval_high:
@@ -403,7 +513,11 @@ def evaluate_subsolidus_reactions(
                 )
                 log_pressure_eq = -2.0 * delta_g0 / (R_J_MOL_K * temperature_K) - 2.0 * log_q_no_driver
                 ln_kp = -delta_g0 / (R_J_MOL_K * temperature_K)
-            else:
+                activity_by_species = {
+                    host_id: activity_host,
+                    "Fe": activity_product,
+                }
+            elif host_id in {"CaSO4", "MgSO4"}:
                 oxide_id = "CaO" if host_id == "CaSO4" else "MgO"
                 oxide_g = _node_value(data[oxide_id], temperature_K)
                 gas_so2_g = _node_value(data["SO2"], temperature_K)
@@ -418,10 +532,37 @@ def evaluate_subsolidus_reactions(
                     else math.log(activity_host) - math.log(activity_product)
                 )
                 log_pressure_eq = ln_kp + log_activity_ratio
-            activity_by_species = {
-                host_id: activity_host,
-                "Fe" if host_id == "FeS_troilite" else ("CaO" if host_id == "CaSO4" else "MgO"): activity_product,
-            }
+                activity_by_species = {
+                    host_id: activity_host,
+                    oxide_id: activity_product,
+                }
+            else:
+                delta_g0 = sum(
+                    nu * _node_value(data[species], temperature_K)
+                    for species, _phase, nu in terms_raw
+                    if species in data
+                )
+                ln_kp = -delta_g0 / (R_J_MOL_K * temperature_K)
+                activity_by_species = {}
+                log_activity_product = 0.0
+                for species, phase, nu in terms_raw:
+                    if phase == "gas":
+                        continue
+                    activity = (
+                        _host_activity(host, condensed_phase_activities, host_id)
+                        if species == host_id
+                        else _activity(
+                            condensed_phase_activities.get(species), species
+                        )
+                    )
+                    activity_by_species[species] = activity
+                    log_activity_product += nu * math.log(activity)
+                driver_nu = next(
+                    nu
+                    for species, phase, nu in terms_raw
+                    if phase == "gas" and species == driver
+                )
+                log_pressure_eq = (-delta_g0 / (R_J_MOL_K * temperature_K) - log_activity_product) / driver_nu
             stoich = tuple({
                 "species_id": species,
                 "phase": phase,
@@ -478,7 +619,22 @@ def evaluate_subsolidus_reactions(
             ))
             continue
 
-        if requires_oxygen_fugacity:
+        if host_id in _JANAF_REACTION_HOSTS:
+            driver_nu = next(
+                nu
+                for species, phase, nu in terms_raw
+                if phase == "gas" and species == driver
+            )
+            for species, phase, nu in terms_raw:
+                if phase != "gas" or species == driver:
+                    continue
+                pressure = gas_o2 if species == "O2" else gas_pressures[species]
+                log_pressure_eq -= (
+                    nu
+                    / driver_nu
+                    * _log_standard_pressure_ratio(float(pressure))
+                )
+        elif requires_oxygen_fugacity:
             log_pressure_eq -= 0.5 * _log_standard_pressure_ratio(gas_o2)
         try:
             equilibrium_pressure = STANDARD_PRESSURE_PA * math.exp(log_pressure_eq)
@@ -503,22 +659,31 @@ def evaluate_subsolidus_reactions(
             ))
             continue
 
-        activity_ratio = activity_product / activity_host
-        activities = (
-            math.log(activity_ratio)
-            if activity_ratio > 0.0 and math.isfinite(activity_ratio)
-            else math.log(activity_product) - math.log(activity_host)
-        )
-        if requires_oxygen_fugacity:
-            log_q = (
-                activities
-                + _log_standard_pressure_ratio(gas_pressures[driver])
-                + 0.5 * _log_standard_pressure_ratio(gas_o2)
-            )
+        if host_id in _JANAF_REACTION_HOSTS:
+            log_q = 0.0
+            for species, phase, nu in terms_raw:
+                if phase == "gas":
+                    pressure = gas_o2 if species == "O2" else gas_pressures[species]
+                    log_q += nu * _log_standard_pressure_ratio(float(pressure))
+                else:
+                    log_q += nu * math.log(activity_by_species[species])
         else:
-            log_q = activities + 0.5 * _log_standard_pressure_ratio(
-                gas_pressures[driver]
+            activity_ratio = activity_product / activity_host
+            activities = (
+                math.log(activity_ratio)
+                if activity_ratio > 0.0 and math.isfinite(activity_ratio)
+                else math.log(activity_product) - math.log(activity_host)
             )
+            if requires_oxygen_fugacity:
+                log_q = (
+                    activities
+                    + _log_standard_pressure_ratio(gas_pressures[driver])
+                    + 0.5 * _log_standard_pressure_ratio(gas_o2)
+                )
+            else:
+                log_q = activities + 0.5 * _log_standard_pressure_ratio(
+                    gas_pressures[driver]
+                )
         delta_g = delta_g0 + R_J_MOL_K * temperature_K * log_q
         extent = remaining if delta_g < 0.0 else 0.0
         notices = [_notice(

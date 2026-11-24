@@ -1225,6 +1225,19 @@ For thermodynamic ceilings on troilite, anhydrite, and crystalline anhydrous
 magnesium sulfate decomposition, see
 [`evaluate_subsolidus_reactions`](docs/subsolidus-reactions.md).
 
+That API also supports ferric sulfate (`Fe2(SO4)3`), ferrous sulfate
+(`FeSO4`), brucite (`Mg(OH)2`), and portlandite (`Ca(OH)2`). Sulfate drivers
+are SO2 with oxygen supplied as a fugacity; hydroxide drivers are H2O. Other
+host IDs remain `unknown_host` where a source grid or closed reaction is
+missing: gypsum and bassanite lack a usable ΔfG(T) grid; goethite has one
+OCR-disputed reference row; jarosite has no table in these compilations;
+Na2SO4 stays solid or melts without a useful oxide-decomposition ceiling;
+NaCl, KCl, and CaCl2 have melting and then chloride-vaporization ceilings;
+MgCl2 remains unsupported because its active air reaction consumes oxygen and
+has a different stoichiometry. Chlorapatite is absent from the tables, and
+fluorapatite and hydroxyapatite lack a closed decomposition assemblage and
+printed melting limits.
+
 `species_thermo(species, phase, T_K, datapack=None,
 allow_extrapolation=False, polymorph=None)` selects the same row the runtime
 selector uses and

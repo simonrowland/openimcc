@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Subsolidus decomposition ceilings
+
+- Added source-bounded ceilings for `Fe2(SO4)3`, `FeSO4`, brucite
+  (`Mg(OH)2`), and portlandite (`Ca(OH)2`). The sulfate reactions use JANAF
+  formation-Gibbs rows for hematite and SO2, with oxygen as a fugacity; the
+  hydroxides release H2O.
+- Kept gypsum and bassanite as `unknown_host` because neither has a usable
+  temperature-dependent formation-Gibbs grid; goethite has only one
+  OCR-disputed reference row, and jarosite has no table in these compilations.
+  Na2SO4 has no useful oxide-decomposition ceiling before melting. NaCl, KCl,
+  and CaCl2 remain unsupported because their ceilings are melting followed by
+  chloride vaporization; MgCl2 remains a gap because its active air reaction
+  consumes oxygen and has different stoichiometry. Chlorapatite is absent from
+  these tables, while fluorapatite and hydroxyapatite have formation grids but
+  no closed decomposition assemblage or printed melting limit.
+
 ### P2O5 candidate
 
 - Added an opt-in nine-parent P2O5 melt pack with Mg3(PO4)2 and Ca3(PO4)2,

@@ -6,6 +6,10 @@ normalized decomposition reactions for exact feed-declared hosts:
 - Troilite: `FeS_troilite → Fe + ½ S2`
 - Anhydrite: `CaSO4 → CaO + SO2 + ½ O2`
 - Crystalline anhydrous magnesium sulfate: `MgSO4 → MgO + SO2 + ½ O2`
+- Ferric sulfate: `Fe2(SO4)3 → Fe2O3 + 3 SO2 + 3/2 O2`
+- Ferrous sulfate: `FeSO4 → 1/2 Fe2O3 + SO2 + 1/4 O2`
+- Brucite: `Mg(OH)2 → MgO + H2O`
+- Portlandite: `Ca(OH)2 → CaO + H2O`
 
 Pass temperature in K, gas partial pressures and oxygen fugacity in Pa,
 condensed-phase activities as dimensionless values, and host inventories in
@@ -26,25 +30,37 @@ when it does not. It is not a predicted release amount or rate.
 zero. The sulfate reactions need both SO2 pressure and one oxygen potential.
 Provide that potential through `oxygen_fugacity_Pa` or the O2 pressure entry;
 if both are present they must agree within the module's declared tolerance.
-The output pressure map contains only S2 for troilite or SO2 for a sulfate.
-The sulfate O2 coproduct remains in stoichiometry and is never an independent
-release channel.
+The output pressure map contains only S2 for troilite, SO2 for a sulfate, or
+H2O for brucite and portlandite. The sulfate O2 coproduct remains in
+stoichiometry and is never an independent release channel. Ferric sulfate has
+three moles of SO2 per reaction mole, and its returned SO2 ceiling solves that
+cubic pressure term.
 
 `numeric_out_of_range` marks one host whose equilibrium pressure is not
 representable as a finite positive float. That host's pressure and extent are
 `None`, and evaluation continues for later hosts in the batch.
 
-The R&H mineral formation-Gibbs nodes, JANAF crystal nodes, and the JANAF
-SO2 formation-Gibbs nodes are linearly interpolated between adjacent published
-temperatures. Existing SO2 and O2 gas rows supply the sulfate domain checks
-and source references; the SO2 formation function is evaluated from its JANAF
-formation-Gibbs table so its sulfur elemental reference is preserved. The
-troilite host row already uses S2 at 1 bar as its sulfur reference. No source
-row is extrapolated. The sulfate gas rows begin at 500 K, so sulfate
-calls below 500 K are unavailable. Anhydrite is unavailable above its 1000 K
-source limit; crystalline anhydrous MgSO4 is covered to 1400 K. Troilite's
-solid source table is used through 1400 K; its reported transition temperatures
-are preserved in the data record.
+The R&H mineral formation-Gibbs nodes, JANAF crystal nodes, and JANAF gas
+formation-Gibbs nodes are linearly interpolated between adjacent published
+temperatures. The new iron sulfate and hydroxide reactions use formation-Gibbs
+values for every term from JANAF's own elemental reference, including hematite
+and water. The sulfate reactions use JANAF's SO2 formation function and the
+JANAF gas rows for temperature-domain checks. No source row is extrapolated.
+Sulfates using SO2 are unavailable below 500 K; anhydrite is covered through
+1000 K, MgSO4 through 1400 K, and the new iron sulfates through 1500 K. Brucite
+and portlandite are covered from 298.15 through 1000 K. Troilite's solid source
+table is used through 1400 K; its reported transition temperatures are
+preserved in the data record.
+
+These IDs remain `unknown_host`: gypsum and bassanite lack a usable ΔfG(T)
+grid; goethite has one OCR-disputed 298.15 K row; jarosite has no table in the
+cited compilations; Na2SO4 has no useful oxide-decomposition ceiling before
+melting; NaCl, KCl, and CaCl2 ceilings are melting followed by chloride
+vaporization. MgCl2's active air reaction consumes oxygen and has a different
+stoichiometry.
+Chlorapatite is absent from the tables, while fluorapatite and hydroxyapatite
+have formation grids without a closed decomposition assemblage or printed
+melting limit.
 
 This API does not calculate flux, area, accommodation, pump or sweep limits,
 mass outputs, timestep release, or solid-release kinetics. Equilibrium is only
@@ -57,9 +73,10 @@ caller owns first-melt handoff and must retain unsupported host inventory.
   Substances at 298.15 K and 1 Bar Pressure and at Higher Temperatures*, USGS
   Bulletin 2131 (1995), troilite p. 156, anhydrite p. 285, magnesium sulfate
   p. 292. [USGS publication](https://pubs.usgs.gov/bul/2131/report.pdf)
-- Chase, *NIST-JANAF Thermochemical Tables*, 4th ed. (1998), Ca-027,
-  Mg-008, O-034 and O-029. The elemental Fe(s) standard has ΔfG° = 0 by
-  definition. DOI: [10.18434/T42S31](https://doi.org/10.18434/T42S31).
+- Chase, *NIST-JANAF Thermochemical Tables*, 4th ed. (1998), Ca-020, Ca-027,
+  Fe-022, Fe-030, Fe-031, H-057, H-064, Mg-008, O-034, and O-029. The
+  elemental oxygen standard has ΔfG° = 0 by definition. DOI:
+  [10.18434/T42S31](https://doi.org/10.18434/T42S31).
 - Madeleine N. Scheidema and Pekka Taskinen, “Decomposition Thermodynamics
   of Magnesium Sulfate,” *Industrial & Engineering Chemistry Research* 50
   (2011), 9550–9556, DOI [10.1021/ie102554f](https://doi.org/10.1021/ie102554f).

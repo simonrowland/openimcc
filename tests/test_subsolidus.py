@@ -1,4 +1,7 @@
+import hashlib
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -71,14 +74,83 @@ def _evaluate(host, temperature, pressures, activities=None, oxygen=None):
     )[0]
 
 
+def _janaf_row(table_id: str, temperature_K: float) -> dict[str, float]:
+    source_root = Path(__file__).resolve().parents[1] / "data-src" / "janaf"
+    text_path = source_root / f"{table_id}.txt"
+    if text_path.exists():
+        lines = text_path.read_text().splitlines()
+        headings = lines[1].split("\t")
+        for line in lines[2:]:
+            cells = line.split("\t")
+            if len(cells) != len(headings):
+                continue
+            try:
+                row = dict(zip(headings, cells))
+                row_temperature = float(row["T(K)"])
+            except (KeyError, ValueError):
+                continue
+            if row_temperature == temperature_K:
+                return {
+                    "temperature": row_temperature,
+                    "entropy": float(row["S"]),
+                    "enthalpy_increment": float(row["H-H(Tr)"]),
+                    "formation_enthalpy": float(row["delta-f H"]),
+                    "formation_gibbs_energy": float(row["delta-f G"]),
+                }
+        raise AssertionError(f"JANAF table {table_id} has no {temperature_K:g} K row")
+
+    import yaml
+
+    table = yaml.safe_load((source_root / f"{table_id}.yaml").read_text())
+    rows = table.get("values", table.get("table", {}).get("values", ()))
+    for row in rows:
+        if float(row["temperature"]["value"]) == temperature_K:
+            return {
+                "temperature": temperature_K,
+                "entropy": float(row["entropy"]["value"]),
+                "enthalpy_increment": float(row["enthalpy_increment"]["value"]),
+                "formation_enthalpy": float(row["formation_enthalpy"]["value"]),
+                "formation_gibbs_energy": float(row["formation_gibbs_energy"]["value"]),
+            }
+    raise AssertionError(f"JANAF table {table_id} has no {temperature_K:g} K row")
+
+
+def _janaf_absolute_gibbs_J(table_id: str, temperature_K: float) -> float:
+    reference_enthalpy = _janaf_row(table_id, 298.15)["formation_enthalpy"]
+    row = _janaf_row(table_id, temperature_K)
+    return (
+        (reference_enthalpy + row["enthalpy_increment"]) * 1000.0
+        - temperature_K * row["entropy"]
+    )
+
+
+def _raw_subsolidus_record(name: str) -> str:
+    path = Path(subsolidus.__file__).with_name("data") / "subsolidus.json"
+    text = path.read_text()
+    species_start = text.index('"species"')
+    record_start = text.index(f'"{name}":', species_start)
+    object_start = text.index("{", record_start)
+    _, object_end = json.JSONDecoder().raw_decode(text, object_start)
+    return text[object_start:object_end]
+
+
 def test_supported_reactions_are_atom_balanced_and_have_one_driver():
     cases = [
         (_host("FeS_troilite", "FeS", "troilite"), {"Fe": 0, "S": 0, "O": 0}),
         (_host("CaSO4", "CaSO4", "anhydrite"), {"Ca": 0, "S": 0, "O": 0}),
         (_host("MgSO4", "MgSO4", "crystalline anhydrous magnesium sulfate"), {"Mg": 0, "S": 0, "O": 0}),
+        (_host("Fe2(SO4)3", "Fe2(SO4)3", "crystal"), {"Fe": 0, "S": 0, "O": 0}),
+        (_host("FeSO4", "FeSO4", "crystal"), {"Fe": 0, "S": 0, "O": 0}),
+        (_host("Mg(OH)2", "Mg(OH)2", "brucite"), {"Mg": 0, "H": 0, "O": 0}),
+        (_host("Ca(OH)2", "Ca(OH)2", "portlandite"), {"Ca": 0, "H": 0, "O": 0}),
     ]
     for host, expected in cases:
-        pressures = {"S2": 1e-8} if host["species_id"] == "FeS_troilite" else {"SO2": 1e-8, "O2": 2e4}
+        if host["species_id"] == "FeS_troilite":
+            pressures = {"S2": 1e-8}
+        elif host["species_id"] in {"Mg(OH)2", "Ca(OH)2"}:
+            pressures = {"H2O": 1e5}
+        else:
+            pressures = {"SO2": 1e-8, "O2": 2e4}
         result = _evaluate(host, 800.0, pressures)
         assert result["status"] == "supported"
         assert "diffusion_limited_equilibrium_upper_bound" in {
@@ -92,12 +164,45 @@ def test_supported_reactions_are_atom_balanced_and_have_one_driver():
             formula = {"FeS_troilite": {"Fe": 1, "S": 1}, "Fe": {"Fe": 1}, "S2": {"S": 2},
                        "CaSO4": {"Ca": 1, "S": 1, "O": 4}, "CaO": {"Ca": 1, "O": 1},
                        "MgSO4": {"Mg": 1, "S": 1, "O": 4}, "MgO": {"Mg": 1, "O": 1},
+                       "Fe2(SO4)3": {"Fe": 2, "S": 3, "O": 12},
+                       "FeSO4": {"Fe": 1, "S": 1, "O": 4},
+                       "Fe2O3": {"Fe": 2, "O": 3},
+                       "Mg(OH)2": {"Mg": 1, "O": 2, "H": 2},
+                       "Ca(OH)2": {"Ca": 1, "O": 2, "H": 2},
+                       "H2O": {"H": 2, "O": 1},
                        "SO2": {"S": 1, "O": 2}, "O2": {"O": 2}}[term["species_id"]]
             for element, count in formula.items():
                 balance[element] += term["nu_mol_per_mol_rxn"] * count
         assert balance == pytest.approx(expected, rel=1.0e-13, abs=0.0)
-        assert all(term["nu_mol_per_mol_rxn"] in {-1.0, -0.5, 0.5, 1.0} for term in terms)
+        assert all(term["nu_mol_per_mol_rxn"] in {-1.0, -0.5, 0.25, 0.5, 1.0, 1.5, 3.0} for term in terms)
         assert result["extent_bound_mol_rxn"] <= host["remaining_mol"]
+
+
+@pytest.mark.parametrize(
+    ("host", "temperature", "pressures", "expected_driver", "expected_pressure", "interval"),
+    [
+        (_host("Fe2(SO4)3", "Fe2(SO4)3", "crystal"), 800.0, {"SO2": 1e5, "O2": 21_000.0}, "SO2", 7.5, (500.0, 1500.0)),
+        (_host("FeSO4", "FeSO4", "crystal"), 1000.0, {"SO2": 1e5, "O2": 21_000.0}, "SO2", 140_000.0, (500.0, 1500.0)),
+        (_host("Mg(OH)2", "Mg(OH)2", "brucite"), 500.0, {"H2O": 1e5}, "H2O", 23_600.0, (298.15, 1000.0)),
+        (_host("Ca(OH)2", "Ca(OH)2", "portlandite"), 700.0, {"H2O": 1e5}, "H2O", 12_900.0, (298.15, 1000.0)),
+    ],
+)
+def test_new_hosts_return_their_ceiling_and_gas_driver(
+    host, temperature, pressures, expected_driver, expected_pressure, interval,
+):
+    result = _evaluate(host, temperature, pressures)
+
+    assert result["status"] == "supported"
+    assert result["driving_gas_species_id"] == expected_driver
+    assert result["joint_valid_temperature_K"] == interval
+    assert result["equilibrium_gas_partial_pressures_Pa"] == pytest.approx(
+        {expected_driver: expected_pressure}, rel=0.02
+    )
+    assert "diffusion_limited_equilibrium_upper_bound" in {
+        notice["code"] for notice in result["notices"]
+    }
+    if host["species_id"] in {"Mg(OH)2", "Ca(OH)2"}:
+        assert not any(term["species_id"] == "O2" for term in result["stoichiometry"])
 
 
 @pytest.mark.parametrize(
@@ -278,6 +383,25 @@ def test_required_pressures_and_unavailable_ranges_refuse_without_fake_numbers()
     assert anhydrite["joint_valid_temperature_K"] == (500.0, 1000.0)
 
 
+@pytest.mark.parametrize(
+    ("host", "temperature", "pressures", "interval"),
+    [
+        (_host("Fe2(SO4)3", "Fe2(SO4)3", "crystal"), 499.0, {"SO2": 1e5, "O2": 21_000.0}, (500.0, 1500.0)),
+        (_host("FeSO4", "FeSO4", "crystal"), 1501.0, {"SO2": 1e5, "O2": 21_000.0}, (500.0, 1500.0)),
+        (_host("Mg(OH)2", "Mg(OH)2", "brucite"), 298.14, {"H2O": 1e5}, (298.15, 1000.0)),
+        (_host("Ca(OH)2", "Ca(OH)2", "portlandite"), 1000.1, {"H2O": 1e5}, (298.15, 1000.0)),
+    ],
+)
+def test_new_hosts_keep_joint_source_range_refusals(host, temperature, pressures, interval):
+    result = _evaluate(host, temperature, pressures)
+
+    assert result["status"] == "temperature_out_of_range"
+    assert result["joint_valid_temperature_K"] == interval
+    assert result["delta_rG0_J_per_mol_rxn"] is None
+    assert result["equilibrium_gas_partial_pressures_Pa"] is None
+    assert result["extent_bound_mol_rxn"] is None
+
+
 def test_unknown_host_and_wrong_phase_do_not_dispatch_by_formula():
     unknown = _evaluate(_host("S", "S", "element", 1.0), 800.0, {"S2": 1.0})
     assert unknown["status"] == "unknown_host"
@@ -285,6 +409,89 @@ def test_unknown_host_and_wrong_phase_do_not_dispatch_by_formula():
     wrong_phase = _evaluate(_host("MgSO4", "MgSO4", "epsomite"), 800.0, {"SO2": 1.0, "O2": 1.0})
     assert wrong_phase["status"] == "unknown_host"
     assert wrong_phase["extent_bound_mol_rxn"] is None
+
+
+@pytest.mark.parametrize(
+    ("species_id", "formula"),
+    [
+        ("gypsum", "CaSO4·2H2O"),
+        ("bassanite", "CaSO4·0.5H2O"),
+        ("goethite", "FeOOH"),
+        ("jarosite", "KFe3(SO4)2(OH)6"),
+        ("Na2SO4", "Na2SO4"),
+        ("NaCl", "NaCl"),
+        ("KCl", "KCl"),
+        ("CaCl2", "CaCl2"),
+        ("MgCl2", "MgCl2"),
+        ("chlorapatite", "Ca5(PO4)3Cl"),
+        ("fluorapatite", "Ca5(PO4)3F"),
+        ("hydroxyapatite", "Ca5(PO4)3OH"),
+    ],
+)
+def test_typed_gap_hosts_remain_unknown(species_id, formula):
+    result = _evaluate(_host(species_id, formula, "crystal"), 800.0, {"SO2": 1e5, "O2": 21_000.0})
+
+    assert result["status"] == "unknown_host"
+    assert result["delta_rG0_J_per_mol_rxn"] is None
+    assert result["equilibrium_gas_partial_pressures_Pa"] is None
+    assert result["extent_bound_mol_rxn"] is None
+
+
+@pytest.mark.parametrize(
+    ("host_id", "temperatures"),
+    [
+        ("Fe2(SO4)3", (500.0, 1000.0, 1500.0)),
+        ("FeSO4", (500.0, 1000.0, 1500.0)),
+        ("Mg(OH)2", (298.15, 600.0, 1000.0)),
+        ("Ca(OH)2", (298.15, 600.0, 1000.0)),
+    ],
+)
+def test_janaf_reaction_formation_gibbs_matches_absolute_gibbs(
+    host_id: str, temperatures: tuple[float, float, float],
+) -> None:
+    table_by_species = {
+        "Fe2(SO4)3": "Fe-031",
+        "FeSO4": "Fe-022",
+        "Fe2O3": "Fe-030",
+        "SO2": "O-034",
+        "O2": "O-029",
+        "Mg(OH)2": "H-057",
+        "MgO": "Mg-008",
+        "H2O": "H-064",
+        "Ca(OH)2": "Ca-020",
+        "CaO": "Ca-027",
+    }
+    data = subsolidus._data()["species"]
+    terms = subsolidus._REACTIONS[host_id][2]
+
+    for temperature in temperatures:
+        formation_delta_g = sum(
+            nu * subsolidus._node_value(data[species], temperature)
+            for species, _phase, nu in terms
+            if species != "O2"
+        )
+        absolute_delta_g = sum(
+            nu * _janaf_absolute_gibbs_J(table_by_species[species], temperature)
+            for species, _phase, nu in terms
+        )
+        assert formation_delta_g == pytest.approx(absolute_delta_g, abs=25.0), (
+            f"{host_id} at {temperature:g} K: formation-from-elements "
+            f"ΔrG={formation_delta_g:g} J/mol; absolute-G ΔrG="
+            f"{absolute_delta_g:g} J/mol"
+        )
+
+
+def test_existing_subsolidus_records_remain_byte_identical() -> None:
+    expected_sha256 = {
+        "FeS_troilite": "d11368b1a6b27d23d2e35454d677cf039eeded99a96769fbdcabdcf1cc5202d6",
+        "CaSO4": "3128d3f2b39d2f9068d87ee45bd864ff081c0ba36786940ea50f99152ce1f331",
+        "MgSO4": "2a8b79cdf96609ce879945bc092dd6b5cbc608c8b978f4655f4c50f3dcdb76b5",
+        "SO2": "ab98e0b0ee43e83eec1765d45a7342d722afd318ed828f4e434a1250302a2312",
+    }
+
+    for name, digest in expected_sha256.items():
+        record = _raw_subsolidus_record(name).encode()
+        assert hashlib.sha256(record).hexdigest() == digest
 
 
 def test_literature_scale_checks_for_each_reaction():
