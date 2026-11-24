@@ -75,6 +75,30 @@
       "doi": "10.1039/JR9610004442",
       "url": "https://doi.org/10.1039/JR9610004442",
       "locator": "CaO–P2O5 phase diagram; congruent melting marker for Ca3(PO4)2 at 1810 °C (2083.15 K)."
+    },
+    "JANAF-MGO-LIQUID": {
+      "citation": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th ed., Mg-009.",
+      "doi": "10.18434/T42S31",
+      "file": "data-src/janaf/Mg-009.yaml",
+      "locator": "MgO(l) formation-Gibbs column, 1700–2300 K; the JANAF pure-liquid standard also underlies the D066 parent standard."
+    },
+    "JANAF-CAO-LIQUID": {
+      "citation": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th ed., Ca-028.",
+      "doi": "10.18434/T42S31",
+      "file": "data-src/janaf/Ca-028.yaml",
+      "locator": "CaO(l) formation-Gibbs column, 1700–2300 K; the JANAF pure-liquid standard also underlies the D066 parent standard."
+    },
+    "JANAF-P2-GAS": {
+      "citation": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th ed., P-012.",
+      "doi": "10.18434/T42S31",
+      "file": "data-src/janaf/P-012.yaml",
+      "locator": "P2(g) formation-Gibbs column and its 1180.008 K 1-bar elemental-reference marker."
+    },
+    "JUNG-HUDON-P2O5-LIQUID": {
+      "citation": "Jung and Hudon (2012), Thermodynamic Assessment of P2O5, Journal of the American Ceramic Society 95(11), 3665-3672.",
+      "doi": "10.1111/j.1551-2916.2012.05382.x",
+      "file": "data-src/published-thermo/jung-hudon-p2o5.json",
+      "locator": "Existing P2(g)+5/2O2(g)=P2O5(l) equation, converted from its inferred 1-atm gas standard to the JANAF 1-bar standard."
     }
   },
   "transcription": {
@@ -2756,8 +2780,8 @@
         "K2O": 0.0,
         "P2O5": 1.0
       },
-      "A": -98.67332105957053,
-      "B": 72806.38248803397,
+      "A": 1.696026324621357,
+      "B": 21657.64082829515,
       "source": "JANAF-MG-PHOSPHATE",
       "T_domain_K": [
         1700.0,
@@ -2793,7 +2817,10 @@
         "reason": "No independent liquid association equilibrium was used as a fitting target."
       },
       "source_refs": [
-        "JANAF-MG-PHOSPHATE"
+        "JANAF-MG-PHOSPHATE",
+        "JANAF-MGO-LIQUID",
+        "JUNG-HUDON-P2O5-LIQUID",
+        "JANAF-P2-GAS"
       ],
       "standard_state_refit": {
         "parents": {
@@ -2805,8 +2832,8 @@
           2300.0
         ],
         "fit_method": "least squares on 1001 evenly spaced pointwise re-referenced log10 K values",
-        "max_abs_residual_dex": 0.04858150840077968,
-        "rms_residual_dex": 0.019273752859213046,
+        "max_abs_residual_dex": 0.07091110580870286,
+        "rms_residual_dex": 0.03037290800483531,
         "flag_over_0_01_dex": true
       }
     },
@@ -2825,8 +2852,8 @@
         "K2O": 0.0,
         "P2O5": 1.0
       },
-      "A": -86.56602327363804,
-      "B": 68851.15232148237,
+      "A": 15.585333210699956,
+      "B": 11143.825534719568,
       "source": "ROBIE-HEMINGWAY-1995",
       "T_domain_K": [
         1700.0,
@@ -2866,7 +2893,10 @@
       },
       "source_refs": [
         "ROBIE-HEMINGWAY-1995",
-        "WELCH-GUTT-1961"
+        "WELCH-GUTT-1961",
+        "JANAF-CAO-LIQUID",
+        "JUNG-HUDON-P2O5-LIQUID",
+        "JANAF-P2-GAS"
       ],
       "standard_state_refit": {
         "parents": {
@@ -2878,8 +2908,8 @@
           2300.0
         ],
         "fit_method": "least squares on 1001 evenly spaced pointwise re-referenced log10 K values",
-        "max_abs_residual_dex": 3.552713678800501e-14,
-        "rms_residual_dex": 1.9181643412012443e-14,
+        "max_abs_residual_dex": 1.7763568394002505e-14,
+        "rms_residual_dex": 7.648955946829044e-15,
         "flag_over_0_01_dex": false
       }
     }
@@ -2986,8 +3016,8 @@
       1700.0,
       2300.0
     ],
-    "p_channel_status": "associates_incomplete",
-    "p_channel_status_basis": "Held-out P-bearing volatility is not shipped because the two-associate KREEP check gives a(P2O5) near or above x(P2O5); exposed Suito values are comparison-only.",
+    "p_channel_status": "shipped_with_provisional_associates",
+    "p_channel_status_basis": "With all Gibbs terms on the same JANAF elemental reference, the two-associate KREEP check places a(P2O5) many orders below x(P2O5); P channels are enabled with the provisional Ca3(PO4)2 flags retained.",
     "source_file": "data-src/p2o5-candidate/thermochemistry.json",
     "d066_core_compatibility": {
       "declared": true,
@@ -2997,7 +3027,8 @@
       "basis": "The copied D066 rows, their row-level standard-state refits, and common liquid-standard records match D066 v4 by content digest."
     },
     "parent_standard": "P2O5(l) is the existing Jung–Hudon 1-bar gas/condensate record; its numeric uncertainty remains a typed gap.",
-    "formation_from_oxides_derivation": "For 3 MO(l)+P2O5(l)=M3(PO4)2(l), ΔG°rxn=ΔGf°(product)-3ΔGf°(MO)-ΔGf°(P2O5). The product and P2O5 each contain two P atoms, so the elemental phosphorus chemical-potential term cancels exactly. All Gibbs energies are J/mol; log10 K=-ΔG°rxn/(R T ln 10) is dimensionless.",
+    "formation_from_oxides_derivation": "For 3 MO(l)+P2O5(l)=M3(PO4)2(l), use ΔGf°(product), JANAF ΔGf°(MO,l), and ΔGf°(P2O5,l)=ΔrG°[P2(g)+5/2O2(g)→P2O5(l)]+ΔGf°(P2,g). JANAF ΔGf°(O2,g)=0. The 3 M, 2 P, and 8 O elemental chemical potentials cancel from ΔGf°(product)-3ΔGf°(MO)-ΔGf°(P2O5); the P2 term is explicit so the elemental-P reference matches the JANAF phosphate row. Convert Jung–Hudon's inferred 1 atm equation to 1 bar with Δνgas=-3.5. Gibbs energies are J/mol and log10K=-ΔG°/(RTln10) is dimensionless.",
+    "mg_crystal_hess_check_298_kJ_mol": -436.4069999999999,
     "mg3_po4_2": {
       "tables": [
         "Mg-038",
@@ -3013,8 +3044,9 @@
         1621.0,
         3000.0
       ],
-      "fit_max_abs_residual_dex": 0.04858150840077968,
-      "fit_rms_residual_dex": 0.019273752859213046
+      "fit_max_abs_residual_dex": 0.07091110580870286,
+      "fit_rms_residual_dex": 0.03037290800483531,
+      "crystal_formation_from_oxides_298_kJ_mol": -436.4069999999999
     },
     "ca3_po4_2": {
       "crystal_source_window_K": [
@@ -3034,8 +3066,8 @@
         "additive parent liquid Cp",
         "liquid association below the melting point"
       ],
-      "fit_max_abs_residual_dex": 3.552713678800501e-14,
-      "fit_rms_residual_dex": 1.9181643412012443e-14
+      "fit_max_abs_residual_dex": 1.7763568394002505e-14,
+      "fit_rms_residual_dex": 7.648955946829044e-15
     },
     "typed_gaps": [
       "Jung–Hudon P2O5(l) numeric uncertainty",

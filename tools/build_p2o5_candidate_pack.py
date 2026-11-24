@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+from functools import lru_cache
 import hashlib
 import json
 import math
@@ -12,6 +13,7 @@ from pathlib import Path
 import sys
 
 import numpy as np
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -25,6 +27,8 @@ PACKS = ROOT / "src/openimcc/data/packs"
 BASE = PACKS / "imcc-sf04-d066-v4.json"
 DESTINATION = PACKS / "imcc-sf04-d066-p2o5-candidate-v1.json"
 SOURCE = ROOT / "data-src/p2o5-candidate/thermochemistry.json"
+JANAF = ROOT / "data-src/janaf"
+JUNG_HUDON = ROOT / "data-src/published-thermo/jung-hudon-p2o5.json"
 FIT_LOW_K = 1700.0
 FIT_HIGH_K = 2300.0
 R_J_MOL_K = 8.31446261815324
@@ -78,10 +82,6 @@ def _compatibility_material(pack: dict) -> tuple[str, str]:
     return row_digest, _digest(standard_material)
 
 
-def _parent_g(oxide: str, temperature_K: float, gas_pack) -> float:
-    return float(species_thermo(oxide, "l", temperature_K, gas_pack).G_J_mol)
-
-
 def _parent_cp(oxide: str, temperature_K: float, gas_pack) -> float:
     return float(species_thermo(oxide, "l", temperature_K, gas_pack).Cp_J_molK)
 
@@ -104,6 +104,83 @@ def _janaf_g(table: dict, temperature_K: float) -> float:
             fraction = (temperature_K - low_t) / (high_t - low_t)
             return low_g + fraction * (high_g - low_g)
     raise ValueError(f"{table['title']} has no formation-Gibbs rows bracketing {temperature_K:g} K")
+
+
+@lru_cache(maxsize=None)
+def _janaf_table(table_id: str) -> dict:
+    return yaml.safe_load(
+        (JANAF / f"{table_id}.yaml").read_text(encoding="utf-8")
+    )["table"]
+
+
+def _janaf_table_value(table_id: str, temperature_K: float, quantity: str) -> float:
+    rows = _janaf_table(table_id)["values"]
+    points = sorted(
+        (
+            float(row["temperature"]["value"]),
+            float(row[quantity]["value"]),
+        )
+        for row in rows
+        if row[quantity]["value"] is not None
+    )
+    for temperature, value in points:
+        if temperature == temperature_K:
+            return value
+    for (low_t, low_v), (high_t, high_v) in zip(points, points[1:]):
+        if low_t < temperature_K < high_t:
+            fraction = (temperature_K - low_t) / (high_t - low_t)
+            return low_v + fraction * (high_v - low_v)
+    raise ValueError(f"JANAF {table_id} has no {quantity} rows bracketing {temperature_K:g} K")
+
+
+def _janaf_formation_g(table_id: str, temperature_K: float) -> float:
+    return 1000.0 * _janaf_table_value(
+        table_id, temperature_K, "formation_gibbs_energy"
+    )
+
+
+def _p2o5_formation_g(temperature_K: float, jung_hudon: dict) -> float:
+    """Convert the Jung–Hudon gas reaction to JANAF elemental-reference ΔGf."""
+    equation = jung_hudon["delta_g_standard_j_mol"]
+    delta_g_reaction = float(equation["intercept"]) + float(equation["slope"]) * temperature_K
+
+    # Premise: Jung–Hudon's reaction uses inferred 1 atm, while JANAF and the
+    # pack use 1 bar. For P2(g)+5/2 O2(g)=P2O5(l), Δνgas=0-(1+2.5)=-3.5,
+    # so ΔG°(1 bar)=ΔG°(1 atm)+ΔνRT ln(1/1.01325). RT is J/mol and the log
+    # is dimensionless. Sanity at 2000 K: this adds about +0.762 kJ/mol.
+    delta_g_nist_pressure = -3.5 * R_J_MOL_K * temperature_K * math.log(1.0 / 1.01325)
+    delta_g_reaction += delta_g_nist_pressure
+
+    # ΔGf(P2O5,l)=ΔG°[P2(g)+5/2O2(g)→P2O5(l)]+ΔGf(P2,g), because
+    # ΔGf(O2,g)=0. This places the Jung–Hudon parent on the same JANAF
+    # elemental reference as Mg3(PO4)2 and the oxide parents. Above the
+    # 1180.008 K P2(g) reference marker, JANAF ΔGf(P2,g)=0 (P2(g) is the
+    # standard elemental state); reading the table keeps that conversion
+    # explicit instead of assuming it. All values are J/mol.
+    return delta_g_reaction + _janaf_formation_g("P-012", temperature_K)
+
+
+def _parent_formation_g(
+    oxide: str, temperature_K: float, jung_hudon: dict
+) -> float:
+    tables = {"MgO": "Mg-009", "CaO": "Ca-028"}
+    if oxide == "P2O5":
+        return _p2o5_formation_g(temperature_K, jung_hudon)
+    try:
+        table_id = tables[oxide]
+    except KeyError as exc:
+        raise ValueError(f"no JANAF formation-Gibbs table for {oxide}") from exc
+    return _janaf_formation_g(table_id, temperature_K)
+
+
+def _mg_crystal_hess_298_kj_mol(source: dict) -> float:
+    mg_rows = source["janaf_pages"]["Mg-038"]["values"]
+    mg_hf = next(float(row[5]) for row in mg_rows if float(row[0]) == 298.15)
+    mgo_hf = _janaf_table_value("Mg-008", 298.15, "formation_enthalpy")
+    p2o5 = source["janaf_reference_checks"]["p2o5_crystal_298"]
+    p2o5_hf = float(p2o5["formation_enthalpy_kJ_mol"])
+    formula_units = float(p2o5["p2o5_formula_units_per_table_formula"])
+    return mg_hf - 3.0 * mgo_hf - p2o5_hf / formula_units
 
 
 def _ca_crystal_formation_g(source: dict, temperature_K: float) -> float:
@@ -155,19 +232,22 @@ def _reaction_fit(
     parent_oxides: dict[str, float],
     product_gibbs,
     temperatures: np.ndarray,
-    gas_pack,
+    jung_hudon: dict,
 ) -> tuple[float, float, float, float]:
-    # Premise: all species share one elemental reference. For
-    # 3 MO(l)+P2O5(l)=M3(PO4)2(l), stoichiometric phosphorus cancels: the two
-    # P atoms in the product equal the two in P2O5. Thus ΔG°rxn is computed as
-    # Gf(product)-3Gf(MO)-Gf(P2O5), without a phosphorus-allotrope correction.
-    # log10(K)=-ΔG°/(R T ln 10); J/mol divided by J/(mol K)*K is dimensionless.
-    # Sanity is recorded by the generated row's 2000 K point and residual.
+    # Premise: each input here is a formation Gibbs energy from one common
+    # elemental reference: JANAF Mg-039 (or the R&H formation rows), JANAF
+    # Mg-009/Ca-028 liquid oxide, and Jung–Hudon P2O5(l) converted by
+    # _p2o5_formation_g. In ΔGf(product)-3ΔGf(MO)-ΔGf(P2O5), the three Mg/Ca,
+    # two P, and eight O elemental chemical potentials cancel exactly. This
+    # avoids mixing JANAF ΔGf with the enthalpy-anchored absolute G returned by
+    # species_thermo. log10(K)=-ΔG°/(RT ln10); J/mol divided by J/mol is
+    # dimensionless. Sanity: the 298.15 K Mg crystal Hess cycle is -436.407 kJ/mol.
     values = []
     for temperature in temperatures:
         product = product_gibbs(float(temperature))
         parents = math.fsum(
-            coefficient * _parent_g(oxide, float(temperature), gas_pack)
+            coefficient
+            * _parent_formation_g(oxide, float(temperature), jung_hudon)
             for oxide, coefficient in parent_oxides.items()
         )
         log_k = -(product - parents) / (R_J_MOL_K * float(temperature) * LN10)
@@ -237,9 +317,17 @@ def _row(
 def build() -> dict:
     pack = json.loads(BASE.read_text(encoding="utf-8"))
     source = json.loads(SOURCE.read_text(encoding="utf-8"))
+    jung_hudon = json.loads(JUNG_HUDON.read_text(encoding="utf-8"))
     original_rows = copy.deepcopy(pack["rows"])
     if len(original_rows) != 38:
         raise ValueError("D066 v4 must contain exactly 38 rows")
+    mg_hess_298 = _mg_crystal_hess_298_kj_mol(source)
+    # JANAF prints these three enthalpies to 0.001 kJ/mol. The Hess cycle is
+    # -3745.098 - 3(-601.241) - (-3009.936/2) = -436.407 kJ/mol; its negative
+    # sign is the required independent check that phosphate formation from
+    # MgO(cr)+P2O5(cr) is strongly exothermic.
+    if not math.isclose(mg_hess_298, -436.407, rel_tol=0.0, abs_tol=0.01):
+        raise ValueError(f"Mg phosphate crystal Hess check is {mg_hess_298:g} kJ/mol")
     gas_pack = load_gas_datapack()
     temperatures = np.linspace(FIT_LOW_K, FIT_HIGH_K, 1001)
     mg_table = source["janaf_pages"]["Mg-039"]
@@ -248,7 +336,7 @@ def build() -> dict:
         mg_parents,
         lambda temperature: _janaf_g(mg_table, temperature),
         temperatures,
-        gas_pack,
+        jung_hudon,
     )
 
     ca_data = source["whitlockite"]
@@ -259,7 +347,7 @@ def build() -> dict:
     def ca_crystal_reaction_g(temperature: float) -> float:
         product = _ca_crystal_formation_g(source, temperature)
         return product - math.fsum(
-            coefficient * _parent_g(oxide, temperature, gas_pack)
+            coefficient * _parent_formation_g(oxide, temperature, jung_hudon)
             for oxide, coefficient in ca_parents.items()
         )
 
@@ -301,7 +389,8 @@ def build() -> dict:
             delta_g_fusion
             + (tm - temperature) * liquid_reaction_entropy
             + math.fsum(
-                coefficient * _parent_g(oxide, temperature, gas_pack)
+                coefficient
+                * _parent_formation_g(oxide, temperature, jung_hudon)
                 for oxide, coefficient in ca_parents.items()
             )
         )
@@ -312,7 +401,7 @@ def build() -> dict:
         ca_parents,
         ca_liquid_formation_g,
         temperatures,
-        gas_pack,
+        jung_hudon,
     )
 
     row_mg = _row(
@@ -321,7 +410,12 @@ def build() -> dict:
         parent_oxides=mg_parents,
         coefficients=mg,
         paper_domain=[1621.0, 3000.0],
-        source_refs=["JANAF-MG-PHOSPHATE"],
+        source_refs=[
+            "JANAF-MG-PHOSPHATE",
+            "JANAF-MGO-LIQUID",
+            "JUNG-HUDON-P2O5-LIQUID",
+            "JANAF-P2-GAS",
+        ],
         derivation=(
             "Re-referenced from JANAF Mg-039(l) to D066 MgO(l) and the existing "
             "Jung–Hudon P2O5(l) parent standard; the P elemental reference cancels "
@@ -335,7 +429,13 @@ def build() -> dict:
         parent_oxides=ca_parents,
         coefficients=ca,
         paper_domain=[298.15, 1600.0],
-        source_refs=["ROBIE-HEMINGWAY-1995", "WELCH-GUTT-1961"],
+        source_refs=[
+            "ROBIE-HEMINGWAY-1995",
+            "WELCH-GUTT-1961",
+            "JANAF-CAO-LIQUID",
+            "JUNG-HUDON-P2O5-LIQUID",
+            "JANAF-P2-GAS",
+        ],
         derivation=(
             "Whitlockite crystal formation Gibbs function to 1600 K; constant-Cp "
             "crystal continuation to 2083.15 K; class-C fusion entropy and additive "
@@ -370,8 +470,13 @@ def build() -> dict:
     pack["candidate_provenance"] = {
         "status": "opt-in provisional candidate; not the default",
         "fit_interval_K": [FIT_LOW_K, FIT_HIGH_K],
-        "p_channel_status": "associates_incomplete",
-        "p_channel_status_basis": "Held-out P-bearing volatility is not shipped because the two-associate KREEP check gives a(P2O5) near or above x(P2O5); exposed Suito values are comparison-only.",
+        "p_channel_status": "shipped_with_provisional_associates",
+        "p_channel_status_basis": (
+            "With all Gibbs terms on the same JANAF elemental reference, the "
+            "two-associate KREEP check places a(P2O5) many orders below "
+            "x(P2O5); P channels are enabled with the provisional Ca3(PO4)2 "
+            "flags retained."
+        ),
         "source_file": "data-src/p2o5-candidate/thermochemistry.json",
         "d066_core_compatibility": {
             "declared": True,
@@ -382,10 +487,14 @@ def build() -> dict:
         },
         "parent_standard": "P2O5(l) is the existing Jung–Hudon 1-bar gas/condensate record; its numeric uncertainty remains a typed gap.",
         "formation_from_oxides_derivation": (
-            "For 3 MO(l)+P2O5(l)=M3(PO4)2(l), ΔG°rxn=ΔGf°(product)-3ΔGf°(MO)-ΔGf°(P2O5). "
-            "The product and P2O5 each contain two P atoms, so the elemental phosphorus chemical-potential term cancels exactly. "
-            "All Gibbs energies are J/mol; log10 K=-ΔG°rxn/(R T ln 10) is dimensionless."
+            "For 3 MO(l)+P2O5(l)=M3(PO4)2(l), use ΔGf°(product), JANAF ΔGf°(MO,l), "
+            "and ΔGf°(P2O5,l)=ΔrG°[P2(g)+5/2O2(g)→P2O5(l)]+ΔGf°(P2,g). "
+            "JANAF ΔGf°(O2,g)=0. The 3 M, 2 P, and 8 O elemental chemical potentials cancel from "
+            "ΔGf°(product)-3ΔGf°(MO)-ΔGf°(P2O5); the P2 term is explicit so the elemental-P "
+            "reference matches the JANAF phosphate row. Convert Jung–Hudon's inferred 1 atm "
+            "equation to 1 bar with Δνgas=-3.5. Gibbs energies are J/mol and log10K=-ΔG°/(RTln10) is dimensionless."
         ),
+        "mg_crystal_hess_check_298_kJ_mol": mg_hess_298,
         "mg3_po4_2": {
             "tables": ["Mg-038", "Mg-039", "Mg-040"],
             "fusion_temperature_K": 1621.0,
@@ -396,6 +505,7 @@ def build() -> dict:
             "paper_window_K": [1621.0, 3000.0],
             "fit_max_abs_residual_dex": mg[2],
             "fit_rms_residual_dex": mg[3],
+            "crystal_formation_from_oxides_298_kJ_mol": mg_hess_298,
         },
         "ca3_po4_2": {
             "crystal_source_window_K": [298.15, 1600.0],
@@ -439,6 +549,30 @@ def build() -> dict:
                 "doi": melting["doi"],
                 "url": melting["url"],
                 "locator": melting["locator"],
+            },
+            "JANAF-MGO-LIQUID": {
+                "citation": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th ed., Mg-009.",
+                "doi": "10.18434/T42S31",
+                "file": "data-src/janaf/Mg-009.yaml",
+                "locator": "MgO(l) formation-Gibbs column, 1700–2300 K; the JANAF pure-liquid standard also underlies the D066 parent standard.",
+            },
+            "JANAF-CAO-LIQUID": {
+                "citation": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th ed., Ca-028.",
+                "doi": "10.18434/T42S31",
+                "file": "data-src/janaf/Ca-028.yaml",
+                "locator": "CaO(l) formation-Gibbs column, 1700–2300 K; the JANAF pure-liquid standard also underlies the D066 parent standard.",
+            },
+            "JANAF-P2-GAS": {
+                "citation": "Chase (1998), NIST-JANAF Thermochemical Tables, 4th ed., P-012.",
+                "doi": "10.18434/T42S31",
+                "file": "data-src/janaf/P-012.yaml",
+                "locator": "P2(g) formation-Gibbs column and its 1180.008 K 1-bar elemental-reference marker.",
+            },
+            "JUNG-HUDON-P2O5-LIQUID": {
+                "citation": "Jung and Hudon (2012), Thermodynamic Assessment of P2O5, Journal of the American Ceramic Society 95(11), 3665-3672.",
+                "doi": "10.1111/j.1551-2916.2012.05382.x",
+                "file": "data-src/published-thermo/jung-hudon-p2o5.json",
+                "locator": "Existing P2(g)+5/2O2(g)=P2O5(l) equation, converted from its inferred 1-atm gas standard to the JANAF 1-bar standard.",
             },
         }
     )

@@ -1013,6 +1013,15 @@ def _p2o5_candidate_artifact(
         "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, "
         "Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
     )
+    janaf_p2 = (
+        "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Table P-012 (P2 gas)."
+    )
+    janaf_mgo = (
+        "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Table Mg-009 (MgO liquid)."
+    )
+    janaf_cao = (
+        "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Table Ca-028 (CaO liquid)."
+    )
     whitlockite = (
         "Robie and Hemingway (1995), USGS Bulletin 2131, p. 300, Table e1, "
         "Ca3(PO4)2 (Whitlockite), DOI 10.3133/b2131."
@@ -1025,12 +1034,24 @@ def _p2o5_candidate_artifact(
         "Jung and Hudon (2012), P2O5(l) 1-bar gas/condensate standard, "
         "DOI 10.1111/j.1551-2916.2012.05382.x."
     )
+    mg_reaction = [
+        (janaf, "derived"),
+        (janaf_mgo, "anchor"),
+        (jung_hudon, "anchor"),
+        (janaf_p2, "derived"),
+    ]
+    ca_reaction = [
+        (whitlockite, "derived"),
+        (janaf_cao, "anchor"),
+        (jung_hudon, "anchor"),
+        (janaf_p2, "derived"),
+    ]
     mg_parameters = [
-        ("formation_delta_h_ox", [(janaf, "derived")], False,
+        ("formation_delta_h_ox", mg_reaction, False,
          "JANAF prints Mg3P2O8 formation enthalpy over the 1700–2300 K fit interval."),
-        ("formation_delta_s_ox", [(janaf, "derived")], False,
+        ("formation_delta_s_ox", mg_reaction, False,
          "JANAF prints Mg3P2O8 liquid thermochemistry over the fit interval."),
-        ("formation_delta_cp_ox", [(janaf, "derived")], False,
+        ("formation_delta_cp_ox", mg_reaction, False,
          "JANAF prints liquid Cp directly over the fit interval."),
         ("fusion_temperature_marker", [(janaf, "selected")], False,
          "Mg-040 prints the crystal/liquid transition at 1621 K."),
@@ -1038,29 +1059,32 @@ def _p2o5_candidate_artifact(
          "Mg-040 prints the 1621 K crystal/liquid pair, from which fusion entropy is differenced."),
         ("liquid_cp", [(janaf, "derived")], False,
          "Mg-039 prints the liquid heat capacity used throughout 1700–2300 K."),
-        ("parent_liquid_standard_MgO", [("NIST-JANAF, DOI 10.18434/T42S31, Table Mg-009; inherited D066 v4 MgO(l) standard.", "anchor")], False,
+        ("parent_liquid_standard_MgO", [(janaf_mgo, "anchor")], False,
          "The D066 v4 MgO(l) standard is preserved by content."),
-        ("parent_liquid_standard_P2O5", [(jung_hudon, "anchor")], False,
+        ("parent_liquid_standard_P2O5", [(jung_hudon, "anchor"), (janaf_p2, "derived")], False,
          "The existing Jung–Hudon 1-bar parent standard is reused; numeric uncertainty is unpublished."),
     ]
     ca_parameters = [
-        ("formation_delta_h_ox", [(whitlockite, "derived")], True,
+        ("formation_delta_h_ox", ca_reaction, True,
          "The printed 298–1600 K crystal Gibbs table is continued above 1600 K at constant Cp."),
-        ("formation_delta_s_ox", [(whitlockite, "derived")], True,
+        ("formation_delta_s_ox", ca_reaction, True,
          "The printed crystal formation entropy is continued above 1600 K at constant Cp."),
-        ("formation_delta_cp_ox", [(whitlockite, "derived")], True,
+        ("formation_delta_cp_ox", ca_reaction, True,
          "Constant-Cp continuation above the last printed 1600 K crystal row is assumed."),
         ("fusion_temperature_marker", [(melting, "selected")], False,
          "Welch and Gutt report the congruent Ca3(PO4)2 melting marker at 1810 °C."),
         ("fusion_entropy", [(f"{8.297530569:.9f} J mol^-1 formula atom^-1 K^-1 × 13 atoms", "derived")], True,
          "Class-C fusion entropy is a provisional 13-atom estimate."),
-        ("liquid_cp", [("Additive CaO(l)+P2O5(l) parent liquid Cp at the 2083.15 K fusion marker.", "derived")], True,
+        ("liquid_cp", [
+            ("Additive CaO(l)+P2O5(l) parent liquid Cp at the 2083.15 K fusion marker.", "derived"),
+            (janaf_cao, "anchor"), (jung_hudon, "anchor"), (janaf_p2, "derived"),
+        ], True,
          "The liquid Cp is the sum of parent liquid Cp values and is provisional."),
-        ("liquid_association_branch", [(whitlockite, "derived"), (melting, "anchor")], True,
+        ("liquid_association_branch", [*ca_reaction, (melting, "anchor")], True,
          "The candidate evaluates a supercooled liquid association branch below the 2083.15 K melting marker."),
-        ("parent_liquid_standard_CaO", [("NIST-JANAF, DOI 10.18434/T42S31, Table Ca-028; inherited D066 v4 CaO(l) standard.", "anchor")], False,
+        ("parent_liquid_standard_CaO", [(janaf_cao, "anchor")], False,
          "The D066 v4 CaO(l) standard is preserved by content."),
-        ("parent_liquid_standard_P2O5", [(jung_hudon, "anchor")], False,
+        ("parent_liquid_standard_P2O5", [(jung_hudon, "anchor"), (janaf_p2, "derived")], False,
          "The existing Jung–Hudon 1-bar parent standard is reused; numeric uncertainty is unpublished."),
     ]
     parameter_specs = {
@@ -1088,9 +1112,9 @@ def _p2o5_candidate_artifact(
     parent_standards = []
     parent_unmapped = []
     parent_specs = {
-        "MgO": [("NIST-JANAF Table Mg-009; D066 v4 MgO(l) parent standard.", "anchor")],
-        "CaO": [("NIST-JANAF Table Ca-028; D066 v4 CaO(l) parent standard.", "anchor")],
-        "P2O5": [(jung_hudon, "anchor")],
+        "MgO": [(janaf_mgo, "anchor")],
+        "CaO": [(janaf_cao, "anchor")],
+        "P2O5": [(jung_hudon, "anchor"), (janaf_p2, "derived")],
     }
     for standard in ("MgO", "CaO", "P2O5"):
         parent_row = _row(f"parent_standard:{standard}", standard)

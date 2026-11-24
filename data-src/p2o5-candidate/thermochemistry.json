@@ -86,5 +86,17 @@
     "locator": "CaO–P2O5 phase diagram; congruent melting marker for Ca3(PO4)2 at 1810 °C (2083.15 K)."
   },
   "class_c_fusion_entropy_J_mol_K_atom": 8.297530569005671,
-  "liquid_cp_rule": "Additive CaO(l) and P2O5(l) parent heat capacities at the fusion marker."
+  "liquid_cp_rule": "Additive CaO(l) and P2O5(l) parent heat capacities at the fusion marker.",
+  "janaf_reference_checks": {
+    "p2o5_crystal_298": {
+      "table_id": "O-094",
+      "url": "https://janaf.nist.gov/tables/O-094.html",
+      "formula_as_published": "(P2O5)2 (P4O10)",
+      "temperature_K": 298.15,
+      "formation_enthalpy_kJ_mol": -3009.936,
+      "p2o5_formula_units_per_table_formula": 2,
+      "locator": "298.15 K formation-enthalpy row; divide the P4O10 value by two for one P2O5 formula unit."
+    },
+    "purpose": "The 298.15 K Mg3(PO4)2 crystal-formation Hess check uses JANAF Mg-038, MgO(cr) Mg-008, and one P2O5(cr) formula unit from O-094/2 on the same elemental reference."
+  }
 }

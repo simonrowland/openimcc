@@ -143,11 +143,9 @@ def test_sr_candidate_v1_remains_selectable() -> None:
     assert profile.melt_pack.version == "1.0.0-d066-sr-candidate-v1"
 
 
-def test_p2o5_candidate_solves_kreep_majors_and_refuses_p_gas() -> None:
-    from openimcc.gas import (
-        ImccP2O5AssociatesIncompleteError,
-        evaluate_gas,
-    )
+def test_p2o5_candidate_solves_kreep_majors_and_ships_p_gas() -> None:
+    from openimcc._constants import MOLAR_MASS_G_MOL
+    from openimcc.gas import evaluate_gas
 
     profile = load_profile("p2o5-candidate")
     composition = {
@@ -167,6 +165,12 @@ def test_p2o5_candidate_solves_kreep_majors_and_refuses_p_gas() -> None:
     assert "P2O5" in melt.parent_oxides
     assert "MnO" in melt.parent_oxides
     assert all(melt.activity(parent) >= 0.0 for parent in melt.parent_oxides)
+    mole_amounts = {
+        oxide: mass / MOLAR_MASS_G_MOL[oxide]
+        for oxide, mass in composition.items()
+    }
+    p2o5_mole_fraction = mole_amounts["P2O5"] / sum(mole_amounts.values())
+    assert melt.activity("P2O5") / p2o5_mole_fraction < 1.0e-3
 
     gas = evaluate_gas(
         {}, 2000.0, 1.0e-10, profile=profile, composition_wt_pct=composition
@@ -175,23 +179,20 @@ def test_p2o5_candidate_solves_kreep_majors_and_refuses_p_gas() -> None:
     assert gas["Na"] > 0.0
     assert "SiO" not in gas.omitted_channels
     assert "Na" not in gas.omitted_channels
+    assert len(gas) == 41
+    assert not gas.omitted_channels
     p_channels = {"P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10"}
-    assert p_channels <= gas.omitted_channels.keys()
-    assert all(
-        getattr(gas.omitted_channels[species], "code", None)
-        == "p2o5_associates_incomplete"
-        for species in p_channels
+    assert p_channels.isdisjoint(gas.omitted_channels)
+    assert all(gas[species] > 0.0 for species in p_channels)
+    explicit_p2 = evaluate_gas(
+        {},
+        2000.0,
+        1.0e-10,
+        profile=profile,
+        composition_wt_pct=composition,
+        gas_species=("P2",),
     )
-    with pytest.raises(ImccP2O5AssociatesIncompleteError) as caught:
-        evaluate_gas(
-            {},
-            2000.0,
-            1.0e-10,
-            profile=profile,
-            composition_wt_pct=composition,
-            gas_species=("P2",),
-        )
-    assert caught.value.code == "p2o5_associates_incomplete"
+    assert explicit_p2["P2"] == pytest.approx(gas["P2"], rel=1e-12)
 
 
 def test_p2o5_candidate_keeps_d066_prefix_and_associate_windows() -> None:

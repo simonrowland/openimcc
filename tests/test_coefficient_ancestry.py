@@ -602,6 +602,22 @@ def test_p2o5_candidate_artifact_has_parameter_level_ancestry() -> None:
     assert {"39:Mg3(PO4)2", "40:Ca3(PO4)2"} <= set(rows)
     assert rows["39:Mg3(PO4)2"]["parameters"]
     assert rows["40:Ca3(PO4)2"]["parameters"]
+    mg_h = next(
+        item
+        for item in rows["39:Mg3(PO4)2"]["parameters"]
+        if item["parameter"] == "formation_delta_h_ox"
+    )
+    ca_h = next(
+        item
+        for item in rows["40:Ca3(PO4)2"]["parameters"]
+        if item["parameter"] == "formation_delta_h_ox"
+    )
+    for parameter in (mg_h, ca_h):
+        assert any(
+            source["work_id"] == "janaf-4th"
+            and "P-012" in source["citation"]
+            for source in parameter["sources"]
+        )
     provisional = {
         (row_id, parameter["parameter"])
         for row_id, row in rows.items()
@@ -619,6 +635,14 @@ def test_p2o5_candidate_artifact_has_parameter_level_ancestry() -> None:
     assert {item["standard"] for item in artifact["parent_standards"]} == {
         "MgO", "CaO", "P2O5"
     }
+    p2o5_standard = next(
+        item for item in artifact["parent_standards"] if item["standard"] == "P2O5"
+    )
+    assert any(
+        source["work_id"] == "janaf-4th"
+        and "P-012" in source["citation"]
+        for source in p2o5_standard["sources"]
+    )
     assert {"janaf-4th", "robie-hemingway-1995-usgs-b2131"} <= set(artifact["work_ids"])
     assert any("10.1039/JR9610004442" in item["citation"] for item in artifact["unmapped"])
 
