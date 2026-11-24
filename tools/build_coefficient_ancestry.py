@@ -483,6 +483,416 @@ def _melt_artifact(mapper: SourceMapper, runtime_digest: str, sidecar: dict[str,
     )
 
 
+_SR_CANDIDATE_FILES = (
+    "imcc-sf04-d066-sr-candidate-v1.json",
+    "imcc-sf04-d066-sr-candidate-v2.json",
+)
+_JANAF_DOI = "10.18434/T42S31"
+_YE_DOI = "10.1007/s11669-007-9086-x"
+_JANAF_SRO_CRYSTAL = (
+    f"NIST-JANAF, DOI {_JANAF_DOI}, Table O-013 (SrO crystal)"
+)
+_JANAF_SRO_LIQUID = (
+    f"NIST-JANAF, DOI {_JANAF_DOI}, Table O-014 (SrO liquid)"
+)
+_JANAF_ALUMINA_CRYSTAL = (
+    f"NIST-JANAF, DOI {_JANAF_DOI}, Table Al-096 (alpha-Al2O3 crystal)"
+)
+_JANAF_ALUMINA_LIQUID = (
+    f"NIST-JANAF, DOI {_JANAF_DOI}, Table Al-100 (Al2O3 liquid)"
+)
+_JANAF_SILICA_CRYSTAL = (
+    f"NIST-JANAF, DOI {_JANAF_DOI}, Table O-035 (high-cristobalite SiO2)"
+)
+_JANAF_SILICA_LIQUID = (
+    f"NIST-JANAF, DOI {_JANAF_DOI}, Table O-038 (SiO2 liquid)"
+)
+_RICHET_PARENT = (
+    "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, "
+    "pp. C-6–C-8, DOI 10.1111/j.1151-2916.1984.tb19155.x"
+)
+_JACOB_SHREYAS = (
+    "Jacob & Shreyas (2018), J. Mater. Sci. 53, pp. 1723–1730, "
+    "DOI 10.1007/s10853-017-1634-0; SrF2-cell EMF formation Gibbs "
+    "functions measured over 1000–1300 K"
+)
+_BRISI_VIA_YE = (
+    "Brisi & Abbattista (1960), Ann. Chimica 50, pp. 165–169; "
+    f"formation enthalpy transcribed by Ye et al. (2007), DOI {_YE_DOI}, "
+    "Table 3, p. 365"
+)
+_YE_TABLE_1 = (
+    f"Ye et al. (2007), DOI {_YE_DOI}, Table 1, pp. 364–365"
+)
+_YE_TABLE_4 = (
+    f"Ye et al. (2007), DOI {_YE_DOI}, Table 4, p. 365"
+)
+_GANITS_VIA_YE = (
+    "Ganits et al. (1979), phase-diagram fusion marker as tabulated by "
+    f"Ye et al. (2007), DOI {_YE_DOI}, Table 4, p. 365"
+)
+_HUNTELAAR_FORMATION = (
+    "Huntelaar et al. (1992), J. Chem. Thermodyn. 24(2), pp. 139–143, "
+    "DOI 10.1016/S0021-9614(05)80042-4"
+)
+_HUNTELAAR_CRYSTAL_CP = (
+    "Huntelaar et al. (1992), J. Phys. Chem. Solids 53(6), Tables 4–5, "
+    "pp. 805–806, DOI 10.1016/0022-3697(92)90193-H"
+)
+_FIELDS_LIQUIDUS = (
+    "Fields et al. (1972), J. Am. Ceram. Soc. 55(12), phase diagram and "
+    "congruent melting temperatures, pp. 585–588, "
+    "DOI 10.1111/j.1151-2916.1972.tb13448.x"
+)
+_CLASS_C_FUSION_ENTROPY = (
+    f"Seventeen measured class-C crystal/liquid pairs recorded in the Sr "
+    f"thermochemistry fragment from NIST-JANAF, "
+    f"DOI {_JANAF_DOI}; 17-pair calibration, mean "
+    "8.297530569 J mol^-1 K^-1 per formula atom"
+)
+
+
+def _sr_parameter_sources(
+    row: dict[str, Any],
+    parameter: str,
+    citations: list[tuple[str, str]],
+    mapper: SourceMapper,
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for citation, role in citations:
+        work_ids = mapper.resolve(citation)
+        if not work_ids:
+            records.append({"work_id": None, "role": role, "citation": citation})
+            row["unmapped"].append(
+                {
+                    "row": row["id"],
+                    "parameter": parameter,
+                    "citation": citation,
+                    "reason": mapper.unmapped_reason(citation),
+                    "role": role,
+                }
+            )
+            continue
+        for work_id in work_ids:
+            source = {"work_id": work_id, "role": role, "citation": citation}
+            records.append(source)
+            if source not in row["sources"]:
+                row["sources"].append(source)
+    return records
+
+
+def _sr_candidate_parameter_specs(
+    complex_name: str, atom_count: int
+) -> list[dict[str, Any]]:
+    oxide_sources = [
+        (_JANAF_SRO_CRYSTAL, "derived"),
+        (_JANAF_ALUMINA_CRYSTAL, "derived"),
+    ]
+    parent_liquid_sources = [
+        (_JANAF_SRO_LIQUID, "anchor"),
+        (_JANAF_ALUMINA_LIQUID, "anchor"),
+    ]
+    provisional_oxide_assumption = complex_name in {"Sr3Al2O6", "Sr4Al2O7"}
+
+    if complex_name == "SrAl2O4":
+        formation_enthalpy = [(_BRISI_VIA_YE, "derived"), *oxide_sources]
+        formation_entropy = [(_YE_TABLE_1, "derived"), *oxide_sources]
+        formation_cp = [(_YE_TABLE_1, "derived"), *oxide_sources]
+        fusion_marker = [(_YE_TABLE_4, "selected"), (_GANITS_VIA_YE, "selected")]
+        marker_provisional = True
+        marker_basis = (
+            "The 2233 K assessed marker is selected among competing phase-diagram "
+            "values and is identified as provisional in its source fragment."
+        )
+        liquid_cp_basis = (
+            "The redox v6 SrAl2O4 source estimates liquid Cp by adding the SrO(l) "
+            "and Al2O3(l) parent values."
+        )
+    elif complex_name in {"SrAl4O7", "SrAl12O19"}:
+        formation_enthalpy = [(_JACOB_SHREYAS, "derived"), *oxide_sources]
+        formation_entropy = [(_JACOB_SHREYAS, "derived"), *oxide_sources]
+        formation_cp = [(_JACOB_SHREYAS, "derived"), *oxide_sources]
+        fusion_marker = [(_GANITS_VIA_YE, "selected")]
+        marker_provisional = False
+        marker_basis = (
+            "The experimental marker is transcribed through Ye et al. Table 4; "
+            "the candidate source does not flag this marker as provisional."
+        )
+        liquid_cp_basis = (
+            "The candidate estimates liquid Cp additively from the SrO(l) and "
+            "Al2O3(l) parent standards."
+        )
+    elif provisional_oxide_assumption:
+        formation_enthalpy = [(_BRISI_VIA_YE, "derived"), *oxide_sources]
+        bound_source = (_JACOB_SHREYAS, "derived")
+        formation_entropy = [
+            (_BRISI_VIA_YE, "derived"),
+            bound_source,
+            *oxide_sources,
+        ]
+        formation_cp = [
+            (_BRISI_VIA_YE, "derived"),
+            bound_source,
+            *oxide_sources,
+        ]
+        fusion_marker = [(_GANITS_VIA_YE, "selected")]
+        marker_provisional = False
+        marker_basis = (
+            "The experimental marker is transcribed through Ye et al. Table 4; "
+            "the candidate source does not flag this marker as provisional."
+        )
+        liquid_cp_basis = (
+            "The candidate estimates liquid Cp additively from the SrO(l) and "
+            "Al2O3(l) parent standards."
+        )
+    elif complex_name in {"SrSiO3", "Sr2SiO4"}:
+        formation_enthalpy = [(_HUNTELAAR_FORMATION, "derived")]
+        formation_entropy = [(_HUNTELAAR_CRYSTAL_CP, "derived")]
+        formation_cp = [(_HUNTELAAR_CRYSTAL_CP, "derived")]
+        fusion_marker = [(_FIELDS_LIQUIDUS, "derived")]
+        marker_provisional = False
+        marker_basis = (
+            "The congruent melting marker is reported as measured in the cited "
+            "phase-equilibrium source."
+        )
+        parent_liquid_sources = [
+            (_JANAF_SRO_LIQUID, "anchor"),
+            (_JANAF_SILICA_LIQUID, "anchor"),
+        ]
+        liquid_cp_basis = (
+            "The redox v6 Sr-silicate source estimates liquid Cp by adding the "
+            "SrO(l) and SiO2(l) parent values."
+        )
+    else:
+        raise ValueError(f"unexpected Sr candidate complex: {complex_name}")
+
+    if provisional_oxide_assumption:
+        delta_s_basis = (
+            "Only formation enthalpy is printed; ΔS_ox = 0 is assumed and "
+            "flagged provisional in the candidate provenance."
+        )
+        delta_cp_basis = (
+            "Only formation enthalpy is printed; ΔCp_ox = 0 is assumed and "
+            "flagged provisional in the candidate provenance."
+        )
+    else:
+        delta_s_basis = (
+            "The crystalline formation entropy follows the cited measured or "
+            "assessed thermochemical relation."
+        )
+        delta_cp_basis = (
+            "The crystalline formation heat-capacity term follows the cited "
+            "thermochemical relation and oxide functions."
+        )
+
+    parent_names = {
+        "SrAl2O4": ("SrO", "Al2O3"),
+        "SrAl4O7": ("SrO", "Al2O3"),
+        "SrAl12O19": ("SrO", "Al2O3"),
+        "Sr3Al2O6": ("SrO", "Al2O3"),
+        "Sr4Al2O7": ("SrO", "Al2O3"),
+        "SrSiO3": ("SrO", "SiO2"),
+        "Sr2SiO4": ("SrO", "SiO2"),
+    }[complex_name]
+    parent_citations = {
+        "SrO": [(_JANAF_SRO_CRYSTAL, "anchor"), (_JANAF_SRO_LIQUID, "anchor")],
+        "Al2O3": [
+            (_JANAF_ALUMINA_CRYSTAL, "anchor"),
+            (_JANAF_ALUMINA_LIQUID, "anchor"),
+        ],
+        "SiO2": [
+            (_RICHET_PARENT, "anchor"),
+            (_JANAF_SILICA_CRYSTAL, "anchor"),
+            (_JANAF_SILICA_LIQUID, "anchor"),
+        ],
+    }
+    parameters = [
+        {
+            "parameter": "formation_delta_h_ox",
+            "citations": formation_enthalpy,
+            "provisional": False,
+            "provisional_basis": (
+                "The crystalline formation enthalpy follows the cited measured "
+                "or assessed thermochemical source."
+            ),
+        },
+        {
+            "parameter": "formation_delta_s_ox",
+            "citations": formation_entropy,
+            "provisional": provisional_oxide_assumption,
+            "provisional_basis": delta_s_basis,
+        },
+        {
+            "parameter": "formation_delta_cp_ox",
+            "citations": formation_cp,
+            "provisional": provisional_oxide_assumption,
+            "provisional_basis": delta_cp_basis,
+        },
+        {
+            "parameter": "fusion_temperature_marker",
+            "citations": fusion_marker,
+            "provisional": marker_provisional,
+            "provisional_basis": marker_basis,
+        },
+        {
+            "parameter": "fusion_entropy",
+            "citations": [
+                (
+                    f"{_CLASS_C_FUSION_ENTROPY}; this row uses "
+                    f"{atom_count} formula atoms",
+                    "derived",
+                )
+            ],
+            "provisional": True,
+            "provisional_basis": (
+                f"Uses 8.297530569 J mol^-1 formula atom^-1 K^-1 multiplied by "
+                f"{atom_count} atoms; the class-C estimate is provisional."
+            ),
+        },
+        {
+            "parameter": "liquid_cp",
+            "citations": parent_liquid_sources,
+            "provisional": True,
+            "provisional_basis": liquid_cp_basis,
+        },
+    ]
+    for parent in parent_names:
+        parameters.append(
+            {
+                "parameter": f"parent_liquid_standard_{parent}",
+                "citations": parent_citations[parent],
+                "provisional": False,
+                "provisional_basis": (
+                    f"The {parent} parent liquid reference follows the cited "
+                    "standard-source record and is not marked provisional."
+                ),
+            }
+        )
+    return parameters
+
+
+def _sr_candidate_artifact(
+    *,
+    path: Path,
+    runtime_digest: str,
+    mapper: SourceMapper,
+    default_melt_artifact: dict[str, Any],
+) -> dict[str, Any]:
+    raw = path.read_bytes()
+    pack = json.loads(raw)
+    default_path = DATA / "packs" / "imcc-sf04-d066-v4.json"
+    default_rows = _json(default_path)["rows"]
+    candidate_rows = pack["rows"]
+    if len(default_rows) != 38 or len(candidate_rows) != 45:
+        raise ValueError(f"unexpected row count in Sr candidate pack {path.name}")
+    for default_row, candidate_row in zip(default_rows, candidate_rows[:38]):
+        if any(
+            default_row.get(key) != candidate_row.get(key)
+            for key in ("row", "complex", "nu", "A", "B")
+        ):
+            raise ValueError(
+                f"base row {default_row.get('row')} differs from the default pack; "
+                "its ancestry must be reviewed before reuse"
+            )
+
+    unmapped_by_row: dict[str, list[dict[str, Any]]] = {}
+    for item in default_melt_artifact["unmapped"]:
+        unmapped_by_row.setdefault(item["row"], []).append(dict(item))
+    rows = []
+    for source_row in default_melt_artifact["rows"]:
+        rows.append(
+            {
+                **source_row,
+                "sources": [dict(source) for source in source_row["sources"]],
+                "unmapped": unmapped_by_row.get(source_row["id"], []),
+            }
+        )
+
+    atom_counts = {
+        "SrAl2O4": 7,
+        "SrAl4O7": 12,
+        "SrAl12O19": 32,
+        "Sr3Al2O6": 11,
+        "Sr4Al2O7": 13,
+        "SrSiO3": 5,
+        "Sr2SiO4": 7,
+    }
+    for source_row in candidate_rows[38:]:
+        complex_name = source_row["complex"]
+        row = _row(f"{source_row['row']}:{complex_name}", complex_name)
+        parameters = []
+        for spec in _sr_candidate_parameter_specs(complex_name, atom_counts[complex_name]):
+            parameter = {
+                key: value
+                for key, value in spec.items()
+                if key != "citations"
+            }
+            parameter["sources"] = _sr_parameter_sources(
+                row, parameter["parameter"], spec["citations"], mapper
+            )
+            parameters.append(parameter)
+        row["parameters"] = parameters
+        _missing_provenance(row)
+        rows.append(row)
+
+    used_parents = set()
+    for source_row in candidate_rows:
+        refit = source_row.get("standard_state_refit")
+        if isinstance(refit, dict):
+            used_parents.update(
+                parent
+                for parent, coefficient in refit.get("parents", {}).items()
+                if coefficient
+            )
+    parent_specs = {
+        "Na2O": [(_RICHET_PARENT, "anchor")],
+        "SiO2": [
+            (_RICHET_PARENT, "anchor"),
+            (_JANAF_SILICA_CRYSTAL, "anchor"),
+            (_JANAF_SILICA_LIQUID, "anchor"),
+        ],
+        "SrO": [(_JANAF_SRO_CRYSTAL, "anchor"), (_JANAF_SRO_LIQUID, "anchor")],
+        "Al2O3": [
+            (_JANAF_ALUMINA_CRYSTAL, "anchor"),
+            (_JANAF_ALUMINA_LIQUID, "anchor"),
+        ],
+    }
+    parent_standards = []
+    parent_unmapped = []
+    for standard in ("Na2O", "SiO2", "SrO", "Al2O3"):
+        if standard not in used_parents:
+            continue
+        parent_row = _row(f"parent_standard:{standard}", standard)
+        sources = _sr_parameter_sources(
+            parent_row, "parent_liquid_standard", parent_specs[standard], mapper
+        )
+        parent_standards.append({"standard": standard, "sources": sources})
+        parent_unmapped.extend(parent_row["unmapped"])
+
+    artifact = _finish_artifact(
+        identity=f"{pack['model_id']}@{pack['imcc_sf04_datapack_version']}",
+        file="data/packs/" + path.name,
+        raw=raw,
+        rows=rows,
+        runtime_digest=runtime_digest,
+        mapper=mapper,
+    )
+    artifact["parent_standards"] = parent_standards
+    artifact["unmapped"].extend(parent_unmapped)
+    artifact["work_ids"] = sorted(
+        set(artifact["work_ids"])
+        | {
+            source["work_id"]
+            for standard in parent_standards
+            for source in standard["sources"]
+            if source["work_id"] is not None
+        }
+    )
+    artifact["complete"] = not artifact["unmapped"]
+    artifact["counts"]["unmapped_citations"] = len(artifact["unmapped"])
+    return artifact
+
+
 def _table_artifact(
     *,
     relative_file: str,
@@ -1268,6 +1678,7 @@ def build() -> dict[str, Any]:
 
     sys.path.insert(0, str(ROOT / "src"))
     from openimcc.gas import load_gas_datapack
+    from openimcc.model import load_datapack
     from openimcc.profiles import load_profile
 
     profile = load_profile("openimcc")
@@ -1275,8 +1686,11 @@ def build() -> dict[str, Any]:
         gas_path=DATA / "gas/gas-shomate-default-v1.csv",
         oxide_path=DATA / "gas/condensate-default-v1.csv",
     )
+    melt_artifact = _melt_artifact(
+        mapper, profile.melt_pack.binding_digest or "", sidecar
+    )
     artifacts = [
-        _melt_artifact(mapper, profile.melt_pack.binding_digest or "", sidecar),
+        melt_artifact,
         _table_artifact(
             relative_file="gas/gas-shomate-default-v1.csv",
             identity="gas-shomate-default-v1",
@@ -1336,6 +1750,19 @@ def build() -> dict[str, Any]:
         _fragment_artifact(path, mapper)
         for path in sorted((DATA / "fragments").glob("*/rows.json"))
     )
+    for filename in _SR_CANDIDATE_FILES:
+        path = DATA / "packs" / filename
+        runtime_digest = load_datapack(path).binding_digest
+        if not runtime_digest:
+            raise ValueError(f"Sr candidate {filename} has no runtime digest")
+        artifacts.append(
+            _sr_candidate_artifact(
+                path=path,
+                runtime_digest=runtime_digest,
+                mapper=mapper,
+                default_melt_artifact=melt_artifact,
+            )
+        )
     referenced_work_ids = {
         work_id for artifact in artifacts for work_id in artifact["work_ids"]
     }

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Sr candidate coefficient ancestry
+
+- Added ancestry artifacts for both Sr candidate packs, with source records and
+  provisional flags for each added row parameter and their parent standards.
+
 ### Sr candidate composition gas path
 
 - Resolve composition-based gas inputs through the selected Sr candidate melt

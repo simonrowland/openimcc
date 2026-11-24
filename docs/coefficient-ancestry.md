@@ -18,6 +18,14 @@ named in a selection decision is `selected`, construction inputs are
 `diagnostic`. A selection-rationale field by itself does not make every source
 selected, and held-out data are never counted as fit evidence.
 
+Rows may include an optional `parameters` list when a coefficient was built
+from distinct source inputs. Each parameter entry records its `sources`, a
+`provisional` flag, and a one-line `provisional_basis`. An unresolved
+parameter citation retains the same source fields with `work_id: null` and is
+also listed in the artifact's `unmapped` collection. The Sr candidate artifacts
+use this field for rows 39–45 and record the parent liquid standards at the
+artifact level.
+
 The generator reads structured citation fields directly. Citations that appear
 only in derivation or construction prose are curated by row in
 `tools/coefficient-ancestry-prose-citations.json`; rows without an additional

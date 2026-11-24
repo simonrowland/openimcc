@@ -14,6 +14,7 @@ import pytest
 import yaml
 
 from openimcc import coefficient_ancestry
+from openimcc.model import load_datapack
 from openimcc.janaf_crystals import (
     evaluate_janaf_apparent_gibbs,
     evaluate_janaf_crystal,
@@ -167,6 +168,12 @@ def _expected_row_ids(artifact: dict) -> set[str]:
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"{row['row']}:{row['complex']}" for row in content["rows"]}
     if file in {
+        "packs/imcc-sf04-d066-sr-candidate-v1.json",
+        "packs/imcc-sf04-d066-sr-candidate-v2.json",
+    }:
+        content = json.loads(path.read_text(encoding="utf-8"))
+        return {f"{row['row']}:{row['complex']}" for row in content["rows"]}
+    if file in {
         "gas/gas-shomate-default-v1.csv",
         "gas/gas-shomate-default-v2.csv",
         "gas/condensate-default-v1.csv",
@@ -252,7 +259,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 39
+    assert len(entries) == 41
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -382,9 +389,131 @@ def test_every_default_row_has_mapped_or_unmapped_lineage() -> None:
         for row in actual_rows:
             assert row["sources"] or row["id"] in unmapped_row_ids
             assert all(source["role"] in ALLOWED_ROLES for source in row["sources"])
-        assert all(item["row"] in actual for item in entry["unmapped"])
+        parent_ids = {
+            f"parent_standard:{standard['standard']}"
+            for standard in entry.get("parent_standards", [])
+        }
+        assert all(
+            item["row"] in actual or item["row"] in parent_ids
+            for item in entry["unmapped"]
+        )
         assert entry["counts"]["rows"] == len(expected)
         assert entry["complete"] is (not entry["unmapped"])
+
+
+def test_sr_candidate_artifacts_have_parameter_level_ancestry() -> None:
+    entries = coefficient_ancestry()
+    default = _artifact(entries, "IMCC-SF04-D066@1.0.6-d066-v4")
+    default_rows = {row["id"]: row for row in default["rows"]}
+    default_pack = _json_resource("data/packs/imcc-sf04-d066-v4.json")
+    vocabulary = set(
+        json.loads(
+            (ROOT / "tests" / "data" / "coefficient-ancestry-vocabulary.json")
+            .read_text(encoding="utf-8")
+        )["work_ids"]
+    )
+    common_parameters = {
+        "formation_delta_h_ox",
+        "formation_delta_s_ox",
+        "formation_delta_cp_ox",
+        "fusion_temperature_marker",
+        "fusion_entropy",
+        "liquid_cp",
+    }
+    for version in ("v1", "v2"):
+        filename = f"imcc-sf04-d066-sr-candidate-{version}.json"
+        pack_path = ROOT / "src" / "openimcc" / "data" / "packs" / filename
+        loaded = load_datapack(pack_path)
+        artifact = _artifact(
+            entries,
+            f"IMCC-SF04-D066-SR-CANDIDATE@1.0.0-d066-sr-candidate-{version}",
+        )
+        assert artifact["runtime_digest"] == loaded.binding_digest
+        assert coefficient_ancestry(artifact["runtime_digest"]) == artifact
+        assert hashlib.sha256(pack_path.read_bytes()).hexdigest() == artifact["digest"]
+        assert artifact["complete"] is False
+
+        candidate_pack = _json_resource(f"data/packs/{filename}")
+        for default_row, candidate_row in zip(
+            default_pack["rows"], candidate_pack["rows"][:38]
+        ):
+            assert (
+                default_row["row"],
+                default_row["complex"],
+                default_row["nu"],
+                default_row["A"],
+                default_row["B"],
+            ) == (
+                candidate_row["row"],
+                candidate_row["complex"],
+                candidate_row["nu"],
+                candidate_row["A"],
+                candidate_row["B"],
+            )
+            row_id = f"{candidate_row['row']}:{candidate_row['complex']}"
+            ancestry_row = next(row for row in artifact["rows"] if row["id"] == row_id)
+            assert ancestry_row["sources"] == default_rows[row_id]["sources"]
+            assert "parameters" not in ancestry_row
+
+        rows = {
+            row["id"]: row
+            for row in artifact["rows"]
+            if int(row["id"].split(":", 1)[0]) >= 39
+        }
+        assert len(rows) == 7
+        for row_number, row in enumerate(
+            candidate_pack["rows"][38:], start=39
+        ):
+            row_id = f"{row_number}:{row['complex']}"
+            ancestry_row = rows[row_id]
+            parameters = ancestry_row["parameters"]
+            by_name = {parameter["parameter"]: parameter for parameter in parameters}
+            expected_names = set(common_parameters)
+            expected_names.update(
+                f"parent_liquid_standard_{parent}"
+                for parent in ("SrO", "Al2O3")
+                if parent in row["standard_state_refit"]["parents"]
+            )
+            expected_names.update(
+                f"parent_liquid_standard_{parent}"
+                for parent in ("SrO", "SiO2")
+                if parent in row["standard_state_refit"]["parents"]
+            )
+            assert set(by_name) == expected_names
+            assert all(parameter["sources"] for parameter in parameters)
+            assert all(
+                source["role"] in ALLOWED_ROLES
+                and (source["work_id"] is None or source["work_id"] in vocabulary)
+                for parameter in parameters
+                for source in parameter["sources"]
+            )
+            assert by_name["fusion_entropy"]["provisional"] is True
+            assert by_name["liquid_cp"]["provisional"] is True
+            if row_id in {"42:Sr3Al2O6", "43:Sr4Al2O7"}:
+                assert by_name["formation_delta_s_ox"]["provisional"] is True
+                assert by_name["formation_delta_cp_ox"]["provisional"] is True
+            if row_id == "39:SrAl2O4":
+                assert by_name["fusion_temperature_marker"]["provisional"] is True
+
+            unmapped_parameters = {
+                (item.get("parameter"), item["citation"])
+                for item in artifact["unmapped"]
+                if item["row"] == row_id
+            }
+            for parameter in parameters:
+                for source in parameter["sources"]:
+                    if source["work_id"] is None:
+                        assert (
+                            parameter["parameter"], source["citation"]
+                        ) in unmapped_parameters
+                        assert "DOI " in source["citation"]
+
+        parent_standards = {
+            source["standard"]: source
+            for source in artifact["parent_standards"]
+        }
+        assert set(parent_standards) == {"Na2O", "SiO2", "SrO", "Al2O3"}
+        assert all(item["sources"] for item in parent_standards.values())
 
 
 def test_elemental_reference_crystal_cards_are_registered_in_ancestry() -> None:
