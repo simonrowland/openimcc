@@ -258,7 +258,7 @@ def test_redox_reaction_band_controlled_vocabulary() -> None:
 
 
 def test_melt_diagnostic_split_controlled_vocabulary() -> None:
-    assert len(_MELT_DIAGNOSTIC_SPLIT_BY_KEY) == 7
+    assert len(_MELT_DIAGNOSTIC_SPLIT_BY_KEY) == 8
     for key, expected in _MELT_DIAGNOSTIC_SPLIT_BY_KEY.items():
         assert _melt_held_out_split([key]) == expected
     for key in (

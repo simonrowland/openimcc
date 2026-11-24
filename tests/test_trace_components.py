@@ -312,7 +312,13 @@ def test_mno_redox_refuses_incompatible_selected_melt_pack() -> None:
     composition = {oxide: 1.0 for oxide in selected_melt.parent_oxides}
     composition["MnO"] = 0.01
 
-    with pytest.raises(RedoxInputError, match="D066 v4 liquid-oxide standards"):
+    with pytest.raises(
+        RedoxInputError,
+        match=(
+            "Mn associations require D066 v4 core rows and existing-parent "
+            "liquid standards identical by content"
+        ),
+    ):
         evaluate(
             composition,
             1800.0,

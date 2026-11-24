@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src" / "openimcc" / "data" / "packs"
 SIDECAR_PATH = ROOT / "src" / "openimcc" / "data" / "source-refs-sidecar.json"
 # Re-pinned after the v2 Sr candidate pack was added to the manifest.
-MANIFEST_SHA256 = "0bfebf26b28039fbcca065caafd7a0c153fece4edc768a9715ad7c644ad8704c"
+MANIFEST_SHA256 = "d1d466194f8453942bc1a4ebc28410427cefb19532912e9d9a7fb4221f4e2103"
 
 
 def _pack_data() -> dict[str, dict[str, Any]]:

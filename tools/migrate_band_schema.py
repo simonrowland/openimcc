@@ -144,6 +144,7 @@ _MELT_DIAGNOSTIC_SPLIT_BY_KEY = {
     'k translation/residual at t max dex': 'held_out_or_candidate',
     'provenance/max abs heldout log10k residual': 'held_out',
     'standard state refit/max abs residual dex': 'held_out_or_candidate',
+    'standard state refit/rms residual dex': 'held_out_or_candidate',
 }
 
 
