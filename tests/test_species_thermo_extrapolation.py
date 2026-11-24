@@ -44,6 +44,10 @@ from openimcc.crystal_species import (
     evaluate_crystal_species,
 )
 from openimcc.janaf_crystals import evaluate_janaf_crystal
+from tools.rebuild_rh_crystal_phases import (
+    RH_GIBBS_LOGK_EXCEPTIONS,
+    _validate_rh_formation_identity,
+)
 
 
 def _value_hexes(value: SpeciesThermo) -> dict[str, str]:
@@ -868,6 +872,33 @@ def test_rh_crystal_generator_check_matches_packaged_data() -> None:
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_rh_source_identity_exception_is_pinned_to_printed_dolomite_row() -> None:
+    exception = RH_GIBBS_LOGK_EXCEPTIONS[("dolomite", 269, 800.0)]
+    assert exception == {
+        "formation_gibbs_kJ_mol": -1891.4,
+        "log10_Kf": 123.47,
+        "gas_constant_J_mol_K": 8.31451,
+        "residual_kJ_mol": 0.3466388,
+        "reason": (
+            "printed ΔfG and log Kf disagree in the source; both preserved as printed"
+        ),
+    }
+    assert _validate_rh_formation_identity(
+        "dolomite", 269, 800.0, -1891.4, 123.47
+    ) == pytest.approx(0.3466388, abs=5e-8)
+    with pytest.raises(ValueError, match="recorded R&H source exception"):
+        _validate_rh_formation_identity(
+            "dolomite", 269, 800.0, -1891.3, 123.47
+        )
+
+
+def test_rh_other_source_identity_mismatch_still_fails() -> None:
+    with pytest.raises(ValueError, match="ΔfG and log Kf disagree"):
+        _validate_rh_formation_identity(
+            "dolomite", 269, 900.0, -1838.7, 107.0
+        )
 
 
 def test_elemental_reference_crystal_card_generator_check_matches_package() -> None:

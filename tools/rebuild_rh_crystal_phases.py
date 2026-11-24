@@ -20,6 +20,17 @@ RH_TABLES_TARGET = ROOT / "src/openimcc/data/diagnostics/rh-crystal-species.json
 RH_TABLES_SOURCE_RELATIVE = str(RH_TABLES_SOURCE.relative_to(ROOT))
 RH_GAS_CONSTANT_J_MOL_K = 8.31446261815324
 SOURCE_COMMIT = "9aacc2f6308e49a5a1988c25487518ba346d9ad0"
+RH_GIBBS_LOGK_EXCEPTIONS = {
+    ("dolomite", 269, 800.0): {
+        "formation_gibbs_kJ_mol": -1891.4,
+        "log10_Kf": 123.47,
+        "gas_constant_J_mol_K": 8.31451,
+        "residual_kJ_mol": 0.3466388,
+        "reason": (
+            "printed ΔfG and log Kf disagree in the source; both preserved as printed"
+        ),
+    },
+}
 RECORD_DIRECTORY = (
     "data/literature/compilations/robie-hemingway-1995-usgs-b2131/records"
 )
@@ -122,6 +133,54 @@ SOURCE_SOLID_LIMITS = {
         },
     },
 }
+
+
+def _validate_rh_formation_identity(
+    species_id: str,
+    page: int,
+    temperature_K: float,
+    formation_gibbs_kJ_mol: float,
+    log10_Kf: float,
+) -> float:
+    log_gibbs = (
+        -RH_GAS_CONSTANT_J_MOL_K
+        * temperature_K
+        * math.log(10.0)
+        * log10_Kf
+        / 1000.0
+    )
+    residual = abs(log_gibbs - formation_gibbs_kJ_mol)
+    key = (species_id, page, temperature_K)
+    exception = RH_GIBBS_LOGK_EXCEPTIONS.get(key)
+    if exception is not None:
+        source_log_gibbs = (
+            -exception["gas_constant_J_mol_K"]
+            * temperature_K
+            * math.log(10.0)
+            * log10_Kf
+            / 1000.0
+        )
+        source_residual = abs(source_log_gibbs - formation_gibbs_kJ_mol)
+        if (
+            formation_gibbs_kJ_mol != exception["formation_gibbs_kJ_mol"]
+            or log10_Kf != exception["log10_Kf"]
+            or not math.isclose(
+                source_residual,
+                exception["residual_kJ_mol"],
+                rel_tol=0.0,
+                abs_tol=5e-8,
+            )
+        ):
+            raise ValueError(
+                f"{species_id} p. {page} at {temperature_K:g} K no longer "
+                f"matches its recorded R&H source exception: {exception['reason']}"
+            )
+        return source_residual
+    if residual > 0.25:
+        raise ValueError(
+            f"{species_id} ΔfG and log Kf disagree at {temperature_K:g} K"
+        )
+    return residual
 
 
 def _read_record(source_repository: Path, page: int) -> dict[str, Any]:
@@ -375,17 +434,13 @@ def build_crystal_species() -> dict[str, Any]:
                 raise ValueError(
                     f"{source_phase['id']} has a non-finite row at {temperature:g} K"
                 )
-            log_gibbs = (
-                -RH_GAS_CONSTANT_J_MOL_K
-                * temperature
-                * math.log(10.0)
-                * values["log10_Kf"]
-                / 1000.0
+            _validate_rh_formation_identity(
+                source_phase["id"],
+                int(source_phase["printed_page"]),
+                temperature,
+                values["formation_gibbs_kJ_mol"],
+                values["log10_Kf"],
             )
-            if abs(log_gibbs - values["formation_gibbs_kJ_mol"]) > 0.25:
-                raise ValueError(
-                    f"{source_phase['id']} ΔfG and log Kf disagree at {temperature:g} K"
-                )
             enthalpy_nodes[label] = round(
                 temperature * values["H_minus_H298_over_T_J_mol_K"] / 1000.0,
                 3,
