@@ -61,7 +61,7 @@ class Profile:
 
 
 def load_profile(name: str) -> Profile:
-    """Load an openimcc, Sr candidate, or published SF04 profile.
+    """Load an openimcc, candidate, or published SF04 profile.
 
     The returned frozen object can be reused across evaluations without
     reloading its packs.
@@ -104,6 +104,26 @@ def load_profile(name: str) -> Profile:
                 "Cr, Sr, Li, Zn, and Yb redox pack."
             ),
         )
+    if name == "p2o5-candidate":
+        from openimcc.gas import load_gas_datapack
+
+        gas = load_gas_datapack(
+            gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v2.csv",
+            oxide_path=_DATA_DIR / "gas" / "condensate-default-v1.csv",
+        )
+        return Profile(
+            name=name,
+            melt_pack=load_datapack(
+                _PACKS_DIR / "imcc-sf04-d066-p2o5-candidate-v1.json"
+            ),
+            gas_datapack=gas,
+            redox_pack_path=_PACKS_DIR / "openimcc-redox-v6.json",
+            provenance=(
+                "Opt-in provisional P2O5 full-component candidate melt pack, "
+                "versioned openimcc gas and condensate tables, and the v6 "
+                "Cr, Sr, Li, Zn, and Yb redox pack."
+            ),
+        )
     if name == "published":
         from openimcc.gas import load_gas_datapack
 
@@ -124,7 +144,7 @@ def load_profile(name: str) -> Profile:
         )
     raise ProfileError(
         f"unknown profile {name!r}; expected 'openimcc', 'published', or "
-        "'sr-candidate' or 'sr-candidate-v1'"
+        "'sr-candidate', 'sr-candidate-v1', or 'p2o5-candidate'"
     )
 
 
@@ -134,6 +154,6 @@ def _resolve_profile(profile: str | Profile) -> Profile:
     if not isinstance(profile, str):
         raise ProfileError(
             "profile must be 'openimcc', 'published', 'sr-candidate', "
-            "'sr-candidate-v1', or a Profile"
+            "'sr-candidate-v1', 'p2o5-candidate', or a Profile"
         )
     return load_profile(profile)

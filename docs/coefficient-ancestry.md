@@ -22,9 +22,9 @@ Rows may include an optional `parameters` list when a coefficient was built
 from distinct source inputs. Each parameter entry records its `sources`, a
 `provisional` flag, and a one-line `provisional_basis`. An unresolved
 parameter citation retains the same source fields with `work_id: null` and is
-also listed in the artifact's `unmapped` collection. The Sr candidate artifacts
-use this field for rows 39–45 and record the parent liquid standards at the
-artifact level.
+also listed in the artifact's `unmapped` collection. The Sr and P2O5 candidate
+artifacts use this field for their new rows and record the parent liquid
+standards at the artifact level.
 
 A parameter is firm when its value is printed or measured at the temperatures
 where it is used—including a printed assessed function evaluated inside its

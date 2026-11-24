@@ -1013,6 +1013,22 @@ report](docs/sr-candidate.md) gives the source checks, entropy sensitivity,
 phase-diagram gaps, composition grid, served-value digests, and example Sr
 pressures.
 
+### Opt-in P2O5 full-component candidate
+
+Use `load_profile("p2o5-candidate")` to select the opt-in
+`imcc-sf04-d066-p2o5-candidate-v1.json` pack. It appends P2O5 to the D066 v4
+parents and adds Mg3(PO4)2 and Ca3(PO4)2 over a 1700–2300 K solve domain. The
+default and published packs are unchanged. The phosphate source windows and
+provisional Ca construction are documented in
+[the P2O5 candidate report](docs/p2o5-candidate.md).
+
+On the representative KREEP check, the two-associate `a(P2O5)` is near or
+above `x(P2O5)`, and the corresponding P pressures are not plausible
+volatility predictions. P-bearing gas channels therefore refuse with the
+typed `p2o5_associates_incomplete` reason; major gas channels such as SiO and
+Na remain available. This opt-in profile does not change the default trace
+handling.
+
 For example, `evaluate(composition, 1800, profile="published")` selects the
 published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
 selects its matching gas tables. The CLI accepts

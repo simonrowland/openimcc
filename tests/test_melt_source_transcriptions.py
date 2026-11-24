@@ -152,6 +152,7 @@ _STANDARD_STATE_REFITS = {
     29, 30, 31, 32, 33, 34, 36, 37, 38,
 }
 _SR_CANDIDATE_REFIT_ROWS = set(range(39, 46))
+_P2O5_CANDIDATE_REFIT_ROWS = {39, 40}
 EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
     "imcc-sf04-d066-ext-v1.json": {"k_translation": _K_TRANSLATED_ROWS},
     "imcc-sf04-d066-feo-hess-candidate.json": {
@@ -213,6 +214,12 @@ EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
         "feo_conversion": {19, 20, 21},
         "fusion_refit": {3},
         "sr_candidate_refit": _SR_CANDIDATE_REFIT_ROWS,
+    },
+    "imcc-sf04-d066-p2o5-candidate-v1.json": {
+        "k_translation": _K_TRANSLATED_ROWS,
+        "standard_state_refit": _STANDARD_STATE_REFITS | _P2O5_CANDIDATE_REFIT_ROWS,
+        "feo_conversion": {19, 20, 21},
+        "fusion_refit": {3},
     },
 }
 
@@ -370,6 +377,14 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
                 }
                 for transform in _recorded_transforms(pack_row):
                     _assert_transform_reason(pack_row, transform)
+                continue
+            if (
+                entry["file"] == "imcc-sf04-d066-p2o5-candidate-v1.json"
+                and pack_row["row"] in _P2O5_CANDIDATE_REFIT_ROWS
+            ):
+                assert _recorded_transforms(pack_row) == {"standard_state_refit"}
+                _assert_transform_reason(pack_row, "standard_state_refit")
+                assert pack_row["standard_state_refit"]["max_abs_residual_dex"] >= 0.0
                 continue
             source_row = _source_row_for_pack_row(pack_row["row"], fc87_rows, sf04_rows)
             _assert_pack_reaction_matches_source(pack_row, source_row)

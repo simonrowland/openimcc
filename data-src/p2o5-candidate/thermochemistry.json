@@ -1,0 +1,90 @@
+{
+  "schema_version": "p2o5_candidate_thermochemistry.v1",
+  "source_policy": "Reviewed transcription of the cited pages and equations. No phosphorus activity or gas-volatility measurement is used as a fit target.",
+  "janaf_pages": {
+    "Mg-038": {
+      "title": "Magnesium Phosphate (Mg3P2O8), crystal",
+      "url": "https://janaf.nist.gov/tables/Mg-038.html",
+      "pressure_bar": 1.0,
+      "columns": ["T_K", "Cp_J_mol_K", "S_J_mol_K", "minus_G_minus_H298_over_T_J_mol_K", "H_increment_kJ_mol", "formation_H_kJ_mol", "formation_G_kJ_mol"],
+      "values": [
+        [298.15, 212.756, 188.280, 188.280, 0.000, -3745.098, -3502.859],
+        [1600.0, 380.744, 695.407, 429.496, 425.458, -4209.957, -2330.185],
+        [1621.0, 380.920, 700.373, 432.973, 433.455, null, null]
+      ],
+      "locator": "Table Mg-038; rows 298.15 K, 1600 K, and the 1621 K crystal-to-liquid marker."
+    },
+    "Mg-039": {
+      "title": "Magnesium Phosphate (Mg3P2O8), liquid",
+      "url": "https://janaf.nist.gov/tables/Mg-039.html",
+      "pressure_bar": 1.0,
+      "columns": ["T_K", "Cp_J_mol_K", "S_J_mol_K", "minus_G_minus_H298_over_T_J_mol_K", "H_increment_kJ_mol", "formation_H_kJ_mol", "formation_G_kJ_mol"],
+      "values": [
+        [298.15, 212.756, 235.102, 235.102, 0.000, -3663.190, -3434.910],
+        [1220.0, 475.302, 640.148, 408.766, 282.287, null, null],
+        [1300.0, 475.302, 670.336, 423.944, 320.311, -3773.316, -2647.268],
+        [1400.0, 475.302, 705.560, 442.817, 367.841, -4136.486, -2551.863],
+        [1500.0, 475.302, 738.353, 461.439, 415.371, -4113.490, -2439.480],
+        [1600.0, 475.302, 769.028, 479.715, 462.901, -4090.605, -2328.626],
+        [1621.0, 475.302, 775.226, 483.503, 472.883, null, null],
+        [1700.0, 475.302, 797.843, 497.589, 510.432, -4067.825, -2219.200],
+        [1800.0, 475.302, 825.011, 515.032, 557.962, -4045.147, -2111.114],
+        [1900.0, 475.302, 850.709, 532.029, 605.492, -4022.568, -2004.284],
+        [2000.0, 475.302, 875.089, 548.577, 653.022, -4000.086, -1898.640],
+        [2100.0, 475.302, 898.279, 564.682, 700.553, -3977.702, -1794.118],
+        [2200.0, 475.302, 920.390, 580.352, 748.083, -3955.413, -1690.659],
+        [2300.0, 475.302, 941.518, 595.599, 795.613, -3933.220, -1588.214]
+      ],
+      "locator": "Table Mg-039; liquid rows 1700–2300 K and the 1220/1621 K transition markers."
+    },
+    "Mg-040": {
+      "title": "Magnesium Phosphate (Mg3P2O8), crystal and liquid transition table",
+      "url": "https://janaf.nist.gov/tables/Mg-040.html",
+      "pressure_bar": 1.0,
+      "columns": ["T_K", "Cp_J_mol_K", "S_J_mol_K", "minus_G_minus_H298_over_T_J_mol_K", "H_increment_kJ_mol", "formation_H_kJ_mol", "formation_G_kJ_mol", "transition"],
+      "values": [
+        [298.15, 212.756, 188.280, 188.280, 0.000, -3745.098, -3502.859, null],
+        [1621.0, 380.920, 700.373, 432.973, 433.455, null, null, "CRYSTAL <--> LIQUID"],
+        [1621.0, 475.302, 775.226, 432.973, 554.791, null, null, "TRANSITION"]
+      ],
+      "locator": "Table Mg-040; 1621 K crystal/liquid pair. ΔSfus=74.853 J mol-1 K-1; ΔHfus=121.336 kJ mol-1."
+    }
+  },
+  "whitlockite": {
+    "formula": "Ca3(PO4)2",
+    "formula_weight_g_mol": 310.177,
+    "citation": "Robie, R. A. and Hemingway, B. S. (1995), Thermodynamic Properties of Minerals and Related Substances at 298.15 K and 1 Bar (10^5 Pascals) Pressure and at Higher Temperatures, U.S. Geological Survey Bulletin 2131, p. 300, Whitlockite.",
+    "doi": "10.3133/b2131",
+    "url": "https://pubs.usgs.gov/bul/2131/report.pdf",
+    "locator": "Printed p. 300, Table e1, Ca3(PO4)2 row series; rhombohedral crystals 298.15–1373 K and monoclinic crystals 1373–1600 K.",
+    "columns": ["T_K", "Cp_J_mol_K", "S_J_mol_K", "enthalpy_increment_over_T_J_mol_K", "minus_G_minus_H298_over_T_J_mol_K", "formation_H_kJ_mol", "formation_G_kJ_mol"],
+    "values": [
+      [298.15, 231.63, 236.00, 0.00, 236.00, -4120.8, -3883.6],
+      [300.0, 232.12, 237.43, 1.43, 236.00, -4120.8, -3882.2],
+      [400.0, 255.24, 307.49, 62.09, 245.40, -4122.7, -3802.1],
+      [500.0, 275.30, 366.64, 102.76, 263.88, -4121.9, -3722.1],
+      [600.0, 294.16, 418.51, 133.10, 285.41, -4120.2, -3642.3],
+      [700.0, 312.44, 465.23, 157.42, 307.82, -4117.6, -3562.8],
+      [800.0, 330.43, 508.13, 177.92, 330.21, -4116.6, -3483.5],
+      [900.0, 348.23, 548.08, 195.86, 352.22, -4112.2, -3404.6],
+      [1000.0, 365.93, 585.69, 211.98, 373.70, -4107.0, -3326.2],
+      [1100.0, 383.55, 621.39, 226.78, 394.61, -4101.2, -3248.4],
+      [1200.0, 401.12, 655.52, 240.57, 414.94, -4245.0, -3167.2],
+      [1300.0, 418.67, 688.32, 253.60, 434.72, -4232.6, -3077.8],
+      [1400.0, 330.54, 729.26, 275.09, 454.17, -4205.8, -2989.8],
+      [1500.0, 330.54, 752.05, 278.79, 473.26, -4201.6, -2903.0],
+      [1600.0, 330.54, 773.38, 282.02, 491.36, -4197.5, -2816.6]
+    ],
+    "high_temperature_cp_equation_J_mol_K": "Cp = 192.9 + 0.1742*T - 1.174e6/T^2 (298–1373 K); the printed 1400–1600 K rows use Cp=330.54 J mol-1 K-1."
+  },
+  "ca3_po4_2_melting": {
+    "temperature_K": 2083.15,
+    "temperature_C": 1810.0,
+    "citation": "Welch, J. H. and Gutt, W. (1961), 874. High-temperature studies of the system calcium oxide–phosphorus pentoxide, Journal of the Chemical Society, 4442–4444.",
+    "doi": "10.1039/JR9610004442",
+    "url": "https://doi.org/10.1039/JR9610004442",
+    "locator": "CaO–P2O5 phase diagram; congruent melting marker for Ca3(PO4)2 at 1810 °C (2083.15 K)."
+  },
+  "class_c_fusion_entropy_J_mol_K_atom": 8.297530569005671,
+  "liquid_cp_rule": "Additive CaO(l) and P2O5(l) parent heat capacities at the fusion marker."
+}

@@ -218,6 +218,7 @@ _CALLER_STANDARD_STATE_CONVENTIONS = {
 _PACK_OVERLAY_BY_VERSION = {
     "1.0.0-d066-sr-candidate-v1": False,
     "1.0.0-d066-sr-candidate-v2": False,
+    "1.0.0-d066-p2o5-candidate-v1": False,
     "1.0.3-d066-ext-v1": True,
     "1.0.9-d066-feo-hess-candidate": False,
     "1.0.3-d066-feo-liquid-candidate": False,

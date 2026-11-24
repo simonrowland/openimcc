@@ -58,6 +58,7 @@ _PUBLISHED_GAS_STANDARD_NOTICES = [
         ("openimcc", "1.0.6-d066-v4", True),
         ("sr-candidate", "1.0.0-d066-sr-candidate-v2", True),
         ("sr-candidate-v1", "1.0.0-d066-sr-candidate-v1", True),
+        ("p2o5-candidate", "1.0.0-d066-p2o5-candidate-v1", True),
         ("published", "1.0.2", False),
     ],
 )
@@ -140,6 +141,79 @@ def test_sr_candidate_v2_flags_rows_outside_their_paper_windows() -> None:
 def test_sr_candidate_v1_remains_selectable() -> None:
     profile = load_profile("sr-candidate-v1")
     assert profile.melt_pack.version == "1.0.0-d066-sr-candidate-v1"
+
+
+def test_p2o5_candidate_solves_kreep_majors_and_refuses_p_gas() -> None:
+    from openimcc.gas import (
+        ImccP2O5AssociatesIncompleteError,
+        evaluate_gas,
+    )
+
+    profile = load_profile("p2o5-candidate")
+    composition = {
+        "SiO2": 50.8,
+        "MgO": 9.34,
+        "FeO": 10.4,
+        "CaO": 9.6,
+        "Al2O3": 15.0,
+        "TiO2": 2.06,
+        "Na2O": 0.77,
+        "K2O": 0.61,
+        "MnO": 0.16,
+        "P2O5": 1.5,
+    }
+    melt = evaluate(composition, 2000.0, profile=profile, basis_type="wt")
+    assert melt.parent_oxides[-1] == "P2O5"
+    assert all(melt.activity(parent) >= 0.0 for parent in melt.parent_oxides)
+
+    gas = evaluate_gas(
+        {}, 2000.0, 1.0e-10, profile=profile, composition_wt_pct=composition
+    )
+    assert gas["SiO"] > 0.0
+    assert gas["Na"] > 0.0
+    assert "SiO" not in gas.omitted_channels
+    assert "Na" not in gas.omitted_channels
+    p_channels = {"P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10"}
+    assert p_channels <= gas.omitted_channels.keys()
+    assert all(
+        getattr(gas.omitted_channels[species], "code", None)
+        == "p2o5_associates_incomplete"
+        for species in p_channels
+    )
+    with pytest.raises(ImccP2O5AssociatesIncompleteError) as caught:
+        evaluate_gas(
+            {},
+            2000.0,
+            1.0e-10,
+            profile=profile,
+            composition_wt_pct=composition,
+            gas_species=("P2",),
+        )
+    assert caught.value.code == "p2o5_associates_incomplete"
+
+
+def test_p2o5_candidate_keeps_d066_prefix_and_associate_windows() -> None:
+    import json
+    from pathlib import Path
+
+    profile = load_profile("p2o5-candidate")
+    pack_dir = Path(__file__).resolve().parents[1] / "src/openimcc/data/packs"
+    candidate = json.loads(
+        (pack_dir / "imcc-sf04-d066-p2o5-candidate-v1.json").read_text()
+    )
+    d066 = json.loads((pack_dir / "imcc-sf04-d066-v4.json").read_text())
+    assert candidate["rows"][:38] == d066["rows"]
+    assert candidate["parents"] == [*d066["parents"], "P2O5"]
+    assert all(
+        row["T_domain_K"] == [1700.0, 2300.0]
+        for row in candidate["rows"][38:]
+    )
+    assert [row["T_domain_paper_demonstrated_K"] for row in candidate["rows"][38:]] == [
+        [1621.0, 3000.0],
+        [298.15, 1600.0],
+    ]
+    assert "printed_janaf_liquid" in candidate["rows"][38]["flags"]
+    assert "class_c_fusion_entropy_provisional" in candidate["rows"][39]["flags"]
 
 
 @pytest.mark.parametrize(

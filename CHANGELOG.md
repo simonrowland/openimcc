@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### P2O5 candidate
+
+- Added an opt-in nine-parent P2O5 melt pack with Mg3(PO4)2 and Ca3(PO4)2,
+  per-row source windows, and parameter-level coefficient ancestry. The
+  default and published packs remain unchanged.
+- Gated P-bearing gas channels on this profile because the two-associate
+  KREEP activity and diagnostic pressures are physically implausible; major
+  gas channels remain available.
+- Enabled the MnO association graft for candidate packs whose D066 core rows
+  and common-parent liquid standards match v4 by content digest.
+
 ### Sr candidate coefficient ancestry
 
 - Added ancestry artifacts for both Sr candidate packs, with source records and

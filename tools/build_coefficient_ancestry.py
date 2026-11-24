@@ -487,6 +487,7 @@ _SR_CANDIDATE_FILES = (
     "imcc-sf04-d066-sr-candidate-v1.json",
     "imcc-sf04-d066-sr-candidate-v2.json",
 )
+_P2O5_CANDIDATE_FILE = "imcc-sf04-d066-p2o5-candidate-v1.json"
 _JANAF_DOI = "10.18434/T42S31"
 _YE_DOI = "10.1007/s11669-007-9086-x"
 _JANAF_SRO_CRYSTAL = (
@@ -557,7 +558,7 @@ _CLASS_C_FUSION_ENTROPY = (
 )
 
 
-def _sr_parameter_sources(
+def _candidate_parameter_sources(
     row: dict[str, Any],
     parameter: str,
     citations: list[tuple[str, str]],
@@ -910,7 +911,7 @@ def _sr_candidate_artifact(
                 for key, value in spec.items()
                 if key != "citations"
             }
-            parameter["sources"] = _sr_parameter_sources(
+            parameter["sources"] = _candidate_parameter_sources(
                 row, parameter["parameter"], spec["citations"], mapper
             )
             parameters.append(parameter)
@@ -946,7 +947,154 @@ def _sr_candidate_artifact(
         if standard not in used_parents:
             continue
         parent_row = _row(f"parent_standard:{standard}", standard)
-        sources = _sr_parameter_sources(
+        sources = _candidate_parameter_sources(
+            parent_row, "parent_liquid_standard", parent_specs[standard], mapper
+        )
+        parent_standards.append({"standard": standard, "sources": sources})
+        parent_unmapped.extend(parent_row["unmapped"])
+
+    artifact = _finish_artifact(
+        identity=f"{pack['model_id']}@{pack['imcc_sf04_datapack_version']}",
+        file="data/packs/" + path.name,
+        raw=raw,
+        rows=rows,
+        runtime_digest=runtime_digest,
+        mapper=mapper,
+    )
+    artifact["parent_standards"] = parent_standards
+    artifact["unmapped"].extend(parent_unmapped)
+    artifact["work_ids"] = sorted(
+        set(artifact["work_ids"])
+        | {
+            source["work_id"]
+            for standard in parent_standards
+            for source in standard["sources"]
+            if source["work_id"] is not None
+        }
+    )
+    artifact["complete"] = not artifact["unmapped"]
+    artifact["counts"]["unmapped_citations"] = len(artifact["unmapped"])
+    return artifact
+
+
+def _p2o5_candidate_artifact(
+    *,
+    path: Path,
+    runtime_digest: str,
+    mapper: SourceMapper,
+    default_melt_artifact: dict[str, Any],
+) -> dict[str, Any]:
+    raw = path.read_bytes()
+    pack = json.loads(raw)
+    default_rows = _json(DATA / "packs" / "imcc-sf04-d066-v4.json")["rows"]
+    candidate_rows = pack["rows"]
+    if len(default_rows) != 38 or len(candidate_rows) != 40:
+        raise ValueError(f"unexpected row count in P2O5 candidate pack {path.name}")
+    for default_row, candidate_row in zip(default_rows, candidate_rows[:38]):
+        if default_row != candidate_row:
+            raise ValueError(
+                f"D066 core row {default_row.get('row')} differs from v4"
+            )
+
+    unmapped_by_row: dict[str, list[dict[str, Any]]] = {}
+    for item in default_melt_artifact["unmapped"]:
+        unmapped_by_row.setdefault(item["row"], []).append(dict(item))
+    rows = []
+    for source_row in default_melt_artifact["rows"]:
+        rows.append(
+            {
+                **source_row,
+                "sources": [dict(source) for source in source_row["sources"]],
+                "unmapped": unmapped_by_row.get(source_row["id"], []),
+            }
+        )
+
+    janaf = (
+        "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, "
+        "Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+    )
+    whitlockite = (
+        "Robie and Hemingway (1995), USGS Bulletin 2131, p. 300, Table e1, "
+        "Ca3(PO4)2 (Whitlockite), DOI 10.3133/b2131."
+    )
+    melting = (
+        "Welch and Gutt (1961), Journal of the Chemical Society, pp. 4442–4444, "
+        "DOI 10.1039/JR9610004442; CaO–P2O5 phase diagram."
+    )
+    jung_hudon = (
+        "Jung and Hudon (2012), P2O5(l) 1-bar gas/condensate standard, "
+        "DOI 10.1111/j.1551-2916.2012.05382.x."
+    )
+    mg_parameters = [
+        ("formation_delta_h_ox", [(janaf, "derived")], False,
+         "JANAF prints Mg3P2O8 formation enthalpy over the 1700–2300 K fit interval."),
+        ("formation_delta_s_ox", [(janaf, "derived")], False,
+         "JANAF prints Mg3P2O8 liquid thermochemistry over the fit interval."),
+        ("formation_delta_cp_ox", [(janaf, "derived")], False,
+         "JANAF prints liquid Cp directly over the fit interval."),
+        ("fusion_temperature_marker", [(janaf, "selected")], False,
+         "Mg-040 prints the crystal/liquid transition at 1621 K."),
+        ("fusion_entropy", [(janaf, "derived")], False,
+         "Mg-040 prints the 1621 K crystal/liquid pair, from which fusion entropy is differenced."),
+        ("liquid_cp", [(janaf, "derived")], False,
+         "Mg-039 prints the liquid heat capacity used throughout 1700–2300 K."),
+        ("parent_liquid_standard_MgO", [("NIST-JANAF, DOI 10.18434/T42S31, Table Mg-009; inherited D066 v4 MgO(l) standard.", "anchor")], False,
+         "The D066 v4 MgO(l) standard is preserved by content."),
+        ("parent_liquid_standard_P2O5", [(jung_hudon, "anchor")], False,
+         "The existing Jung–Hudon 1-bar parent standard is reused; numeric uncertainty is unpublished."),
+    ]
+    ca_parameters = [
+        ("formation_delta_h_ox", [(whitlockite, "derived")], True,
+         "The printed 298–1600 K crystal Gibbs table is continued above 1600 K at constant Cp."),
+        ("formation_delta_s_ox", [(whitlockite, "derived")], True,
+         "The printed crystal formation entropy is continued above 1600 K at constant Cp."),
+        ("formation_delta_cp_ox", [(whitlockite, "derived")], True,
+         "Constant-Cp continuation above the last printed 1600 K crystal row is assumed."),
+        ("fusion_temperature_marker", [(melting, "selected")], False,
+         "Welch and Gutt report the congruent Ca3(PO4)2 melting marker at 1810 °C."),
+        ("fusion_entropy", [(f"{8.297530569:.9f} J mol^-1 formula atom^-1 K^-1 × 13 atoms", "derived")], True,
+         "Class-C fusion entropy is a provisional 13-atom estimate."),
+        ("liquid_cp", [("Additive CaO(l)+P2O5(l) parent liquid Cp at the 2083.15 K fusion marker.", "derived")], True,
+         "The liquid Cp is the sum of parent liquid Cp values and is provisional."),
+        ("liquid_association_branch", [(whitlockite, "derived"), (melting, "anchor")], True,
+         "The candidate evaluates a supercooled liquid association branch below the 2083.15 K melting marker."),
+        ("parent_liquid_standard_CaO", [("NIST-JANAF, DOI 10.18434/T42S31, Table Ca-028; inherited D066 v4 CaO(l) standard.", "anchor")], False,
+         "The D066 v4 CaO(l) standard is preserved by content."),
+        ("parent_liquid_standard_P2O5", [(jung_hudon, "anchor")], False,
+         "The existing Jung–Hudon 1-bar parent standard is reused; numeric uncertainty is unpublished."),
+    ]
+    parameter_specs = {
+        "Mg3(PO4)2": mg_parameters,
+        "Ca3(PO4)2": ca_parameters,
+    }
+    for source_row in candidate_rows[38:]:
+        complex_name = source_row["complex"]
+        row = _row(f"{source_row['row']}:{complex_name}", complex_name)
+        parameters = []
+        for parameter_name, citations, provisional, basis in parameter_specs[complex_name]:
+            parameter = {
+                "parameter": parameter_name,
+                "provisional": provisional,
+                "provisional_basis": basis,
+                "sources": _candidate_parameter_sources(
+                    row, parameter_name, citations, mapper
+                ),
+            }
+            parameters.append(parameter)
+        row["parameters"] = parameters
+        _missing_provenance(row)
+        rows.append(row)
+
+    parent_standards = []
+    parent_unmapped = []
+    parent_specs = {
+        "MgO": [("NIST-JANAF Table Mg-009; D066 v4 MgO(l) parent standard.", "anchor")],
+        "CaO": [("NIST-JANAF Table Ca-028; D066 v4 CaO(l) parent standard.", "anchor")],
+        "P2O5": [(jung_hudon, "anchor")],
+    }
+    for standard in ("MgO", "CaO", "P2O5"):
+        parent_row = _row(f"parent_standard:{standard}", standard)
+        sources = _candidate_parameter_sources(
             parent_row, "parent_liquid_standard", parent_specs[standard], mapper
         )
         parent_standards.append({"standard": standard, "sources": sources})
@@ -1846,6 +1994,18 @@ def build() -> dict[str, Any]:
                 default_melt_artifact=melt_artifact,
             )
         )
+    p2o5_path = DATA / "packs" / _P2O5_CANDIDATE_FILE
+    p2o5_runtime_digest = load_datapack(p2o5_path).binding_digest
+    if not p2o5_runtime_digest:
+        raise ValueError(f"P2O5 candidate {_P2O5_CANDIDATE_FILE} has no runtime digest")
+    artifacts.append(
+        _p2o5_candidate_artifact(
+            path=p2o5_path,
+            runtime_digest=p2o5_runtime_digest,
+            mapper=mapper,
+            default_melt_artifact=melt_artifact,
+        )
+    )
     referenced_work_ids = {
         work_id for artifact in artifacts for work_id in artifact["work_ids"]
     }

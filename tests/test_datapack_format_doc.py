@@ -285,6 +285,7 @@ def test_model_notice_documents_exist() -> None:
         "docs/anorthite-disposition.md",
         "docs/k2si2o5-disposition.md",
         "docs/feo-liquid-candidate.md",
+        "docs/p2o5-candidate.md",
     ):
         assert (ROOT / path).is_file(), path
 
@@ -322,6 +323,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         "imcc-sf04-d066-sio2-na2o-candidate.json",
         "imcc-sf04-d066-sr-candidate-v1.json",
         "imcc-sf04-d066-sr-candidate-v2.json",
+        "imcc-sf04-d066-p2o5-candidate-v1.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",
@@ -503,6 +505,7 @@ def test_every_shipped_pack_loads() -> None:
         "imcc-sf04-d066-sio2-na2o-candidate.json",
         "imcc-sf04-d066-sr-candidate-v1.json",
         "imcc-sf04-d066-sr-candidate-v2.json",
+        "imcc-sf04-d066-p2o5-candidate-v1.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",

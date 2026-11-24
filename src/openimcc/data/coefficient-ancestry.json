@@ -28176,8 +28176,8 @@
     {
       "identity": "liquid-standards-v2",
       "file": "data/liquid-standards.json",
-      "digest": "0b781198f23610ae49014e33852a0a64f91f812b2b502c263276d227543b70c7",
-      "runtime_digest": "0b781198f23610ae49014e33852a0a64f91f812b2b502c263276d227543b70c7",
+      "digest": "1f48ce53bc9328cf375610137f6d5086a0cb559fe2e36fca41c5074104137bf5",
+      "runtime_digest": "1f48ce53bc9328cf375610137f6d5086a0cb559fe2e36fca41c5074104137bf5",
       "rows": [
         {
           "id": "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75:standard:SiO2",
@@ -32261,6 +32261,162 @@
           "label": "Cr2O3",
           "sources": [],
           "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:SiO2",
+          "label": "SiO2",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "O-035"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:MgO",
+          "label": "MgO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Mg-009"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:CaO",
+          "label": "CaO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Ca-028"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:Al2O3",
+          "label": "Al2O3",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Al-100"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:TiO2",
+          "label": "TiO2",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "O-044"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:Na2O",
+          "label": "Na2O",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Na-012"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Na-013"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:K2O",
+          "label": "K2O",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "K-012"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "D066 K-row translation record preserves the absolute complex Gibbs energy"
+            }
+          ],
+          "basis": "translation-record"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:FeO",
+          "label": "FeO",
+          "sources": [
+            {
+              "work_id": "darken-gurry-1946-iron-oxygen-ii",
+              "role": "selected",
+              "citation": "Darken & Gurry (1946), Tables IIIA/B/VI"
+            }
+          ],
+          "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:P2O5",
+          "label": "P2O5",
+          "sources": [],
+          "basis": "source"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:override:K2SiO3:K2O",
+          "label": "K2SiO3/K2O",
+          "sources": [],
+          "basis": "best available"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:override:K2Si2O5:K2O",
+          "label": "K2Si2O5/K2O",
+          "sources": [],
+          "basis": "best available"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:override:K2Si4O9:K2O",
+          "label": "K2Si4O9/K2O",
+          "sources": [],
+          "basis": "best available"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:override:KCaAlSi2O7:K2O",
+          "label": "KCaAlSi2O7/K2O",
+          "sources": [],
+          "basis": "best available"
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:diagnostic:K2SiO3",
+          "label": "K2SiO3",
+          "sources": []
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:diagnostic:K2Si2O5",
+          "label": "K2Si2O5",
+          "sources": []
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:diagnostic:K2Si4O9",
+          "label": "K2Si4O9",
+          "sources": []
+        },
+        {
+          "id": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:diagnostic:KCaAlSi2O7",
+          "label": "KCaAlSi2O7",
+          "sources": []
         }
       ],
       "work_ids": [
@@ -33637,14 +33793,106 @@
           "citation": "10.1016/j.gca.2021.03.024",
           "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
           "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:SiO2",
+          "citation": "Richet, Bottinga & Tequi (1984)",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:SiO2",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:Na2O",
+          "citation": "Richet, Bottinga & Tequi (1984)",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:Na2O",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:FeO",
+          "citation": "Masson (1965), Eq. 17",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:P2O5",
+          "citation": "Jung and Hudon (2012), P2O5(l), pure liquid at 1 bar",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:P2O5",
+          "citation": "existing gas and condensate standard",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:standard:P2O5",
+          "citation": "no numeric uncertainty published.",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:override:K2SiO3:K2O",
+          "citation": "disclosed reference-unknown marker",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:override:K2Si2O5:K2O",
+          "citation": "disclosed reference-unknown marker",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:override:K2Si4O9:K2O",
+          "citation": "disclosed reference-unknown marker",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:override:KCaAlSi2O7:K2O",
+          "citation": "disclosed reference-unknown marker",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:diagnostic:K2SiO3",
+          "citation": "No source citation is recorded in the row provenance.",
+          "reason": "The row has no source citation to resolve to a vocabulary work ID."
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:diagnostic:K2Si2O5",
+          "citation": "No source citation is recorded in the row provenance.",
+          "reason": "The row has no source citation to resolve to a vocabulary work ID."
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:diagnostic:K2Si4O9",
+          "citation": "No source citation is recorded in the row provenance.",
+          "reason": "The row has no source citation to resolve to a vocabulary work ID."
+        },
+        {
+          "row": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4:diagnostic:KCaAlSi2O7",
+          "citation": "No source citation is recorded in the row provenance.",
+          "reason": "The row has no source citation to resolve to a vocabulary work ID."
         }
       ],
       "complete": false,
       "counts": {
-        "rows": 353,
-        "mapped_rows": 231,
-        "unmapped_citations": 237,
-        "rows_with_unmapped": 211
+        "rows": 370,
+        "mapped_rows": 239,
+        "unmapped_citations": 253,
+        "rows_with_unmapped": 223
       }
     },
     {
@@ -44722,6 +44970,1530 @@
               "work_id": "janaf-4th",
               "role": "anchor",
               "citation": "NIST-JANAF, DOI 10.18434/T42S31, Table Al-100 (Al2O3 liquid)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "identity": "IMCC-SF04-D066-P2O5-CANDIDATE@1.0.0-d066-p2o5-candidate-v1",
+      "file": "data/packs/imcc-sf04-d066-p2o5-candidate-v1.json",
+      "digest": "0c0def0078957bfc4bbc37b234fa08089e7127b96df05fc1e2cc6fd0cf536955",
+      "runtime_digest": "5e569d847cdf77d9cb7fe97450650f97c317566870a4217ffb8789cdf6e01dd4",
+      "rows": [
+        {
+          "id": "1:Mg2SiO4",
+          "label": "Mg2SiO4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "2:MgSiO3",
+          "label": "MgSiO3",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "3:MgAl2O4",
+          "label": "MgAl2O4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "shornikov-2017-spinel-thermodynamics",
+              "role": "selected",
+              "citation": "10.1134/s0036024417020303"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "anchor",
+              "citation": "JANAF Al-090 analogy estimate"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "anchor",
+              "citation": "JANAF Al-089 MgAl2O4(cr)"
+            }
+          ]
+        },
+        {
+          "id": "4:MgTiO3",
+          "label": "MgTiO3",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "5:MgTi2O5",
+          "label": "MgTi2O5",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "6:Mg2TiO4",
+          "label": "Mg2TiO4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "7:Al6Si2O13",
+          "label": "Al6Si2O13",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF solid mullite"
+            }
+          ]
+        },
+        {
+          "id": "8:CaAl2O4",
+          "label": "CaAl2O4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "9:CaAl4O7",
+          "label": "CaAl4O7",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "kems-051-allibert-1981",
+              "role": "derived",
+              "citation": "Allibert et al."
+            }
+          ]
+        },
+        {
+          "id": "10:Ca12Al14O33",
+          "label": "Ca12Al14O33",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "11:CaSiO3",
+          "label": "CaSiO3",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "12:CaAl2Si2O8",
+          "label": "CaAl2Si2O8",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "13:CaMgSi2O6",
+          "label": "CaMgSi2O6",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "14:Ca2MgSi2O7",
+          "label": "Ca2MgSi2O7",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "15:Ca2Al2SiO7",
+          "label": "Ca2Al2SiO7",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "16:CaTiO3",
+          "label": "CaTiO3",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "17:Ca2SiO4",
+          "label": "Ca2SiO4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "18:CaTiSiO5",
+          "label": "CaTiSiO5",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "19:FeTiO3",
+          "label": "FeTiO3",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "darken-gurry-1946-iron-oxygen-ii",
+              "role": "derived",
+              "citation": "10.1021/ja01209a030"
+            }
+          ]
+        },
+        {
+          "id": "20:Fe2SiO4",
+          "label": "Fe2SiO4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "darken-gurry-1946-iron-oxygen-ii",
+              "role": "derived",
+              "citation": "10.1021/ja01209a030"
+            }
+          ]
+        },
+        {
+          "id": "21:FeAl2O4",
+          "label": "FeAl2O4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "darken-gurry-1946-iron-oxygen-ii",
+              "role": "derived",
+              "citation": "10.1021/ja01209a030"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "22:CaAl12O19",
+          "label": "CaAl12O19",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "kems-051-allibert-1981",
+              "role": "derived",
+              "citation": "Allibert et al."
+            }
+          ]
+        },
+        {
+          "id": "23:Mg2Al4Si5O18",
+          "label": "Mg2Al4Si5O18",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "24:Na2SiO3",
+          "label": "Na2SiO3",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "25:Na2Si2O5",
+          "label": "Na2Si2O5",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "26:NaAlSiO4",
+          "label": "NaAlSiO4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "27:NaAlSi3O8",
+          "label": "NaAlSi3O8",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "28:NaAlO2",
+          "label": "NaAlO2",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "29:Na2TiO3",
+          "label": "Na2TiO3",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "30:NaAlSi2O6",
+          "label": "NaAlSi2O6",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "31:K2SiO3",
+          "label": "K2SiO3",
+          "sources": [
+            {
+              "work_id": "sf04-magma-companion-workbook",
+              "role": "derived",
+              "citation": "10.1016/j.icarus.2003.08.023"
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "JANAF"
+            }
+          ]
+        },
+        {
+          "id": "32:K2Si2O5",
+          "label": "K2Si2O5",
+          "sources": [
+            {
+              "work_id": "sf04-magma-companion-workbook",
+              "role": "derived",
+              "citation": "10.1016/j.icarus.2003.08.023"
+            }
+          ]
+        },
+        {
+          "id": "33:KAlSiO4",
+          "label": "KAlSiO4",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "34:KAlSi3O8",
+          "label": "KAlSi3O8",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "35:KAlO2",
+          "label": "KAlO2",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "36:KAlSi2O6",
+          "label": "KAlSi2O6",
+          "sources": [
+            {
+              "work_id": "no27-fegley-cameron-1987-epsl",
+              "role": "derived",
+              "citation": "10.1016/0012-821x(87)90196-8"
+            }
+          ]
+        },
+        {
+          "id": "37:K2Si4O9",
+          "label": "K2Si4O9",
+          "sources": [
+            {
+              "work_id": "sf04-magma-companion-workbook",
+              "role": "derived",
+              "citation": "10.1016/j.icarus.2003.08.023"
+            }
+          ]
+        },
+        {
+          "id": "38:KCaAlSi2O7",
+          "label": "KCaAlSi2O7",
+          "sources": [
+            {
+              "work_id": "sf04-magma-companion-workbook",
+              "role": "derived",
+              "citation": "10.1016/j.icarus.2003.08.023"
+            }
+          ]
+        },
+        {
+          "id": "39:Mg3(PO4)2",
+          "label": "Mg3(PO4)2",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "derived",
+              "citation": "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "selected",
+              "citation": "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "anchor",
+              "citation": "NIST-JANAF, DOI 10.18434/T42S31, Table Mg-009; inherited D066 v4 MgO(l) standard."
+            }
+          ],
+          "parameters": [
+            {
+              "parameter": "formation_delta_h_ox",
+              "provisional": false,
+              "provisional_basis": "JANAF prints Mg3P2O8 formation enthalpy over the 1700–2300 K fit interval.",
+              "sources": [
+                {
+                  "work_id": "janaf-4th",
+                  "role": "derived",
+                  "citation": "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+                }
+              ]
+            },
+            {
+              "parameter": "formation_delta_s_ox",
+              "provisional": false,
+              "provisional_basis": "JANAF prints Mg3P2O8 liquid thermochemistry over the fit interval.",
+              "sources": [
+                {
+                  "work_id": "janaf-4th",
+                  "role": "derived",
+                  "citation": "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+                }
+              ]
+            },
+            {
+              "parameter": "formation_delta_cp_ox",
+              "provisional": false,
+              "provisional_basis": "JANAF prints liquid Cp directly over the fit interval.",
+              "sources": [
+                {
+                  "work_id": "janaf-4th",
+                  "role": "derived",
+                  "citation": "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+                }
+              ]
+            },
+            {
+              "parameter": "fusion_temperature_marker",
+              "provisional": false,
+              "provisional_basis": "Mg-040 prints the crystal/liquid transition at 1621 K.",
+              "sources": [
+                {
+                  "work_id": "janaf-4th",
+                  "role": "selected",
+                  "citation": "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+                }
+              ]
+            },
+            {
+              "parameter": "fusion_entropy",
+              "provisional": false,
+              "provisional_basis": "Mg-040 prints the 1621 K crystal/liquid pair, from which fusion entropy is differenced.",
+              "sources": [
+                {
+                  "work_id": "janaf-4th",
+                  "role": "derived",
+                  "citation": "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+                }
+              ]
+            },
+            {
+              "parameter": "liquid_cp",
+              "provisional": false,
+              "provisional_basis": "Mg-039 prints the liquid heat capacity used throughout 1700–2300 K.",
+              "sources": [
+                {
+                  "work_id": "janaf-4th",
+                  "role": "derived",
+                  "citation": "Chase (1998), NIST-JANAF, DOI 10.18434/T42S31, Tables Mg-038, Mg-039 and Mg-040 (Mg3P2O8 crystal, liquid and transition)."
+                }
+              ]
+            },
+            {
+              "parameter": "parent_liquid_standard_MgO",
+              "provisional": false,
+              "provisional_basis": "The D066 v4 MgO(l) standard is preserved by content.",
+              "sources": [
+                {
+                  "work_id": "janaf-4th",
+                  "role": "anchor",
+                  "citation": "NIST-JANAF, DOI 10.18434/T42S31, Table Mg-009; inherited D066 v4 MgO(l) standard."
+                }
+              ]
+            },
+            {
+              "parameter": "parent_liquid_standard_P2O5",
+              "provisional": false,
+              "provisional_basis": "The existing Jung–Hudon 1-bar parent standard is reused; numeric uncertainty is unpublished.",
+              "sources": [
+                {
+                  "work_id": null,
+                  "role": "anchor",
+                  "citation": "Jung and Hudon (2012), P2O5(l) 1-bar gas/condensate standard, DOI 10.1111/j.1551-2916.2012.05382.x."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "40:Ca3(PO4)2",
+          "label": "Ca3(PO4)2",
+          "sources": [
+            {
+              "work_id": "robie-hemingway-1995-usgs-b2131",
+              "role": "derived",
+              "citation": "Robie and Hemingway (1995), USGS Bulletin 2131, p. 300, Table e1, Ca3(PO4)2 (Whitlockite), DOI 10.3133/b2131."
+            },
+            {
+              "work_id": "janaf-4th",
+              "role": "anchor",
+              "citation": "NIST-JANAF, DOI 10.18434/T42S31, Table Ca-028; inherited D066 v4 CaO(l) standard."
+            }
+          ],
+          "parameters": [
+            {
+              "parameter": "formation_delta_h_ox",
+              "provisional": true,
+              "provisional_basis": "The printed 298–1600 K crystal Gibbs table is continued above 1600 K at constant Cp.",
+              "sources": [
+                {
+                  "work_id": "robie-hemingway-1995-usgs-b2131",
+                  "role": "derived",
+                  "citation": "Robie and Hemingway (1995), USGS Bulletin 2131, p. 300, Table e1, Ca3(PO4)2 (Whitlockite), DOI 10.3133/b2131."
+                }
+              ]
+            },
+            {
+              "parameter": "formation_delta_s_ox",
+              "provisional": true,
+              "provisional_basis": "The printed crystal formation entropy is continued above 1600 K at constant Cp.",
+              "sources": [
+                {
+                  "work_id": "robie-hemingway-1995-usgs-b2131",
+                  "role": "derived",
+                  "citation": "Robie and Hemingway (1995), USGS Bulletin 2131, p. 300, Table e1, Ca3(PO4)2 (Whitlockite), DOI 10.3133/b2131."
+                }
+              ]
+            },
+            {
+              "parameter": "formation_delta_cp_ox",
+              "provisional": true,
+              "provisional_basis": "Constant-Cp continuation above the last printed 1600 K crystal row is assumed.",
+              "sources": [
+                {
+                  "work_id": "robie-hemingway-1995-usgs-b2131",
+                  "role": "derived",
+                  "citation": "Robie and Hemingway (1995), USGS Bulletin 2131, p. 300, Table e1, Ca3(PO4)2 (Whitlockite), DOI 10.3133/b2131."
+                }
+              ]
+            },
+            {
+              "parameter": "fusion_temperature_marker",
+              "provisional": false,
+              "provisional_basis": "Welch and Gutt report the congruent Ca3(PO4)2 melting marker at 1810 °C.",
+              "sources": [
+                {
+                  "work_id": null,
+                  "role": "selected",
+                  "citation": "Welch and Gutt (1961), Journal of the Chemical Society, pp. 4442–4444, DOI 10.1039/JR9610004442; CaO–P2O5 phase diagram."
+                }
+              ]
+            },
+            {
+              "parameter": "fusion_entropy",
+              "provisional": true,
+              "provisional_basis": "Class-C fusion entropy is a provisional 13-atom estimate.",
+              "sources": [
+                {
+                  "work_id": null,
+                  "role": "derived",
+                  "citation": "8.297530569 J mol^-1 formula atom^-1 K^-1 × 13 atoms"
+                }
+              ]
+            },
+            {
+              "parameter": "liquid_cp",
+              "provisional": true,
+              "provisional_basis": "The liquid Cp is the sum of parent liquid Cp values and is provisional.",
+              "sources": [
+                {
+                  "work_id": null,
+                  "role": "derived",
+                  "citation": "Additive CaO(l)+P2O5(l) parent liquid Cp at the 2083.15 K fusion marker."
+                }
+              ]
+            },
+            {
+              "parameter": "liquid_association_branch",
+              "provisional": true,
+              "provisional_basis": "The candidate evaluates a supercooled liquid association branch below the 2083.15 K melting marker.",
+              "sources": [
+                {
+                  "work_id": "robie-hemingway-1995-usgs-b2131",
+                  "role": "derived",
+                  "citation": "Robie and Hemingway (1995), USGS Bulletin 2131, p. 300, Table e1, Ca3(PO4)2 (Whitlockite), DOI 10.3133/b2131."
+                },
+                {
+                  "work_id": null,
+                  "role": "anchor",
+                  "citation": "Welch and Gutt (1961), Journal of the Chemical Society, pp. 4442–4444, DOI 10.1039/JR9610004442; CaO–P2O5 phase diagram."
+                }
+              ]
+            },
+            {
+              "parameter": "parent_liquid_standard_CaO",
+              "provisional": false,
+              "provisional_basis": "The D066 v4 CaO(l) standard is preserved by content.",
+              "sources": [
+                {
+                  "work_id": "janaf-4th",
+                  "role": "anchor",
+                  "citation": "NIST-JANAF, DOI 10.18434/T42S31, Table Ca-028; inherited D066 v4 CaO(l) standard."
+                }
+              ]
+            },
+            {
+              "parameter": "parent_liquid_standard_P2O5",
+              "provisional": false,
+              "provisional_basis": "The existing Jung–Hudon 1-bar parent standard is reused; numeric uncertainty is unpublished.",
+              "sources": [
+                {
+                  "work_id": null,
+                  "role": "anchor",
+                  "citation": "Jung and Hudon (2012), P2O5(l) 1-bar gas/condensate standard, DOI 10.1111/j.1551-2916.2012.05382.x."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "work_ids": [
+        "darken-gurry-1946-iron-oxygen-ii",
+        "janaf-4th",
+        "kems-051-allibert-1981",
+        "no27-fegley-cameron-1987-epsl",
+        "robie-hemingway-1995-usgs-b2131",
+        "sf04-magma-companion-workbook",
+        "shornikov-2017-spinel-thermodynamics"
+      ],
+      "unmapped": [
+        {
+          "row": "1:Mg2SiO4",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "1:Mg2SiO4",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "2:MgSiO3",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "2:MgSiO3",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "3:MgAl2O4",
+          "citation": "independent Richet et al. DTA value is 53.50 ± 5.50 kJ/mol",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "anchor"
+        },
+        {
+          "row": "7:Al6Si2O13",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "7:Al6Si2O13",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "8:CaAl2O4",
+          "citation": "Rein & Chipman",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "9:CaAl4O7",
+          "citation": "Blander & Pelton",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "10:Ca12Al14O33",
+          "citation": "Rein & Chipman",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "11:CaSiO3",
+          "citation": "drop calorimetry 900-1850 K (Richet & Bottinga)",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "11:CaSiO3",
+          "citation": "cross-checks 1700-2600 K (Stout & Piwinskii)",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "11:CaSiO3",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "11:CaSiO3",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "12:CaAl2Si2O8",
+          "citation": "Richet & Bottinga",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "12:CaAl2Si2O8",
+          "citation": "Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "12:CaAl2Si2O8",
+          "citation": "Hemingway et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "12:CaAl2Si2O8",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "12:CaAl2Si2O8",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "13:CaMgSi2O6",
+          "citation": "Stebbins et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "13:CaMgSi2O6",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "13:CaMgSi2O6",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "13:CaMgSi2O6",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "14:Ca2MgSi2O7",
+          "citation": "Proks et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "14:Ca2MgSi2O7",
+          "citation": "Pankratz & Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "14:Ca2MgSi2O7",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "14:Ca2MgSi2O7",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "14:Ca2MgSi2O7",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "15:Ca2Al2SiO7",
+          "citation": "Pankratz & Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "15:Ca2Al2SiO7",
+          "citation": "Hemingway et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "15:Ca2Al2SiO7",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "15:Ca2Al2SiO7",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "16:CaTiO3",
+          "citation": "Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "16:CaTiO3",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "17:Ca2SiO4",
+          "citation": "Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "17:Ca2SiO4",
+          "citation": "Hemingway et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "17:Ca2SiO4",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "17:Ca2SiO4",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "18:CaTiSiO5",
+          "citation": "Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "18:CaTiSiO5",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "18:CaTiSiO5",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "18:CaTiSiO5",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "19:FeTiO3",
+          "citation": "Masson (1965)",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "19:FeTiO3",
+          "citation": "10.1098/rspa.1965.0176",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "19:FeTiO3",
+          "citation": "Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "19:FeTiO3",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "20:Fe2SiO4",
+          "citation": "Masson (1965)",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "20:Fe2SiO4",
+          "citation": "10.1098/rspa.1965.0176",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "20:Fe2SiO4",
+          "citation": "Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "20:Fe2SiO4",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "20:Fe2SiO4",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "20:Fe2SiO4",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "21:FeAl2O4",
+          "citation": "Masson (1965)",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "21:FeAl2O4",
+          "citation": "10.1098/rspa.1965.0176",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "21:FeAl2O4",
+          "citation": "Chan et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "22:CaAl12O19",
+          "citation": "Blander & Pelton",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "23:Mg2Al4Si5O18",
+          "citation": "Pankratz & Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "23:Mg2Al4Si5O18",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "23:Mg2Al4Si5O18",
+          "citation": "Richet & Bottinga drop calorimetry",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "23:Mg2Al4Si5O18",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "23:Mg2Al4Si5O18",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "24:Na2SiO3",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "24:Na2SiO3",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "25:Na2Si2O5",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "25:Na2Si2O5",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "26:NaAlSiO4",
+          "citation": "Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "26:NaAlSiO4",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "26:NaAlSiO4",
+          "citation": "Stebbins et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "26:NaAlSiO4",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "26:NaAlSiO4",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "27:NaAlSi3O8",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "27:NaAlSi3O8",
+          "citation": "Stebbins et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "27:NaAlSi3O8",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "27:NaAlSi3O8",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "28:NaAlO2",
+          "citation": "NBS compilation",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "28:NaAlO2",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "28:NaAlO2",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "29:Na2TiO3",
+          "citation": "Richet & Bottinga",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "29:Na2TiO3",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "29:Na2TiO3",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "30:NaAlSi2O6",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "30:NaAlSi2O6",
+          "citation": "Kelley",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "30:NaAlSi2O6",
+          "citation": "Bell & Roseboom",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "30:NaAlSi2O6",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "30:NaAlSi2O6",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "31:K2SiO3",
+          "citation": "Glushko et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "31:K2SiO3",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "31:K2SiO3",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "32:K2Si2O5",
+          "citation": "Beyer et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "32:K2Si2O5",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "32:K2Si2O5",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "33:KAlSiO4",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "33:KAlSiO4",
+          "citation": "Schairer & Bowen",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "33:KAlSiO4",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "33:KAlSiO4",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "34:KAlSi3O8",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "34:KAlSi3O8",
+          "citation": "Stebbins et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "34:KAlSi3O8",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "34:KAlSi3O8",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "35:KAlO2",
+          "citation": "Glushko et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "36:KAlSi2O6",
+          "citation": "Robie et al.",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "36:KAlSi2O6",
+          "citation": "Pankratz",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "36:KAlSi2O6",
+          "citation": "Schairer & Bowen",
+          "reason": "No public vocabulary work ID is known for this citation.",
+          "role": "derived"
+        },
+        {
+          "row": "36:KAlSi2O6",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "36:KAlSi2O6",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "37:K2Si4O9",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "37:K2Si4O9",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "38:KCaAlSi2O7",
+          "citation": "Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "38:KCaAlSi2O7",
+          "citation": "10.1111/j.1151-2916.1984.tb19155.x",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "39:Mg3(PO4)2",
+          "parameter": "parent_liquid_standard_P2O5",
+          "citation": "Jung and Hudon (2012), P2O5(l) 1-bar gas/condensate standard, DOI 10.1111/j.1551-2916.2012.05382.x.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "40:Ca3(PO4)2",
+          "parameter": "fusion_temperature_marker",
+          "citation": "Welch and Gutt (1961), Journal of the Chemical Society, pp. 4442–4444, DOI 10.1039/JR9610004442; CaO–P2O5 phase diagram.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "selected"
+        },
+        {
+          "row": "40:Ca3(PO4)2",
+          "parameter": "fusion_entropy",
+          "citation": "8.297530569 J mol^-1 formula atom^-1 K^-1 × 13 atoms",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "40:Ca3(PO4)2",
+          "parameter": "liquid_cp",
+          "citation": "Additive CaO(l)+P2O5(l) parent liquid Cp at the 2083.15 K fusion marker.",
+          "reason": "No curated citation-key mapping resolves to a work ID in the vocabulary.",
+          "role": "derived"
+        },
+        {
+          "row": "40:Ca3(PO4)2",
+          "parameter": "liquid_association_branch",
+          "citation": "Welch and Gutt (1961), Journal of the Chemical Society, pp. 4442–4444, DOI 10.1039/JR9610004442; CaO–P2O5 phase diagram.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "40:Ca3(PO4)2",
+          "parameter": "parent_liquid_standard_P2O5",
+          "citation": "Jung and Hudon (2012), P2O5(l) 1-bar gas/condensate standard, DOI 10.1111/j.1551-2916.2012.05382.x.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        },
+        {
+          "row": "parent_standard:P2O5",
+          "parameter": "parent_liquid_standard",
+          "citation": "Jung and Hudon (2012), P2O5(l) 1-bar gas/condensate standard, DOI 10.1111/j.1551-2916.2012.05382.x.",
+          "reason": "No curated mapping resolves this DOI to a work ID in the vocabulary.",
+          "role": "anchor"
+        }
+      ],
+      "complete": false,
+      "counts": {
+        "rows": 40,
+        "mapped_rows": 40,
+        "unmapped_citations": 116,
+        "rows_with_unmapped": 37
+      },
+      "parent_standards": [
+        {
+          "standard": "MgO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "anchor",
+              "citation": "NIST-JANAF Table Mg-009; D066 v4 MgO(l) parent standard."
+            }
+          ]
+        },
+        {
+          "standard": "CaO",
+          "sources": [
+            {
+              "work_id": "janaf-4th",
+              "role": "anchor",
+              "citation": "NIST-JANAF Table Ca-028; D066 v4 CaO(l) parent standard."
+            }
+          ]
+        },
+        {
+          "standard": "P2O5",
+          "sources": [
+            {
+              "work_id": null,
+              "role": "anchor",
+              "citation": "Jung and Hudon (2012), P2O5(l) 1-bar gas/condensate standard, DOI 10.1111/j.1551-2916.2012.05382.x."
             }
           ]
         }

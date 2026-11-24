@@ -232,6 +232,23 @@ class ImccGasValidityMetadataError(ImccRefusal):
     code = "imcc_gas_validity_metadata_missing"
 
 
+class ImccP2O5AssociatesIncompleteError(ImccComponentOutsideDomainError):
+    """Raised when P-bearing gas channels exceed the candidate's evidence."""
+
+    code = "p2o5_associates_incomplete"
+
+    def __init__(self, species: str, reason: str) -> None:
+        self.species = species
+        self.reason = reason
+        super().__init__(f"{self.code}: {species}: {reason}")
+
+
+class _P2O5AssociatesIncompleteRefusal(TraceGasChannelRefusal):
+    """Omission notice for P-bearing gas channels on the incomplete profile."""
+
+    code = "p2o5_associates_incomplete"
+
+
 @dataclass(frozen=True)
 class _HighTemperatureCandidateNotice:
     tier: str
@@ -4609,6 +4626,21 @@ def evaluate_gas(
         species: str,
         reaction: tuple[str, float, float] | None,
     ) -> TraceGasChannelRefusal | None:
+        if (
+            reaction is not None
+            and reaction[0] == "P2O5"
+            and selected_profile is not None
+            and getattr(
+                selected_profile.melt_pack, "_p2o5_channel_status", None
+            ) == "associates_incomplete"
+        ):
+            return _P2O5AssociatesIncompleteRefusal(
+                species,
+                "associates_incomplete: only Mg3(PO4)2 and Ca3(PO4)2 are "
+                "represented; the predicted P2O5 activity is near or above "
+                "its mole fraction, so P-bearing volatility is not supported",
+                triggers=("P2O5", "Mg3(PO4)2", "Ca3(PO4)2"),
+            )
         elements = channel_elements(species)
         if trace_blockers and elements & {"Na", "K"}:
             return TraceGasChannelRefusal(
@@ -4686,6 +4718,10 @@ def evaluate_gas(
                 )
                 raise ImccTraceMajorBiasError(
                     str(selected_refusal), major_oxide
+                )
+            if isinstance(selected_refusal, _P2O5AssociatesIncompleteRefusal):
+                raise ImccP2O5AssociatesIncompleteError(
+                    selected_refusal.species, selected_refusal.reason
                 )
             raise ImccComponentOutsideDomainError(str(selected_refusal))
     if requested_channels is None or include_ions:

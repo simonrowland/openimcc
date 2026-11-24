@@ -12,6 +12,7 @@ the simulator's backend glue.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 from dataclasses import dataclass, field, replace
 from fractions import Fraction
@@ -99,11 +100,14 @@ _PUBLISHED_CORE_ROWS = 38
 
 _D066_MODEL_ID = "IMCC-SF04-D066"
 _SR_CANDIDATE_MODEL_ID = "IMCC-SF04-D066-SR-CANDIDATE"
+_P2O5_CANDIDATE_MODEL_ID = "IMCC-SF04-D066-P2O5-CANDIDATE"
 _SR_CANDIDATE_PARENT_OXIDES = _EXPECTED_PARENT_OXIDES + ("SrO",)
+_P2O5_CANDIDATE_PARENT_OXIDES = _EXPECTED_PARENT_OXIDES + ("P2O5",)
 _SR_CANDIDATE_ROWS = (
     "SrAl2O4", "SrAl4O7", "SrAl12O19", "Sr3Al2O6",
     "Sr4Al2O7", "SrSiO3", "Sr2SiO4",
 )
+_P2O5_CANDIDATE_ROWS = ("Mg3(PO4)2", "Ca3(PO4)2")
 _D066_CORE_ROWS = (
     "Mg2SiO4", "MgSiO3", "MgAl2O4", "MgTiO3", "MgTi2O5", "Mg2TiO4",
     "Al6Si2O13", "CaAl2O4", "CaAl4O7", "Ca12Al14O33", "CaSiO3",
@@ -1063,6 +1067,9 @@ class ImccLoadedDatapack:
     _feo_liquid_candidate: Any = field(
         default=_NO_FEO_LIQUID_CANDIDATE, repr=False, compare=False
     )
+    _p2o5_channel_status: str | None = field(
+        default=None, repr=False, compare=False
+    )
 
     @property
     def model_id(self) -> str:
@@ -1649,6 +1656,107 @@ def _validate_sr_candidate(data: Mapping[str, Any]) -> tuple[list[dict[str, Any]
     return rows, digest
 
 
+def _d066_core_content_digests(data: Mapping[str, Any]) -> tuple[str, str]:
+    """Digest the copied D066 rows and the common-parent liquid standards."""
+    rows = data.get("rows")
+    parents = data.get("parents")
+    if not isinstance(rows, list) or len(rows) < _PUBLISHED_CORE_ROWS:
+        raise ImccMalformedDatapackError("candidate is missing its D066 core rows")
+    if not isinstance(parents, list) or parents[:8] != list(_EXPECTED_PARENT_OXIDES):
+        raise ImccMalformedDatapackError("candidate does not preserve the D066 parent prefix")
+    standards = data.get("parent_standard_candidates", {})
+    if not isinstance(standards, dict):
+        raise ImccMalformedDatapackError("parent_standard_candidates must be an object")
+    standard_material = {
+        "parents": parents[:8],
+        "parent_standard_candidates": {
+            key: value
+            for key, value in standards.items()
+            if key == "construction" or key in _EXPECTED_PARENT_OXIDES
+        },
+        "feo_liquid_candidate": data.get("feo_liquid_candidate"),
+        "row_standard_state_refits": [
+            row.get("standard_state_refit")
+            for row in rows[:_PUBLISHED_CORE_ROWS]
+            if isinstance(row, dict)
+        ],
+    }
+
+    def digest(value: Any) -> str:
+        serialized = json.dumps(
+            value, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+        ).encode("utf-8")
+        return hashlib.sha256(serialized).hexdigest()
+
+    return digest(rows[:_PUBLISHED_CORE_ROWS]), digest(standard_material)
+
+
+def _validate_p2o5_candidate(data: Mapping[str, Any]) -> tuple[list[dict[str, Any]], str]:
+    """Validate the frozen D066 prefix and two phosphate candidate rows."""
+    rows = data.get("rows")
+    expected_count = len(_D066_CORE_ROWS) + len(_P2O5_CANDIDATE_ROWS)
+    if not isinstance(rows, list) or len(rows) != expected_count:
+        raise ImccMalformedDatapackError(
+            f"P2O5 candidate must contain exactly {expected_count} rows"
+        )
+    core_data = dict(data)
+    core_data["rows"] = rows[:len(_D066_CORE_ROWS)]
+    _validate_d066_core(core_data)
+    added = rows[len(_D066_CORE_ROWS):]
+    if any(not isinstance(row, dict) for row in added):
+        raise ImccMalformedDatapackError("P2O5 candidate rows must be objects")
+    _validate_active_row_metadata(added, label="P2O5 candidate")
+    if tuple(row.get("complex") for row in added) != _P2O5_CANDIDATE_ROWS:
+        raise ImccMalformedDatapackError(
+            "P2O5 candidate row set or order does not match the frozen candidate rows"
+        )
+    for index, row in enumerate(added, start=len(_D066_CORE_ROWS) + 1):
+        if type(row.get("row")) is not int or row["row"] != index:
+            raise ImccMalformedDatapackError(
+                f"P2O5 candidate row {row['complex']!r} must retain row number {index}"
+            )
+        if row.get("coverage") != "C-independent-thermochemistry":
+            raise ImccMalformedDatapackError(
+                f"P2O5 candidate row {row['complex']!r} has invalid coverage"
+            )
+        nu = row.get("nu")
+        if not isinstance(nu, dict) or set(nu) - set(_P2O5_CANDIDATE_PARENT_OXIDES):
+            raise ImccMalformedDatapackError(
+                f"P2O5 candidate row {row['complex']!r} has invalid parent stoichiometry"
+            )
+        flags = row.get("flags", [])
+        if not isinstance(flags, list) or not all(isinstance(flag, str) for flag in flags):
+            raise ImccMalformedDatapackError(
+                f"P2O5 candidate row {row['complex']!r} flags must be strings"
+            )
+
+    compatibility = (
+        data.get("candidate_provenance", {}).get("d066_core_compatibility")
+        if isinstance(data.get("candidate_provenance"), dict)
+        else None
+    )
+    if not isinstance(compatibility, dict) or compatibility.get("declared") is not True:
+        raise ImccMalformedDatapackError(
+            "P2O5 candidate must declare its D066 core content compatibility"
+        )
+    row_digest, standards_digest = _d066_core_content_digests(data)
+    if (
+        compatibility.get("row_count") != _PUBLISHED_CORE_ROWS
+        or compatibility.get("rows_1_38_sha256") != row_digest
+        or compatibility.get("existing_parent_liquid_standards_sha256") != standards_digest
+    ):
+        raise ImccMalformedDatapackError(
+            "P2O5 candidate D066 compatibility digests do not match its content"
+        )
+    try:
+        digest = _published_datapack_manifest_hash(data)
+    except (TypeError, ValueError) as exc:
+        raise ImccMalformedDatapackError(
+            "P2O5 candidate datapack cannot be canonically serialized"
+        ) from exc
+    return rows, digest
+
+
 def _build_nu_vector(
     parent_oxides: Sequence[str],
     nu: Mapping[str, Any],
@@ -1741,7 +1849,11 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     expected_parents = (
         _SR_CANDIDATE_PARENT_OXIDES
         if model_id == _SR_CANDIDATE_MODEL_ID
-        else _EXPECTED_PARENT_OXIDES
+        else (
+            _P2O5_CANDIDATE_PARENT_OXIDES
+            if model_id == _P2O5_CANDIDATE_MODEL_ID
+            else _EXPECTED_PARENT_OXIDES
+        )
     )
     base_parents = data.get("parents")
     if not isinstance(base_parents, list) or base_parents != list(expected_parents):
@@ -1767,7 +1879,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     if sp_extension is None:
         if model_id not in {
             "IMCC-SF04", _D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID,
-            _SR_CANDIDATE_MODEL_ID,
+            _SR_CANDIDATE_MODEL_ID, _P2O5_CANDIDATE_MODEL_ID,
         }:
             raise ImccMalformedDatapackError(
                 f"model_id {model_id!r} requires a recognized extension section"
@@ -1789,6 +1901,13 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
                 "the Sr candidate cannot be combined with another extension section"
             )
         rows, _candidate_digest = _validate_sr_candidate(data)
+        published_manifest_sha256 = None
+    elif model_id == _P2O5_CANDIDATE_MODEL_ID:
+        if sp_extension is not None or has_excess_gibbs:
+            raise ImccMalformedDatapackError(
+                "the P2O5 candidate cannot be combined with another extension section"
+            )
+        rows, _candidate_digest = _validate_p2o5_candidate(data)
         published_manifest_sha256 = None
     elif model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
         rows, _d066_manifest_sha256 = _validate_d066_core(data)
@@ -2046,13 +2165,19 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     )
     extension_species = tuple(str(row["complex"]) for row in extension_rows)
     extension_names = set(extension_parents) | set(extension_species)
-    if model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID, _SR_CANDIDATE_MODEL_ID}:
+    if model_id in {
+        _D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID,
+        _SR_CANDIDATE_MODEL_ID, _P2O5_CANDIDATE_MODEL_ID,
+    }:
         coverage = {
             name: (
                 _SP_EXTENSION_TIER if name in extension_names else
                 (
                     "C-independent-thermochemistry"
-                    if model_id == _SR_CANDIDATE_MODEL_ID and name == "SrO"
+                    if (
+                        (model_id == _SR_CANDIDATE_MODEL_ID and name == "SrO")
+                        or (model_id == _P2O5_CANDIDATE_MODEL_ID and name == "P2O5")
+                    )
                     else "D-carried-published"
                 )
             )
@@ -2172,6 +2297,11 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             MappingProxyType(dict(data["feo_liquid_candidate"]))
             if isinstance(data.get("feo_liquid_candidate"), dict)
             else data.get("feo_liquid_candidate", _FEO_LIQUID_CANDIDATE_ABSENT)
+        ),
+        _p2o5_channel_status=(
+            data.get("candidate_provenance", {}).get("p_channel_status")
+            if isinstance(data.get("candidate_provenance"), dict)
+            else None
         ),
     )
 
@@ -2508,7 +2638,7 @@ def evaluate(
             and trace_component_rule(name) is None
         )
     elif (
-        model_id != _SR_CANDIDATE_MODEL_ID
+        model_id not in {_SR_CANDIDATE_MODEL_ID, _P2O5_CANDIDATE_MODEL_ID}
         and len(composition) > len(_EXPECTED_PARENT_OXIDES)
     ):
         supplied_sp_names.update(_SP_EXTENSION_PARENTS)
@@ -2697,7 +2827,7 @@ def evaluate(
     if canonical_oxide_mol <= 0.0:
         raise ImccCompositionIncompleteError(
             "candidate parent-oxide composition total is zero"
-            if model_id == _SR_CANDIDATE_MODEL_ID
+            if model_id in {_SR_CANDIDATE_MODEL_ID, _P2O5_CANDIDATE_MODEL_ID}
             else "canonical 8-oxide composition total is zero"
         )
     x_me2o = alkali_mol / canonical_oxide_mol
