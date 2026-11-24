@@ -1267,6 +1267,8 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "B-005", "B-006", "B-007", "B-078", "B-079", "B-080",
         "B-093", "B-094", "B-096", "B-098", "Ga-005", "Ga-006", "Ga-007",
         "Hf-006", "Hf-007", "Hf-008", "Hg-004",
+        # Subsolidus decomposition ceilings (sulfate and hydroxide hosts).
+        "Fe-031", "Fe-022", "Ca-020", "H-057",
     } | JANAF_CRYSTAL_TABLE_IDS | JANAF_LIQUID_TABLE_IDS | GAS_PACK_V2_TEXT_TABLE_IDS
     assert JANAF_CRYSTAL_YAML_TABLE_IDS <= {
         path.stem for path in JANAF_DATA.glob("*.yaml")
