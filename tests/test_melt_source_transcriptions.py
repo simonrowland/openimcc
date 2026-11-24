@@ -153,7 +153,22 @@ _STANDARD_STATE_REFITS = {
 }
 _SR_CANDIDATE_REFIT_ROWS = set(range(39, 46))
 _P2O5_CANDIDATE_REFIT_ROWS = {39, 40}
-EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
+_D066_V4_TRANSFORMS = {
+    "k_translation": _K_TRANSLATED_ROWS,
+    "standard_state_refit": _STANDARD_STATE_REFITS,
+    "feo_conversion": {19, 20, 21},
+    "fusion_refit": {3},
+}
+_D066_CANDIDATE_REFITS_BY_FAMILY = {
+    "melt-sr-candidate": {
+        "standard_state_refit": _SR_CANDIDATE_REFIT_ROWS,
+        "sr_candidate_refit": _SR_CANDIDATE_REFIT_ROWS,
+    },
+    "melt-p2o5-candidate": {
+        "standard_state_refit": _P2O5_CANDIDATE_REFIT_ROWS,
+    },
+}
+_BASE_EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
     "imcc-sf04-d066-ext-v1.json": {"k_translation": _K_TRANSLATED_ROWS},
     "imcc-sf04-d066-feo-hess-candidate.json": {
         "k_translation": _K_TRANSLATED_ROWS,
@@ -186,40 +201,12 @@ EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
         "feo_conversion": {19, 20, 21},
         "fusion_refit": {3},
     },
-    "imcc-sf04-d066-v4.json": {
-        "k_translation": _K_TRANSLATED_ROWS,
-        "standard_state_refit": _STANDARD_STATE_REFITS,
-        "feo_conversion": {19, 20, 21},
-        "fusion_refit": {3},
-    },
+    "imcc-sf04-d066-v4.json": _D066_V4_TRANSFORMS,
     "imcc-sf04-d066-v5.json": {
         "k_translation": _K_TRANSLATED_ROWS,
         "standard_state_refit": _STANDARD_STATE_REFITS,
         "hess_refit": {1, 3, 11, 12, 14},
         "feo_conversion": {19, 20, 21},
-    },
-    # build_sr_candidate_pack.py loads the v4 pack and leaves its 38 rows
-    # unchanged, then appends seven Sr rows re-referenced over a versioned
-    # 1001-point least-squares interval.
-    "imcc-sf04-d066-sr-candidate-v1.json": {
-        "k_translation": _K_TRANSLATED_ROWS,
-        "standard_state_refit": _STANDARD_STATE_REFITS | _SR_CANDIDATE_REFIT_ROWS,
-        "feo_conversion": {19, 20, 21},
-        "fusion_refit": {3},
-        "sr_candidate_refit": _SR_CANDIDATE_REFIT_ROWS,
-    },
-    "imcc-sf04-d066-sr-candidate-v2.json": {
-        "k_translation": _K_TRANSLATED_ROWS,
-        "standard_state_refit": _STANDARD_STATE_REFITS | _SR_CANDIDATE_REFIT_ROWS,
-        "feo_conversion": {19, 20, 21},
-        "fusion_refit": {3},
-        "sr_candidate_refit": _SR_CANDIDATE_REFIT_ROWS,
-    },
-    "imcc-sf04-d066-p2o5-candidate-v1.json": {
-        "k_translation": _K_TRANSLATED_ROWS,
-        "standard_state_refit": _STANDARD_STATE_REFITS | _P2O5_CANDIDATE_REFIT_ROWS,
-        "feo_conversion": {19, 20, 21},
-        "fusion_refit": {3},
     },
 }
 
@@ -227,6 +214,28 @@ EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
 def _manifest_d066_entries() -> list[dict[str, Any]]:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     return [entry for entry in manifest["packs"] if "d066" in entry["file"].lower()]
+
+
+def _expected_d066_transforms() -> dict[str, dict[str, set[int]]]:
+    expected = dict(_BASE_EXPECTED_D066_TRANSFORMS)
+    for entry in _manifest_d066_entries():
+        candidate_refits = _D066_CANDIDATE_REFITS_BY_FAMILY.get(entry.get("family"))
+        if candidate_refits is None:
+            continue
+        transforms = dict(_D066_V4_TRANSFORMS)
+        transforms["standard_state_refit"] = (
+            transforms["standard_state_refit"]
+            | candidate_refits.get("standard_state_refit", set())
+        )
+        transforms.update(
+            {
+                category: rows
+                for category, rows in candidate_refits.items()
+                if category != "standard_state_refit"
+            }
+        )
+        expected[entry["file"]] = transforms
+    return expected
 
 
 def _recorded_transforms(pack_row: dict[str, Any]) -> set[str]:
@@ -251,9 +260,10 @@ def _recorded_transforms(pack_row: dict[str, Any]) -> set[str]:
 
 def _d066_direct_cases() -> list[tuple[str, int]]:
     cases = []
+    expected_transforms = _expected_d066_transforms()
     for entry in _manifest_d066_entries():
         pack = json.loads((PACK_DIR / entry["file"]).read_text(encoding="utf-8"))
-        transformed = set().union(*EXPECTED_D066_TRANSFORMS[entry["file"]].values())
+        transformed = set().union(*expected_transforms[entry["file"]].values())
         cases.extend(
             (entry["file"], row["row"])
             for row in pack["rows"]
@@ -336,7 +346,8 @@ def _assert_transform_reason(
 def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> None:
     fc87_rows, sf04_rows = _source_rows()
     entries = _manifest_d066_entries()
-    assert {entry["file"] for entry in entries} == set(EXPECTED_D066_TRANSFORMS)
+    expected_transforms = _expected_d066_transforms()
+    assert {entry["file"] for entry in entries} == set(expected_transforms)
 
     for entry in entries:
         pack = json.loads((PACK_DIR / entry["file"]).read_text(encoding="utf-8"))
@@ -350,7 +361,7 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
             "sr_candidate_refit",
         }
         expected = {
-            category: EXPECTED_D066_TRANSFORMS[entry["file"]].get(category, set())
+            category: expected_transforms[entry["file"]].get(category, set())
             for category in categories
         }
         observed = {

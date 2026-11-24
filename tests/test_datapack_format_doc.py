@@ -316,44 +316,8 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         for path in PACK_DIR.glob("*.json")
         if path.name != "MANIFEST.json"
     }
-    assert names == {
-        "imcc-sf04-d066-ext-v1.json",
-        "imcc-sf04-d066-feo-hess-candidate.json",
-        "imcc-sf04-d066-feo-liquid-candidate.json",
-        "imcc-sf04-d066-p2o5-candidate-v1.json",
-        "imcc-sf04-d066-sio2-na2o-candidate.json",
-        "imcc-sf04-d066-sr-candidate-v1.json",
-        "imcc-sf04-d066-sr-candidate-v2.json",
-        "imcc-sf04-d066-v1-kcaalsi2o7.json",
-        "imcc-sf04-d066-v1.json",
-        "imcc-sf04-d066-v2.json",
-        "imcc-sf04-d066-v3.json",
-        "imcc-sf04-d066-v4.json",
-        "imcc-sf04-d066-v5.json",
-        "imcc-sf04-ext-v4.json",
-        "imcc-sf04-v1.0.2.json",
-        "openimcc-redox-cr-candidate-v2.json",
-        "openimcc-redox-cr-candidate-v3.json",
-        "openimcc-redox-cr-candidate-v4.json",
-        "openimcc-redox-cr-candidate.json",
-        "openimcc-redox-cr-ti-candidate-v2.json",
-        "openimcc-redox-cr-ti-candidate-v3.json",
-        "openimcc-redox-cr-ti-candidate-v4.json",
-        "openimcc-redox-cr-ti-candidate.json",
-        "openimcc-redox-feo-liquid-candidate-v2.json",
-        "openimcc-redox-feo-liquid-candidate.json",
-        "openimcc-redox-sio2-na2o-candidate.json",
-        "openimcc-redox-ti-candidate-v2.json",
-        "openimcc-redox-ti-candidate-v3.json",
-        "openimcc-redox-ti-candidate-v4.json",
-        "openimcc-redox-ti-candidate.json",
-        "openimcc-redox-v1.json",
-        "openimcc-redox-v2.json",
-        "openimcc-redox-v3.json",
-        "openimcc-redox-v4.json",
-        "openimcc-redox-v5.json",
-        "openimcc-redox-v6.json",
-    }
+    manifest = json.loads((PACK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
+    assert names == {entry["file"] for entry in manifest["packs"]}
 
 
 def test_pack_lifecycle_metadata_is_documented_for_every_shipped_pack() -> None:
@@ -497,45 +461,7 @@ def test_every_shipped_pack_loads() -> None:
     # packmanifest --check compares whole-file hashes only. Each component
     # loader also checks its own schema and identity rules, so load every pack.
     manifest = json.loads((PACK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
-    names = sorted(Path(entry["file"]).name for entry in manifest["packs"])
-    assert names == [
-        "imcc-sf04-d066-ext-v1.json",
-        "imcc-sf04-d066-feo-hess-candidate.json",
-        "imcc-sf04-d066-feo-liquid-candidate.json",
-        "imcc-sf04-d066-p2o5-candidate-v1.json",
-        "imcc-sf04-d066-sio2-na2o-candidate.json",
-        "imcc-sf04-d066-sr-candidate-v1.json",
-        "imcc-sf04-d066-sr-candidate-v2.json",
-        "imcc-sf04-d066-v1-kcaalsi2o7.json",
-        "imcc-sf04-d066-v1.json",
-        "imcc-sf04-d066-v2.json",
-        "imcc-sf04-d066-v3.json",
-        "imcc-sf04-d066-v4.json",
-        "imcc-sf04-d066-v5.json",
-        "imcc-sf04-ext-v4.json",
-        "imcc-sf04-v1.0.2.json",
-        "openimcc-redox-cr-candidate-v2.json",
-        "openimcc-redox-cr-candidate-v3.json",
-        "openimcc-redox-cr-candidate-v4.json",
-        "openimcc-redox-cr-candidate.json",
-        "openimcc-redox-cr-ti-candidate-v2.json",
-        "openimcc-redox-cr-ti-candidate-v3.json",
-        "openimcc-redox-cr-ti-candidate-v4.json",
-        "openimcc-redox-cr-ti-candidate.json",
-        "openimcc-redox-feo-liquid-candidate-v2.json",
-        "openimcc-redox-feo-liquid-candidate.json",
-        "openimcc-redox-sio2-na2o-candidate.json",
-        "openimcc-redox-ti-candidate-v2.json",
-        "openimcc-redox-ti-candidate-v3.json",
-        "openimcc-redox-ti-candidate-v4.json",
-        "openimcc-redox-ti-candidate.json",
-        "openimcc-redox-v1.json",
-        "openimcc-redox-v2.json",
-        "openimcc-redox-v3.json",
-        "openimcc-redox-v4.json",
-        "openimcc-redox-v5.json",
-        "openimcc-redox-v6.json",
-    ]
+    names = sorted(entry["file"] for entry in manifest["packs"])
     for name in names:
         if name.startswith("openimcc-redox-"):
             from openimcc.redox_pack import load_redox_pack

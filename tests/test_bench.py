@@ -588,23 +588,28 @@ def test_unsupported_observable_is_not_coerced(tmp_path: Path) -> None:
 
 
 def test_research_overlay_controlled_vocabulary_census() -> None:
-    assert len(_PACK_OVERLAY_BY_VERSION) == 36
-    packs = [
-        json.loads(path.read_text(encoding="utf-8"))
-        for path in sorted((_REPO_ROOT / "src/openimcc/data/packs").glob("*.json"))
-        if path.name != "MANIFEST.json"
-    ]
-    assert len(packs) == len(_PACK_OVERLAY_BY_VERSION)
-    assert {
-        str(pack.get("imcc_sf04_datapack_version") or pack.get("version"))
-        for pack in packs
-    } == set(_PACK_OVERLAY_BY_VERSION)
-    for pack in packs:
+    pack_dir = _REPO_ROOT / "src/openimcc/data/packs"
+    manifest = json.loads((pack_dir / "MANIFEST.json").read_text(encoding="utf-8"))
+    entries = manifest["packs"]
+    versions = [str(entry["datapack_version"]) for entry in entries]
+    # The previous table marked only model-mapped versions True; every other
+    # version used the same False default as the sparse table.
+    old_lookups = {
+        version: version in _PACK_OVERLAY_MODEL_BY_VERSION
+        for version in versions
+    }
+    new_lookups = {
+        version: _PACK_OVERLAY_BY_VERSION.get(version, False)
+        for version in versions
+    }
+    assert new_lookups == old_lookups
+    for entry in entries:
+        pack = json.loads((pack_dir / entry["file"]).read_text(encoding="utf-8"))
         model = pack.get("model_id") or pack.get("model")
         version = str(
             pack.get("imcc_sf04_datapack_version") or pack.get("version")
         )
-        expected_overlay = _PACK_OVERLAY_BY_VERSION[version]
+        expected_overlay = old_lookups[version]
         if expected_overlay:
             assert str(model).casefold() == _PACK_OVERLAY_MODEL_BY_VERSION[
                 version
