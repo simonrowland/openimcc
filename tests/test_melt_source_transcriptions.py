@@ -153,6 +153,7 @@ _STANDARD_STATE_REFITS = {
 }
 _SR_CANDIDATE_REFIT_ROWS = set(range(39, 46))
 _P2O5_CANDIDATE_REFIT_ROWS = {39, 40}
+_ALUMINATE_CANDIDATE_REFIT_ROWS = {9, 22}
 _D066_V4_TRANSFORMS = {
     "k_translation": _K_TRANSLATED_ROWS,
     "standard_state_refit": _STANDARD_STATE_REFITS,
@@ -166,6 +167,9 @@ _D066_CANDIDATE_REFITS_BY_FAMILY = {
     },
     "melt-p2o5-candidate": {
         "standard_state_refit": _P2O5_CANDIDATE_REFIT_ROWS,
+    },
+    "melt-cao-aluminate-candidate": {
+        "candidate_fit_refit": _ALUMINATE_CANDIDATE_REFIT_ROWS,
     },
 }
 _BASE_EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
@@ -359,22 +363,53 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
             "feo_conversion",
             "fusion_refit",
             "sr_candidate_refit",
+            "candidate_fit_refit",
         }
         expected = {
             category: expected_transforms[entry["file"]].get(category, set())
             for category in categories
         }
+        recorded_candidate_fit = set(
+            pack.get("candidate_fit", {}).get("changed_parameters", {})
+        )
         observed = {
-            category: {
-                row["row"]
-                for row in pack["rows"]
-                if category in _recorded_transforms(row)
-            }
+            category: (
+                {
+                    row["row"]
+                    for row in pack["rows"]
+                    if row["complex"] in recorded_candidate_fit
+                }
+                if category == "candidate_fit_refit"
+                else {
+                    row["row"]
+                    for row in pack["rows"]
+                    if category in _recorded_transforms(row)
+                }
+            )
             for category in categories
         }
         assert observed == expected
 
         for pack_row in pack["rows"]:
+            if (
+                entry.get("family") == "melt-cao-aluminate-candidate"
+                and pack_row["complex"] in recorded_candidate_fit
+            ):
+                fit_coefficients = pack["candidate_fit"]["changed_parameters"][
+                    pack_row["complex"]
+                ]
+                assert pack_row["row"] in _ALUMINATE_CANDIDATE_REFIT_ROWS
+                assert fit_coefficients == {
+                    "A": pack_row["A"],
+                    "B": pack_row["B"],
+                }
+                assert _recorded_transforms(pack_row) == set()
+                source_row = _source_row_for_pack_row(
+                    pack_row["row"], fc87_rows, sf04_rows
+                )
+                _assert_pack_reaction_matches_source(pack_row, source_row)
+                assert not _matches_source_coefficients(pack_row, source_row)
+                continue
             if (
                 entry["file"] in {
                     "imcc-sf04-d066-sr-candidate-v1.json",

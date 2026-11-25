@@ -488,6 +488,11 @@ _SR_CANDIDATE_FILES = (
     "imcc-sf04-d066-sr-candidate-v2.json",
 )
 _P2O5_CANDIDATE_FILE = "imcc-sf04-d066-p2o5-candidate-v1.json"
+_CAO_ALUMINATE_CANDIDATE_FILE = "imcc-sf04-d066-cao-aluminate-candidate-v1.json"
+_ALLIBERT_1981 = (
+    "Allibert et al. (1981), CaO–Al2O3 liquid activities; "
+    "DOI 10.1111/j.1151-2916.1981.tb09608.x."
+)
 _D066_CORE_ROW_COUNT = 38
 _JANAF_DOI = "10.18434/T42S31"
 _YE_DOI = "10.1007/s11669-007-9086-x"
@@ -1185,6 +1190,74 @@ def _p2o5_candidate_artifact(
         rows=rows,
         parent_standards=parent_standards,
         parent_unmapped=parent_unmapped,
+    )
+
+
+def _cao_aluminate_candidate_artifact(
+    *,
+    path: Path,
+    runtime_digest: str,
+    mapper: SourceMapper,
+    default_melt_artifact: dict[str, Any],
+) -> dict[str, Any]:
+    raw = path.read_bytes()
+    pack = json.loads(raw)
+    candidate_rows = pack["rows"]
+    default_rows = _json(DATA / "packs" / "imcc-sf04-d066-v4.json")["rows"]
+    fitted = {"CaAl4O7", "CaAl12O19"}
+    if (
+        len(candidate_rows) != _D066_CORE_ROW_COUNT
+        or len(default_rows) != len(candidate_rows)
+    ):
+        raise ValueError("unexpected row count in CaO–Al2O3 candidate pack")
+    for default_row, candidate_row in zip(default_rows, candidate_rows, strict=True):
+        restored = dict(candidate_row)
+        if candidate_row.get("complex") in fitted:
+            restored["A"] = default_row["A"]
+        if restored != default_row:
+            raise ValueError(
+                f"CaO–Al2O3 candidate changed an unauthorized field in row "
+                f"{default_row.get('row')}"
+            )
+
+    rows = _default_candidate_artifact_rows(default_melt_artifact)
+    for complex_name in sorted(fitted):
+        source_row = next(
+            item for item in candidate_rows if item["complex"] == complex_name
+        )
+        ancestry_row = next(
+            row for row in rows if row["id"] == f"{source_row['row']}:{complex_name}"
+        )
+        ancestry_row["parameters"] = [
+            {
+                "parameter": "A",
+                "sources": _candidate_parameter_sources(
+                    ancestry_row, "A", [(_ALLIBERT_1981, "fitted")], mapper
+                ),
+            },
+            {
+                "parameter": "B",
+                "sources": _candidate_parameter_sources(
+                    ancestry_row,
+                    "B",
+                    [(
+                        "Fegley & Cameron (1987), Table 3, p. 211; "
+                        "DOI 10.1016/0012-821X(87)90196-8",
+                        "selected",
+                    )],
+                    mapper,
+                ),
+            },
+        ]
+    return _finish_candidate_artifact(
+        path=path,
+        raw=raw,
+        pack=pack,
+        runtime_digest=runtime_digest,
+        mapper=mapper,
+        rows=rows,
+        parent_standards=[],
+        parent_unmapped=[],
     )
 
 
@@ -2066,6 +2139,20 @@ def build() -> dict[str, Any]:
         _p2o5_candidate_artifact(
             path=p2o5_path,
             runtime_digest=p2o5_runtime_digest,
+            mapper=mapper,
+            default_melt_artifact=melt_artifact,
+        )
+    )
+    aluminate_path = DATA / "packs" / _CAO_ALUMINATE_CANDIDATE_FILE
+    aluminate_runtime_digest = load_datapack(aluminate_path).binding_digest
+    if not aluminate_runtime_digest:
+        raise ValueError(
+            f"CaO–Al2O3 candidate {_CAO_ALUMINATE_CANDIDATE_FILE} has no runtime digest"
+        )
+    artifacts.append(
+        _cao_aluminate_candidate_artifact(
+            path=aluminate_path,
+            runtime_digest=aluminate_runtime_digest,
             mapper=mapper,
             default_melt_artifact=melt_artifact,
         )

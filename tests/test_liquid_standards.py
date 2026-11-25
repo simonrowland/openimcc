@@ -59,6 +59,17 @@ def _registry() -> dict[str, object]:
     return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
 
 
+def test_every_manifest_melt_pack_resolves_liquid_standards() -> None:
+    manifest = json.loads((PACK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
+    melt_packs = [entry for entry in manifest["packs"] if entry["kind"] == "melt"]
+    assert melt_packs
+
+    for entry in melt_packs:
+        declared = pack_liquid_standards(PACK_DIR / entry["file"])
+        assert declared.source != "undeclared", entry["file"]
+        assert declared.standards or declared.row_overrides, entry["file"]
+
+
 def test_registry_schema_and_every_shipped_pack_has_a_declaration() -> None:
     registry = _registry()
     assert registry["schema_version"] == 2

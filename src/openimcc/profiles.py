@@ -120,6 +120,16 @@ def load_profile(name: str) -> Profile:
                 "Cr, Sr, Li, Zn, and Yb redox pack."
             ),
         )
+    if name == "cao-aluminate-candidate":
+        return _candidate_profile(
+            name,
+            "imcc-sf04-d066-cao-aluminate-candidate-v1.json",
+            (
+                "Opt-in CaO–Al2O3 associate activity-fit candidate melt pack, "
+                "versioned openimcc gas and condensate tables, and the v6 "
+                "Cr, Sr, Li, Zn, and Yb redox pack."
+            ),
+        )
     if name == "published":
         from openimcc.gas import load_gas_datapack
 
@@ -140,7 +150,8 @@ def load_profile(name: str) -> Profile:
         )
     raise ProfileError(
         f"unknown profile {name!r}; expected 'openimcc', 'published', or "
-        "'sr-candidate', 'sr-candidate-v1', or 'p2o5-candidate'"
+        "'sr-candidate', 'sr-candidate-v1', 'p2o5-candidate', or "
+        "'cao-aluminate-candidate'"
     )
 
 
@@ -150,6 +161,7 @@ def _resolve_profile(profile: str | Profile) -> Profile:
     if not isinstance(profile, str):
         raise ProfileError(
             "profile must be 'openimcc', 'published', 'sr-candidate', "
-            "'sr-candidate-v1', 'p2o5-candidate', or a Profile"
+            "'sr-candidate-v1', 'p2o5-candidate', 'cao-aluminate-candidate', "
+            "or a Profile"
         )
     return load_profile(profile)

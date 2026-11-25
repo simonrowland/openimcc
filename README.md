@@ -1031,6 +1031,17 @@ represented, and no held-out phosphate-capacity or volatility data have scored
 the candidate yet. The opt-in profile does not change the default trace
 handling.
 
+### Opt-in CaO–Al2O3 aluminate candidate
+
+Use `load_profile("cao-aluminate-candidate")` to select the opt-in
+`imcc-sf04-d066-cao-aluminate-candidate-v1.json` pack. It keeps the D066 v4
+parent basis and applies a constrained shared `A` shift to CaAl4O7 and
+CaAl12O19 using 14 exposed Allibert binary activities and 345 exposed
+Stolyarova 1996 rows. A source-balanced mean-squared-dex objective gives a
+shared shift factor of 0.889630787; both `B` coefficients and every other row
+are unchanged. The default profile is unchanged. See [the aluminate candidate
+report](docs/cao-aluminate-candidate.md).
+
 For example, `evaluate(composition, 1800, profile="published")` selects the
 published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
 selects its matching gas tables. The CLI accepts

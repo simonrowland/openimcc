@@ -2595,7 +2595,8 @@ def evaluate(
         taking their natural logs to continue a time-stepped solve.
     profile:
         Optional named profile (``"openimcc"``, ``"published"``, or
-        ``"sr-candidate"`` or ``"sr-candidate-v1"``), or a loaded
+        ``"sr-candidate"``, ``"sr-candidate-v1"``, ``"p2o5-candidate"``, or
+        ``"cao-aluminate-candidate"``), or a loaded
         :class:`openimcc.profiles.Profile`.
         It cannot be combined with ``pack``.
 

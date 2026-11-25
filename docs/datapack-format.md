@@ -109,6 +109,7 @@ when absent, although they are present in the shipped packs as noted.
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
 | candidate_provenance | object | No | Pack-level sources, construction assumptions, validation checks, and uncertainty notes for opt-in candidates, including the Sr and P2O5 candidates. The loader validates the P2O5 candidate's declared D066 content digests; other candidate metadata is descriptive. |
+| candidate_fit | object | No | Audit record for a candidate coefficient fit, including fit data and roles, objective, source counts, parameter-search details, and changed coefficients. The loader does not consume this metadata. |
 | created | string | No | Pack creation date, represented as an ISO-like date such as 2026-08-11. The loader does not parse it. |
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
 | excess_gibbs | object | Conditional | Opt-in analytical-parent or total-species pair excess-Gibbs terms. Accepted only with the new `IMCC-SF04-D066-EXCESS-CANDIDATE` identity; its full content participates in the canonical binding digest. Never add this section to a published pack. |

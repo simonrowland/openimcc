@@ -171,6 +171,7 @@ def _expected_row_ids(artifact: dict) -> set[str]:
         "packs/imcc-sf04-d066-sr-candidate-v1.json",
         "packs/imcc-sf04-d066-sr-candidate-v2.json",
         "packs/imcc-sf04-d066-p2o5-candidate-v1.json",
+        "packs/imcc-sf04-d066-cao-aluminate-candidate-v1.json",
     }:
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"{row['row']}:{row['complex']}" for row in content["rows"]}
@@ -260,7 +261,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 42
+    assert len(entries) == 43
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -645,6 +646,32 @@ def test_p2o5_candidate_artifact_has_parameter_level_ancestry() -> None:
     )
     assert {"janaf-4th", "robie-hemingway-1995-usgs-b2131"} <= set(artifact["work_ids"])
     assert any("10.1039/JR9610004442" in item["citation"] for item in artifact["unmapped"])
+
+
+def test_cao_aluminate_candidate_records_fitted_intercepts() -> None:
+    entries = coefficient_ancestry()
+    path = ROOT / "src/openimcc/data/packs/imcc-sf04-d066-cao-aluminate-candidate-v1.json"
+    loaded = load_datapack(path)
+    artifact = _artifact(
+        entries,
+        "IMCC-SF04-D066@1.0.0-d066-cao-aluminate-candidate-v1",
+    )
+    assert artifact["runtime_digest"] == loaded.binding_digest
+    assert artifact["counts"]["rows"] == 38
+    rows = {row["id"]: row for row in artifact["rows"]}
+    for row_id in ("9:CaAl4O7", "22:CaAl12O19"):
+        parameters = {item["parameter"]: item for item in rows[row_id]["parameters"]}
+        assert {"A", "B"} <= set(parameters)
+        assert any(
+            source["role"] == "fitted"
+            and source["work_id"] == "kems-051-allibert-1981"
+            for source in parameters["A"]["sources"]
+        )
+        assert any(
+            source["role"] == "selected"
+            and source["work_id"] == "no27-fegley-cameron-1987-epsl"
+            for source in parameters["B"]["sources"]
+        )
 
 
 def test_elemental_reference_crystal_cards_are_registered_in_ancestry() -> None:

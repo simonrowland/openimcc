@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### CaO–Al2O3 aluminate candidate
+
+- Added the opt-in `cao-aluminate-candidate` profile and pack
+  `imcc-sf04-d066-cao-aluminate-candidate-v1.json`. It applies one shared `A`
+  shift to CaAl4O7 and CaAl12O19, scaled by 0.889630787. That factor is the
+  minimum of an equal-source mean-squared-dex objective over 14 Allibert and
+  345 exposed Stolyarova 1996 rows. `B` and every other row are unchanged, and
+  the default profile is unchanged.
+- The candidate builder writes or verifies the pack's liquid-standard
+  declaration, and a test checks that every manifest melt pack resolves one.
+- Full residual replay improves the fitted Allibert rows (0.258 → 0.123 dex)
+  but not the two independent sources (Stolyarova 1995 vapour flat, Cho and
+  Suito 1994 +0.035 dex), so the pack stays opt-in.
+
 ### Subsolidus decomposition ceilings
 
 - Added source-bounded ceilings for `Fe2(SO4)3`, `FeSO4`, brucite
