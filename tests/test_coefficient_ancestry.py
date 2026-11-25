@@ -172,6 +172,7 @@ def _expected_row_ids(artifact: dict) -> set[str]:
         "packs/imcc-sf04-d066-sr-candidate-v2.json",
         "packs/imcc-sf04-d066-p2o5-candidate-v1.json",
         "packs/imcc-sf04-d066-cao-aluminate-candidate-v1.json",
+        "packs/imcc-sf04-d066-silicate-candidate-v2.json",
     }:
         content = json.loads(path.read_text(encoding="utf-8"))
         return {f"{row['row']}:{row['complex']}" for row in content["rows"]}
@@ -261,7 +262,7 @@ def test_default_artifacts_match_the_loaded_package_data() -> None:
     profile = load_profile("openimcc")
 
     assert manifest["schema"] == "openimcc-coefficient-ancestry.v1"
-    assert len(entries) == 43
+    assert len(entries) == 44
     for entry in entries:
         raw = resources.files("openimcc").joinpath(*entry["file"].split("/")).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == entry["digest"]
@@ -672,6 +673,43 @@ def test_cao_aluminate_candidate_records_fitted_intercepts() -> None:
             and source["work_id"] == "no27-fegley-cameron-1987-epsl"
             for source in parameters["B"]["sources"]
         )
+
+
+def test_silicate_candidate_v2_ancestry_marks_only_mg_intercepts_provisional() -> None:
+    entries = coefficient_ancestry()
+    filename = "imcc-sf04-d066-silicate-candidate-v2.json"
+    path = ROOT / "src/openimcc/data/packs" / filename
+    loaded = load_datapack(path)
+    artifact = _artifact(
+        entries,
+        "IMCC-SF04-D066@1.0.0-d066-silicate-candidate-v2",
+    )
+    default = _artifact(entries, "IMCC-SF04-D066@1.0.6-d066-v4")
+    default_rows = {row["id"]: row for row in default["rows"]}
+    candidate_rows = {row["id"]: row for row in artifact["rows"]}
+
+    assert artifact["runtime_digest"] == loaded.binding_digest
+    assert len(candidate_rows) == 38
+    assert artifact["complete"] is False
+    for row_id, row in candidate_rows.items():
+        if row["label"] not in {"Mg2SiO4", "MgSiO3"}:
+            assert row == default_rows[row_id]
+            continue
+        parameters = {item["parameter"]: item for item in row["parameters"]}
+        assert set(parameters) == {"A", "B"}
+        assert parameters["A"]["provisional"] is True
+        assert parameters["B"]["provisional"] is False
+        assert {source["role"] for source in parameters["A"]["sources"]} == {
+            "fitted"
+        }
+        assert len(parameters["A"]["sources"]) == 4
+        citations = " ".join(
+            source["citation"]
+            for parameter in row["parameters"]
+            for source in parameter["sources"]
+        ).casefold()
+        assert "zaitsev" not in citations
+        assert "shornikov" not in citations
 
 
 def test_elemental_reference_crystal_cards_are_registered_in_ancestry() -> None:

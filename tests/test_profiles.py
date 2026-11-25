@@ -59,6 +59,8 @@ _PUBLISHED_GAS_STANDARD_NOTICES = [
         ("sr-candidate", "1.0.0-d066-sr-candidate-v2", True),
         ("sr-candidate-v1", "1.0.0-d066-sr-candidate-v1", True),
         ("p2o5-candidate", "1.0.0-d066-p2o5-candidate-v1", True),
+        ("cao-aluminate-candidate", "1.0.0-d066-cao-aluminate-candidate-v1", True),
+        ("silicate-candidate", "1.0.0-d066-silicate-candidate-v2", True),
         ("published", "1.0.2", False),
     ],
 )
@@ -233,6 +235,44 @@ def test_p2o5_candidate_keeps_d066_prefix_and_associate_windows() -> None:
     ]
     assert "printed_janaf_liquid" in candidate["rows"][38]["flags"]
     assert "class_c_fusion_entropy_provisional" in candidate["rows"][39]["flags"]
+
+
+def test_silicate_candidate_v2_refits_only_the_two_mg_associate_intercepts() -> None:
+    import json
+    from pathlib import Path
+
+    profile = load_profile("silicate-candidate")
+    default = load_profile("openimcc")
+    pack_dir = Path(__file__).resolve().parents[1] / "src/openimcc/data/packs"
+    candidate = json.loads(
+        (pack_dir / "imcc-sf04-d066-silicate-candidate-v2.json").read_text(encoding="utf-8")
+    )
+    base = json.loads((pack_dir / "imcc-sf04-d066-v4.json").read_text(encoding="utf-8"))
+    target = {
+        "Mg2SiO4": -0.8648532598800563,
+        "MgSiO3": 0.3506691491283032,
+    }
+
+    assert profile.melt_pack.parent_oxides == default.melt_pack.parent_oxides
+    assert len(candidate["rows"]) == len(base["rows"]) == 38
+    for base_row, candidate_row in zip(base["rows"], candidate["rows"]):
+        if base_row["complex"] in target:
+            assert candidate_row["A"] == target[base_row["complex"]]
+            assert candidate_row["B"] == base_row["B"]
+            assert candidate_row["candidate_activity_fit"]["provisional"] is True
+            assert len(candidate_row["candidate_activity_fit"]["fit_source_refs"]) == 4
+        else:
+            assert candidate_row == base_row
+    assert candidate["candidate_provenance"]["fit_set"]["n"] == 118
+    assert profile.melt_pack.version == "1.0.0-d066-silicate-candidate-v2"
+    assert profile.melt_pack.binding_digest != default.melt_pack.binding_digest
+    manganese = evaluate_redox(
+        {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65},
+        2200.0,
+        "closed",
+        profile=profile,
+    )
+    assert manganese.parent_activity["MnO"] > 0.0
 
 
 @pytest.mark.parametrize(

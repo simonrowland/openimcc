@@ -16,6 +16,23 @@
   but not the two independent sources (Stolyarova 1995 vapour flat, Cho and
   Suito 1994 +0.035 dex), so the pack stays opt-in.
 
+### Mg-silicate activity candidate
+
+- Added the opt-in `silicate-candidate` profile with a D066 v4 based pack that
+  refits only the Mg₂SiO₄(l) and MgSiO₃(l) association A intercepts. Both B
+  slopes and both Ca-silicate rows remain at v4; default and published packs
+  are unchanged.
+- On the full 84,107-row score, the held-out weighted median improves 0.035 →
+  0.020 dex across two validated cells (5.1% validated share). FIT-source
+  rows (n=511) improve in median |dex| from 0.336 to 0.324; combined held-out
+  RMS (n=13) improves 0.272 → 0.247. All 12 Zaitsev rows improve, and no
+  melt-activity cell worsens by more than 0.05 dex. The 111
+  default-replay mismatches are excluded; faithful rows agree within
+  1.5e−13 dex. The candidate corrects only about 10% of the SiO₂ bias in
+  SiO₂-poor Mg melts (Arutyunyan's signed residual −0.377 → −0.337 dex);
+  A shifts large enough to remove all of that bias would over-move a(MgO).
+  The high-temperature Markova residue-path sign flip remains.
+
 ### Subsolidus decomposition ceilings
 
 - Added source-bounded ceilings for `Fe2(SO4)3`, `FeSO4`, brucite

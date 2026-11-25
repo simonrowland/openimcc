@@ -5338,6 +5338,296 @@
         }
       },
       "undeclared_reason": {}
+    },
+    "5321dcab6502c3b348ae1c29cbaa35542eb6fb5585bcbdf1966f765e72f5bc47": {
+      "file": "imcc-sf04-d066-silicate-candidate-v2.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.0-d066-silicate-candidate-v2",
+      "standards": {
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na2O-RBT84-CANDIDATE",
+        "K2O": "K-012",
+        "FeO": "DG46-MASSON65"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-silicate-candidate-v2.json#parent_standard_candidates.SiO2 and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF O-035 crystal and fusion anchor",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-silicate-candidate-v2.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-silicate-candidate-v2.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-silicate-candidate-v2.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-silicate-candidate-v2.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-silicate-candidate-v2.json#parent_standard_candidates.Na2O and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF Na-012 crystal and Na-013 transition marker",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-silicate-candidate-v2.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-silicate-candidate-v2.json#feo_liquid_candidate; Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "source"
+      },
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
+      "undeclared_reason": {}
     }
   }
 }

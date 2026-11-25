@@ -1042,6 +1042,25 @@ shared shift factor of 0.889630787; both `B` coefficients and every other row
 are unchanged. The default profile is unchanged. See [the aluminate candidate
 report](docs/cao-aluminate-candidate.md).
 
+### Opt-in Mg-silicate activity candidate
+
+Use `load_profile("silicate-candidate")` to select the opt-in
+`imcc-sf04-d066-silicate-candidate-v2.json` pack. It changes only the Mg₂SiO₄(l)
+and MgSiO₃(l) association A intercepts; their B slopes and both Ca-silicate
+rows remain at D066 v4. The default and published profiles are unchanged. The
+candidate corrects only about 10% of the SiO₂ activity bias in SiO₂-poor Mg
+melts (Arutyunyan's signed residual changes from −0.377 to −0.337 dex). The
+association A shifts needed to remove the full silica bias would over-move
+a(MgO). On the full 84,107-row score, the held-out weighted median improves
+0.035 → 0.020 dex across two validated cells (5.1% validated share). The
+FIT-source rows (n=511) improve in median |dex| from 0.336 to 0.324, and
+combined held-out RMS (n=13) improves 0.272 → 0.247; all 12 Zaitsev rows
+improve, with no melt-activity cell worsening by more than 0.05 dex. The 111
+default-replay mismatches are excluded; faithful rows agree within 1.5e−13
+dex. The Markova high-temperature sign flip remains. See [the silicate
+candidate report](docs/silicate-candidate.md) for held-out and residue-path
+results.
+
 For example, `evaluate(composition, 1800, profile="published")` selects the
 published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
 selects its matching gas tables. The CLI accepts

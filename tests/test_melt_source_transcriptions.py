@@ -154,6 +154,7 @@ _STANDARD_STATE_REFITS = {
 _SR_CANDIDATE_REFIT_ROWS = set(range(39, 46))
 _P2O5_CANDIDATE_REFIT_ROWS = {39, 40}
 _ALUMINATE_CANDIDATE_REFIT_ROWS = {9, 22}
+_SILICATE_CANDIDATE_REFIT_ROWS = {1, 2}
 _D066_V4_TRANSFORMS = {
     "k_translation": _K_TRANSLATED_ROWS,
     "standard_state_refit": _STANDARD_STATE_REFITS,
@@ -170,6 +171,9 @@ _D066_CANDIDATE_REFITS_BY_FAMILY = {
     },
     "melt-cao-aluminate-candidate": {
         "candidate_fit_refit": _ALUMINATE_CANDIDATE_REFIT_ROWS,
+    },
+    "melt-silicate-candidate": {
+        "activity_fit": _SILICATE_CANDIDATE_REFIT_ROWS,
     },
 }
 _BASE_EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
@@ -244,6 +248,8 @@ def _expected_d066_transforms() -> dict[str, dict[str, set[int]]]:
 
 def _recorded_transforms(pack_row: dict[str, Any]) -> set[str]:
     transforms = set()
+    if pack_row.get("candidate_activity_fit"):
+        transforms.add("activity_fit")
     if pack_row.get("standard_state_refit"):
         transforms.add("standard_state_refit")
     if "fusion_entropy_estimate_J_mol_K" in pack_row:
@@ -343,6 +349,12 @@ def _assert_transform_reason(
         )
         assert pack_row["source_refs"]
         assert pack_row["derivation"]
+    elif transform == "activity_fit":
+        metadata = pack_row["candidate_activity_fit"]
+        assert pack_row["row"] in _SILICATE_CANDIDATE_REFIT_ROWS
+        assert metadata["parameter"] == "A"
+        assert metadata["provisional"] is True
+        assert metadata["B_preserved_from_d066_v4"] is True
     else:  # pragma: no cover - the explicit map limits the accepted categories
         raise AssertionError(transform)
 
@@ -364,6 +376,7 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
             "fusion_refit",
             "sr_candidate_refit",
             "candidate_fit_refit",
+            "activity_fit",
         }
         expected = {
             category: expected_transforms[entry["file"]].get(category, set())

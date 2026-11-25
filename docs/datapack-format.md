@@ -108,7 +108,7 @@ when absent, although they are present in the shipped packs as noted.
 
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
-| candidate_provenance | object | No | Pack-level sources, construction assumptions, validation checks, and uncertainty notes for opt-in candidates, including the Sr and P2O5 candidates. The loader validates the P2O5 candidate's declared D066 content digests; other candidate metadata is descriptive. |
+| candidate_provenance | object | No | Pack-level sources, construction assumptions, validation checks, and uncertainty notes for opt-in candidates, including the Sr, P2O5, and constrained Mg-silicate activity candidates. The loader validates the P2O5 candidate's declared D066 content digests; other candidate metadata is descriptive. |
 | candidate_fit | object | No | Audit record for a candidate coefficient fit, including fit data and roles, objective, source counts, parameter-search details, and changed coefficients. The loader does not consume this metadata. |
 | created | string | No | Pack creation date, represented as an ISO-like date such as 2026-08-11. The loader does not parse it. |
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
@@ -131,6 +131,17 @@ when absent, although they are present in the shipped packs as noted.
 | sp_extension | object | Conditional | Separate S/P extension declaration. If present, the loader validates its identity, certification, parents, and non-empty extension rows, then appends those rows to the published or D066 core. |
 | spec | string | No | Path and, in v1.0.2 and ext-v4, revision label for the model specification used by the pack. It is not opened by the loader. |
 | transcription | string or object | No | Record of how source values were transcribed and checked. Retired packs use a string; v1.0.2/ext-v4 use an object with `method` and `diff_result` fields. |
+
+### `candidate_provenance`
+
+This optional top-level object records descriptive fit provenance. The
+Mg-silicate candidate uses `fit_set` for fitted source keys, temperature
+interval, reference state, objective, and excluded held-out or diagnostic
+sources; `parameter_choice` for free and fixed coefficients and constraints;
+`d066_core_content` for row and parent-standard digests;
+`standard_state_conversion` for the Gibbs relation used to convert solid
+references; and `fit_coefficients` for selected A/B values. The loader
+preserves and hashes this object but does not use it in numerical evaluation.
 
 In D066 v3, each source inventory entry may include `citation`, `table`, `url`,
 and `doi` fields. Each row's `source_refs` array contains keys into this
@@ -300,6 +311,7 @@ pack, but those fields are not required to construct the kernel datapack.
 | A | number | Yes | Intercept in log10 K_j(T) = A_j + B_j/T_K. |
 | active | boolean | No | Defaults to true when absent. If false, the row must have a non-empty inactive_reason; if true or absent, inactive_reason is forbidden. Inactive rows still count toward the required 38-row published or D066 row set, then are filtered from solver species and equations during pack loading and listed in ImccLoadedDatapack.inactive_rows. |
 | B | number | Yes | Kelvin-scaled inverse-temperature coefficient in the same fit. |
+| candidate_activity_fit | object | No | Fit record for an opt-in activity-refit row. The Mg-silicate candidate records `parameter`, `provisional`, fitted `fit_source_refs`, whether B was preserved from D066 v4, the objective, and its entropy constraint. Descriptive metadata only; coefficients in A/B are used by the solver. |
 | calorimetry_re_solve_candidate | string | No | Describes a conditional thermochemical re-solve candidate. Provenance only; the loader does not alter the coefficients from this field. |
 | T_domain_K | array of two numbers | Yes | Declared inclusive [low, high] Kelvin interval used by the solver for this active complex. |
 | T_domain_basis | string | Yes | Evidence or policy basis for the declared runtime interval, such as the SF04-exercised interval or a JANAF regression interval. The loader stores the string but does not interpret its wording. |

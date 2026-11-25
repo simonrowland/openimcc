@@ -488,6 +488,7 @@ _SR_CANDIDATE_FILES = (
     "imcc-sf04-d066-sr-candidate-v2.json",
 )
 _P2O5_CANDIDATE_FILE = "imcc-sf04-d066-p2o5-candidate-v1.json"
+_SILICATE_CANDIDATE_FILE = "imcc-sf04-d066-silicate-candidate-v2.json"
 _CAO_ALUMINATE_CANDIDATE_FILE = "imcc-sf04-d066-cao-aluminate-candidate-v1.json"
 _ALLIBERT_1981 = (
     "Allibert et al. (1981), CaO–Al2O3 liquid activities; "
@@ -1258,6 +1259,147 @@ def _cao_aluminate_candidate_artifact(
         rows=rows,
         parent_standards=[],
         parent_unmapped=[],
+    )
+
+
+def _silicate_candidate_artifact(
+    *,
+    path: Path,
+    runtime_digest: str,
+    mapper: SourceMapper,
+    default_melt_artifact: dict[str, Any],
+) -> dict[str, Any]:
+    raw = path.read_bytes()
+    pack = json.loads(raw)
+    candidate_rows = pack["rows"]
+    target_names = {
+        row["complex"]
+        for row in candidate_rows
+        if isinstance(row.get("candidate_activity_fit"), dict)
+    }
+    if target_names != {"Mg2SiO4", "MgSiO3"}:
+        raise ValueError("silicate candidate has an invalid refit-row set")
+    _validate_candidate_core_rows(
+        path,
+        candidate_rows,
+        candidate_name="silicate",
+        expected_row_count=_D066_CORE_ROW_COUNT,
+        compare_fields=("row", "complex", "nu", "B"),
+    )
+    default_pack = _json(DATA / "packs" / "imcc-sf04-d066-v4.json")
+    for base_row, candidate_row in zip(default_pack["rows"], candidate_rows):
+        if base_row["complex"] not in target_names:
+            if base_row != candidate_row:
+                raise ValueError(
+                    f"non-target silicate candidate row changed: {base_row['complex']}"
+                )
+            continue
+        allowed = {"A", "source_refs", "derivation", "candidate_activity_fit"}
+        if {
+            key: value for key, value in base_row.items() if key not in allowed
+        } != {
+            key: value for key, value in candidate_row.items() if key not in allowed
+        }:
+            raise ValueError(
+                f"unexpected non-coefficient change in {base_row['complex']}"
+            )
+        fit = candidate_row.get("candidate_activity_fit")
+        if (
+            not isinstance(fit, dict)
+            or fit.get("parameter") != "A"
+            or fit.get("provisional") is not True
+            or fit.get("B_preserved_from_d066_v4") is not True
+        ):
+            raise ValueError(
+                f"{base_row['complex']} has invalid candidate fit metadata"
+            )
+
+    rows = _default_candidate_artifact_rows(default_melt_artifact)
+    fit_sources = [
+        (
+            f"{source['citation']} {source.get('doi', '')}".strip(),
+            "fitted",
+        )
+        for source in (
+            pack.get("sources", {}).get(key, {})
+            for key in pack.get("candidate_provenance", {})
+            .get("fit_set", {})
+            .get("sources", [])
+        )
+        if isinstance(source, dict) and isinstance(source.get("citation"), str)
+    ]
+    expected_fit_count = len(
+        pack.get("candidate_provenance", {}).get("fit_set", {}).get("sources", [])
+    )
+    if not fit_sources or len(fit_sources) != expected_fit_count:
+        raise ValueError("silicate candidate must identify every fitted source")
+    inherited = pack.get("sources", {}).get("FC87", {})
+    inherited_citation = inherited.get("citation")
+    if not isinstance(inherited_citation, str):
+        raise ValueError("silicate candidate is missing its inherited FC87 source")
+    if inherited.get("doi"):
+        inherited_citation += f" DOI {inherited['doi']}"
+
+    for source_row in candidate_rows:
+        complex_name = source_row["complex"]
+        if complex_name not in target_names:
+            continue
+        row_id = f"{source_row['row']}:{complex_name}"
+        row = _row(row_id, complex_name)
+        row["parameters"] = []
+        parameter_specs = (
+            (
+                "A",
+                fit_sources,
+                True,
+                (
+                    "Fitted on exposed 1873–1973 K activity rows; the selected "
+                    "associate allocation is provisional. "
+                    + str(source_row["candidate_activity_fit"].get("objective", ""))
+                ),
+            ),
+            (
+                "B",
+                [(inherited_citation, "derived")],
+                False,
+                "Unchanged from the D066 v4 FC87-based coefficient; independent slope fitting was not supported by the narrow activity temperature range.",
+            ),
+        )
+        for parameter_name, citations, provisional, basis in parameter_specs:
+            row["parameters"].append(
+                {
+                    "parameter": parameter_name,
+                    "provisional": provisional,
+                    "provisional_basis": basis,
+                    "sources": _candidate_parameter_sources(
+                        row, parameter_name, citations, mapper
+                    ),
+                }
+            )
+        _missing_provenance(row)
+        rows[int(source_row["row"]) - 1] = row
+
+    standard_pack = _json(DATA / "liquid-standards.json")["packs"].get(
+        runtime_digest
+    )
+    if not isinstance(standard_pack, dict):
+        raise ValueError("silicate candidate has no liquid-standard registration")
+    parent_specs = {
+        parent: [(citation, "anchor")]
+        for parent, citation in standard_pack["standard_citations"].items()
+    }
+    parent_standards, parent_unmapped = _candidate_parent_standard_rows(
+        tuple(pack["parents"]), parent_specs, mapper
+    )
+    return _finish_candidate_artifact(
+        path=path,
+        raw=raw,
+        pack=pack,
+        runtime_digest=runtime_digest,
+        mapper=mapper,
+        rows=rows,
+        parent_standards=parent_standards,
+        parent_unmapped=parent_unmapped,
     )
 
 
@@ -2153,6 +2295,20 @@ def build() -> dict[str, Any]:
         _cao_aluminate_candidate_artifact(
             path=aluminate_path,
             runtime_digest=aluminate_runtime_digest,
+            mapper=mapper,
+            default_melt_artifact=melt_artifact,
+        )
+    )
+    silicate_path = DATA / "packs" / _SILICATE_CANDIDATE_FILE
+    silicate_runtime_digest = load_datapack(silicate_path).binding_digest
+    if not silicate_runtime_digest:
+        raise ValueError(
+            f"silicate candidate {_SILICATE_CANDIDATE_FILE} has no runtime digest"
+        )
+    artifacts.append(
+        _silicate_candidate_artifact(
+            path=silicate_path,
+            runtime_digest=silicate_runtime_digest,
             mapper=mapper,
             default_melt_artifact=melt_artifact,
         )
