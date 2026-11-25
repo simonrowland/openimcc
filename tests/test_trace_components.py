@@ -315,8 +315,8 @@ def test_mno_redox_refuses_incompatible_selected_melt_pack() -> None:
     with pytest.raises(
         RedoxInputError,
         match=(
-            "Mn associations require D066 v4 core rows and existing-parent "
-            "liquid standards identical by content"
+            "Mn associations require a D066 v4 parent-oxide prefix and "
+            "matching existing-parent liquid standards"
         ),
     ):
         evaluate(

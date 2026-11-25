@@ -2390,17 +2390,14 @@ def _with_mno_associations(
     ):
         d066_v4 = load_datapack()
         candidate_compatible = (
-            len(melt_pack.parent_oxides) > len(_EXPECTED_PARENT_OXIDES)
-            and tuple(melt_pack.parent_oxides[:8]) == tuple(d066_v4.parent_oxides)
-            and melt_pack._d066_core_row_digest == d066_v4._d066_core_row_digest
-            and melt_pack._d066_core_row_digest is not None
+            tuple(melt_pack.parent_oxides[:8]) == tuple(d066_v4.parent_oxides)
             and _d066_core_liquid_standards_digest(melt_pack)
             == _d066_core_liquid_standards_digest(d066_v4)
         )
         if not candidate_compatible:
             raise RedoxInputError(
-                "Mn associations require D066 v4 core rows and existing-parent "
-                "liquid standards identical by content"
+                "Mn associations require a D066 v4 parent-oxide prefix and "
+                "matching existing-parent liquid standards"
             )
 
     registry = {
