@@ -87,8 +87,10 @@ high-cristobalite and liquid-silica references.
 ## Validation
 
 The focused automated gates are in `tests/test_mqm_mgo_sio2.py`.
-Arutyunyan et al. (2005) is the sole genuinely independent activity check;
-Wu Table 2 and Kambayashi & Kato are fit or reproducibility evidence.
+Arutyunyan et al. (2005) is the sole activity check independent of the Wu
+assessment; Wu Table 2 and Kambayashi & Kato are fit or reproducibility
+evidence. The later opt-in `silicate-candidate` and `mgsio-candidate` packs
+fit Arutyunyan, so it is not independent evidence for those packs.
 
 | Gate | Result |
 | --- | --- |

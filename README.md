@@ -1815,8 +1815,9 @@ validated:
 - Kume's CaO values are reduced using Morita's silica values, so the two
   series are linked rather than independent.
 - No independent CaO–SiO2 binary activity data are available at these
-  temperatures. MgO–SiO2 has one independent check, Arutyunyan et al. (2005),
-  but it does not constrain the calcium complexes.
+  temperatures. MgO–SiO2 has one check independent of the default fit,
+  Arutyunyan et al. (2005), but it does not constrain the calcium complexes.
+  The opt-in silicate and MgO–SiO2 candidate packs fit it.
 
 Nothing is retuned. Until independent paired measurements are available,
 treat silica activities in these binaries near 1773–1873 K as about 0.4 dex low
