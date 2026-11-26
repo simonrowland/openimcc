@@ -5,14 +5,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 from candidate_pack import add_write_check_arguments, write_or_check_candidate_pack
 from openimcc.model import load_datapack
 from openimcc.standards import pack_liquid_standards
 
 
-ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "src/openimcc/data/packs/imcc-sf04-d066-v4.json"
 DESTINATION = ROOT / "src/openimcc/data/packs/imcc-sf04-d066-cao-aluminate-candidate-v1.json"
 LIQUID_STANDARDS = ROOT / "src/openimcc/data/liquid-standards.json"
