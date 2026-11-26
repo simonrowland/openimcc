@@ -1061,6 +1061,17 @@ dex. The Markova high-temperature sign flip remains. See [the silicate
 candidate report](docs/silicate-candidate.md) for held-out and residue-path
 results.
 
+### Opt-in MgO–SiO2 minimal-associate candidate
+
+Use `load_profile("mgsio-candidate")` to select the opt-in
+`imcc-sf04-d066-mgsio-candidate-v1.json` pack. It marks MgSiO3 inactive and
+jointly refits Mg2SiO4 A and B while retaining the D066 parent basis and liquid
+standards. The training joint RMS falls from 0.279390 to 0.132483 dex
+unweighted (0.265585 to 0.124698 weighted). Held-out Zaitsev 2006 median
+absolute residual falls from 0.202337 to 0.109047 dex (n=12). The default
+profile is unchanged and this candidate remains opt-in. See [the candidate
+report](docs/mgsio-candidate.md) for source, family, and liquidus results.
+
 For example, `evaluate(composition, 1800, profile="published")` selects the
 published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
 selects its matching gas tables. The CLI accepts

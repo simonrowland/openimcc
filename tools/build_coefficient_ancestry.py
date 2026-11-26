@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import csv
 import hashlib
 import json
@@ -489,6 +490,7 @@ _SR_CANDIDATE_FILES = (
 )
 _P2O5_CANDIDATE_FILE = "imcc-sf04-d066-p2o5-candidate-v1.json"
 _SILICATE_CANDIDATE_FILE = "imcc-sf04-d066-silicate-candidate-v2.json"
+_MGSIO_CANDIDATE_FILE = "imcc-sf04-d066-mgsio-candidate-v1.json"
 _CAO_ALUMINATE_CANDIDATE_FILE = "imcc-sf04-d066-cao-aluminate-candidate-v1.json"
 _ALLIBERT_1981 = (
     "Allibert et al. (1981), CaO–Al2O3 liquid activities; "
@@ -1384,6 +1386,129 @@ def _silicate_candidate_artifact(
     )
     if not isinstance(standard_pack, dict):
         raise ValueError("silicate candidate has no liquid-standard registration")
+    parent_specs = {
+        parent: [(citation, "anchor")]
+        for parent, citation in standard_pack["standard_citations"].items()
+    }
+    parent_standards, parent_unmapped = _candidate_parent_standard_rows(
+        tuple(pack["parents"]), parent_specs, mapper
+    )
+    return _finish_candidate_artifact(
+        path=path,
+        raw=raw,
+        pack=pack,
+        runtime_digest=runtime_digest,
+        mapper=mapper,
+        rows=rows,
+        parent_standards=parent_standards,
+        parent_unmapped=parent_unmapped,
+    )
+
+
+def _mgsio_candidate_artifact(
+    *,
+    path: Path,
+    runtime_digest: str,
+    mapper: SourceMapper,
+    default_melt_artifact: dict[str, Any],
+) -> dict[str, Any]:
+    raw = path.read_bytes()
+    pack = json.loads(raw)
+    candidate_rows = pack["rows"]
+    fit_rows = [
+        row for row in candidate_rows
+        if isinstance(row.get("candidate_activity_fit"), dict)
+    ]
+    if [row["complex"] for row in fit_rows] != ["Mg2SiO4"]:
+        raise ValueError("mgsio candidate has an invalid refit-row set")
+    _validate_candidate_core_rows(
+        path,
+        candidate_rows,
+        candidate_name="mgsio",
+        expected_row_count=_D066_CORE_ROW_COUNT,
+        compare_fields=("row", "complex", "nu"),
+    )
+    fit_sources = [
+        (
+            f"{source['citation']} DOI {source['doi']}".strip(),
+            "fitted",
+        )
+        for source in (
+            pack.get("sources", {}).get(key, {})
+            for key in pack.get("candidate_provenance", {})
+            .get("fit_set", {})
+            .get("sources", [])
+        )
+        if isinstance(source, dict) and isinstance(source.get("citation"), str)
+    ]
+    expected_fit_count = len(
+        pack.get("candidate_provenance", {}).get("fit_set", {}).get("sources", [])
+    )
+    if not fit_sources or len(fit_sources) != expected_fit_count:
+        raise ValueError("mgsio candidate must identify every fitted source")
+
+    default_pack = _json(DATA / "packs" / "imcc-sf04-d066-v4.json")
+    rows = _default_candidate_artifact_rows(default_melt_artifact)
+    inactive_reason = pack["candidate_provenance"]["parameter_choice"][
+        "inactive_row"
+    ]["reason"]
+    for base_row, candidate_row in zip(
+        default_pack["rows"], candidate_rows, strict=True
+    ):
+        complex_name = base_row["complex"]
+        if complex_name == "Mg2SiO4":
+            allowed = {
+                "A", "B", "source_refs", "derivation", "candidate_activity_fit"
+            }
+            if {
+                key: value for key, value in base_row.items() if key not in allowed
+            } != {
+                key: value for key, value in candidate_row.items() if key not in allowed
+            }:
+                raise ValueError("unexpected non-fit change in Mg2SiO4")
+            fit = candidate_row["candidate_activity_fit"]
+            if (
+                fit.get("parameter") != "A and B"
+                or fit.get("provisional") is not True
+                or fit.get("B_preserved_from_d066_v4") is not False
+            ):
+                raise ValueError("Mg2SiO4 has invalid joint-fit metadata")
+            row = _row("1:Mg2SiO4", "Mg2SiO4")
+            row["parameters"] = []
+            for parameter_name in ("A", "B"):
+                row["parameters"].append(
+                    {
+                        "parameter": parameter_name,
+                        "provisional": True,
+                        "provisional_basis": (
+                            "Joint weighted fit to both oxide activities on 46 "
+                            "exposed source rows; the parameter allocation is "
+                            "provisional. "
+                            + str(fit.get("objective", ""))
+                        ),
+                        "sources": _candidate_parameter_sources(
+                            row, parameter_name, fit_sources, mapper
+                        ),
+                    }
+                )
+            _missing_provenance(row)
+            rows[int(candidate_row["row"]) - 1] = row
+        elif complex_name == "MgSiO3":
+            expected = copy.deepcopy(base_row)
+            expected["active"] = False
+            expected["inactive_reason"] = inactive_reason
+            if expected != candidate_row:
+                raise ValueError("unexpected MgSiO3 candidate-row change")
+            rows[int(candidate_row["row"]) - 1]["active"] = False
+            rows[int(candidate_row["row"]) - 1]["inactive_reason"] = inactive_reason
+        elif base_row != candidate_row:
+            raise ValueError(f"unexpected non-target row change: {complex_name}")
+
+    standard_pack = _json(DATA / "liquid-standards.json")["packs"].get(
+        runtime_digest
+    )
+    if not isinstance(standard_pack, dict):
+        raise ValueError("mgsio candidate has no liquid-standard registration")
     parent_specs = {
         parent: [(citation, "anchor")]
         for parent, citation in standard_pack["standard_citations"].items()
@@ -2309,6 +2434,20 @@ def build() -> dict[str, Any]:
         _silicate_candidate_artifact(
             path=silicate_path,
             runtime_digest=silicate_runtime_digest,
+            mapper=mapper,
+            default_melt_artifact=melt_artifact,
+        )
+    )
+    mgsio_path = DATA / "packs" / _MGSIO_CANDIDATE_FILE
+    mgsio_runtime_digest = load_datapack(mgsio_path).binding_digest
+    if not mgsio_runtime_digest:
+        raise ValueError(
+            f"mgsio candidate {_MGSIO_CANDIDATE_FILE} has no runtime digest"
+        )
+    artifacts.append(
+        _mgsio_candidate_artifact(
+            path=mgsio_path,
+            runtime_digest=mgsio_runtime_digest,
             mapper=mapper,
             default_melt_artifact=melt_artifact,
         )

@@ -181,3 +181,29 @@ def test_changed_parent_liquid_standard_is_still_refused(
             allow_extrapolation=True,
             allow_out_of_envelope=True,
         )
+
+
+def test_mgsio_candidate_mno_graft_does_not_require_mgsio3() -> None:
+    d066 = load_datapack()
+    profile = load_profile("mgsio-candidate")
+    candidate = profile.melt_pack
+
+    assert candidate.parent_oxides == d066.parent_oxides
+    assert (
+        _d066_core_liquid_standards_digest(candidate)
+        == _d066_core_liquid_standards_digest(d066)
+    )
+    result = evaluate(
+        _mno_composition(),
+        1800.0,
+        profile=profile,
+        basis_type="wt",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert np.isfinite(result.activity("MnO"))
+    assert "MgSiO3" not in result.species_names
+    assert {"MnSiO3(l)", "Mn2SiO4(l)", "MnAl2O4(l)"} <= set(
+        result.species_names
+    )

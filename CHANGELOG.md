@@ -33,6 +33,15 @@
   A shifts large enough to remove all of that bias would over-move a(MgO).
   The high-temperature Markova residue-path sign flip remains.
 
+### MgO–SiO2 minimal-associate candidate
+
+- Added the opt-in `mgsio-candidate` profile with MgSiO3 inactive and Mg2SiO4
+  A and B jointly refit on exposed MgO–SiO2 activities. The training joint RMS
+  improves from 0.279390 to 0.132483 dex unweighted and from 0.265585 to
+  0.124698 weighted; the default profile remains unchanged.
+- Held-out Zaitsev 2006 median absolute residual improves from 0.202337 to
+  0.109047 dex (n=12). The candidate remains opt-in.
+
 ### Subsolidus decomposition ceilings
 
 - Added source-bounded ceilings for `Fe2(SO4)3`, `FeSO4`, brucite

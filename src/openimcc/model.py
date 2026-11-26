@@ -82,6 +82,7 @@ from openimcc.trace_components import (
 
 
 DEFAULT_MELT_PACK_NAME = "imcc-sf04-d066-v4.json"
+DEFAULT_D066_VERSION = "1.0.6-d066-v4"
 _NO_FEO_LIQUID_CANDIDATE = object()
 _FEO_LIQUID_CANDIDATE_ABSENT = object()
 
@@ -1536,6 +1537,8 @@ def _validate_active_row_metadata(
 
 def _validate_d066_core(
     data: Mapping[str, Any],
+    *,
+    allow_additional_inactive_rows: bool = False,
 ) -> tuple[list[dict[str, Any]], str]:
     rows = data.get("rows")
     if not isinstance(rows, list) or len(rows) != len(_D066_CORE_ROWS):
@@ -1586,9 +1589,10 @@ def _validate_d066_core(
                     f"D066 row {name!r} must remain active and carry reference_unknown"
                 )
         elif name not in _D066_E25_ROWS and row.get("active", True) is not True:
-            raise ImccMalformedDatapackError(
-                f"D066 row {name!r} cannot be inactive"
-            )
+            if not allow_additional_inactive_rows:
+                raise ImccMalformedDatapackError(
+                    f"D066 row {name!r} cannot be inactive"
+                )
 
     e25 = next(row for row in rows if row["complex"] in _D066_E25_ROWS)
     if e25.get("active", True) is False:
@@ -1937,7 +1941,15 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         )
         published_manifest_sha256 = None
     elif model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
-        rows, _d066_manifest_sha256 = _validate_d066_core(data)
+        rows, _d066_manifest_sha256 = _validate_d066_core(
+            data,
+            allow_additional_inactive_rows=(
+                model_id == _D066_MODEL_ID
+                and version != DEFAULT_D066_VERSION
+                and isinstance(data.get("candidate_provenance"), dict)
+                and bool(data["candidate_provenance"])
+            ),
+        )
         published_manifest_sha256 = None
     else:
         rows, published_manifest_sha256 = _validate_published_core(
@@ -2386,7 +2398,7 @@ def _with_mno_associations(
 
     if (
         melt_pack.model_id != "IMCC-SF04-D066"
-        or melt_pack.version != "1.0.6-d066-v4"
+        or melt_pack.version != DEFAULT_D066_VERSION
     ):
         d066_v4 = load_datapack()
         candidate_compatible = (
@@ -2596,7 +2608,8 @@ def evaluate(
     profile:
         Optional named profile (``"openimcc"``, ``"published"``, or
         ``"sr-candidate"``, ``"sr-candidate-v1"``, ``"p2o5-candidate"``, or
-        ``"cao-aluminate-candidate"``), or a loaded
+        ``"cao-aluminate-candidate"``, ``"silicate-candidate"``, or
+        ``"mgsio-candidate"``), or a loaded
         :class:`openimcc.profiles.Profile`.
         It cannot be combined with ``pack``.
 

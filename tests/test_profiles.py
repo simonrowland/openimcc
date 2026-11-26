@@ -61,6 +61,7 @@ _PUBLISHED_GAS_STANDARD_NOTICES = [
         ("p2o5-candidate", "1.0.0-d066-p2o5-candidate-v1", True),
         ("cao-aluminate-candidate", "1.0.0-d066-cao-aluminate-candidate-v1", True),
         ("silicate-candidate", "1.0.0-d066-silicate-candidate-v2", True),
+        ("mgsio-candidate", "1.0.0-d066-mgsio-candidate-v1", True),
         ("published", "1.0.2", False),
     ],
 )

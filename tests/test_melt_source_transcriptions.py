@@ -155,6 +155,7 @@ _SR_CANDIDATE_REFIT_ROWS = set(range(39, 46))
 _P2O5_CANDIDATE_REFIT_ROWS = {39, 40}
 _ALUMINATE_CANDIDATE_REFIT_ROWS = {9, 22}
 _SILICATE_CANDIDATE_REFIT_ROWS = {1, 2}
+_MGSIO_CANDIDATE_REFIT_ROWS = {1}
 _D066_V4_TRANSFORMS = {
     "k_translation": _K_TRANSLATED_ROWS,
     "standard_state_refit": _STANDARD_STATE_REFITS,
@@ -174,6 +175,9 @@ _D066_CANDIDATE_REFITS_BY_FAMILY = {
     },
     "melt-silicate-candidate": {
         "activity_fit": _SILICATE_CANDIDATE_REFIT_ROWS,
+    },
+    "melt-mgsio-candidate": {
+        "activity_fit": _MGSIO_CANDIDATE_REFIT_ROWS,
     },
 }
 _BASE_EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
@@ -351,10 +355,16 @@ def _assert_transform_reason(
         assert pack_row["derivation"]
     elif transform == "activity_fit":
         metadata = pack_row["candidate_activity_fit"]
-        assert pack_row["row"] in _SILICATE_CANDIDATE_REFIT_ROWS
-        assert metadata["parameter"] == "A"
+        assert pack_row["row"] in (
+            _SILICATE_CANDIDATE_REFIT_ROWS | _MGSIO_CANDIDATE_REFIT_ROWS
+        )
         assert metadata["provisional"] is True
-        assert metadata["B_preserved_from_d066_v4"] is True
+        if metadata["parameter"] == "A":
+            assert metadata["B_preserved_from_d066_v4"] is True
+        else:
+            assert metadata["parameter"] == "A and B"
+            assert metadata["B_preserved_from_d066_v4"] is False
+            assert metadata["fit_source_refs"]
     else:  # pragma: no cover - the explicit map limits the accepted categories
         raise AssertionError(transform)
 

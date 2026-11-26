@@ -108,7 +108,7 @@ when absent, although they are present in the shipped packs as noted.
 
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
-| candidate_provenance | object | No | Pack-level sources, construction assumptions, validation checks, and uncertainty notes for opt-in candidates, including the Sr, P2O5, and constrained Mg-silicate activity candidates. The loader validates the P2O5 candidate's declared D066 content digests; other candidate metadata is descriptive. |
+| candidate_provenance | object | No | Pack-level sources, construction assumptions, validation checks, and uncertainty notes for opt-in candidates, including the Sr, P2O5, constrained silicate, and MgO–SiO2 activity candidates. The loader validates the P2O5 candidate's declared D066 content digests and uses a non-empty declaration to gate additional inactive rows on non-default D066 activity packs; other candidate metadata is descriptive. |
 | candidate_fit | object | No | Audit record for a candidate coefficient fit, including fit data and roles, objective, source counts, parameter-search details, and changed coefficients. The loader does not consume this metadata. |
 | created | string | No | Pack creation date, represented as an ISO-like date such as 2026-08-11. The loader does not parse it. |
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
@@ -120,7 +120,7 @@ when absent, although they are present in the shipped packs as noted.
 | imcc_sf04_datapack_version | non-empty string | Yes | Datapack version. load_datapack() stores it as the loaded version and uses it in the published-core projection or the per-pack binding digest. |
 | merge_semantics | object | No | Describes how an extension overlays or carries forward published rows: mode, row counts, replacement counts, and rationale. It is not interpreted by load_datapack(). |
 | model | string | No | Human-readable model description. Retired extension records use IMCC-SF04-EXT; v1.0.2, ext-v4, and D066 packs use a longer equation/species-count description. Runtime identity comes from model_id, not this field. |
-| model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; IMCC-SF04-D066-SR-CANDIDATE validates that frozen 38-row core plus its exact seven-row Sr suffix and nine-parent basis; IMCC-SF04-D066-P2O5-CANDIDATE validates the same core plus Mg3(PO4)2 and Ca3(PO4)2 and a nine-parent basis. The new excess-Gibbs candidate identity is required when `excess_gibbs` is present. |
+| model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; IMCC-SF04-D066-SR-CANDIDATE validates that frozen 38-row core plus its exact seven-row Sr suffix and nine-parent basis; IMCC-SF04-D066-P2O5-CANDIDATE validates the same core plus Mg3(PO4)2 and Ca3(PO4)2 and a nine-parent basis. Opt-in D066 activity candidates retain the frozen 38-row core and use IMCC-SF04-D066. The new excess-Gibbs candidate identity is required when `excess_gibbs` is present. |
 | pack_arithmetic | string | No | Prose describing how the pack's rows and coefficient revisions were assembled. It does not alter arithmetic. |
 | parents | array of strings | Yes | Ordered parent-oxide basis. Published, D066, and S/P-extension identities use ["SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"]. The opt-in Sr candidate appends SrO; the P2O5 candidate appends P2O5 after those eight. |
 | parent_standard_candidates | object | No | Provenance for opt-in candidate parent-standard revisions, including source values, retained anchors, and construction details. The loader does not read this field; candidate coefficients and condensate tables carry the numerical changes. |
@@ -135,9 +135,10 @@ when absent, although they are present in the shipped packs as noted.
 ### `candidate_provenance`
 
 This optional top-level object records descriptive fit provenance. The
-Mg-silicate candidate uses `fit_set` for fitted source keys, temperature
-interval, reference state, objective, and excluded held-out or diagnostic
-sources; `parameter_choice` for free and fixed coefficients and constraints;
+constrained silicate and `mgsio-candidate` packs use `fit_set` for fitted
+source keys, temperature interval, reference state, objective, and excluded
+held-out or diagnostic sources; `parameter_choice` for free and fixed
+coefficients and constraints;
 `d066_core_content` for row and parent-standard digests;
 `standard_state_conversion` for the Gibbs relation used to convert solid
 references; and `fit_coefficients` for selected A/B values. The loader
@@ -309,9 +310,9 @@ pack, but those fields are not required to construct the kernel datapack.
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
 | A | number | Yes | Intercept in log10 K_j(T) = A_j + B_j/T_K. |
-| active | boolean | No | Defaults to true when absent. If false, the row must have a non-empty inactive_reason; if true or absent, inactive_reason is forbidden. Inactive rows still count toward the required 38-row published or D066 row set, then are filtered from solver species and equations during pack loading and listed in ImccLoadedDatapack.inactive_rows. |
+| active | boolean | No | Defaults to true when absent. If false, the row must have a non-empty inactive_reason; if true or absent, inactive_reason is forbidden. Inactive rows still count toward the required 38-row published or D066 row set, then are filtered from solver species and equations during pack loading and listed in ImccLoadedDatapack.inactive_rows. For `IMCC-SF04-D066`, only KCaAlSi2O7 may be inactive at version `1.0.6-d066-v4`. A different version may declare additional inactive core rows only when it carries a non-empty `candidate_provenance` object. |
 | B | number | Yes | Kelvin-scaled inverse-temperature coefficient in the same fit. |
-| candidate_activity_fit | object | No | Fit record for an opt-in activity-refit row. The Mg-silicate candidate records `parameter`, `provisional`, fitted `fit_source_refs`, whether B was preserved from D066 v4, the objective, and its entropy constraint. Descriptive metadata only; coefficients in A/B are used by the solver. |
+| candidate_activity_fit | object | No | Fit record for an opt-in activity-refit row. The silicate candidate records its A-only refit; the `mgsio-candidate` records the joint Mg2SiO4 A/B fit, fitted `fit_source_refs`, weighting, objective, and parameter bounds. Descriptive metadata only; coefficients in A/B are used by the solver. |
 | calorimetry_re_solve_candidate | string | No | Describes a conditional thermochemical re-solve candidate. Provenance only; the loader does not alter the coefficients from this field. |
 | T_domain_K | array of two numbers | Yes | Declared inclusive [low, high] Kelvin interval used by the solver for this active complex. |
 | T_domain_basis | string | Yes | Evidence or policy basis for the declared runtime interval, such as the SF04-exercised interval or a JANAF regression interval. The loader stores the string but does not interpret its wording. |
@@ -568,9 +569,13 @@ not silently repair a pack.
    uses its own structural check: the 38 complex names and row numbers must
    match the frozen SF04 set and order; coverage labels and v1.0.2 row lineage
    must match each complex; active must be boolean when present; and an
-   inactive row requires a non-empty inactive_reason. Only KCaAlSi2O7 may be
-   inactive in the D066 primary arm. These rows are checked before inactive
-   rows are filtered from the loaded solver pack.
+   inactive row requires a non-empty inactive_reason. For model_id
+   `IMCC-SF04-D066`, only KCaAlSi2O7 may be inactive at version
+   `1.0.6-d066-v4`. A different version may declare additional inactive
+   core rows only when it carries a non-empty `candidate_provenance` object.
+   This rule does not apply to `IMCC-SF04-D066-EXCESS-CANDIDATE`. Additional
+   inactive rows remain part of the frozen 38-row record and binding digest,
+   then are filtered from the solver pack.
 6. For the published identity, the loader builds a canonical core payload by
    removing model_id and sp_extension, forcing model_id to IMCC-SF04, and (for
    IMCC-SF04-EXT) using the version prefix before -ext-sp-. It sorts object
