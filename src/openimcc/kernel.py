@@ -1035,14 +1035,11 @@ def _species_pair_residual_jacobian(
 
 def _mqm_excess_gibbs_j_mol(x_sio2: float, temperature_K: float) -> float:
     """Return Wu mixing Gibbs energy minus the free-oxide ideal baseline."""
-    from openimcc.mqm_mgo_sio2 import _mixing_gibbs_j_mol
-
-    x_mgo = 1.0 - x_sio2
-    ideal = _R_J_MOL_K * temperature_K * (
-        (x_mgo * math.log(x_mgo) if x_mgo > 0.0 else 0.0)
-        + (x_sio2 * math.log(x_sio2) if x_sio2 > 0.0 else 0.0)
+    from openimcc.mqm_mgo_sio2 import (
+        _mixing_excess_gibbs_j_mol as _binary_mixing_excess_gibbs_j_mol,
     )
-    return _mixing_gibbs_j_mol(x_sio2, temperature_K) - ideal
+
+    return _binary_mixing_excess_gibbs_j_mol(x_sio2, temperature_K)
 
 
 def _mqm_free_pool_state(
@@ -1065,6 +1062,14 @@ def _mqm_free_pool_state(
     if total <= 0.0:
         return 0.0, 0.0, 0.0, 0.0, 0.0
     y = n_sio2 / total
+    from openimcc.mqm_mgo_sio2 import _mixing_excess_edge_series_j_mol
+
+    edge_state = _mixing_excess_edge_series_j_mol(y, temperature_K)
+    if edge_state is not None:
+        g, _dg, gpp, mu_mgo, mu_sio2 = edge_state
+        if y <= 1.0e-14 or 1.0 - y <= 1.0e-14:
+            gpp = 0.0
+        return g, mu_mgo, mu_sio2, gpp, y
     g = _mqm_excess_gibbs_j_mol(y, temperature_K)
     from openimcc.mqm_mgo_sio2 import (
         _mixing_excess_gibbs_derivative_j_mol,
@@ -1274,6 +1279,8 @@ def _solve_species_pair_active(
             f"(y_Si={y_pool:.8g}, bounds={bounds}, T={temperature_K:.8g} K)"
         )
 
+    lower = np.full(n_species, -200.0)
+    upper = np.full(n_species, 100.0)
     if y_init is not None:
         warm_y = _warm_start_vector(y_init)
         if warm_y.shape != x_target.shape or not np.all(np.isfinite(warm_y)):
@@ -1334,11 +1341,19 @@ def _solve_species_pair_active(
 
     unique_seeds: list[np.ndarray] = []
     for seed in seeds:
-        if not any(np.array_equal(seed, existing) for existing in unique_seeds):
-            unique_seeds.append(seed)
+        # Keep the existing guard for malformed non-finite starts, but bring
+        # every finite start into the least-squares bounds before it runs.
+        # In-bound starts are unchanged, so ordinary species-pair roots follow
+        # the same solver path and receive exactly the same initial values.
+        bounded_seed = (
+            np.clip(seed, lower, upper)
+            if np.all(np.isfinite(seed)) else seed
+        )
+        if not any(
+            np.array_equal(bounded_seed, existing) for existing in unique_seeds
+        ):
+            unique_seeds.append(bounded_seed)
 
-    lower = np.full(n_species, -200.0)
-    upper = np.full(n_species, 100.0)
     max_nfev = max(10, max_iter * (n_species + 1))
     solver_tol = min(tol, 1.0e-14) if mqm_candidate is not None else tol
     # The MQM path checks parent balances separately in relative form below;
@@ -1415,6 +1430,8 @@ def _solve_species_pair_active(
         # the unscaled objective, while the acceptance checks below retain the
         # original absolute and relative requirements.
         start = best_z if best_z is not None else ideal_z
+        if np.all(np.isfinite(start)):
+            start = np.clip(start, lower, upper)
         try:
             _f0, _x0, start_D, _J0 = evaluate_model(start)
             relative_tol = (

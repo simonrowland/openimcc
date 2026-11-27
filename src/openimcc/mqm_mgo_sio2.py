@@ -215,8 +215,78 @@ def _xlog_ratio(numerator: float, denominator: float) -> float:
     return 0.0 if numerator <= 0.0 else numerator * math.log(numerator / denominator)
 
 
-def _mixing_gibbs_j_mol(x_sio2: float, temperature_K: float) -> float:
-    """Minimized Wu binary Gmix in J per mole of oxide formula units."""
+_EDGE_SERIES_SWITCH = 1.0e-8
+
+
+def _mixing_excess_edge_series_j_mol(
+    x_sio2: float, temperature_K: float
+) -> tuple[float, float, float, float, float] | None:
+    """Return (gE, dgE/dx, d2gE/dx2, muMgE, muSiE) near either edge."""
+    if 0.0 < x_sio2 < _EDGE_SERIES_SWITCH:
+        minority_oxide_fraction = x_sio2
+        delta_0 = -86090.0
+        d_delta_dy_0 = -48974.0 + 37.656 * temperature_K
+        rt = _R * temperature_K
+        pair_constant = math.exp(-delta_0 / rt)
+        # With minority site fraction u, the pair equilibrium gives the
+        # minority homopair fraction r=u^2/K+O(u^3), K=exp(-Delta/RT).
+        # The pair excess entropy is u^2*(1-(1+ln K)/K)+O(u^3). Substituting
+        # q=u-r into Npair*q*Delta plus RT*Npair*S_pair, then converting from
+        # site fraction u to oxide fraction x (u=zSi*x/zMg+O(x^2)), gives
+        # gE=A*x+B*x^2+O(x^3), where A=zSi*Delta0/2 and
+        # B=zSi^2/(2*zMg)*(Delta'_0-Delta0/K+RT*(1-(1+ln K)/K)).
+        # Delta and RT are J/mol, so A and B are J/mol. At x=1e-8 the
+        # regular derivative and this expansion differ by less than 1 J/mol
+        # over the candidate's 1200-3000 K interval. The sanity limits are
+        # gE(0)=0 and dgE/dx(0)=zSi*Delta0/2, the insertion-potential limit.
+        a = _Z_SIO2 * delta_0 / 2.0
+        b = (_Z_SIO2 * _Z_SIO2 / (2.0 * _Z_MGO)) * (
+            d_delta_dy_0 - delta_0 / pair_constant
+            + rt * (1.0 - (1.0 + math.log(pair_constant)) / pair_constant)
+        )
+        g_excess = a * minority_oxide_fraction + b * minority_oxide_fraction**2
+        dg_excess = a + 2.0 * b * minority_oxide_fraction
+        mu_mgo = -b * minority_oxide_fraction**2
+        mu_sio2 = dg_excess - b * minority_oxide_fraction**2
+        return g_excess, dg_excess, 2.0 * b, mu_mgo, mu_sio2
+
+    if 0.0 < 1.0 - x_sio2 < _EDGE_SERIES_SWITCH:
+        minority_oxide_fraction = 1.0 - x_sio2
+        delta_1 = 193045.0 - 87.864 * temperature_K
+        d_delta_dy_1 = 2247789.0 - 840.984 * temperature_K
+        rt = _R * temperature_K
+        pair_constant = math.exp(-delta_1 / rt)
+        # At the silica-rich edge the minority site fraction is MgO,
+        # u=1-YSi=zMg*(1-x)/zSi+O((1-x)^2). The pair balance again gives
+        # r=u^2/K+O(u^3); after conversion to oxide fraction t=1-x,
+        # gE=A*t+B*t^2+O(t^3). Here A=zMg*Delta1/2 and
+        # B=zMg^2/(2*zSi)*(-Delta'_1-Delta1/K+RT*(1-(1+ln K)/K));
+        # the minus sign converts dDelta/dYSi to dDelta/du. Units remain
+        # J/mol, and gE(0)=0 with the MgO insertion-potential limit preserved.
+        a = _Z_MGO * delta_1 / 2.0
+        b = (_Z_MGO * _Z_MGO / (2.0 * _Z_SIO2)) * (
+            -d_delta_dy_1 - delta_1 / pair_constant
+            + rt * (1.0 - (1.0 + math.log(pair_constant)) / pair_constant)
+        )
+        g_excess = a * minority_oxide_fraction + b * minority_oxide_fraction**2
+        dg_excess = -a - 2.0 * b * minority_oxide_fraction
+        mu_mgo = -dg_excess - b * minority_oxide_fraction**2
+        mu_sio2 = -b * minority_oxide_fraction**2
+        return g_excess, dg_excess, 2.0 * b, mu_mgo, mu_sio2
+
+    return None
+
+
+def _mixing_excess_gibbs_j_mol(
+    x_sio2: float, temperature_K: float
+) -> float:
+    """Return minimized Wu excess Gmix in J per mole of oxide units."""
+    edge_state = _mixing_excess_edge_series_j_mol(x_sio2, temperature_K)
+    if edge_state is not None:
+        return edge_state[0]
+    if x_sio2 <= 0.0 or x_sio2 >= 1.0:
+        return 0.0
+
     x_mgo = 1.0 - x_sio2
     x_mgm, x_mgsi, x_sisi, _y_sio2, delta_g = _pair_fractions(
         x_sio2, temperature_K
@@ -225,21 +295,27 @@ def _mixing_gibbs_j_mol(x_sio2: float, temperature_K: float) -> float:
     y_mgo = _Z_MGO * x_mgo / coord_sum
     y_sio2 = _Z_SIO2 * x_sio2 / coord_sum
     pair_moles = coord_sum / 2.0
-
-    ideal = _R * temperature_K * (
-        (x_mgo * math.log(x_mgo) if x_mgo > 0.0 else 0.0)
-        + (x_sio2 * math.log(x_sio2) if x_sio2 > 0.0 else 0.0)
-    )
     pair_entropy = math.fsum((
         _xlog_ratio(x_mgm, y_mgo * y_mgo),
         _xlog_ratio(x_sisi, y_sio2 * y_sio2),
         _xlog_ratio(x_mgsi, 2.0 * y_mgo * y_sio2),
     ))
-    # Wu Eqs. (3)–(5), p. 27: ΔH=XAB*omega/2 and ΔS_nonconf=XAB*eta/2.
-    # Since XAB=2q, this pair contribution is Npairs*q*(omega−eta*T).
-    return ideal + _R * temperature_K * pair_moles * pair_entropy + pair_moles * (
+    # These are the excess terms already separated from the free-oxide ideal
+    # baseline; forming total Gmix and subtracting that baseline loses low-y
+    # precision. Wu Eqs. (3)–(5): Npair*q*Delta is in J/mol.
+    return _R * temperature_K * pair_moles * pair_entropy + pair_moles * (
         x_mgsi / 2.0
     ) * delta_g
+
+
+def _mixing_gibbs_j_mol(x_sio2: float, temperature_K: float) -> float:
+    """Minimized Wu binary Gmix in J per mole of oxide formula units."""
+    x_mgo = 1.0 - x_sio2
+    ideal = _R * temperature_K * (
+        (x_mgo * math.log(x_mgo) if x_mgo > 0.0 else 0.0)
+        + (x_sio2 * math.log(x_sio2) if x_sio2 > 0.0 else 0.0)
+    )
+    return math.fsum((ideal, _mixing_excess_gibbs_j_mol(x_sio2, temperature_K)))
 
 
 def _mixing_enthalpy_j_mol(x_sio2: float, temperature_K: float) -> float:
@@ -280,13 +356,9 @@ def _mixing_excess_gibbs_derivative_j_mol(
     if x_sio2 >= 1.0:
         delta_g_at_silica = 193045.0 - 87.864 * temperature_K
         return -_Z_MGO * delta_g_at_silica / 2.0
-    # Below this scale, the limiting derivative differs by far less than a
-    # joule per mole and avoids ratios of underflowed pair fractions.
-    if x_sio2 < 1.0e-14:
-        return _Z_SIO2 * -86090.0 / 2.0
-    if 1.0 - x_sio2 < 1.0e-14:
-        delta_g_at_silica = 193045.0 - 87.864 * temperature_K
-        return -_Z_MGO * delta_g_at_silica / 2.0
+    edge_state = _mixing_excess_edge_series_j_mol(x_sio2, temperature_K)
+    if edge_state is not None:
+        return edge_state[1]
 
     p_mgm, p_mgsi, p_sisi, y_sio2, delta_g = _pair_fractions(
         x_sio2, temperature_K

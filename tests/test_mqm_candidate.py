@@ -20,7 +20,6 @@ from openimcc._constants import R_J_MOL_K
 from openimcc.equilibrium import CrystalCandidate, equilibrate
 from openimcc.gas import load_gas_datapack, species_thermo
 from openimcc.kernel import (
-    ImccRefusal,
     _mqm_excess_gibbs_j_mol,
     _mqm_free_pool_state,
 )
@@ -70,6 +69,41 @@ def _mole_fractions_from_wt(weight_percent: dict[str, float]) -> dict[str, float
     return {oxide: amount / total for oxide, amount in moles.items()}
 
 
+def _mqm_edge_series_reference(
+    y_sio2: float, temperature: float
+) -> tuple[float, float, float, float, float]:
+    """Derived O(t^2) edge series: gE, dgE/dy, gE'', muMgE, muSiE."""
+    z_mgo, z_sio2 = 1.37744375, 2.7548875
+    rt = R_J_MOL_K * temperature
+    if y_sio2 < 0.5:
+        t = y_sio2
+        delta_0 = -86090.0
+        d_delta_dy_0 = -48974.0 + 37.656 * temperature
+        pair_constant = math.exp(-delta_0 / rt)
+        a = z_sio2 * delta_0 / 2.0
+        b = z_sio2**2 / (2.0 * z_mgo) * (
+            d_delta_dy_0 - delta_0 / pair_constant
+            + rt * (1.0 - (1.0 + math.log(pair_constant)) / pair_constant)
+        )
+        derivative = a + 2.0 * b * t
+        mu_mgo = -b * t**2
+        mu_sio2 = derivative - b * t**2
+    else:
+        t = 1.0 - y_sio2
+        delta_1 = 193045.0 - 87.864 * temperature
+        d_delta_dy_1 = 2247789.0 - 840.984 * temperature
+        pair_constant = math.exp(-delta_1 / rt)
+        a = z_mgo * delta_1 / 2.0
+        b = z_mgo**2 / (2.0 * z_sio2) * (
+            -d_delta_dy_1 - delta_1 / pair_constant
+            + rt * (1.0 - (1.0 + math.log(pair_constant)) / pair_constant)
+        )
+        derivative = -a - 2.0 * b * t
+        mu_mgo = -derivative - b * t**2
+        mu_sio2 = -b * t**2
+    return a * t + b * t**2, derivative, 2.0 * b, mu_mgo, mu_sio2
+
+
 def test_binary_join_matches_wu_standard_mixing_before_conversion() -> None:
     temperature = 1873.15
     profile = load_profile("mqm-candidate")
@@ -111,22 +145,25 @@ def test_mg_free_cas_na_face_is_exactly_the_default_including_silica_activity() 
     assert candidate.activity("SiO2") == default.activity("SiO2")
 
 
-def test_low_temperature_near_binary_mqm_recovery_has_no_untyped_crash() -> None:
-    try:
-        evaluate(
-            {
-                "MgO": 1.0, "SiO2": 0.95, "CaO": 0.01,
-                "Al2O3": 0.01, "FeO": 0.02, "Na2O": 0.01,
-            },
-            1300.0,
-            profile="mqm-candidate",
-            allow_extrapolation=True,
-            allow_out_of_envelope=True,
-        )
-    except ImccRefusal:
-        # This case can be refused as a typed model limitation; it must not
-        # leak an implementation error from the low-temperature retry.
-        pass
+def test_low_temperature_near_binary_mqm_recovery_solves_the_regression_case() -> None:
+    result = evaluate(
+        {
+            "MgO": 1.0, "SiO2": 0.95, "CaO": 0.01,
+            "Al2O3": 0.01, "FeO": 0.02, "Na2O": 0.01,
+        },
+        1300.0,
+        profile="mqm-candidate",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.convergence.status == "converged"
+    assert result.convergence.residual_inf <= 2.0e-12
+    assert result.D == pytest.approx(1.052, abs=0.005)
+    smallest_complex_log = float(
+        np.min(np.log(result.complex_x[result.complex_x > 0.0]))
+    )
+    assert smallest_complex_log == pytest.approx(-189.4, abs=2.0)
 
 
 def test_excess_potentials_are_derivatives_of_one_gibbs_function() -> None:
@@ -189,6 +226,45 @@ def test_excess_potentials_remain_accurate_at_dilute_edges(y_sio2: float) -> Non
 
     assert mu_mgo == pytest.approx(five_point_derivative(0), abs=1.0)
     assert mu_sio2 == pytest.approx(five_point_derivative(1), abs=1.0)
+
+
+@pytest.mark.parametrize(
+    "y_sio2",
+    (
+        1.0e-14, 1.0e-12, 1.0e-11,
+        1.0 - 1.0e-11, 1.0 - 1.0e-12, 1.0 - 1.0e-14,
+    ),
+)
+def test_excess_potentials_match_derived_high_precision_edge_series(
+    y_sio2: float,
+) -> None:
+    temperature = 1873.15
+    expected_g, _expected_dg, _expected_gpp, expected_mu_mgo, expected_mu_sio2 = (
+        _mqm_edge_series_reference(y_sio2, temperature)
+    )
+    g, mu_mgo, mu_sio2, _gpp, _y = _mqm_free_pool_state(
+        1.0 - y_sio2, y_sio2, temperature
+    )
+
+    assert g == pytest.approx(expected_g, rel=1.0e-14, abs=1.0e-20)
+    assert mu_mgo == pytest.approx(expected_mu_mgo, abs=1.0e-15)
+    assert mu_sio2 == pytest.approx(expected_mu_sio2, abs=1.0e-15)
+
+
+@pytest.mark.parametrize(
+    ("temperature", "y_sio2"),
+    (
+        (1200.0, 1.0e-8), (1200.0, 1.0 - 1.0e-8),
+        (1873.15, 1.0e-8), (1873.15, 1.0 - 1.0e-8),
+        (3000.0, 1.0e-8), (3000.0, 1.0 - 1.0e-8),
+    ),
+)
+def test_regular_edge_derivative_matches_series_at_switch(
+    temperature: float, y_sio2: float
+) -> None:
+    expected = _mqm_edge_series_reference(y_sio2, temperature)[1]
+    actual = _mixing_excess_gibbs_derivative_j_mol(y_sio2, temperature)
+    assert actual == pytest.approx(expected, abs=1.0)
 
 
 def test_excess_potentials_have_finite_limits_when_free_pool_ratio_underflows() -> None:

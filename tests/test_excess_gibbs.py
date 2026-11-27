@@ -268,6 +268,8 @@ def test_species_pair_mass_action_activity_and_enthalpy_use_joules(
     result = evaluate(
         composition, temperature, candidate, allow_out_of_envelope=True
     )
+    assert result.convergence.status == "converged"
+    assert result.convergence.solver_path == "species-pair-multistart"
     species_moles = sum(composition.values()) / result.D
     gibbs, enthalpy, mu = _species_pair_excess_state(
         result.species_names,
