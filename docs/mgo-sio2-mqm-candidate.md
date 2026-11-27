@@ -1,8 +1,9 @@
 # Experimental MgO–SiO₂ MQM candidate
 
 `openimcc.evaluate_mgo_sio2_mqm(composition_moles, T_K)` exposes an opt-in
-binary liquid calculation based on Wu et al. (1993), *ISIJ International*
-33(1), 26–35, [doi:10.2355/isijinternational.33.26](https://doi.org/10.2355/isijinternational.33.26).
+binary liquid calculation based on Wu, Eriksson, Pelton & Blander (1993),
+*ISIJ International* 33(1), 26–35,
+[doi:10.2355/isijinternational.33.26](https://doi.org/10.2355/isijinternational.33.26).
 The pair reaction and entropy equations are Eqs. (2)–(5), p. 27; the
 MgO–SiO₂ parameters are Eqs. (7)–(8), p. 30; pure oxide liquid functions are
 Table 1, p. 28. It is experimental, leaves `evaluate()` and all defaults

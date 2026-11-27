@@ -43,6 +43,9 @@ from openimcc.kernel import (
     ImccDatapack,
     ImccFerricInputUnsupportedError,
     ImccInvalidWarmStartError,
+    ImccMQMCandidateKernelRequiresAdapterError,
+    ImccMQMCandidateNonconvexError,
+    MqmCandidateBlock,
     ImccNonconvergenceError,
     PackRowParticipation,
     ImccRefusal,
@@ -100,6 +103,7 @@ _EXPECTED_PARENT_OXIDES = (
 _PUBLISHED_CORE_ROWS = 38
 
 _D066_MODEL_ID = "IMCC-SF04-D066"
+_MQM_CANDIDATE_VERSION = "1.0.0-d066-mqm-candidate-v1"
 _SR_CANDIDATE_MODEL_ID = "IMCC-SF04-D066-SR-CANDIDATE"
 _P2O5_CANDIDATE_MODEL_ID = "IMCC-SF04-D066-P2O5-CANDIDATE"
 _SR_CANDIDATE_PARENT_OXIDES = _EXPECTED_PARENT_OXIDES + ("SrO",)
@@ -1047,6 +1051,54 @@ class ExcessGibbsTerm:
         return self.W_H_J_mol != 0.0 or self.W_S_J_mol_K != 0.0
 
 
+_MQM_CANDIDATE_CITATION = (
+    "Wu, P., Eriksson, G., Pelton, A.D. & Blander, M. (1993), "
+    "ISIJ International 33, 26–35, DOI 10.2355/isijinternational.33.26; "
+    "Eqs. (7)–(8), p. 30."
+)
+
+
+def _parse_mqm_candidate(section: Any) -> MqmCandidateBlock:
+    expected_keys = {
+        "model", "free_pool", "coordination_numbers", "omega_J_mol",
+        "eta_J_mol_K", "T_range_K", "replaced_reactions",
+        "standard_state_conversion", "citation",
+    }
+    if not isinstance(section, dict) or set(section) != expected_keys:
+        raise ImccMalformedDatapackError(
+            "mqm_candidate must declare the fixed Wu 1993 parameter block"
+        )
+    expected = {
+        "model": "wu-1993-pair-approximation",
+        "free_pool": ["MgO", "SiO2"],
+        "coordination_numbers": {"MgO": 1.37744375, "SiO2": 2.7548875},
+        "omega_J_mol": {
+            "constant": -86090.0, "Y_Si": -48974.0, "Y_Si^7": 328109.0,
+        },
+        "eta_J_mol_K": {"Y_Si": -37.656, "Y_Si^7": 125.52},
+        "T_range_K": [1200.0, 3000.0],
+        "replaced_reactions": ["Mg2SiO4", "MgSiO3"],
+        "standard_state_conversion": (
+            "none in the embedded Gibbs function; Wu-to-OpenIMCC conversion "
+            "is applied only by evaluate_mgo_sio2_mqm"
+        ),
+        "citation": _MQM_CANDIDATE_CITATION,
+    }
+    if section != expected:
+        raise ImccMalformedDatapackError(
+            "mqm_candidate parameters or provenance do not match Wu 1993"
+        )
+    return MqmCandidateBlock(
+        free_pool=("MgO", "SiO2"),
+        coordination_numbers=(1.37744375, 2.7548875),
+        omega_coefficients_J_mol=(-86090.0, -48974.0, 328109.0),
+        eta_coefficients_J_mol_K=(-37.656, 125.52),
+        T_range_K=(1200.0, 3000.0),
+        source_citation=_MQM_CANDIDATE_CITATION,
+        replaced_reactions=("Mg2SiO4", "MgSiO3"),
+    )
+
+
 @dataclass(frozen=True)
 class ImccLoadedDatapack:
     """Adapter-level loaded datapack: kernel datapack plus provenance metadata."""
@@ -1082,6 +1134,11 @@ class ImccLoadedDatapack:
     @property
     def paper_domains(self) -> Sequence[tuple[float, float] | None]:
         return self.kernel_datapack.paper_domains
+
+    @property
+    def mqm_candidate(self) -> MqmCandidateBlock | None:
+        """Return the separately declared Wu MQM block, when this is its pack."""
+        return self.kernel_datapack.mqm_candidate
 
     @property
     def binding_digest(self) -> str | None:
@@ -1410,6 +1467,58 @@ def _species_pair_excess_state(
         float(total_species_moles) * math.fsum(g_terms),
         float(total_species_moles) * math.fsum(h_terms),
         mu_excess,
+    )
+
+
+def _mqm_candidate_excess_result(
+    result: ImccResult,
+    basis: float,
+    temperature_K: float,
+    block: MqmCandidateBlock,
+) -> ImccResult:
+    """Install Wu free-pool activities and extensive Gibbs contributions."""
+    parent_index = {name: index for index, name in enumerate(result.parent_oxides)}
+    mg_index, si_index = (parent_index[name] for name in block.free_pool)
+    n_mgo = float(result.parent_x_star[mg_index])
+    n_sio2 = float(result.parent_x_star[si_index])
+    if n_mgo <= 0.0 or n_sio2 <= 0.0:
+        return result
+
+    from openimcc.kernel import _mqm_free_pool_state
+    from openimcc.mqm_mgo_sio2 import _mixing_enthalpy_j_mol
+
+    g_ex, mu_mgo, mu_sio2, _gpp, y_sio2 = _mqm_free_pool_state(
+        n_mgo, n_sio2, temperature_K
+    )
+    total_species_moles = float(basis) / float(result.D)
+    free_pool_moles = total_species_moles * (n_mgo + n_sio2)
+    # Wu's minimized pair Gibbs includes an ideal entropy baseline; the model
+    # already has it in D066. Subtracting it for g_E leaves the pair excess.
+    # At equilibrium the pair enthalpy is Npair*q*omega (gE−T*d(gE)/dT);
+    # all quantities are J/mol before multiplication by pool moles.
+    gibbs_excess = free_pool_moles * g_ex
+    enthalpy_excess = free_pool_moles * _mixing_enthalpy_j_mol(
+        y_sio2, temperature_K
+    )
+    activities = result.parent_x_star.copy()
+    activities[mg_index] *= math.exp(
+        mu_mgo / (_R_J_MOL_K * temperature_K)
+    )
+    activities[si_index] *= math.exp(
+        mu_sio2 / (_R_J_MOL_K * temperature_K)
+    )
+    gamma = np.divide(
+        activities,
+        result.parent_x,
+        out=np.zeros_like(activities),
+        where=result.parent_x > 0.0,
+    )
+    return replace(
+        result,
+        parent_activity=activities,
+        parent_gamma=gamma,
+        excess_gibbs_J=gibbs_excess,
+        excess_enthalpy_J=enthalpy_excess,
     )
 
 
@@ -1883,6 +1992,25 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     base_parents = tuple(base_parents)
 
     has_excess_gibbs = "excess_gibbs" in data
+    has_mqm_candidate = "mqm_candidate" in data
+    if has_mqm_candidate and (
+        model_id != _D066_MODEL_ID or version != _MQM_CANDIDATE_VERSION
+    ):
+        raise ImccMalformedDatapackError(
+            "mqm_candidate is permitted only on the mqm-candidate pack identity"
+        )
+    if version == _MQM_CANDIDATE_VERSION and not has_mqm_candidate:
+        raise ImccMalformedDatapackError(
+            "the mqm-candidate pack identity requires an mqm_candidate section"
+        )
+    if has_mqm_candidate and (has_excess_gibbs or data.get("sp_extension") is not None):
+        raise ImccMalformedDatapackError(
+            "mqm_candidate cannot be combined with excess_gibbs or sp_extension"
+        )
+    mqm_candidate = (
+        _parse_mqm_candidate(data["mqm_candidate"])
+        if has_mqm_candidate else None
+    )
     if has_excess_gibbs and model_id != _EXCESS_GIBBS_MODEL_ID:
         raise ImccMalformedDatapackError(
             "excess_gibbs requires the new candidate identity "
@@ -1950,6 +2078,21 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
                 and bool(data["candidate_provenance"])
             ),
         )
+        if has_mqm_candidate:
+            inactive = {
+                str(row["complex"]): row.get("inactive_reason")
+                for row in rows
+                if row.get("active", True) is False
+            }
+            required_inactive = {"Mg2SiO4", "MgSiO3"}
+            if (
+                not isinstance(data.get("candidate_provenance"), dict)
+                or not data["candidate_provenance"]
+                or not required_inactive <= set(inactive)
+            ):
+                raise ImccMalformedDatapackError(
+                    "mqm-candidate requires provenance and inactive Mg2SiO4/MgSiO3 rows"
+                )
         published_manifest_sha256 = None
     else:
         rows, published_manifest_sha256 = _validate_published_core(
@@ -2201,6 +2344,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         paper_domains=paper_domains,
         version=version,
         parent_oxides=parents,
+        mqm_candidate=mqm_candidate,
     )
     extension_species = tuple(str(row["complex"]) for row in extension_rows)
     extension_names = set(extension_parents) | set(extension_species)
@@ -2531,6 +2675,7 @@ def _with_mno_associations(
         paper_domains=(*base.paper_domains, *((None,) * len(rows))),
         version=base.version,
         parent_oxides=parent_names,
+        mqm_candidate=base.mqm_candidate,
     )
     return label_research_datapack(
         runtime,
@@ -2645,6 +2790,11 @@ def evaluate(
         raise ImccUnprovenDatapackError(
             "a bare excess-Gibbs candidate kernel omits interaction metadata; "
             "pass the loaded wrapper returned by load_datapack()"
+        )
+    if isinstance(pack, ImccDatapack) and pack.mqm_candidate is not None:
+        raise ImccMQMCandidateKernelRequiresAdapterError(
+            "a bare MQM candidate kernel omits loaded-pack provenance; pass the "
+            "loaded wrapper returned by load_datapack()"
         )
 
     # Resolve the kernel datapack and metadata.
@@ -3368,6 +3518,14 @@ def evaluate(
             parent_gamma=parent_gamma,
             excess_gibbs_J=excess_gibbs_J,
             excess_enthalpy_J=excess_enthalpy_J,
+        )
+
+    if kernel_pack.mqm_candidate is not None:
+        result = _mqm_candidate_excess_result(
+            result,
+            basis,
+            float(result.temperature_K),
+            kernel_pack.mqm_candidate,
         )
 
     # Build the caller-facing label block. The paper-window flag is computed

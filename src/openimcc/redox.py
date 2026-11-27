@@ -18,9 +18,11 @@ from typing import Any, Literal, TYPE_CHECKING
 import numpy as np
 from scipy.optimize import linprog
 
-from openimcc._constants import MOLAR_MASS_G_MOL
+from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K as _R_J_MOL_K
 from openimcc.kernel import (
     ImccRefusal,
+    _mqm_candidate_reduced_balance_jacobian,
+    _mqm_free_pool_state,
     active_residual_jacobian,
     solve_active_warm,
 )
@@ -803,10 +805,29 @@ def _active_inner_once(
         parent_names=tuple(
             parent_names[index] for index in np.flatnonzero(active_parent)
         ),
+        mqm_candidate=base_datapack.mqm_candidate,
+        temperature_K=temperature_K,
     )
     if fallback_counter is not None:
         fallback_counter[0] += int(inner_fallback_fired)
-    _f, _g, _D, J = active_residual_jacobian(y, x_target, nu, lnK, S, np)
+    active_names = tuple(
+        parent_names[index] for index in np.flatnonzero(active_parent)
+    )
+    if base_datapack.mqm_candidate is not None and {
+        "MgO", "SiO2"
+    } <= set(active_names):
+        J = _mqm_candidate_reduced_balance_jacobian(
+            y,
+            g,
+            x_target,
+            nu,
+            lnK,
+            S,
+            temperature_K,
+            active_names,
+        )
+    else:
+        _f, _g, _D, J = active_residual_jacobian(y, x_target, nu, lnK, S, np)
     return _LiquidState(
         parent_moles=parent_moles,
         basis=basis,
@@ -2198,6 +2219,11 @@ def _assemble_result(
     )
     if unmodelled_redox_couples:
         flags = (*flags, "RED: unmodelled_redox_couples")
+    if base_datapack.mqm_candidate is not None:
+        flags = (
+            *flags,
+            "mqm-candidate: " + base_datapack.mqm_candidate.source_citation,
+        )
     if last_resort_ideal_parents:
         dependency_axes = tuple(dict.fromkeys(
             (*dependency_axes, "redox_association")
@@ -2232,18 +2258,33 @@ def _assemble_result(
         active_fraction_by_index.get(index, 0.0)
         for index in range(len(base_datapack.reactions))
     )
+    parent_activities = {
+        parent_names[index]: float(math.exp(value))
+        for index, value in zip(state.active_parent, state.y)
+    }
+    mqm_candidate = base_datapack.mqm_candidate
+    if mqm_candidate is not None and {"MgO", "SiO2"} <= active_parent_names:
+        mg_index = int(np.flatnonzero(state.active_parent == parent_names.index("MgO"))[0])
+        si_index = int(np.flatnonzero(state.active_parent == parent_names.index("SiO2"))[0])
+        _g, mu_mgo, mu_sio2, _gpp, _pool_y = _mqm_free_pool_state(
+            math.exp(float(state.y[mg_index])),
+            math.exp(float(state.y[si_index])),
+            temperature_K,
+        )
+        parent_activities["MgO"] *= math.exp(
+            mu_mgo / (_R_J_MOL_K * temperature_K)
+        )
+        parent_activities["SiO2"] *= math.exp(
+            mu_sio2 / (_R_J_MOL_K * temperature_K)
+        )
+
     result = RedoxResult(
         temperature_K=temperature_K,
         mode=mode,
         lambda_ln_f_o2=float(lambda_value),
         lambda_sat=float(lambda_sat),
         parent_moles=MappingProxyType(parent_values),
-        parent_activity=MappingProxyType(
-            {
-                parent_names[index]: float(math.exp(value))
-                for index, value in zip(state.active_parent, state.y)
-            }
-        ),
+        parent_activity=MappingProxyType(parent_activities),
         species_moles=MappingProxyType(species_values),
         element_moles_by_oxidation_state=element_moles_by_oxidation_state,
         ferric_fe_mol=ferric_fe_mol,
@@ -3293,6 +3334,7 @@ def evaluate_redox(
             warm_start,
             tol=tol,
             max_iter=max_iter,
+            melt_pack=selected.melt_pack,
             loaded_redox_pack=selected_redox_pack,
             strict_pack_standards=strict_pack_standards,
             standards_profile=selected,

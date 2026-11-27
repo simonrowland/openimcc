@@ -21,8 +21,8 @@ from test_melt_source_transcriptions import (
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src" / "openimcc" / "data" / "packs"
 SIDECAR_PATH = ROOT / "src" / "openimcc" / "data" / "source-refs-sidecar.json"
-# Re-pinned after the opt-in D066 MgO–SiO2 candidate was added to the manifest.
-MANIFEST_SHA256 = "1b6bedecda95a512cb3780bf088b58faef329411779e7f4ccee28b5b7094ca7a"
+# Re-pinned after the opt-in D066 Wu MQM candidate citation was completed.
+MANIFEST_SHA256 = "526faad65ca1d0ce4c75b307f22828dc46e945e2a8e060b18a1eb99c20c7fcfa"
 
 
 def _pack_data() -> dict[str, dict[str, Any]]:

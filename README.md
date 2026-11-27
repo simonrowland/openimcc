@@ -1072,6 +1072,15 @@ absolute residual falls from 0.202337 to 0.109047 dex (n=12). The default
 profile is unchanged and this candidate remains opt-in. See [the candidate
 report](docs/mgsio-candidate.md) for source, family, and liquidus results.
 
+### Opt-in Wu MgO–SiO₂ MQM candidate
+
+Use `load_profile("mqm-candidate")` to select the fixed-parameter Wu 1993
+MgO–SiO₂ free-pool Gibbs candidate. It keeps D066 v4 coefficients, marks
+Mg₂SiO₄ and MgSiO₃ inactive, and does not refit the retained associates. The
+default profile is unchanged. See [the MQM candidate report](docs/mqm-candidate.md)
+for the Gibbs function, redox support, nonconvex refusal, and exposed-source
+diagnostics.
+
 For example, `evaluate(composition, 1800, profile="published")` selects the
 published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
 selects its matching gas tables. The CLI accepts

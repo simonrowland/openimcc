@@ -342,6 +342,31 @@ def _has_active_excess(pack: Any) -> bool:
     return any(term.active for term in getattr(pack, "excess_gibbs_terms", ()))
 
 
+def _has_mqm_candidate(pack: Any) -> bool:
+    if getattr(pack, "mqm_candidate", None) is not None:
+        return True
+    return getattr(
+        getattr(pack, "kernel_datapack", None), "mqm_candidate", None
+    ) is not None
+
+
+def _mqm_candidate_active(pack: Any, bulk: Mapping[str, float]) -> bool:
+    return (
+        _has_mqm_candidate(pack)
+        and bulk.get("MgO", 0.0) > 0.0
+        and bulk.get("SiO2", 0.0) > 0.0
+    )
+
+
+class _EquilibriumModelRefusalError(ValueError):
+    """Typed unsupported-model refusal for internal boundary calculations."""
+
+    def __init__(self, refusal: EquilibriumRefusal) -> None:
+        self.refusal = refusal
+        self.code = refusal.code
+        super().__init__(f"{refusal.code}: {refusal.detail}")
+
+
 def _source_solid_limit_K(row: Mapping[str, Any]) -> float | None:
     return diagnostics._crystal_source_solid_limit_K(row)
 
@@ -3302,6 +3327,21 @@ def _equilibrate_one(
                 ("solver_settings",),
             ),
         )
+    if _mqm_candidate_active(selected_pack, normalized_bulk):
+        return _empty_result(
+            bulk=normalized_bulk,
+            temperature_K=temperature,
+            pack=selected_pack,
+            states=all_states,
+            data_identity=data_identity,
+            explicit_candidates=explicit,
+            refusal=EquilibriumRefusal(
+                "unsupported_nonconvex_model",
+                "The mqm-candidate free-pool block is active, but the "
+                "single-liquid crystal optimizer does not carry it through.",
+                ("melt_model",),
+            ),
+        )
     if _has_active_excess(selected_pack):
         return _empty_result(
             bulk=normalized_bulk,
@@ -3733,6 +3773,13 @@ def _boundary_context(
     )
     parent_names = tuple(kernel.parent_oxides)
     normalized_bulk, parents = _parse_bulk(bulk, parent_names)
+    if _mqm_candidate_active(selected_pack, normalized_bulk):
+        raise _EquilibriumModelRefusalError(EquilibriumRefusal(
+            "unsupported_nonconvex_model",
+            "The mqm-candidate free-pool block is active, but the "
+            "liquid-boundary calculation does not carry it through.",
+            ("melt_model",),
+        ))
     gas_pack, _ = diagnostics._crystal_thermo_context(None)
     all_states, _data_identity, gas_pack, unavailable, _explicit = (
         _resolve_candidates(candidates, temperature_K, gas_pack)

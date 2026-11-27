@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Wu MgO–SiO2 MQM candidate
+
+- Added the opt-in `mqm-candidate` profile with Wu's published MgO–SiO2
+  pair-approximation Gibbs block on the free-oxide pool. The binary activities
+  are fixed and unfitted; the default pack and outputs are unchanged.
+- At Hashimoto's starting composition, the Fe/Si flux preference changes from
+  +1.19 to +0.50 dex. The evolved Markova panel VI residues remain Mg-first,
+  so this model does not fix the Markova sign.
+- `equilibrate()` returns the typed `unsupported_nonconvex_model` refusal when
+  both MgO and SiO2 are present because its crystal path does not carry the
+  candidate block; Mg-free states run normally.
+- `evaluate_redox(profile=...)` now speciates on the selected profile's melt
+  pack, including candidate profiles. The `openimcc` profile remains
+  bit-for-bit identical to the prior default-pack behavior.
+
 ### CaO–Al2O3 aluminate candidate
 
 - Added the opt-in `cao-aluminate-candidate` profile and pack

@@ -491,6 +491,7 @@ _SR_CANDIDATE_FILES = (
 _P2O5_CANDIDATE_FILE = "imcc-sf04-d066-p2o5-candidate-v1.json"
 _SILICATE_CANDIDATE_FILE = "imcc-sf04-d066-silicate-candidate-v2.json"
 _MGSIO_CANDIDATE_FILE = "imcc-sf04-d066-mgsio-candidate-v1.json"
+_MQM_CANDIDATE_FILE = "imcc-sf04-d066-mqm-candidate-v1.json"
 _CAO_ALUMINATE_CANDIDATE_FILE = "imcc-sf04-d066-cao-aluminate-candidate-v1.json"
 _ALLIBERT_1981 = (
     "Allibert et al. (1981), CaO–Al2O3 liquid activities; "
@@ -1528,6 +1529,90 @@ def _mgsio_candidate_artifact(
     )
 
 
+def _mqm_candidate_artifact(
+    *,
+    path: Path,
+    runtime_digest: str,
+    mapper: SourceMapper,
+    default_melt_artifact: dict[str, Any],
+) -> dict[str, Any]:
+    raw = path.read_bytes()
+    pack = json.loads(raw)
+    candidate_rows = pack["rows"]
+    default_pack = _json(DATA / "packs" / "imcc-sf04-d066-v4.json")
+    if len(candidate_rows) != _D066_CORE_ROW_COUNT:
+        raise ValueError("mqm candidate must retain the 38-row D066 core")
+
+    rows = _default_candidate_artifact_rows(default_melt_artifact)
+    inactive_reasons = pack["candidate_provenance"]["inactive_rows"]
+    for base_row, candidate_row in zip(
+        default_pack["rows"], candidate_rows, strict=True
+    ):
+        complex_name = base_row["complex"]
+        if complex_name in {"Mg2SiO4", "MgSiO3"}:
+            expected = dict(base_row)
+            expected["active"] = False
+            expected["inactive_reason"] = inactive_reasons[complex_name]
+            if expected != candidate_row:
+                raise ValueError(f"unexpected inactive MQM row change: {complex_name}")
+            rows[int(candidate_row["row"]) - 1]["active"] = False
+            rows[int(candidate_row["row"]) - 1]["inactive_reason"] = (
+                inactive_reasons[complex_name]
+            )
+        elif base_row != candidate_row:
+            raise ValueError(f"unexpected D066 row change in MQM candidate: {complex_name}")
+
+    standard_pack = _json(DATA / "liquid-standards.json")["packs"].get(
+        runtime_digest
+    )
+    if not isinstance(standard_pack, dict):
+        raise ValueError("MQM candidate has no liquid-standard registration")
+    parent_specs = {
+        parent: [(citation, "anchor")]
+        for parent, citation in standard_pack["standard_citations"].items()
+    }
+    parent_standards, parent_unmapped = _candidate_parent_standard_rows(
+        tuple(pack["parents"]), parent_specs, mapper
+    )
+    artifact = _finish_candidate_artifact(
+        path=path,
+        raw=raw,
+        pack=pack,
+        runtime_digest=runtime_digest,
+        mapper=mapper,
+        rows=rows,
+        parent_standards=parent_standards,
+        parent_unmapped=parent_unmapped,
+    )
+    block = pack["mqm_candidate"]
+    artifact["model_terms"] = [{
+        "id": "mqm_candidate",
+        "model": block["model"],
+        "parameters": [
+            {
+                "parameter": "coordination_numbers",
+                "values": block["coordination_numbers"],
+                "role": "published",
+                "citation": block["citation"],
+            },
+            {
+                "parameter": "omega_J_mol",
+                "values": block["omega_J_mol"],
+                "role": "published",
+                "citation": block["citation"],
+            },
+            {
+                "parameter": "eta_J_mol_K",
+                "values": block["eta_J_mol_K"],
+                "role": "published",
+                "citation": block["citation"],
+            },
+        ],
+        "refit": False,
+    }]
+    return artifact
+
+
 def _table_artifact(
     *,
     relative_file: str,
@@ -2448,6 +2533,20 @@ def build() -> dict[str, Any]:
         _mgsio_candidate_artifact(
             path=mgsio_path,
             runtime_digest=mgsio_runtime_digest,
+            mapper=mapper,
+            default_melt_artifact=melt_artifact,
+        )
+    )
+    mqm_path = DATA / "packs" / _MQM_CANDIDATE_FILE
+    mqm_runtime_digest = load_datapack(mqm_path).binding_digest
+    if not mqm_runtime_digest:
+        raise ValueError(
+            f"MQM candidate {_MQM_CANDIDATE_FILE} has no runtime digest"
+        )
+    artifacts.append(
+        _mqm_candidate_artifact(
+            path=mqm_path,
+            runtime_digest=mqm_runtime_digest,
             mapper=mapper,
             default_melt_artifact=melt_artifact,
         )

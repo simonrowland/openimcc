@@ -26,6 +26,12 @@ also listed in the artifact's `unmapped` collection. The Sr and P2O5 candidate
 artifacts use this field for their new rows and record the parent liquid
 standards at the artifact level.
 
+An artifact may also carry `model_terms` for fixed parameters that define a
+model block rather than a reaction row. Each term records the model name,
+parameter values, citation role, and citation. The Wu MQM candidate uses this
+for its published coordination numbers and ω/η coefficients; these values are
+not row refits.
+
 A parameter is firm when its value is printed or measured at the temperatures
 where it is used—including a printed assessed function evaluated inside its
 stated window and printed JANAF cells unless the table text marks them

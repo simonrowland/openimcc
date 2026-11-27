@@ -2,6 +2,8 @@
 
 This module evaluates only MgO–SiO2 formula-unit mole amounts. It does not
 embed the binary in multicomponent melts or replace the default evaluator.
+Model and parameter citation: Wu, Eriksson, Pelton & Blander (1993),
+*ISIJ International* 33(1), 26–35, DOI 10.2355/isijinternational.33.26.
 """
 
 from __future__ import annotations
@@ -240,6 +242,89 @@ def _mixing_gibbs_j_mol(x_sio2: float, temperature_K: float) -> float:
     ) * delta_g
 
 
+def _mixing_enthalpy_j_mol(x_sio2: float, temperature_K: float) -> float:
+    """Return the Wu binary mixing enthalpy at fixed oxide composition."""
+    x_mgo = 1.0 - x_sio2
+    _x_mgm, x_mgsi, _x_sisi, y_sio2, _delta_g = _pair_fractions(
+        x_sio2, temperature_K
+    )
+    pair_moles = (_Z_MGO * x_mgo + _Z_SIO2 * x_sio2) / 2.0
+    omega = -86090.0 - 48974.0 * y_sio2 + 328109.0 * y_sio2**7
+    # The pair configurational term is entropic. At the minimized pair state,
+    # the envelope theorem leaves Hmix=Npair*q*omega, with q=X_MgSi/2;
+    # units are J per mole of oxide formula units.
+    return pair_moles * (x_mgsi / 2.0) * omega
+
+
+def _mixing_gibbs_derivative_j_mol(
+    x_sio2: float,
+    temperature_K: float,
+) -> float:
+    """Return dGmix/dx from the analytic excess derivative and ideal slope."""
+    if x_sio2 <= 0.0 or x_sio2 >= 1.0:
+        raise ValueError("binary Gibbs derivative requires an interior composition")
+    return _mixing_excess_gibbs_derivative_j_mol(
+        x_sio2, temperature_K
+    ) + _R * temperature_K * (
+        math.log(x_sio2) - math.log1p(-x_sio2)
+    )
+
+
+def _mixing_excess_gibbs_derivative_j_mol(
+    x_sio2: float,
+    temperature_K: float,
+) -> float:
+    """Return the analytic derivative of Wu's excess mixing Gibbs energy."""
+    if x_sio2 <= 0.0:
+        return _Z_SIO2 * -86090.0 / 2.0
+    if x_sio2 >= 1.0:
+        delta_g_at_silica = 193045.0 - 87.864 * temperature_K
+        return -_Z_MGO * delta_g_at_silica / 2.0
+    # Below this scale, the limiting derivative differs by far less than a
+    # joule per mole and avoids ratios of underflowed pair fractions.
+    if x_sio2 < 1.0e-14:
+        return _Z_SIO2 * -86090.0 / 2.0
+    if 1.0 - x_sio2 < 1.0e-14:
+        delta_g_at_silica = 193045.0 - 87.864 * temperature_K
+        return -_Z_MGO * delta_g_at_silica / 2.0
+
+    p_mgm, p_mgsi, p_sisi, y_sio2, delta_g = _pair_fractions(
+        x_sio2, temperature_K
+    )
+    x_mgo = 1.0 - x_sio2
+    coord_sum = _Z_MGO * x_mgo + _Z_SIO2 * x_sio2
+    dcoord_dx = _Z_SIO2 - _Z_MGO
+    y_mgo = 1.0 - y_sio2
+    dy_sio2_dx = _Z_MGO * _Z_SIO2 / (coord_sum * coord_sum)
+    dy_mgo_dx = -dy_sio2_dx
+    pair_moles = coord_sum / 2.0
+    pair_entropy = math.fsum((
+        _xlog_ratio(p_mgm, y_mgo * y_mgo),
+        _xlog_ratio(p_sisi, y_sio2 * y_sio2),
+        _xlog_ratio(p_mgsi, 2.0 * y_mgo * y_sio2),
+    ))
+    d_pair_entropy_dx = math.fsum((
+        dy_mgo_dx * (math.log(p_mgm / (y_mgo * y_mgo)) + 1.0)
+        - 2.0 * p_mgm * dy_mgo_dx / y_mgo,
+        dy_sio2_dx * (math.log(p_sisi / (y_sio2 * y_sio2)) + 1.0)
+        - 2.0 * p_sisi * dy_sio2_dx / y_sio2,
+        -p_mgsi * (dy_mgo_dx / y_mgo + dy_sio2_dx / y_sio2),
+    ))
+    d_omega_dy = -48974.0 + 7.0 * 328109.0 * y_sio2**6
+    d_eta_dy = -37.656 + 7.0 * 125.52 * y_sio2**6
+    d_delta_dy = d_omega_dy - temperature_K * d_eta_dy
+    q = p_mgsi / 2.0
+    d_excess_dx = (
+        _R * temperature_K * (
+            dcoord_dx / 2.0 * pair_entropy
+            + pair_moles * d_pair_entropy_dx
+        )
+        + dcoord_dx / 2.0 * q * delta_g
+        + pair_moles * q * d_delta_dy * dy_sio2_dx
+    )
+    return d_excess_dx
+
+
 def _lower_hull(points: list[tuple[int, float, float]]) -> list[tuple[int, float, float]]:
     hull: list[tuple[int, float, float]] = []
     for point in points:
@@ -358,12 +443,12 @@ def evaluate_mgo_sio2_mqm(
     elif x_sio2 == 1.0:
         ln_a_sio2_wu, ln_a_mgo_wu = 0.0, -math.inf
     else:
+        # Check that both oxide fractions retain enough local precision to
+        # report activities, since 1−xSiO2 loses resolution near the endpoint.
         h = min(_ACTIVITY_STEP, x_sio2 / 2.0, x_mgo / 2.0)
+        x_mgo_center = amounts.get("MgO", 0.0) / total
         x_sio2_plus = x_sio2 + h
         x_sio2_minus = x_sio2 - h
-        # Recover the center from input moles: 1−xSiO2 loses precision in
-        # this dilute limit and would hide stencil-spacing distortion.
-        x_mgo_center = amounts.get("MgO", 0.0) / total
         x_mgo_plus = 1.0 - x_sio2_plus
         x_mgo_minus = 1.0 - x_sio2_minus
         recovered_steps = (
@@ -376,14 +461,11 @@ def evaluate_mgo_sio2_mqm(
         if relative_step_error > _ACTIVITY_STENCIL_REL_TOL:
             raise ImccComponentOutsideDomainError(
                 "Wu 1993 MgO–SiO2 MQM activity evaluation refused; violated axis: "
-                "composition_mole_fraction; central-difference stencil steps "
-                f"differ from the nominal step by {relative_step_error:.1%}, "
+                "composition_mole_fraction; local fraction perturbations are "
+                f"distorted by {relative_step_error:.1%} by float rounding, "
                 f"above the {_ACTIVITY_STENCIL_REL_TOL:.0%} tolerance"
             )
-        derivative = (
-            _mixing_gibbs_j_mol(x_sio2_plus, temperature)
-            - _mixing_gibbs_j_mol(x_sio2_minus, temperature)
-        ) / (2.0 * h)
+        derivative = _mixing_gibbs_derivative_j_mol(x_sio2, temperature)
         # Premise: Wu Eqs. (2)–(8), pp. 27, 30, minimize Gmix at fixed
         # analytical composition. For g=Gmix/(nMgO+nSiO2), Euler's relation
         # gives μSi,mix=g+(1−x)dg/dx and μMg,mix=g−x*dg/dx, both J/mol.

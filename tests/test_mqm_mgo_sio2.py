@@ -226,6 +226,7 @@ def test_dilute_mgo_activity_refuses_rounding_distorted_stencil() -> None:
 
     assert "Wu 1993 MgO–SiO2 MQM" in str(refused.value)
     assert "composition_mole_fraction" in str(refused.value)
+    assert "local fraction perturbations are distorted" in str(refused.value)
     assert "5% tolerance" in str(refused.value)
 
 

@@ -62,6 +62,7 @@ _PUBLISHED_GAS_STANDARD_NOTICES = [
         ("cao-aluminate-candidate", "1.0.0-d066-cao-aluminate-candidate-v1", True),
         ("silicate-candidate", "1.0.0-d066-silicate-candidate-v2", True),
         ("mgsio-candidate", "1.0.0-d066-mgsio-candidate-v1", True),
+        ("mqm-candidate", "1.0.0-d066-mqm-candidate-v1", True),
         ("published", "1.0.2", False),
     ],
 )
@@ -268,12 +269,23 @@ def test_silicate_candidate_v2_refits_only_the_two_mg_associate_intercepts() -> 
     assert profile.melt_pack.version == "1.0.0-d066-silicate-candidate-v2"
     assert profile.melt_pack.binding_digest != default.melt_pack.binding_digest
     manganese = evaluate_redox(
-        {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65},
+        {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Mg": 0.4, "Al": 0.1, "O": 2.05},
         2200.0,
         "closed",
         profile=profile,
     )
+    default_manganese = evaluate_redox(
+        {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Mg": 0.4, "Al": 0.1, "O": 2.05},
+        2200.0,
+        "closed",
+        profile="openimcc",
+    )
     assert manganese.parent_activity["MnO"] > 0.0
+    assert manganese.melt_pack_binding_digest == profile.melt_pack.binding_digest
+    assert manganese.melt_pack_binding_digest != (
+        default_manganese.melt_pack_binding_digest
+    )
+    assert manganese.species_moles != default_manganese.species_moles
 
 
 @pytest.mark.parametrize(
@@ -524,3 +536,14 @@ def test_openimcc_profile_selects_the_default_redox_pack() -> None:
             assert getattr(profiled, result_field.name) == getattr(
                 default, result_field.name
             )
+    before_change_payload = repr(tuple(
+        (result_field.name, getattr(default, result_field.name))
+        for result_field in fields(default)
+        if result_field.name not in {"profile", "receipt"}
+    )).encode("utf-8")
+    profile_payload = repr(tuple(
+        (result_field.name, getattr(profiled, result_field.name))
+        for result_field in fields(profiled)
+        if result_field.name not in {"profile", "receipt"}
+    )).encode("utf-8")
+    assert profile_payload == before_change_payload

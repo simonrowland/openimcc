@@ -167,6 +167,18 @@ class ImccSpeciesPairMultipleRootsError(ImccRefusal):
     code = "imcc_species_pair_multiple_roots"
 
 
+class ImccMQMCandidateNonconvexError(ImccRefusal):
+    """Raised when the Wu MQM free pool lies in its two-liquid field."""
+
+    code = "imcc_mqm_candidate_nonconvex"
+
+
+class ImccMQMCandidateKernelRequiresAdapterError(ImccRefusal):
+    """Raised when the raw kernel entry point would drop MQM metadata."""
+
+    code = "imcc_mqm_candidate_requires_loaded_adapter"
+
+
 def _warm_start_vector(y_init: Any) -> np.ndarray:
     try:
         return np.array(y_init, dtype=np.float64)
@@ -196,6 +208,19 @@ class _ImccDatapackIdentity:
     coverage: Mapping[str, str]
     binding_digest: str | None
     proven: bool
+
+
+@dataclass(frozen=True)
+class MqmCandidateBlock:
+    """Fixed Wu 1993 free-pool subsystem declared by an opt-in melt pack."""
+
+    free_pool: tuple[str, str]
+    coordination_numbers: tuple[float, float]
+    omega_coefficients_J_mol: tuple[float, float, float]
+    eta_coefficients_J_mol_K: tuple[float, float]
+    T_range_K: tuple[float, float]
+    source_citation: str
+    replaced_reactions: tuple[str, str]
 
 
 def _untrusted_datapack_identity() -> _ImccDatapackIdentity:
@@ -249,6 +274,7 @@ class ImccDatapack:
     version: str
     parent_oxides: Sequence[str] = _PUBLISHED_PARENT_OXIDES
     paper_domains: Sequence[tuple[float, float] | None] | None = None
+    mqm_candidate: MqmCandidateBlock | None = None
     _identity: _ImccDatapackIdentity = field(
         init=False,
         repr=False,
@@ -265,6 +291,7 @@ class ImccDatapack:
         version: str,
         parent_oxides: Sequence[str] = _PUBLISHED_PARENT_OXIDES,
         paper_domains: Sequence[tuple[float, float] | None] | None = None,
+        mqm_candidate: MqmCandidateBlock | None = None,
     ) -> None:
         if hasattr(self, "_identity"):
             raise TypeError("ImccDatapack cannot be initialized more than once")
@@ -276,6 +303,7 @@ class ImccDatapack:
         object.__setattr__(self, "version", version)
         object.__setattr__(self, "parent_oxides", parent_oxides)
         object.__setattr__(self, "paper_domains", paper_domains)
+        object.__setattr__(self, "mqm_candidate", mqm_candidate)
         object.__setattr__(self, "_identity", _untrusted_datapack_identity())
         self.__post_init__()
 
@@ -1005,31 +1033,246 @@ def _species_pair_residual_jacobian(
     return residual, np.concatenate((parent_x, complex_x)), D, jacobian
 
 
+def _mqm_excess_gibbs_j_mol(x_sio2: float, temperature_K: float) -> float:
+    """Return Wu mixing Gibbs energy minus the free-oxide ideal baseline."""
+    from openimcc.mqm_mgo_sio2 import _mixing_gibbs_j_mol
+
+    x_mgo = 1.0 - x_sio2
+    ideal = _R_J_MOL_K * temperature_K * (
+        (x_mgo * math.log(x_mgo) if x_mgo > 0.0 else 0.0)
+        + (x_sio2 * math.log(x_sio2) if x_sio2 > 0.0 else 0.0)
+    )
+    return _mixing_gibbs_j_mol(x_sio2, temperature_K) - ideal
+
+
+def _mqm_free_pool_state(
+    n_mgo: float,
+    n_sio2: float,
+    temperature_K: float,
+) -> tuple[float, float, float, float, float]:
+    """Return ``(gE, mu_Mg,E, mu_Si,E, gE'', y)`` for the free pool.
+
+    Premise: differentiating ``N_f*gE(y)`` gives the two partial potentials
+    in the candidate definition. The first derivative is analytic for the
+    pair entropy and enthalpy terms, with finite endpoint limits; the second
+    derivative uses a wider 1e-4 stencil to keep the projected-Hessian check
+    above float64 noise.
+    Both g and its derivatives are J/mol, so division by RT in mass action is
+    dimensionless. At a pure endpoint, the present oxide has zero excess
+    potential and the absent oxide gets its finite insertion-potential limit.
+    """
+    total = n_mgo + n_sio2
+    if total <= 0.0:
+        return 0.0, 0.0, 0.0, 0.0, 0.0
+    y = n_sio2 / total
+    g = _mqm_excess_gibbs_j_mol(y, temperature_K)
+    from openimcc.mqm_mgo_sio2 import (
+        _mixing_excess_gibbs_derivative_j_mol,
+    )
+
+    dg = _mixing_excess_gibbs_derivative_j_mol(y, temperature_K)
+    if y <= 1.0e-14 or 1.0 - y <= 1.0e-14:
+        gpp = 0.0
+        mu_mgo = g - y * dg
+        mu_sio2 = g + (1.0 - y) * dg
+        return g, mu_mgo, mu_sio2, gpp, y
+    h2 = min(1.0e-4, y / 2.0, (1.0 - y) / 2.0)
+    gpp = (
+        _mqm_excess_gibbs_j_mol(y + h2, temperature_K)
+        - 2.0 * g
+        + _mqm_excess_gibbs_j_mol(y - h2, temperature_K)
+    ) / (h2 * h2)
+    mu_mgo = g - y * dg
+    mu_sio2 = g + (1.0 - y) * dg
+    return g, mu_mgo, mu_sio2, gpp, y
+
+
+def _mqm_candidate_excess_hessian(
+    species_x: np.ndarray,
+    temperature_K: float,
+    parent_names: Sequence[str],
+) -> tuple[np.ndarray, float, float]:
+    """Return the full-species Gibbs Hessian and free-pool excess state."""
+    hessian = np.zeros((species_x.size, species_x.size), dtype=float)
+    mg_index = parent_names.index("MgO") if "MgO" in parent_names else None
+    si_index = parent_names.index("SiO2") if "SiO2" in parent_names else None
+    if mg_index is None or si_index is None:
+        return hessian, 0.0, 0.0
+    n_mgo = float(species_x[mg_index])
+    n_sio2 = float(species_x[si_index])
+    g, _mu_mgo, _mu_sio2, gpp, y = _mqm_free_pool_state(
+        n_mgo, n_sio2, temperature_K
+    )
+    total = n_mgo + n_sio2
+    if total > 0.0 and n_mgo > 0.0 and n_sio2 > 0.0:
+        x_mgo = 1.0 - y
+        hessian[mg_index, mg_index] = gpp * y * y / total
+        hessian[mg_index, si_index] = -gpp * y * x_mgo / total
+        hessian[si_index, mg_index] = hessian[mg_index, si_index]
+        hessian[si_index, si_index] = gpp * x_mgo * x_mgo / total
+    return hessian, g, y
+
+
+def _mqm_candidate_residual_jacobian(
+    z: np.ndarray,
+    x_target: np.ndarray,
+    nu: np.ndarray,
+    lnK: np.ndarray,
+    S: np.ndarray,
+    temperature_K: float,
+    parent_names: Sequence[str],
+) -> tuple[np.ndarray, np.ndarray, float, np.ndarray]:
+    """Evaluate balances and mass action with the separate Wu Gibbs block."""
+    n_parent = x_target.size
+    n_complex = lnK.size
+    parent_log = z[:n_parent]
+    complex_log = z[n_parent:]
+    parent_x = np.exp(parent_log)
+    complex_x = np.exp(complex_log)
+    species_x = np.concatenate((parent_x, complex_x))
+    hessian, _g, _y = _mqm_candidate_excess_hessian(
+        species_x, temperature_K, parent_names
+    )
+    chemical_potential = np.zeros(species_x.size, dtype=float)
+    if "MgO" in parent_names and "SiO2" in parent_names:
+        mg_index = parent_names.index("MgO")
+        si_index = parent_names.index("SiO2")
+        _g, mu_mgo, mu_sio2, _gpp, _y = _mqm_free_pool_state(
+            float(parent_x[mg_index]),
+            float(parent_x[si_index]),
+            temperature_K,
+        )
+        chemical_potential[mg_index] = mu_mgo
+        chemical_potential[si_index] = mu_sio2
+
+    reaction_operator = np.hstack((-nu.T, np.eye(n_complex)))
+    D = 1.0 + float(np.sum((S - 1.0) * complex_x))
+    balance = parent_x + nu @ complex_x - x_target * D
+    mass_action = (
+        complex_log - nu.T @ parent_log - lnK
+        + reaction_operator @ chemical_potential
+        / (_R_J_MOL_K * temperature_K)
+    )
+    residual = np.concatenate((balance, mass_action))
+
+    balance_parent_jac = np.diag(parent_x)
+    balance_complex_jac = (
+        nu - x_target[:, None] * (S - 1.0)[None, :]
+    ) * complex_x[None, :]
+    mu_log_jacobian = hessian * species_x[None, :]
+    reaction_jacobian = reaction_operator + (
+        reaction_operator @ mu_log_jacobian
+    ) / (_R_J_MOL_K * temperature_K)
+    jacobian = np.vstack((
+        np.hstack((balance_parent_jac, balance_complex_jac)),
+        reaction_jacobian,
+    ))
+    return residual, species_x, D, jacobian
+
+
+def _mqm_candidate_reduced_balance_jacobian(
+    y: np.ndarray,
+    complex_x: np.ndarray,
+    x_target: np.ndarray,
+    nu: np.ndarray,
+    lnK: np.ndarray,
+    S: np.ndarray,
+    temperature_K: float,
+    parent_names: Sequence[str],
+) -> np.ndarray:
+    """Eliminate mass-action species from the MQM parent-balance Jacobian."""
+    z = np.concatenate((y, np.log(complex_x)))
+    _residual, _species, _D, jacobian = _mqm_candidate_residual_jacobian(
+        z, x_target, nu, lnK, S, temperature_K, parent_names
+    )
+    n_parent = x_target.size
+    if complex_x.size == 0:
+        return jacobian[:n_parent, :n_parent]
+    # Parent potentials depend only on the two free oxides, so dR/dlog(x_j)
+    # is identity. Eliminate log complexes by the Schur complement.
+    return (
+        jacobian[:n_parent, :n_parent]
+        - jacobian[:n_parent, n_parent:]
+        @ jacobian[n_parent:, :n_parent]
+    )
+
+
 def _solve_species_pair_active(
     x_target: np.ndarray,
     nu: np.ndarray,
     lnK: np.ndarray,
     S: np.ndarray,
-    interaction: np.ndarray,
+    interaction: np.ndarray | None,
     temperature_K: float,
     tol: float,
     max_iter: int,
     *,
     y_init: np.ndarray | None = None,
     relative_log_x_recovery: bool = False,
+    mqm_candidate: MqmCandidateBlock | None = None,
+    parent_names: Sequence[str] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int]:
-    """Solve a species-pair candidate, compare starts, and certify stability."""
+    """Solve an active nonideal model, compare starts, and certify stability."""
     if max_iter <= 0:
         raise ImccNonconvergenceError(
-            "species-pair solve did not run (max_iter <= 0)",
+            "nonideal melt solve did not run (max_iter <= 0)",
             {"iterations": 0, "residual_inf": float("inf"), "residual_l2": float("inf")},
         )
 
     n_parent = x_target.size
     n_complex = lnK.size
     n_species = n_parent + n_complex
-    if interaction.shape != (n_species, n_species):
+    if interaction is not None and interaction.shape != (n_species, n_species):
         raise ValueError("species-pair interaction matrix has the wrong shape")
+    if interaction is None and mqm_candidate is None:
+        raise ValueError("a species-pair interaction or MQM block is required")
+    active_parent_names = (
+        tuple(str(name) for name in parent_names)
+        if parent_names is not None
+        else tuple(f"parent {index}" for index in range(n_parent))
+    )
+    if len(active_parent_names) != n_parent:
+        raise ValueError("parent_names must match active parents")
+    binary_join = all(
+        name in {"MgO", "SiO2"} or float(x_target[index]) == 0.0
+        for index, name in enumerate(active_parent_names)
+    )
+
+    def evaluate_model(value: np.ndarray) -> tuple[np.ndarray, np.ndarray, float, np.ndarray]:
+        if interaction is not None:
+            return _species_pair_residual_jacobian(
+                value, x_target, nu, lnK, S, interaction, temperature_K
+            )
+        return _mqm_candidate_residual_jacobian(
+            value, x_target, nu, lnK, S, temperature_K, active_parent_names
+        )
+
+    def in_mqm_gap(species_x: np.ndarray) -> tuple[bool, float, tuple[float, float] | None]:
+        if mqm_candidate is None:
+            return False, 0.0, None
+        mg_index = active_parent_names.index("MgO") if "MgO" in active_parent_names else None
+        si_index = active_parent_names.index("SiO2") if "SiO2" in active_parent_names else None
+        if mg_index is None or si_index is None:
+            return False, 0.0, None
+        n_mgo = float(species_x[mg_index])
+        n_sio2 = float(species_x[si_index])
+        _g, _mu_mgo, _mu_sio2, _gpp, y_pool = _mqm_free_pool_state(
+            n_mgo, n_sio2, temperature_K
+        )
+        from openimcc.mqm_mgo_sio2 import _BINODAL_STEP, _two_liquid_bounds
+
+        bounds = _two_liquid_bounds(temperature_K)
+        inside = bounds is not None and (
+            bounds[0] - _BINODAL_STEP <= y_pool <= bounds[1] + _BINODAL_STEP
+        )
+        return inside, y_pool, bounds
+
+    def refuse_nonconvex(y_pool: float, bounds: tuple[float, float] | None) -> NoReturn:
+        raise ImccMQMCandidateNonconvexError(
+            "the Wu MQM free MgO/SiO2 pool lies inside or near the "
+            "silica-rich two-liquid field "
+            f"(y_Si={y_pool:.8g}, bounds={bounds}, T={temperature_K:.8g} K)"
+        )
 
     if y_init is not None:
         warm_y = _warm_start_vector(y_init)
@@ -1069,7 +1312,20 @@ def _solve_species_pair_active(
     # Move each species participating in a nonzero pair in both directions.
     # These deterministic starts test basin agreement without introducing a
     # random seed or claiming that finite starts prove global uniqueness.
-    interacting = np.flatnonzero(np.any(interaction != 0.0, axis=0))
+    if interaction is not None:
+        interacting = np.flatnonzero(np.any(interaction != 0.0, axis=0))
+    else:
+        participating_parents = {
+            active_parent_names.index(name)
+            for name in ("MgO", "SiO2")
+            if name in active_parent_names
+        }
+        interacting = np.asarray(sorted(participating_parents), dtype=int)
+        if participating_parents:
+            influenced_complexes = np.flatnonzero(
+                np.any(nu[list(participating_parents), :] > 0.0, axis=0)
+            ) + n_parent
+            interacting = np.concatenate((interacting, influenced_complexes))
     for species_index in interacting:
         for displacement in (-2.0, 2.0):
             seed = ideal_z.copy()
@@ -1084,48 +1340,53 @@ def _solve_species_pair_active(
     lower = np.full(n_species, -200.0)
     upper = np.full(n_species, 100.0)
     max_nfev = max(10, max_iter * (n_species + 1))
+    solver_tol = min(tol, 1.0e-14) if mqm_candidate is not None else tol
+    # The MQM path checks parent balances separately in relative form below;
+    # allow a small equation-residual margin for the coupled mass-action solve.
+    residual_tol = 2.0 * tol if mqm_candidate is not None else tol
     roots: list[tuple[np.ndarray, np.ndarray, float, int, float, float, float]] = []
     residual_records: list[dict[str, float | int]] = []
     best_z: np.ndarray | None = None
     best_residual = float("inf")
+
+    def run(
+        start: np.ndarray, relative: bool = False, solve_tol: float = tol
+    ) -> Any:
+        def residual_jac(value: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+            residual, _species, D, jacobian = evaluate_model(value)
+            if relative:
+                # Scale inventory equations by feed abundance so trace
+                # parents receive the same refinement priority as majors.
+                residual = residual.copy()
+                jacobian = jacobian.copy()
+                residual[:n_parent] /= x_target
+                jacobian[:n_parent] /= x_target[:, None]
+            return residual, jacobian
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            return least_squares(
+                lambda value: residual_jac(value)[0], start,
+                jac=lambda value: residual_jac(value)[1],
+                bounds=(lower, upper), method="trf",
+                ftol=solve_tol, xtol=solve_tol, gtol=solve_tol,
+                max_nfev=max_nfev,
+            )
+
     for seed_index, seed in enumerate(unique_seeds):
         if not np.all(np.isfinite(seed)) or np.any(seed < lower) or np.any(seed > upper):
             continue
 
-        def run(
-            start: np.ndarray, relative: bool = False, solve_tol: float = tol
-        ) -> Any:
-            def residual_jac(value: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-                residual, _species, D, jacobian = _species_pair_residual_jacobian(
-                    value, x_target, nu, lnK, S, interaction, temperature_K
-                )
-                if relative:
-                    # Scale inventory equations by feed abundance so trace
-                    # parents receive the same refinement priority as majors.
-                    residual = residual.copy()
-                    jacobian = jacobian.copy()
-                    residual[:n_parent] /= x_target
-                    jacobian[:n_parent] /= x_target[:, None]
-                return residual, jacobian
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", RuntimeWarning)
-                return least_squares(
-                    lambda value: residual_jac(value)[0], start,
-                    jac=lambda value: residual_jac(value)[1],
-                    bounds=(lower, upper), method="trf",
-                    ftol=solve_tol, xtol=solve_tol, gtol=solve_tol,
-                    max_nfev=max_nfev,
-                )
-
         try:
-            solved = run(seed)
+            solved = run(
+                seed,
+                relative=mqm_candidate is not None,
+                solve_tol=solver_tol,
+            )
         except (ValueError, FloatingPointError):
             continue
 
-        residual, species_x, D, _jacobian = _species_pair_residual_jacobian(
-            solved.x, x_target, nu, lnK, S, interaction, temperature_K
-        )
+        residual, species_x, D, _jacobian = evaluate_model(solved.x)
         residual_inf = float(np.linalg.norm(residual, ord=np.inf))
         residual_l2 = float(np.linalg.norm(residual, ord=2))
         relative_balance = residual[:n_parent] / (D * x_target)
@@ -1140,7 +1401,7 @@ def _solve_species_pair_active(
             best_z = solved.x.copy()
         if (
             math.isfinite(D) and D > 0.0
-            and residual_inf <= tol and relative_inf <= tol
+            and residual_inf <= residual_tol and relative_inf <= tol
             and np.all(np.isfinite(species_x))
         ):
             roots.append((
@@ -1155,14 +1416,13 @@ def _solve_species_pair_active(
         # original absolute and relative requirements.
         start = best_z if best_z is not None else ideal_z
         try:
-            _f0, _x0, start_D, _J0 = _species_pair_residual_jacobian(
-                start, x_target, nu, lnK, S, interaction, temperature_K
+            _f0, _x0, start_D, _J0 = evaluate_model(start)
+            relative_tol = (
+                min(tol * min(start_D, 1.0), solver_tol)
+                if start_D > 0.0 else solver_tol
             )
-            relative_tol = tol * min(start_D, 1.0) if start_D > 0.0 else tol
             solved = run(start, relative=True, solve_tol=relative_tol)
-            residual, species_x, D, _jacobian = _species_pair_residual_jacobian(
-                solved.x, x_target, nu, lnK, S, interaction, temperature_K
-            )
+            residual, species_x, D, _jacobian = evaluate_model(solved.x)
             residual_inf = float(np.linalg.norm(residual, ord=np.inf))
             residual_l2 = float(np.linalg.norm(residual, ord=2))
             relative_inf = float(np.linalg.norm(
@@ -1170,7 +1430,7 @@ def _solve_species_pair_active(
             )) if math.isfinite(D) and D > 0.0 else float("inf")
             if (
                 math.isfinite(D) and D > 0.0
-                and residual_inf <= tol and relative_inf <= tol
+                and residual_inf <= residual_tol and relative_inf <= tol
                 and np.all(np.isfinite(species_x))
             ):
                 roots.append((
@@ -1185,9 +1445,14 @@ def _solve_species_pair_active(
             pass
 
     if not roots:
+        if mqm_candidate is not None and best_z is not None:
+            _residual, best_species_x, _D, _jacobian = evaluate_model(best_z)
+            inside, y_pool, bounds = in_mqm_gap(best_species_x)
+            if inside:
+                refuse_nonconvex(y_pool, bounds)
         best = min(residual_records, key=lambda item: float(item["residual_inf"])) if residual_records else {}
         raise ImccNonconvergenceError(
-            "species-pair mass-action and parent-balance solve did not converge",
+            "nonideal mass-action and parent-balance solve did not converge",
             {
                 "iterations": sum(int(item["iterations"]) for item in residual_records),
                 "residual_inf": float(best.get("residual_inf", float("inf"))),
@@ -1196,6 +1461,15 @@ def _solve_species_pair_active(
             },
         )
 
+    if mqm_candidate is not None:
+        for root in roots:
+            inside, y_pool, bounds = in_mqm_gap(root[1])
+            # The binary binodal applies directly on the binary join. In a
+            # multicomponent melt, retained associates can stabilize a free
+            # pool inside that interval, so use the projected Hessian below.
+            if binary_join and inside:
+                refuse_nonconvex(y_pool, bounds)
+
     reference_x = roots[0][1]
     distinct = [
         root for root in roots[1:]
@@ -1203,7 +1477,7 @@ def _solve_species_pair_active(
     ]
     if distinct:
         raise ImccSpeciesPairMultipleRootsError(
-            "deterministic species-pair starts converged to distinct roots; "
+            "deterministic nonideal starts converged to distinct roots; "
             "the single-liquid result is refused",
         )
 
@@ -1214,19 +1488,24 @@ def _solve_species_pair_active(
     root_z, species_x, D, iterations, residual_inf, residual_l2, displacement = root
     if n_complex:
         nullspace = np.vstack((-nu, np.eye(n_complex)))
-        wx = interaction @ species_x
-        gex = 0.5 * float(species_x @ wx)
-        ones = np.ones(n_species)
         ideal_projected = _R_J_MOL_K * temperature_K * (
             nullspace.T @ (nullspace / species_x[:, None])
             - np.outer(np.sum(nullspace, axis=0), np.sum(nullspace, axis=0))
         )
-        excess_hessian = (
-            interaction
-            - np.outer(ones, wx)
-            - np.outer(wx, ones)
-            + 2.0 * gex * np.ones((n_species, n_species))
-        )
+        if interaction is not None:
+            wx = interaction @ species_x
+            gex = 0.5 * float(species_x @ wx)
+            ones = np.ones(n_species)
+            excess_hessian = (
+                interaction
+                - np.outer(ones, wx)
+                - np.outer(wx, ones)
+                + 2.0 * gex * np.ones((n_species, n_species))
+            )
+        else:
+            excess_hessian, _gex, _pool_y = _mqm_candidate_excess_hessian(
+                species_x, temperature_K, active_parent_names
+            )
         projected = ideal_projected + nullspace.T @ excess_hessian @ nullspace
         # Equilibrate the reaction coordinates before the eigenvalue check.
         # Trace species can make the ideal Hessian span many orders of
@@ -1247,8 +1526,12 @@ def _solve_species_pair_active(
             not math.isfinite(min_eigenvalue)
             or min_eigenvalue < -stability_tolerance
         ):
+            if mqm_candidate is not None:
+                inside, y_pool, bounds = in_mqm_gap(species_x)
+                if inside:
+                    refuse_nonconvex(y_pool, bounds)
             raise ImccSpeciesPairUnstableError(
-                "species-pair root fails the projected local Gibbs stability "
+                "nonideal root fails the projected local Gibbs stability "
                 "check (minimum equilibrated eigenvalue "
                 f"{min_eigenvalue:.12g})",
             )
@@ -1263,7 +1546,7 @@ def _solve_species_pair_active(
         residual_inf,
         residual_l2,
         displacement,
-        "species-pair-multistart",
+        "species-pair-multistart" if interaction is not None else "mqm-candidate-multistart",
         0,
     )
 
@@ -1720,6 +2003,7 @@ def _certify_active_root(
     *,
     parent_names: Sequence[str] | None = None,
     species_pair_interaction: np.ndarray | None = None,
+    mqm_candidate: MqmCandidateBlock | None = None,
     temperature_K: float | None = None,
 ) -> tuple[
     tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int], bool
@@ -1756,7 +2040,17 @@ def _certify_active_root(
             relative_error = (
                 activity + nu @ candidate_g
             ) / bound_rhs - 1.0
-        return relative_error, activity, bound_rhs, activity <= bound_rhs
+        if mqm_candidate is not None:
+            # The exact activity bound can coincide with an active parent
+            # after elimination. Permit only the caller's relative balance
+            # tolerance for candidate roundoff; the inventory certificate
+            # below applies that same bound to every parent.
+            bound_limit = bound_rhs * (
+                1.0 + tol_rel + 8.0 * np.finfo(float).eps
+            )
+        else:
+            bound_limit = bound_rhs
+        return relative_error, activity, bound_rhs, activity <= bound_limit
 
     def certified(
         relative_error: np.ndarray, bound_ok: np.ndarray, candidate_D: float
@@ -1821,9 +2115,9 @@ def _certify_active_root(
     if not math.isfinite(D) or D <= 0.0:
         refuse(relative_error, activity, bound_rhs, bound_ok)
 
-    if species_pair_interaction is not None:
+    if species_pair_interaction is not None or mqm_candidate is not None:
         if temperature_K is None:
-            raise ValueError("temperature_K is required for species-pair certification")
+            raise ValueError("temperature_K is required for nonideal certification")
         refined = _solve_species_pair_active(
             x_target,
             nu,
@@ -1835,6 +2129,8 @@ def _certify_active_root(
             max_iter,
             y_init=y,
             relative_log_x_recovery=True,
+            mqm_candidate=mqm_candidate,
+            parent_names=names,
         )
         refined_error, refined_activity, refined_bound_rhs, refined_bound_ok = (
             measure(refined[0], refined[1], refined[2])
@@ -1952,6 +2248,8 @@ def solve_active_warm(
     *,
     y_init: np.ndarray | None = None,
     parent_names: Sequence[str] | None = None,
+    mqm_candidate: MqmCandidateBlock | None = None,
+    temperature_K: float | None = None,
 ) -> tuple[
     np.ndarray, np.ndarray, float, int, float, float, float, str, int, bool
 ]:
@@ -1961,6 +2259,52 @@ def solve_active_warm(
     paths. The returned root then passes the separate per-parent relative
     inventory certificate ``f_i / (D * x_target_i)``.
     """
+    active_names = (
+        tuple(str(name) for name in parent_names)
+        if parent_names is not None
+        else tuple(_PUBLISHED_PARENT_OXIDES[:len(x_target)])
+    )
+    if (
+        mqm_candidate is not None
+        and "MgO" in active_names
+        and "SiO2" in active_names
+    ):
+        if temperature_K is None:
+            raise ValueError("temperature_K is required for the MQM candidate")
+        if not mqm_candidate.T_range_K[0] <= temperature_K <= mqm_candidate.T_range_K[1]:
+            raise ImccTOutsideDatapackDomainError(
+                f"temperature {temperature_K:g} K is outside the MQM candidate "
+                f"range [{mqm_candidate.T_range_K[0]:g}, "
+                f"{mqm_candidate.T_range_K[1]:g}] K"
+            )
+        solution = _solve_species_pair_active(
+            x_target,
+            nu,
+            lnK,
+            S,
+            None,
+            temperature_K,
+            tol,
+            max_iter,
+            y_init=y_init,
+            relative_log_x_recovery=True,
+            mqm_candidate=mqm_candidate,
+            parent_names=active_names,
+        )
+        certified, _refined = _certify_active_root(
+            x_target,
+            nu,
+            lnK,
+            S,
+            tol,
+            max_iter,
+            solution,
+            parent_names=active_names,
+            mqm_candidate=mqm_candidate,
+            temperature_K=temperature_K,
+        )
+        return (*certified, False)
+
     # Active parents are positive by construction; retaining their real scale
     # avoids a 1e-12 floor for ppm and lower feed fractions.
     ideal_y = np.log(x_target)
@@ -2417,6 +2761,11 @@ def _solve_imcc_sf04_with_seed(
             f"T={T:g} K is outside the paper-demonstrated domain for rows: "
             + ", ".join(paper_window_rows),
         )
+    if datapack.mqm_candidate is not None:
+        flags = (
+            *flags,
+            "mqm-candidate: " + datapack.mqm_candidate.source_citation,
+        )
 
     # --- Complex equilibrium constants at T (active subset only) ------------
     log10_K_active = datapack.A[active_complex] + datapack.B[active_complex] / T
@@ -2425,6 +2774,10 @@ def _solve_imcc_sf04_with_seed(
     x_active = x[active_parent]
     nu_active = datapack.nu[active_parent, :][:, active_complex]
     S_active = nu_active.sum(axis=0)
+    active_parent_names = tuple(
+        datapack.parent_oxides[index]
+        for index in np.flatnonzero(active_parent)
+    )
 
     if x_active.size == 0:
         # Should not happen because total > 0.
@@ -2441,7 +2794,51 @@ def _solve_imcc_sf04_with_seed(
     else:
         active_interaction = None
 
-    if active_interaction is not None and np.any(active_interaction != 0.0):
+    mqm_candidate = datapack.mqm_candidate
+    mqm_active = (
+        mqm_candidate is not None
+        and "MgO" in active_parent_names
+        and "SiO2" in active_parent_names
+    )
+    if mqm_active:
+        if active_interaction is not None and np.any(active_interaction != 0.0):
+            raise ValueError("the MQM candidate cannot be combined with species-pair terms")
+        if not mqm_candidate.T_range_K[0] <= T <= mqm_candidate.T_range_K[1]:
+            raise ImccTOutsideDatapackDomainError(
+                f"temperature {T:g} K is outside the MQM candidate range "
+                f"[{mqm_candidate.T_range_K[0]:g}, "
+                f"{mqm_candidate.T_range_K[1]:g}] K"
+            )
+        solution = _solve_species_pair_active(
+            x_active,
+            nu_active,
+            lnK_active,
+            S_active,
+            None,
+            T,
+            float(tol),
+            int(max_iter),
+            y_init=y_init,
+            relative_log_x_recovery=(
+                relative_recovery or relative_log_x_recovery
+            ),
+            mqm_candidate=mqm_candidate,
+            parent_names=active_parent_names,
+        )
+        continuation_y = solution[0]
+        solution, refined = _certify_active_root(
+            x_active,
+            nu_active,
+            lnK_active,
+            S_active,
+            tol,
+            max_iter,
+            solution,
+            parent_names=active_parent_names,
+            mqm_candidate=mqm_candidate,
+            temperature_K=T,
+        )
+    elif active_interaction is not None and np.any(active_interaction != 0.0):
         solution = _solve_species_pair_active(
             x_active,
             nu_active,
@@ -2465,10 +2862,7 @@ def _solve_imcc_sf04_with_seed(
             tol,
             max_iter,
             solution,
-            parent_names=tuple(
-                datapack.parent_oxides[index]
-                for index in np.flatnonzero(active_parent)
-            ),
+            parent_names=active_parent_names,
             species_pair_interaction=active_interaction,
             temperature_K=T,
         )
@@ -2564,7 +2958,9 @@ def _solve_imcc_sf04_with_seed(
     ) = solution
     if (
         active_interaction is None or not np.any(active_interaction != 0.0)
-    ) and (relative_recovery or relative_log_x_recovery or refined):
+    ) and not mqm_active and (
+        relative_recovery or relative_log_x_recovery or refined
+    ):
         # The absolute path already records these norms. A relative solve or
         # refinement records |f/X|, so recompute |f| only for those uncommon
         # roots and keep the default passing path at the certificate's O(P*C)
@@ -2665,6 +3061,12 @@ def solve_imcc_sf04(
     if datapack.model_id == _EXCESS_GIBBS_MODEL_ID:
         raise _ImccExcessGibbsKernelRequiresAdapterError(
             "the public kernel solver is ideal-only for an excess-Gibbs candidate; "
+            "pass the loaded wrapper returned by openimcc.model.load_datapack() "
+            "to openimcc.model.evaluate()"
+        )
+    if datapack.mqm_candidate is not None:
+        raise ImccMQMCandidateKernelRequiresAdapterError(
+            "the public kernel solver is ideal-only for an MQM candidate; "
             "pass the loaded wrapper returned by openimcc.model.load_datapack() "
             "to openimcc.model.evaluate()"
         )

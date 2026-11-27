@@ -108,11 +108,12 @@ when absent, although they are present in the shipped packs as noted.
 
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
-| candidate_provenance | object | No | Pack-level sources, construction assumptions, validation checks, and uncertainty notes for opt-in candidates, including the Sr, P2O5, constrained silicate, and MgO–SiO2 activity candidates. The loader validates the P2O5 candidate's declared D066 content digests and uses a non-empty declaration to gate additional inactive rows on non-default D066 activity packs; other candidate metadata is descriptive. |
+| candidate_provenance | object | No | Pack-level sources, construction assumptions, validation checks, and uncertainty notes for opt-in candidates, including the Sr, P2O5, constrained silicate, MgO–SiO2 activity, and Wu MQM candidates. The loader validates the P2O5 candidate's declared D066 content digests and uses a non-empty declaration to gate additional inactive rows on non-default D066 activity packs; other candidate metadata is descriptive. |
 | candidate_fit | object | No | Audit record for a candidate coefficient fit, including fit data and roles, objective, source counts, parameter-search details, and changed coefficients. The loader does not consume this metadata. |
 | created | string | No | Pack creation date, represented as an ISO-like date such as 2026-08-11. The loader does not parse it. |
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
 | excess_gibbs | object | Conditional | Opt-in analytical-parent or total-species pair excess-Gibbs terms. Accepted only with the new `IMCC-SF04-D066-EXCESS-CANDIDATE` identity; its full content participates in the canonical binding digest. Never add this section to a published pack. |
+| mqm_candidate | object | Conditional | Fixed Wu 1993 MgO–SiO₂ free-pool Gibbs block. Accepted only with the `IMCC-SF04-D066` / `1.0.0-d066-mqm-candidate-v1` identity; the block is strictly validated and participates in the binding digest. It is separate from `excess_gibbs`. |
 | extension_parent_datapack_version | string | No | Version of the parent/earlier extension pack used by the extension record. Present in the retired ext-v3 record; the loader treats it as metadata. |
 | extension_wave | string | No | Label for the extension work wave, for example EXT3-JANAF-native-endmember-screen. Its exact release semantics are not established by the code. |
 | feo_liquid_candidate | object | No | Records the D&G/Masson FeO(l) standard Gibbs-energy shift (`source`, `delta_g_j_mol` as a T-linear expression in J/mol, `transformation`, `uncertainty`) and how it was carried into every association row that consumes FeO. Present in both the historical opt-in candidate and promoted D066 v2 pack. The coefficients in `rows` already include the shift; the loader does not read this field. See docs/feo-liquid-candidate.md. |
@@ -120,7 +121,7 @@ when absent, although they are present in the shipped packs as noted.
 | imcc_sf04_datapack_version | non-empty string | Yes | Datapack version. load_datapack() stores it as the loaded version and uses it in the published-core projection or the per-pack binding digest. |
 | merge_semantics | object | No | Describes how an extension overlays or carries forward published rows: mode, row counts, replacement counts, and rationale. It is not interpreted by load_datapack(). |
 | model | string | No | Human-readable model description. Retired extension records use IMCC-SF04-EXT; v1.0.2, ext-v4, and D066 packs use a longer equation/species-count description. Runtime identity comes from model_id, not this field. |
-| model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; IMCC-SF04-D066-SR-CANDIDATE validates that frozen 38-row core plus its exact seven-row Sr suffix and nine-parent basis; IMCC-SF04-D066-P2O5-CANDIDATE validates the same core plus Mg3(PO4)2 and Ca3(PO4)2 and a nine-parent basis. Opt-in D066 activity candidates retain the frozen 38-row core and use IMCC-SF04-D066. The new excess-Gibbs candidate identity is required when `excess_gibbs` is present. |
+| model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; IMCC-SF04-D066-SR-CANDIDATE validates that frozen 38-row core plus its exact seven-row Sr suffix and nine-parent basis; IMCC-SF04-D066-P2O5-CANDIDATE validates the same core plus Mg3(PO4)2 and Ca3(PO4)2 and a nine-parent basis. Opt-in D066 candidates retain the frozen 38-row core and use IMCC-SF04-D066. The excess-Gibbs identity is required when `excess_gibbs` is present; the fixed MQM block is accepted only on its declared candidate version. |
 | pack_arithmetic | string | No | Prose describing how the pack's rows and coefficient revisions were assembled. It does not alter arithmetic. |
 | parents | array of strings | Yes | Ordered parent-oxide basis. Published, D066, and S/P-extension identities use ["SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"]. The opt-in Sr candidate appends SrO; the P2O5 candidate appends P2O5 after those eight. |
 | parent_standard_candidates | object | No | Provenance for opt-in candidate parent-standard revisions, including source values, retained anchors, and construction details. The loader does not read this field; candidate coefficients and condensate tables carry the numerical changes. |
@@ -155,6 +156,60 @@ pack filename and row number/species pair to the same `source_refs` vocabulary
 without changing the pack files. These refs identify source ancestry: the
 publication a row descends from. Conversion and refit details, and therefore
 the provenance of the final coefficients, remain in each pack's own metadata.
+
+### `mqm_candidate` structure
+
+This optional block is accepted only on the opt-in Wu MQM D066 pack. It is
+strictly checked against the published fixed parameters below; it cannot be
+combined with `excess_gibbs` or `sp_extension`. The candidate pack keeps the
+D066 v4 reaction rows and coefficients, with only `Mg2SiO4` and `MgSiO3`
+marked inactive and declared in `candidate_provenance`.
+
+| Key | JSON type | Meaning |
+|---|---|---|
+| model | string | `wu-1993-pair-approximation`. |
+| free_pool | two strings | `MgO` and `SiO2`, in that order; other oxides do not dilute this subsystem. |
+| coordination_numbers | object | `MgO: 1.37744375`, `SiO2: 2.7548875`. |
+| omega_J_mol | object | Published pair enthalpy coefficients: `constant: -86090`, `Y_Si: -48974`, and `Y_Si^7: 328109`, in J/mol. |
+| eta_J_mol_K | object | Published pair entropy coefficients: `Y_Si: -37.656` and `Y_Si^7: 125.52`, in J/(mol K). |
+| T_range_K | two numbers | Inclusive supported interval `[1200, 3000]` K. |
+| replaced_reactions | two strings | `Mg2SiO4` and `MgSiO3`; their D066 rows remain present but inactive. |
+| standard_state_conversion | string | Declares that no Wu-to-OpenIMCC standard-state shift is added to the embedded Gibbs function. The shift remains only in `evaluate_mgo_sio2_mqm()` output. |
+| citation | string | Wu, Eriksson, Pelton & Blander (1993), *ISIJ International* 33, 26–35, DOI 10.2355/isijinternational.33.26, Eqs. (7)–(8), p. 30. |
+
+The pair calculation uses the existing binary helper. With free-pool silica
+ratio `y = n*(SiO2)/(n*(MgO)+n*(SiO2))`, it computes Wu's full binary mixing
+function `g_W(y,T)`. The embedded excess Gibbs function is
+
+~~~text
+g_E(y,T) = g_W(y,T) - R*T*((1-y)*ln(1-y) + y*ln(y))
+G_E = N_f * g_E
+mu*_Mg,E = g_E - y * dg_E/dy
+mu*_Si,E = g_E + (1-y) * dg_E/dy
+mu*_j,E = 0 for every other free parent or associate
+~~~
+
+Here `N_f` is the amount of the free MgO/SiO2 pool. The D066 ideal free-oxide
+entropy already supplies the subtracted term, so adding only `G_E` makes the
+binary join equal Wu's mixing function in Wu standards. No standard-state sum
+is included: when MgO is absent, the candidate equals D066 exactly, including
+`a(SiO2)`. The standalone binary helper applies its Wu-to-OpenIMCC conversion
+only to its returned activities.
+
+The solve uses deterministic multistart and the projected Gibbs-Hessian
+stability check used by the species-pair path. On the binary join, the typed
+two-liquid refusal applies inside or within one binodal grid step of Wu's
+silica-rich gap. In multicomponent melts, retained associates can stabilize a
+free-pool ratio in that interval, so the typed refusal follows when the
+projected Hessian is unstable there or no root is found there. `equilibrate()`
+returns its typed `unsupported_nonconvex_model` refusal only when both MgO and
+SiO₂ are present, because the crystal optimizer does not carry the MQM block
+through its liquid path. Mg-free states run normally because the block is
+inactive on that face.
+
+The retained D066 associates, including CaMgSi2O6, Ca2MgSi2O7, and
+Mg2Al4Si5O18, keep their original coefficients. They were calibrated alongside
+the two removed binary silicates; no coefficients are refit by this candidate.
 
 ### excess_gibbs structure
 

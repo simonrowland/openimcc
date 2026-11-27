@@ -179,6 +179,7 @@ _D066_CANDIDATE_REFITS_BY_FAMILY = {
     "melt-mgsio-candidate": {
         "activity_fit": _MGSIO_CANDIDATE_REFIT_ROWS,
     },
+    "melt-mqm-candidate": {},
 }
 _BASE_EXPECTED_D066_TRANSFORMS: dict[str, dict[str, set[int]]] = {
     "imcc-sf04-d066-ext-v1.json": {"k_translation": _K_TRANSLATED_ROWS},
@@ -233,6 +234,9 @@ def _expected_d066_transforms() -> dict[str, dict[str, set[int]]]:
     for entry in _manifest_d066_entries():
         candidate_refits = _D066_CANDIDATE_REFITS_BY_FAMILY.get(entry.get("family"))
         if candidate_refits is None:
+            continue
+        if entry.get("family") == "melt-mqm-candidate":
+            expected[entry["file"]] = _D066_V4_TRANSFORMS
             continue
         transforms = dict(_D066_V4_TRANSFORMS)
         transforms["standard_state_refit"] = (
@@ -468,6 +472,36 @@ def test_d066_recorded_refits_and_standard_state_conversions_are_explicit() -> N
                 sorted(transforms),
                 "recorded transformation unexpectedly reproduces source coefficients",
             )
+
+
+def test_mqm_candidate_has_no_row_refits_and_only_disables_binary_silicates() -> None:
+    candidate = json.loads(
+        (PACK_DIR / "imcc-sf04-d066-mqm-candidate-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    d066 = json.loads((PACK_DIR / "imcc-sf04-d066-v4.json").read_text(encoding="utf-8"))
+    manifest_entry = next(
+        entry for entry in _manifest_d066_entries()
+        if entry["file"] == "imcc-sf04-d066-mqm-candidate-v1.json"
+    )
+    assert manifest_entry["family"] == "melt-mqm-candidate"
+    assert _D066_CANDIDATE_REFITS_BY_FAMILY[manifest_entry["family"]] == {}
+    assert candidate["candidate_provenance"]["parameter_status"] == (
+        "published values transcribed; no fitting or refitting"
+    )
+
+    inactive_reasons = candidate["candidate_provenance"]["inactive_rows"]
+    assert set(inactive_reasons) == {"Mg2SiO4", "MgSiO3"}
+    for original, row in zip(d066["rows"], candidate["rows"], strict=True):
+        if original["complex"] in inactive_reasons:
+            expected = dict(original)
+            expected["active"] = False
+            expected["inactive_reason"] = inactive_reasons[original["complex"]]
+            assert row == expected
+        else:
+            assert row == original
+        assert "candidate_activity_fit" not in row
 
 
 def test_sr_candidate_keeps_v4_prefix_and_refits_its_seven_sr_rows() -> None:
