@@ -61,6 +61,29 @@ activities gives `+1.16` and `+2.49` dex; both calculations remain Mg-first,
 so the Markova sign is not fixed by this model. These are model diagnostics,
 not fitted binary activities or independent validation of the gas calculation.
 
+## Full residual replay
+
+The candidate was replayed against the full scored residual set on the same
+rows as the default (melt activity 1,023, vapour 1,749, SiO evolution 164; the
+default replay reproduces the stored predictions to 1.5e-13 dex). Median
+|log10(model/measured)| per melt-activity cell, default → candidate:
+
+| Cell | n | Median abs residual (dex) | Signed median (dex) |
+|---|---:|---:|---:|
+| binary silicate, 1700–1950 K | 102 | 0.371 → 0.268 | −0.334 → −0.029 |
+| binary silicate, 1950–2200 K | 27 | 0.358 → 0.036 | −0.014 → +0.003 |
+| ternary silicate, 1700–1950 K | 112 | 0.411 → 0.356 | −0.313 → −0.262 |
+| Na-silicate, 1323–1700 K | 253 | 0.161 → 0.201 | −0.001 → −0.074 |
+| CMAS, 1700–1950 K | 38 | 0.473 → 0.473 | −0.278 → −0.413 |
+| CAS, 1700–1950 K | 364 | unchanged | unchanged |
+
+The MgO–SiO₂ binary bias is removed. The Na-silicate 1323–1700 K cell and
+the CMAS signed median move the wrong way, consistent with retained
+Mg-bearing associates that were calibrated alongside the removed binary
+silicates. The candidate also refuses 47 rows that the default scores:
+32 `ImccSpeciesPairMultipleRootsError`, 11 `ImccMQMCandidateNonconvexError`,
+and 4 `ImccNonconvergenceError`. It therefore stays opt-in.
+
 The opt-in profile uses the same packaged gas, condensate, and redox packs as
 the default profile. The new Gibbs parameters and inactive-row reasons are
 part of the candidate pack's binding digest and ancestry record.
