@@ -64,7 +64,7 @@ not fitted binary activities or independent validation of the gas calculation.
 ## Full residual replay
 
 The candidate was replayed against the full scored residual set on the same
-rows as the default (melt activity 1,023, vapour 1,749, SiO evolution 164; the
+rows as the default (melt activity 1,023, vapour 1,750, SiO evolution 164; the
 default replay reproduces the stored predictions to 1.5e-13 dex). Median
 |log10(model/measured)| per melt-activity cell, default → candidate:
 
@@ -80,9 +80,9 @@ default replay reproduces the stored predictions to 1.5e-13 dex). Median
 The MgO–SiO₂ binary bias is removed. The Na-silicate 1323–1700 K cell and
 the CMAS signed median move the wrong way, consistent with retained
 Mg-bearing associates that were calibrated alongside the removed binary
-silicates. The candidate also refuses 47 rows that the default scores:
+silicates. The candidate also refuses 46 rows that the default scores:
 32 `ImccSpeciesPairMultipleRootsError`, 11 `ImccMQMCandidateNonconvexError`,
-and 4 `ImccNonconvergenceError`. It therefore stays opt-in.
+and 3 `ImccNonconvergenceError`. It therefore stays opt-in.
 
 The opt-in profile uses the same packaged gas, condensate, and redox packs as
 the default profile. The new Gibbs parameters and inactive-row reasons are
